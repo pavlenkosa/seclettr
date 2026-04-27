@@ -80,6 +80,7 @@ ENV_TEMPLATE_SRC="$ROOT_DIR/infra/.env.example"
 NGINX_SRC_DIR="$ROOT_DIR/infra/nginx"
 MIGRATIONS_SRC_DIR="$ROOT_DIR/infra/migrations"
 INSTALL_SCRIPT_SRC="$ROOT_DIR/scripts/release-install.sh"
+UNINSTALL_SCRIPT_SRC="$ROOT_DIR/scripts/release-uninstall.sh"
 SERVER_INSTALL_SCRIPT_SRC="$ROOT_DIR/scripts/server-install.sh"
 LICENSE_SRC="$ROOT_DIR/LICENSE"
 NOTICE_SRC="$ROOT_DIR/NOTICE"
@@ -137,6 +138,7 @@ cp "$RELEASE_COMPOSE_SRC" "$STAGE_DIR/docker-compose.yml"
 cp "$RELEASE_HTTP_OVERRIDE_SRC" "$STAGE_DIR/docker-compose.http.yml"
 cp "$ENV_TEMPLATE_SRC" "$STAGE_DIR/.env.example"
 cp "$INSTALL_SCRIPT_SRC" "$STAGE_DIR/install.sh"
+cp "$UNINSTALL_SCRIPT_SRC" "$STAGE_DIR/uninstall.sh"
 cp "$SERVER_INSTALL_SCRIPT_SRC" "$STAGE_DIR/install-docker.sh"
 cp "$LICENSE_SRC" "$STAGE_DIR/LICENSE"
 cp "$LICENSE_RU_SRC" "$STAGE_DIR/LICENSE.ru.md"
@@ -146,7 +148,7 @@ cp "$LEGAL_NOTICE_SRC" "$STAGE_DIR/LEGAL_NOTICE.md"
 cp "$LEGAL_NOTICE_RU_SRC" "$STAGE_DIR/LEGAL_NOTICE.ru.md"
 cp "$DEPLOYMENT_GUIDE_SRC" "$STAGE_DIR/DEPLOYMENT.md"
 cp "$DEPLOYMENT_GUIDE_RU_SRC" "$STAGE_DIR/DEPLOYMENT.ru.md"
-chmod +x "$STAGE_DIR/install.sh" "$STAGE_DIR/install-docker.sh"
+chmod +x "$STAGE_DIR/install.sh" "$STAGE_DIR/uninstall.sh" "$STAGE_DIR/install-docker.sh"
 cp -R "$NGINX_SRC_DIR" "$STAGE_DIR/nginx"
 mkdir -p "$STAGE_DIR/nginx/certs"
 cp -R "$MIGRATIONS_SRC_DIR" "$STAGE_DIR/migrations"
@@ -190,6 +192,7 @@ It supports single-node deployment modes without rebuilding images:
 - \`migrations/\` — SQL migrations for the bundled migration runner
 - \`nginx/\` — nginx configs and cert mount point
 - \`install.sh\` — load images, run migrations, and start the stack
+- \`uninstall.sh\` — stop services, remove containers, volumes, and optionally images
 - \`install-docker.sh\` — optional Docker/Compose installer for Ubuntu/Debian
 - \`DEPLOYMENT.md\` and \`DEPLOYMENT.ru.md\` — step-by-step deployment guides
 - \`LICENSE\`, \`LICENSE.ru.md\`, \`NOTICE\`, \`THIRD_PARTY_NOTICES.md\`, \`LEGAL_NOTICE.md\`, \`LEGAL_NOTICE.ru.md\` — legal bundle for redistribution

@@ -430,6 +430,18 @@ provision_letsencrypt_cert() {
 
   require_certbot
 
+  # If certbot already has a valid cert for this domain, reuse it directly
+  # without running certbot again (avoids port-80 conflicts with running nginx).
+  local live_dir="/etc/letsencrypt/live/$domain"
+  if [[ -f "$live_dir/fullchain.pem" && -f "$live_dir/privkey.pem" ]]; then
+    log_ok "Let's Encrypt certificate already present for $domain — reusing"
+    mkdir -p "$cert_dir"
+    cp "$live_dir/fullchain.pem" "$cert_dir/cert.pem"
+    cp "$live_dir/privkey.pem"  "$cert_dir/key.pem"
+    chmod 644 "$cert_dir/key.pem"
+    return 0
+  fi
+
   local certbot_args=(certonly --standalone --non-interactive --agree-tos -d "$domain")
   if [[ -n "$email" ]]; then
     certbot_args+=(--email "$email")
@@ -441,9 +453,9 @@ provision_letsencrypt_cert() {
   certbot "${certbot_args[@]}" || return 1
 
   mkdir -p "$cert_dir"
-  cp "/etc/letsencrypt/live/$domain/fullchain.pem" "$cert_dir/cert.pem"
-  cp "/etc/letsencrypt/live/$domain/privkey.pem" "$cert_dir/key.pem"
-  chmod 600 "$cert_dir/key.pem"
+  cp "$live_dir/fullchain.pem" "$cert_dir/cert.pem"
+  cp "$live_dir/privkey.pem"  "$cert_dir/key.pem"
+  chmod 644 "$cert_dir/key.pem"
   log_ok "Let's Encrypt certificate obtained for $domain"
 }
 
@@ -459,7 +471,7 @@ docker compose -p ${PROJECT_NAME} --env-file "${ENV_FILE}" -f "${COMPOSE_FILE}" 
 certbot renew --quiet
 cp "/etc/letsencrypt/live/${domain}/fullchain.pem" "${cert_dir}/cert.pem"
 cp "/etc/letsencrypt/live/${domain}/privkey.pem" "${cert_dir}/key.pem"
-chmod 600 "${cert_dir}/key.pem"
+chmod 644 "${cert_dir}/key.pem"
 docker compose -p ${PROJECT_NAME} --env-file "${ENV_FILE}" -f "${COMPOSE_FILE}" start web
 RENEW_SCRIPT
   chmod +x "$renew_script"

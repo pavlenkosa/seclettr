@@ -188,7 +188,6 @@ export function DirectCallSurfaceRenderer({
   stageScene,
   incomingPeerInitials,
   incomingPeerDisplayName,
-  incomingPromptText,
   incomingMinimizedMetaText,
   peerDisplayInitials,
   peerDisplayName,

@@ -1,0 +1,15 @@
+.root {
+  width: var(--avatar-size, 42px);
+  height: var(--avatar-size, 42px);
+  border-radius: 999px;
+  background: linear-gradient(145deg, var(--avatar-grad-start), var(--avatar-grad-end));
+  color: var(--avatar-text);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  font-size: var(--avatar-font-size, 0.86rem);
+  font-weight: 700;
+  box-shadow: var(--avatar-shadow);
+  user-select: none;
+}

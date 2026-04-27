@@ -1,0 +1,77 @@
+# Dependencies
+node_modules/
+.pnpm-store/
+
+# Build output
+dist/
+build/
+.next/
+artifacts/
+
+# Vite
+.vite/
+
+# Environment variables — NEVER commit
+.env
+.env.local
+.env.*.local
+infra/.env
+infra/.env.dev
+infra/.env.test
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+pnpm-debug.log*
+
+# Test coverage and Playwright
+coverage/
+playwright-report/
+test-results/
+
+# OS artifacts
+.DS_Store
+Thumbs.db
+
+# Editor
+.vscode/settings.json
+.idea/
+*.swp
+.sonarlint/
+.scannerwork/
+
+# Turbo cache
+.turbo/
+
+# Docker volumes (if accidentally created locally)
+postgres_data/
+minio_data/
+coturn_logs/
+
+# TLS certificates generated locally
+infra/nginx/certs/*.pem
+infra/nginx/certs/*.key
+infra/nginx/certs/*.crt
+
+# Dev certificates — never commit keys
+infra/.dev-certs/
+
+# Archive artifacts — never commit
+*.zip
+sonar-export-*/
+sonar-export-*.tar.gz
+
+# npm lockfile — project uses pnpm exclusively
+package-lock.json
+
+# Other
+.runtime
+/artifacts
+.runlogs
+
+# TypeScript incremental metadata
+*.tsbuildinfo
+
+# Guardrail: transpiled JS should never be committed inside TS source tree
+apps/web/src/**/*.js

@@ -1,0 +1,107 @@
+// @vitest-environment jsdom
+
+import { act } from "react";
+import { createRoot, type Root } from "react-dom/client";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { GroupCallStageViewerDialog } from "@/calls/group/presentation/components/GroupCallStageViewerDialog";
+import type { GroupCallStageTile } from "@/calls/group/model/group-call-types";
+
+const stageTile: GroupCallStageTile = {
+  id: "stage-tile",
+  label: "Remote Screen",
+  stream: null,
+  audioStream: null,
+  fallbackInitials: "RS",
+  badge: "Screen",
+  hasVideo: true,
+  videoSource: "screen",
+  isLocal: false,
+};
+
+describe("GroupCallStageViewerDialog", () => {
+  let container: HTMLDivElement;
+  let root: Root;
+
+  beforeEach(() => {
+    (globalThis as typeof globalThis & { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
+    container = document.createElement("div");
+    document.body.appendChild(container);
+    root = createRoot(container);
+  });
+
+  afterEach(() => {
+    act(() => {
+      root.unmount();
+    });
+    container.remove();
+    delete (globalThis as typeof globalThis & { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT;
+  });
+
+  it("closes on Escape without affecting stop-watching actions", () => {
+    const onClose = vi.fn();
+    const onStopWatchingStageTile = vi.fn();
+
+    act(() => {
+      root.render(
+        <GroupCallStageViewerDialog
+          isOpen
+          stageTile={stageTile}
+          stageEyebrowLabel="Stage"
+          fullscreenToggleLabel="Close viewer"
+          canStopWatchingStageTile
+          stopWatchingStageLabel="Stop viewing"
+          onClose={onClose}
+          onStopWatchingStageTile={onStopWatchingStageTile}
+        />
+      );
+    });
+
+    act(() => {
+      document.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true }));
+    });
+
+    expect(onClose).toHaveBeenCalledTimes(1);
+    expect(onStopWatchingStageTile).not.toHaveBeenCalled();
+  });
+
+  it("traps focus inside the viewer dialog", () => {
+    act(() => {
+      root.render(
+        <GroupCallStageViewerDialog
+          isOpen
+          stageTile={stageTile}
+          stageEyebrowLabel="Stage"
+          fullscreenToggleLabel="Close viewer"
+          canStopWatchingStageTile
+          stopWatchingStageLabel="Stop viewing"
+          onClose={() => {}}
+          onStopWatchingStageTile={() => {}}
+        />
+      );
+    });
+
+    // Dialog portals to document.body — query there, not inside container.
+    const closeButton = Array.from(document.body.querySelectorAll("button")).find(
+      (button) => button.textContent === "Close viewer"
+    ) ?? null;
+    const stopWatchingButton = document.body.querySelector('[aria-label="Stop viewing"]') as HTMLButtonElement | null;
+
+    expect(closeButton).not.toBeNull();
+    expect(stopWatchingButton).not.toBeNull();
+    expect(document.activeElement).toBe(closeButton);
+
+    act(() => {
+      stopWatchingButton?.focus();
+      document.dispatchEvent(new KeyboardEvent("keydown", { key: "Tab", bubbles: true }));
+    });
+
+    expect(document.activeElement).toBe(closeButton);
+
+    act(() => {
+      closeButton?.focus();
+      document.dispatchEvent(new KeyboardEvent("keydown", { key: "Tab", shiftKey: true, bubbles: true }));
+    });
+
+    expect(document.activeElement).toBe(stopWatchingButton);
+  });
+});

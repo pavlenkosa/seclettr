@@ -1,0 +1,305 @@
+.layout {
+  display: grid;
+  grid-template-columns: minmax(240px, 260px) minmax(0, 1fr);
+  gap: 1rem;
+  align-items: start;
+}
+
+.sidebar {
+  display: flex;
+  flex-direction: column;
+  gap: 0.62rem;
+  position: sticky;
+  top: 0;
+}
+
+.content {
+  min-width: 0;
+}
+
+.contentPane {
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+  min-height: var(--sectioned-modal-pane-min-height, 0);
+  animation: sectionContentIn 0.2s ease;
+}
+
+@keyframes sectionContentIn {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.sectionTab {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: start;
+  gap: 0.78rem;
+  padding: 0.88rem 0.92rem;
+  border-radius: 22px;
+  border: 1px solid color-mix(in srgb, var(--accent) 12%, var(--panel-border-soft));
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--surface-float) 94%, var(--glass-surface-fill, transparent)), color-mix(in srgb, var(--surface-shell) 96%, var(--glass-surface-fill, transparent)));
+  -webkit-backdrop-filter: blur(var(--glass-blur-medium, 0px)) saturate(var(--glass-saturate, 1));
+  backdrop-filter: blur(var(--glass-blur-medium, 0px)) saturate(var(--glass-saturate, 1));
+  text-align: left;
+  box-shadow: none;
+  transition: transform 0.16s ease, border-color 0.16s ease, background 0.16s ease, box-shadow 0.16s ease;
+}
+
+.sectionTab:hover {
+  transform: translateY(-1px);
+  border-color: color-mix(in srgb, var(--accent) 22%, var(--panel-border-soft));
+}
+
+.sectionTabActive {
+  border-color: color-mix(in srgb, var(--accent) 42%, var(--panel-border-soft));
+  background:
+    radial-gradient(circle at top left, color-mix(in srgb, var(--accent) 16%, transparent), transparent 55%),
+    linear-gradient(180deg, color-mix(in srgb, var(--surface-float) 96%, var(--glass-surface-fill, transparent)), color-mix(in srgb, var(--accent) 6%, var(--surface-shell-strong)));
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.08);
+}
+
+.sectionTabIcon {
+  width: 42px;
+  height: 42px;
+  border-radius: 14px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: color-mix(in srgb, var(--accent) 72%, white 8%);
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--accent) 18%, transparent), color-mix(in srgb, var(--accent) 8%, transparent));
+  border: 1px solid color-mix(in srgb, var(--accent) 22%, transparent);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.08);
+  flex-shrink: 0;
+}
+
+.sectionTabBody {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.22rem;
+}
+
+.sectionTabTitle {
+  color: var(--text-primary);
+  font-size: 0.92rem;
+  font-weight: 700;
+  line-height: 1.35;
+  text-wrap: pretty;
+  overflow-wrap: normal;
+  word-break: normal;
+  hyphens: none;
+}
+
+.sectionTabDescription {
+  color: color-mix(in srgb, var(--text-secondary) 94%, var(--text-muted));
+  font-size: 0.72rem;
+  line-height: 1.45;
+}
+
+.sectionHero {
+  --surface-panel-border: color-mix(in srgb, var(--accent) 22%, var(--panel-border-soft));
+  --surface-panel-shadow: 0 18px 36px rgb(2 8 20 / 0.14);
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 0.9rem;
+  align-items: center;
+}
+
+.sectionHeroIcon {
+  width: 58px;
+  height: 58px;
+  border-radius: 18px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: color-mix(in srgb, var(--accent) 82%, white 8%);
+  background:
+    linear-gradient(160deg, color-mix(in srgb, var(--accent) 30%, transparent), color-mix(in srgb, var(--accent) 12%, transparent));
+  border: 1px solid color-mix(in srgb, var(--accent) 26%, transparent);
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.1),
+    0 12px 24px color-mix(in srgb, var(--accent) 16%, transparent);
+}
+
+.sectionHeroBody {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.38rem;
+}
+
+.sectionHeroEyebrow {
+  color: color-mix(in srgb, var(--accent) 72%, var(--text-secondary));
+  font-size: 0.72rem;
+  font-weight: 760;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.sectionHeroTitle {
+  margin: 0;
+  color: var(--text-primary);
+  font-size: 1.18rem;
+  line-height: 1.1;
+  font-weight: 760;
+  letter-spacing: -0.03em;
+}
+
+.sectionHeroDescription {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 0.82rem;
+  line-height: 1.55;
+}
+
+.sectionHeroMeta {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.footerPanel {
+  --surface-panel-shadow: none;
+}
+
+.note {
+  margin: 0;
+  font-size: 0.78rem;
+  line-height: 1.55;
+  color: var(--text-secondary);
+}
+
+:global(:root[data-theme="light"]) .sectionTab {
+  border-color: color-mix(in srgb, var(--accent) 20%, var(--panel-border-soft));
+  background:
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--surface-float) 84%, white),
+      color-mix(in srgb, var(--surface-shell-strong) 88%, white)
+    );
+}
+
+:global(:root[data-theme="light"]) .sectionTabActive {
+  border-color: color-mix(in srgb, var(--accent) 38%, var(--panel-border-soft));
+  background:
+    radial-gradient(circle at top left, color-mix(in srgb, var(--accent) 18%, transparent), transparent 56%),
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--surface-float) 86%, white),
+      color-mix(in srgb, var(--accent) 8%, var(--surface-shell-strong))
+    );
+}
+
+:global(:root[data-theme="light"]) .sectionTabDescription,
+:global(:root[data-theme="light"]) .sectionHeroDescription,
+:global(:root[data-theme="light"]) .note {
+  color: color-mix(in srgb, var(--text-primary) 68%, var(--text-secondary));
+}
+
+:global(:root[data-theme="light"]) .sectionHeroEyebrow {
+  color: color-mix(in srgb, var(--accent) 78%, var(--text-primary));
+}
+
+:global(:root[data-theme="light"]) .sectionHero {
+  --surface-panel-shadow: 0 12px 24px rgb(133 151 176 / 0.14);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sectionTab {
+    transition: none !important;
+    transform: none !important;
+  }
+
+  .contentPane {
+    animation: none !important;
+  }
+}
+
+@media (max-width: 820px) {
+  .layout {
+    grid-template-columns: 1fr;
+  }
+
+  .sidebar {
+    position: static;
+    flex-direction: row;
+    overflow-x: auto;
+    padding-top: 0.25rem;
+    padding-bottom: 0.6rem;
+    margin-inline: -0.12rem;
+    padding-inline: 0.12rem;
+  }
+
+  .sectionTab {
+    min-width: 240px;
+  }
+}
+
+@media (max-width: 640px) {
+  .layout {
+    gap: 0.82rem;
+  }
+
+  .sidebar {
+    gap: 0.5rem;
+  }
+
+  .contentPane {
+    min-height: var(--sectioned-modal-pane-min-height-mobile, var(--sectioned-modal-pane-min-height, 0));
+  }
+
+  .sectionTab {
+    min-width: min(236px, calc(100vw - 2.4rem));
+    grid-template-columns: 36px minmax(0, 1fr);
+    gap: 0.64rem;
+    padding: 0.78rem 0.82rem;
+    border-radius: 20px;
+  }
+
+  .sectionTabIcon {
+    width: 36px;
+    height: 36px;
+    border-radius: 12px;
+  }
+
+  .sectionTabBody {
+    gap: 0.18rem;
+  }
+
+  .sectionTabTitle {
+    font-size: 0.86rem;
+    line-height: 1.26;
+    text-wrap: pretty;
+  }
+
+  .sectionTabDescription {
+    font-size: 0.68rem;
+    line-height: 1.38;
+  }
+
+  .sectionHero {
+    grid-template-columns: 1fr;
+    gap: 0.72rem;
+    align-items: flex-start;
+  }
+
+  .sectionHeroIcon {
+    width: 48px;
+    height: 48px;
+    border-radius: 15px;
+  }
+
+  .sectionHeroTitle {
+    font-size: 1.06rem;
+  }
+}

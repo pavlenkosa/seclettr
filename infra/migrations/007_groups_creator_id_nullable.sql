@@ -1,0 +1,6 @@
+BEGIN;
+
+ALTER TABLE groups
+  ALTER COLUMN creator_id DROP NOT NULL;
+
+COMMIT;

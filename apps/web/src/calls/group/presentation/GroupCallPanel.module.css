@@ -1,0 +1,1908 @@
+﻿@keyframes groupCallBackdropIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes groupCallPanelIn {
+  from {
+    opacity: 0;
+    transform: translateY(16px) scale(0.985);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes groupCallDockIn {
+  from {
+    opacity: 0;
+    filter: blur(2px);
+  }
+  to {
+    opacity: 1;
+    filter: blur(0);
+  }
+}
+
+@keyframes groupCallSidePanelIn {
+  from {
+    opacity: 0;
+    transform: translateX(18px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes groupCallSideSheetIn {
+  from {
+    opacity: 0;
+    transform: translateY(18px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.backdrop {
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100dvh;
+  max-width: none;
+  max-height: none;
+  margin: 0;
+  border: 0;
+  outline: 0;
+  box-sizing: border-box;
+  z-index: 255;
+  display: flex;
+  align-items: stretch;
+  justify-content: center;
+  padding: 0;
+  background: rgb(3 8 18 / 0.78);
+  backdrop-filter: blur(12px);
+  animation: groupCallBackdropIn 180ms cubic-bezier(0.2, 0.9, 0.2, 1) both;
+}
+
+.panel {
+  position: relative;
+  width: 100%;
+  max-width: none;
+  min-height: 100%;
+  max-height: none;
+  display: flex;
+  flex-direction: column;
+  gap: 1.1rem;
+  padding:
+    calc(env(safe-area-inset-top, 0px) + 1rem)
+    clamp(0.9rem, 1.4vw, 1.35rem)
+    calc(env(safe-area-inset-bottom, 0px) + 1rem);
+  border-radius: 0;
+  border: none;
+  background:
+    radial-gradient(1320px 760px at 10% -8%, color-mix(in srgb, var(--accent) 18%, transparent), transparent 54%),
+    radial-gradient(980px 620px at 92% 16%, color-mix(in srgb, var(--panel-header-bg) 24%, transparent), transparent 58%),
+    linear-gradient(180deg, color-mix(in srgb, var(--bg-primary) 94%, #06101c), color-mix(in srgb, var(--bg-primary) 98%, #030712));
+  box-shadow: none;
+  animation: groupCallPanelIn 220ms cubic-bezier(0.18, 0.9, 0.2, 1) both;
+}
+
+.header {
+  --header-bar-gap: 0.85rem;
+  flex-shrink: 0;
+  width: min(100%, 1520px);
+  margin-inline: auto;
+}
+
+.headerSummary {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.28rem;
+  align-items: center;
+  justify-self: center;
+  text-align: center;
+}
+
+.headerTitleRow,
+.headerMetaRow {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+}
+
+.headerTitle {
+  min-width: 0;
+  color: var(--text-primary);
+  font-size: clamp(1rem, 2.5vw, 1.22rem);
+  font-weight: 760;
+  letter-spacing: -0.02em;
+}
+
+.headerDuration {
+  display: inline-flex;
+  align-items: center;
+  min-height: 28px;
+  padding: 0 0.55rem;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--surface-shell) 88%, transparent);
+  border: 1px solid color-mix(in srgb, var(--panel-border-soft) 88%, transparent);
+  color: var(--text-secondary);
+  font-size: 0.74rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.headerMetaText {
+  color: var(--text-secondary);
+  font-size: 0.78rem;
+  font-weight: 600;
+}
+
+.headerActions {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.detailsToggleBtn {
+  min-width: 126px;
+}
+
+.modeChip {
+  --icon-pill-min-height: 38px;
+  --icon-pill-padding: 0 0.8rem;
+  --icon-pill-gap: 0.45rem;
+}
+
+.statusBadge {
+  flex-shrink: 0;
+}
+
+.iconBtn {
+  --icon-button-size: 38px;
+}
+
+.headerDangerBtn {
+  min-height: 38px;
+  padding: 0 0.8rem;
+  border-radius: 999px;
+  border: 1px solid rgb(252 165 165 / 0.3);
+  background: linear-gradient(180deg, #dc2626, #b91c1c);
+  color: #fff;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  font-size: 0.78rem;
+  font-weight: 700;
+  line-height: 1;
+  white-space: nowrap;
+  transition: transform 0.12s ease, filter 0.12s ease;
+}
+
+.headerDangerBtn:hover {
+  filter: brightness(1.04);
+  transform: translateY(-1px);
+}
+
+.body {
+  flex: 1;
+  min-height: 0;
+  position: relative;
+  display: flex;
+  justify-content: center;
+  gap: 0.95rem;
+  overflow: visible;
+  align-items: flex-start;
+}
+
+.bodyWithSidePanel {
+  overflow: visible;
+}
+
+@media (min-width: 1360px) {
+  .bodyWithSidePanel .mainColumn {
+    padding-right: calc(clamp(420px, 32vw, 520px) + 1rem);
+  }
+}
+
+.bodyCompact {
+  flex: 0 0 auto;
+  overflow: visible;
+}
+
+.bodyCompact .mainColumn > .section {
+  width: min(100%, 1040px);
+  margin-inline: auto;
+}
+
+.bodyCompact .sectionHeader {
+  width: min(100%, 760px);
+}
+
+.mainColumn,
+.sidePanel {
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+  overflow: auto;
+  padding-right: 0.12rem;
+}
+
+.mainColumn {
+  flex: 1;
+  min-width: 0;
+  width: 100%;
+  align-items: stretch;
+  padding-right: 0.12rem;
+}
+
+.mainColumn > .section {
+  width: min(100%, 1560px);
+  margin-inline: auto;
+}
+
+.sidePanel {
+  position: absolute;
+  top: 0.45rem;
+  right: 0;
+  bottom: auto;
+  width: clamp(420px, 32vw, 520px);
+  min-width: 0;
+  min-height: 340px;
+  height: auto;
+  max-height: calc(100% - 0.45rem);
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  padding: 0.82rem 0.86rem 0.86rem;
+  border-radius: 24px;
+  border: 1px solid color-mix(in srgb, var(--panel-border-soft) 76%, transparent);
+  background:
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--surface-float) 96%, transparent),
+      color-mix(in srgb, var(--surface-shell) 98%, transparent)
+    );
+  box-shadow:
+    0 24px 56px rgb(2 8 20 / 0.18),
+    inset 0 1px 0 rgb(255 255 255 / 0.04);
+  backdrop-filter: blur(22px);
+  overflow: hidden;
+  resize: vertical;
+  z-index: 5;
+  animation: groupCallSidePanelIn 180ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.sidePanelChatMode {
+  height: clamp(380px, 52vh, 540px);
+}
+
+.sidePanelDetailsMode {
+  height: clamp(460px, 66vh, 760px);
+}
+
+.sidePanelHeader {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.7rem;
+  padding: 0.02rem 0.08rem 0.74rem;
+  border-bottom: 1px solid color-mix(in srgb, var(--panel-border-soft) 68%, transparent);
+}
+
+.sidePanelTitle {
+  min-width: 0;
+  color: var(--text-secondary);
+  font-size: 0.75rem;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+}
+
+.sidePanelCloseBtn {
+  --icon-button-size: 34px;
+  flex-shrink: 0;
+}
+
+.sidePanelContent {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: auto;
+  padding-top: 0.82rem;
+  padding-right: 0.08rem;
+}
+
+.detailsDrawer {
+  --surface-panel-shadow: 0 18px 42px rgb(2 8 20 / 0.22);
+  --surface-panel-bg-start: color-mix(in srgb, var(--surface-float) 96%, var(--glass-surface-fill, transparent));
+  --surface-panel-bg-end: color-mix(in srgb, var(--surface-shell) 98%, var(--glass-surface-fill, transparent));
+  position: absolute;
+  top: calc(env(safe-area-inset-top, 0px) + 4.5rem);
+  right: clamp(0.85rem, 1.6vw, 1.35rem);
+  z-index: 3;
+  width: min(380px, calc(100vw - 2rem));
+  max-height: calc(100% - env(safe-area-inset-top, 0px) - 12rem);
+  border-radius: 28px;
+  box-shadow:
+    0 28px 64px rgb(2 8 20 / 0.24),
+    inset 0 1px 0 rgb(255 255 255 / 0.04);
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+  overflow: auto;
+  opacity: 0;
+  pointer-events: none;
+  transform: translateX(18px);
+  transition: opacity 0.16s ease, transform 0.16s ease;
+}
+
+.detailsDrawerOpen {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translateX(0);
+}
+
+.detailsDrawerInline {
+  position: relative;
+  top: auto;
+  right: auto;
+  z-index: auto;
+  width: 100%;
+  max-height: none;
+  gap: 0.9rem;
+  overflow: visible;
+  opacity: 1;
+  pointer-events: auto;
+  transform: none;
+  transition: none;
+}
+
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: 0.42rem;
+}
+
+.sectionHeader {
+  width: min(100%, 980px);
+  margin-inline: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 0.24rem;
+}
+
+.sectionHeaderCentered {
+  text-align: center;
+}
+
+.mediaToolbar {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  flex-wrap: wrap;
+}
+
+.mediaToggleBtn {
+  min-height: 36px;
+  padding: 0 0.7rem;
+  border-radius: 999px;
+  border: 1px solid color-mix(in srgb, var(--panel-border-soft) 88%, transparent);
+  background: color-mix(in srgb, var(--surface-shell) 90%, transparent);
+  color: var(--text-primary);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.38rem;
+  font-size: 0.76rem;
+  font-weight: 700;
+  transition: transform 0.12s ease, border-color 0.12s ease, background-color 0.12s ease;
+}
+
+.mediaToggleBtn:hover:not(:disabled) {
+  transform: translateY(-1px);
+  border-color: color-mix(in srgb, var(--accent) 28%, var(--panel-border-soft));
+}
+
+.mediaToggleBtn:disabled {
+  cursor: not-allowed;
+  opacity: 0.58;
+}
+
+.mediaToggleBtnActive {
+  border-color: color-mix(in srgb, var(--accent) 34%, transparent);
+  background: color-mix(in srgb, var(--accent) 14%, var(--surface-shell));
+}
+
+.mediaToolbarHint {
+  color: var(--text-secondary);
+  font-size: 0.76rem;
+  line-height: 1.4;
+}
+
+.controlRail {
+  flex-shrink: 0;
+  width: min(100%, 520px);
+  margin: 0;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.6rem;
+}
+
+.controlBtn {
+  --call-control-stacked-min-height: 72px;
+  --call-control-stacked-padding: 0.58rem 0.48rem;
+  --call-control-stacked-radius: 18px;
+  --call-control-stacked-icon-size: 36px;
+  --call-control-stacked-icon-radius: 13px;
+  --call-control-stacked-label-size: 0.74rem;
+}
+
+.sectionLabel {
+  color: var(--text-secondary);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+}
+
+.detailsCard {
+  --surface-panel-shadow: none;
+  --surface-panel-bg-start: color-mix(in srgb, var(--surface-shell) 94%, transparent);
+  --surface-panel-bg-end: color-mix(in srgb, var(--surface-shell-strong) 90%, transparent);
+  display: flex;
+  flex-direction: column;
+  gap: 0.28rem;
+}
+
+.audioOutputSelector {
+  width: 100%;
+}
+
+.roomIdCode {
+  color: var(--text-primary);
+  font-family: "SF Mono", "Fira Mono", "Consolas", monospace;
+  font-size: 1rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+
+.roomIdHint {
+  color: var(--text-secondary);
+  font-size: 0.76rem;
+  line-height: 1.45;
+}
+
+.stageShell {
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+  width: min(100%, 1560px);
+  padding: 0.95rem;
+  border-radius: 32px;
+  border: 1px solid color-mix(in srgb, var(--panel-border-soft) 80%, transparent);
+  background:
+    radial-gradient(circle at top left, color-mix(in srgb, var(--accent) 12%, transparent), transparent 48%),
+    color-mix(in srgb, var(--surface-shell) 92%, transparent);
+  box-shadow:
+    0 30px 70px rgb(2 8 20 / 0.22),
+    inset 0 1px 0 rgb(255 255 255 / 0.04);
+}
+
+.stageViewerOverlay {
+  position: fixed;
+  inset: 0;
+  /* 260 > backdrop's z-index:255; dialog portals to document.body to escape
+     the panel's persistent transform:scale(1) containing block. */
+  z-index: 260;
+  display: flex;
+  flex-direction: column;
+  gap: 0.8rem;
+  padding:
+    calc(env(safe-area-inset-top, 0px) + 0.9rem)
+    0.9rem
+    calc(env(safe-area-inset-bottom, 0px) + 0.9rem);
+  background: rgb(3 8 18 / 0.94);
+  backdrop-filter: blur(18px);
+}
+
+.stageViewerHeader {
+  width: min(100%, 1120px);
+  margin-inline: auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.stageViewerMeta {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.12rem;
+}
+
+.stageViewerBody {
+  flex: 1;
+  min-height: 0;
+  width: min(100%, 1120px);
+  margin-inline: auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.stageBar,
+.stageStripBar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.stageMeta {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.12rem;
+}
+
+.stageEyebrow {
+  color: var(--text-secondary);
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+}
+
+.stageTitle {
+  color: var(--text-primary);
+  font-size: 0.92rem;
+  font-weight: 700;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.stageActions {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.stageActionBtn {
+  min-height: 34px;
+  padding: 0 0.7rem;
+  border-radius: 999px;
+  border: 1px solid color-mix(in srgb, var(--panel-border-soft) 88%, transparent);
+  background: color-mix(in srgb, var(--surface-float) 90%, transparent);
+  color: var(--text-primary);
+  font-size: 0.74rem;
+  font-weight: 700;
+  transition: transform 0.12s ease, border-color 0.12s ease;
+}
+
+.stageActionBtn:hover {
+  transform: translateY(-1px);
+  border-color: color-mix(in srgb, var(--accent) 28%, var(--panel-border-soft));
+}
+
+.mediaGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(200px, 100%), 1fr));
+  justify-content: stretch;
+  gap: 0.65rem;
+}
+
+.mediaGridAudioOnly {
+  grid-template-columns: repeat(auto-fit, minmax(min(200px, 100%), 1fr));
+  justify-content: stretch;
+  gap: 0.8rem;
+}
+
+.mediaGridSolo {
+  grid-template-columns: minmax(320px, 560px);
+  justify-content: center;
+}
+
+.mediaGridCompact {
+  width: min(100%, 980px);
+  margin-inline: auto;
+}
+
+.mediaGridCrowded {
+  grid-template-columns: repeat(auto-fill, minmax(148px, 1fr));
+  gap: 0.56rem;
+  align-content: start;
+  max-height: min(52vh, 560px);
+  overflow-y: auto;
+  scrollbar-width: thin;
+  padding-right: 0.18rem;
+}
+
+.mediaGridCrowded .mediaTileStage {
+  min-height: clamp(140px, 18vh, 214px);
+}
+
+.mediaGridCrowded .mediaTileAudioOnly.mediaTileStage {
+  aspect-ratio: auto;
+  min-height: clamp(152px, 20vh, 230px);
+  max-width: none;
+  margin-inline: 0;
+}
+
+.mediaGridCrowdedHeavy {
+  grid-template-columns: repeat(auto-fill, minmax(132px, 1fr));
+}
+
+.mediaGridCrowdedHeavy .mediaTileStage {
+  min-height: clamp(122px, 15vh, 182px);
+}
+
+.mediaGridSoloWaiting {
+  grid-template-columns: minmax(340px, 460px);
+  justify-content: center;
+  width: min(100%, 460px);
+  margin-inline: auto;
+}
+
+.stageStripSection {
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+}
+
+.mediaStrip {
+  --group-call-strip-tile-width: clamp(168px, 18vw, 236px);
+  display: flex;
+  align-items: stretch;
+  gap: 0.65rem;
+  overflow-x: auto;
+  overflow-y: visible;
+  overscroll-behavior-x: contain;
+  scroll-snap-type: x proximity;
+  scrollbar-width: thin;
+  padding: 0.08rem 0.08rem 0.28rem;
+}
+
+.mediaStrip > .mediaTile {
+  flex: 0 0 var(--group-call-strip-tile-width);
+  width: var(--group-call-strip-tile-width);
+  scroll-snap-align: start;
+}
+
+.mediaTile {
+  position: relative;
+  min-width: 0;
+  overflow: hidden;
+  display: flex;
+  align-items: flex-end;
+  border-radius: 22px;
+  border: 1px solid color-mix(in srgb, var(--panel-border-soft) 84%, transparent);
+  background:
+    radial-gradient(circle at 28% 24%, color-mix(in srgb, var(--accent) 22%, transparent), transparent 42%),
+    linear-gradient(180deg, color-mix(in srgb, var(--surface-shell) 94%, transparent), color-mix(in srgb, var(--surface-float) 96%, transparent));
+}
+
+.mediaTileActionBtn {
+  position: absolute;
+  top: 0.62rem;
+  right: 0.62rem;
+  z-index: 2;
+  min-height: 30px;
+  padding: 0 0.56rem;
+  border-radius: 999px;
+  border: 1px solid color-mix(in srgb, var(--panel-border-soft) 88%, transparent);
+  background: color-mix(in srgb, var(--panel-header-bg) 78%, transparent);
+  color: color-mix(in srgb, var(--text-primary) 92%, white 8%);
+  font-size: 0.68rem;
+  font-weight: 700;
+  backdrop-filter: blur(10px);
+  transition: border-color 0.12s ease, transform 0.12s ease, background-color 0.12s ease;
+}
+
+.mediaTileActionBtn:hover {
+  transform: translateY(-1px);
+  border-color: color-mix(in srgb, var(--accent) 34%, var(--panel-border-soft));
+  background: color-mix(in srgb, var(--panel-header-bg) 88%, transparent);
+}
+
+.mediaTileStage {
+  min-height: clamp(240px, 32vh, 420px);
+  border-radius: 24px;
+}
+
+.mediaTileStrip {
+  min-height: 172px;
+}
+
+.mediaTileViewer {
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  border-radius: 28px;
+  border-color: rgb(148 163 184 / 0.18);
+  background: rgb(5 10 20 / 0.98);
+}
+
+.mediaTileScreen {
+  background:
+    radial-gradient(circle at 24% 18%, color-mix(in srgb, var(--accent) 14%, transparent), transparent 42%),
+    rgb(7 12 24 / 0.96);
+}
+
+.mediaTileInteractive {
+  cursor: pointer;
+  transition: transform 0.12s ease, border-color 0.12s ease, box-shadow 0.12s ease;
+}
+
+.mediaTileInteractive:hover {
+  transform: translateY(-1px);
+  border-color: color-mix(in srgb, var(--accent) 24%, var(--panel-border-soft));
+  box-shadow: 0 10px 22px rgb(2 8 20 / 0.08);
+}
+
+.mediaVideo {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  background: color-mix(in srgb, var(--surface-shell) 92%, transparent);
+}
+
+.mediaVideoScreen {
+  object-fit: contain;
+  background: rgb(7 12 24 / 0.96);
+}
+
+.mediaVideoHidden {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.mediaVideoFallback {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background:
+    radial-gradient(circle at 28% 24%, color-mix(in srgb, var(--accent) 12%, transparent), transparent 42%),
+    linear-gradient(180deg, color-mix(in srgb, var(--surface-shell) 94%, transparent), color-mix(in srgb, var(--surface-float) 96%, transparent));
+}
+
+.mediaAvatarFallback {
+  position: relative;
+  z-index: 1;
+  --avatar-size: clamp(88px, 22%, 134px);
+  --avatar-font-size: clamp(1.45rem, 2.2vw, 2rem);
+  --avatar-shadow:
+    inset 0 0 0 1px rgb(255 255 255 / 0.16),
+    0 18px 36px color-mix(in srgb, var(--accent) 18%, transparent);
+  letter-spacing: -0.04em;
+}
+
+.mediaAudioFallback {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.mediaAudioPulse {
+  position: absolute;
+  width: clamp(118px, 28%, 176px);
+  aspect-ratio: 1 / 1;
+  border-radius: 999px;
+  border: 1px solid color-mix(in srgb, var(--accent) 34%, transparent);
+  background: radial-gradient(circle at center, color-mix(in srgb, var(--accent) 18%, transparent), transparent 70%);
+  opacity: 0.58;
+  transform: scale(1);
+  transition: transform 0.14s ease, opacity 0.14s ease, box-shadow 0.14s ease;
+}
+
+.mediaAudioPulseActive {
+  opacity: 0.95;
+  transform: scale(1.09);
+  box-shadow:
+    0 0 0 7px color-mix(in srgb, var(--accent) 18%, transparent),
+    0 0 0 14px color-mix(in srgb, var(--accent) 10%, transparent);
+}
+
+.mediaTileAudioOnly {
+  align-items: stretch;
+  justify-content: center;
+  border-color: color-mix(in srgb, var(--panel-border-soft) 86%, transparent);
+  background:
+    radial-gradient(circle at 50% 34%, color-mix(in srgb, var(--accent) 16%, transparent), transparent 44%),
+    linear-gradient(180deg, color-mix(in srgb, var(--surface-shell) 96%, transparent), color-mix(in srgb, var(--surface-float) 97%, transparent));
+  box-shadow: 0 12px 26px rgb(2 8 20 / 0.07);
+}
+
+.mediaTileAudioOnly .mediaTileMeta {
+  position: absolute;
+  inset: 0;
+  align-self: stretch;
+  z-index: 2;
+  height: auto;
+  padding: 0.72rem 0.75rem 0.72rem;
+  gap: 0;
+  justify-content: space-between;
+  align-items: center;
+  background: transparent;
+  text-align: center;
+  pointer-events: none;
+}
+
+.mediaTileAudioOnly .mediaTileLabel {
+  width: 100%;
+  text-align: center;
+}
+
+.mediaTileAudioOnly .mediaStatusChip {
+  align-self: center;
+}
+
+.mediaTileAudioOnly .mediaAudioFallback {
+  position: absolute;
+  inset: 0;
+  align-items: center;
+}
+
+.mediaTileAudioOnly .mediaAudioPulse {
+  width: clamp(118px, 32%, 176px);
+  height: auto;
+}
+
+.mediaTileAudioOnly .mediaAvatarFallback {
+  --avatar-size: clamp(96px, 22%, 138px);
+  --avatar-font-size: clamp(1.5rem, 2.2vw, 2rem);
+}
+
+.mediaTileAudioOnly.mediaTileStage {
+  aspect-ratio: 1 / 1;
+  min-height: clamp(280px, 34vh, 360px);
+  width: 100%;
+  max-width: 360px;
+  margin-inline: auto;
+  background:
+    radial-gradient(circle at 50% 36%, color-mix(in srgb, var(--accent) 18%, transparent), transparent 42%),
+    linear-gradient(180deg, color-mix(in srgb, var(--surface-shell) 96%, transparent), color-mix(in srgb, var(--surface-float) 96%, transparent));
+  box-shadow: 0 18px 36px rgb(2 8 20 / 0.14);
+}
+
+.mediaTileAudioOnly.mediaTileStage .mediaAudioPulse {
+  width: clamp(118px, 28%, 176px);
+  height: auto;
+}
+
+.mediaTileAudioOnly.mediaTileStage .mediaAudioFallback {
+  padding: 1.2rem;
+}
+
+.mediaTileAudioOnly.mediaTileStage .mediaTileMeta {
+  justify-content: flex-end;
+  align-items: flex-start;
+  padding: 0.9rem;
+  background: linear-gradient(180deg, transparent 52%, rgb(2 8 20 / 0.44));
+  text-align: left;
+}
+
+.mediaTileAudioOnly.mediaTileStage .mediaTileLabel {
+  text-align: left;
+}
+
+.mediaTileAudioOnly.mediaTileStage .mediaStatusChip {
+  align-self: flex-start;
+}
+
+.mediaTileAudioOnly.mediaTileStage .mediaAvatarFallback {
+  --avatar-shadow: 0 8px 22px rgb(2 6 23 / 0.28);
+  font-weight: 700;
+  letter-spacing: 0.03em;
+}
+
+.mediaGridSoloWaiting .mediaTileStage {
+  width: 100%;
+  max-width: none;
+}
+
+.mediaGridSoloWaiting .mediaTileAudioOnly.mediaTileStage {
+  aspect-ratio: 1 / 1;
+  min-height: 0;
+  max-width: none;
+}
+
+.mediaTileAudioOnly.mediaTileStrip {
+  min-height: 220px;
+}
+
+.mediaTileAudioActive {
+  border-color: color-mix(in srgb, var(--accent) 42%, var(--panel-border-soft));
+  box-shadow: 0 10px 28px color-mix(in srgb, var(--accent) 14%, transparent);
+}
+
+.mediaTileMeta {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 0.18rem;
+  padding: 0.8rem 0.85rem;
+  background: linear-gradient(180deg, transparent, rgb(2 8 20 / 0.72));
+}
+
+.mediaTileLabel {
+  color: #f8fbff;
+  font-size: 0.86rem;
+  font-weight: 700;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.mediaStatusChip {
+  align-self: flex-start;
+}
+
+.mediaEmpty {
+  padding: 0.85rem 0.9rem;
+  border-radius: 18px;
+  border: 1px solid color-mix(in srgb, var(--panel-border-soft) 88%, transparent);
+  background: color-mix(in srgb, var(--surface-shell) 92%, transparent);
+  width: min(100%, 760px);
+  color: var(--text-secondary);
+  font-size: 0.82rem;
+  line-height: 1.45;
+}
+
+.mediaEmptyCompact {
+  width: min(100%, 640px);
+  margin-inline: auto;
+}
+
+.mediaNotice {
+  width: min(100%, 980px);
+  margin-inline: auto;
+  text-align: center;
+}
+
+.sidePanel .detailsDrawerInline {
+  gap: 0.82rem;
+}
+
+.metaPrimary {
+  color: var(--text-primary);
+  font-size: 0.84rem;
+  font-weight: 700;
+}
+
+.metaSecondary {
+  color: var(--text-secondary);
+  font-size: 0.77rem;
+  line-height: 1.45;
+}
+
+.metaNotice {
+  margin-top: 0.12rem;
+}
+
+.hiddenAudio {
+  position: absolute;
+  width: 0;
+  height: 0;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.mediaGridSolo .mediaTileStage {
+  min-height: clamp(240px, 34vh, 430px);
+}
+
+.stageShell .mediaTileStage {
+  min-height: clamp(300px, 48vh, 680px);
+}
+
+.stageShell .mediaTileAudioOnly.mediaTileStage {
+  min-height: clamp(280px, 34vh, 360px);
+}
+
+.stageShell:fullscreen {
+  width: 100vw;
+  height: 100vh;
+  max-width: none;
+  padding: 1.15rem;
+  border: none;
+  border-radius: 0;
+  background: rgb(3 8 18 / 0.98);
+}
+
+.stageShell:fullscreen .stageBar {
+  flex-wrap: wrap;
+}
+
+.stageShell:fullscreen .mediaTileStage {
+  flex: 1;
+  min-height: calc(100vh - 5.5rem);
+  border-radius: 26px;
+}
+
+.memberList {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.5rem;
+}
+
+.memberRow {
+  --surface-panel-shadow: none;
+  --surface-panel-bg-start: color-mix(in srgb, var(--surface-shell) 88%, transparent);
+  --surface-panel-bg-end: color-mix(in srgb, var(--surface-shell-strong) 84%, transparent);
+}
+
+.memberRowActive {
+  --surface-panel-border: color-mix(in srgb, var(--success) 28%, var(--panel-border-soft));
+  --surface-panel-bg-start: color-mix(in srgb, var(--success) 8%, var(--surface-shell));
+  --surface-panel-bg-end: color-mix(in srgb, var(--success) 5%, var(--surface-shell-strong));
+}
+
+.memberRowContent {
+  min-height: 48px;
+}
+
+.memberAvatar {
+  --avatar-size: 32px;
+  --avatar-font-size: 0.72rem;
+  flex-shrink: 0;
+}
+
+.memberName {
+  min-width: 0;
+  color: var(--text-primary);
+  font-size: 0.82rem;
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.memberPresenceDot {
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  margin-left: auto;
+  flex-shrink: 0;
+  background: color-mix(in srgb, var(--panel-border-soft) 88%, transparent);
+}
+
+.memberPresenceDotActive {
+  background: var(--success);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--success) 16%, transparent);
+}
+
+.contractHint {
+  --surface-panel-shadow: none;
+  --surface-panel-bg-start: color-mix(in srgb, var(--surface-shell) 86%, transparent);
+  --surface-panel-bg-end: color-mix(in srgb, var(--surface-shell-strong) 82%, transparent);
+}
+
+.contractHintText {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 0.8rem;
+  line-height: 1.5;
+}
+
+.errorNotice {
+  margin-top: -0.1rem;
+}
+
+.actions {
+  flex-shrink: 0;
+  width: min(100%, 760px);
+  margin-inline: auto;
+  display: grid;
+  gap: 0.72rem;
+  align-items: stretch;
+}
+
+.actionsSingle {
+  grid-template-columns: minmax(240px, 360px);
+  justify-content: center;
+}
+
+.actionsDual {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.controlRailCompact,
+.actionsCompact {
+  width: min(100%, 820px);
+  margin-inline: auto;
+}
+
+.dangerActionBtn {
+  --pill-border: color-mix(in srgb, var(--danger) 30%, var(--panel-border-soft));
+  --pill-bg: color-mix(in srgb, var(--danger) 8%, var(--surface-shell));
+  --pill-bg-hover: color-mix(in srgb, var(--danger) 12%, var(--surface-shell-strong));
+  --pill-fg: color-mix(in srgb, var(--danger) 68%, white 12%);
+  min-height: 62px;
+  padding-inline: 1rem;
+  font-weight: 720;
+  font-size: 0.82rem;
+  width: 100%;
+  border-radius: 22px;
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.05),
+    0 8px 16px rgb(2 8 20 / 0.05);
+}
+
+.dangerActionBtnSecondary {
+  min-width: 0;
+}
+
+.dangerActionBtnPrimary {
+  --pill-border: color-mix(in srgb, var(--danger) 42%, var(--panel-border-soft));
+  --pill-bg:
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--danger) 24%, var(--surface-float)),
+      color-mix(in srgb, var(--danger) 16%, var(--surface-shell-strong))
+    );
+  --pill-bg-hover:
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--danger) 28%, var(--surface-float)),
+      color-mix(in srgb, var(--danger) 20%, var(--surface-shell-strong))
+    );
+  --pill-fg: color-mix(in srgb, var(--danger) 76%, white 10%);
+  min-width: 0;
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.1),
+    0 10px 22px color-mix(in srgb, var(--danger) 10%, transparent);
+}
+
+.dock {
+  --floating-dock-z-index: 250;
+  --floating-dock-bottom-offset: 10px;
+  /* Default to bottom-right — avoids center-covering the composer */
+  --floating-dock-left: auto;
+  --floating-dock-right: clamp(0.75rem, 2vw, 1.5rem);
+  --floating-dock-translate-x: 0;
+}
+
+.dockSummary {
+  --avatar-summary-padding: 0.38rem 0.46rem;
+  --avatar-summary-radius: 12px;
+  --avatar-summary-avatar-size: 34px;
+  --avatar-summary-avatar-font-size: 0.72rem;
+  --avatar-summary-title-size: 0.825rem;
+  --avatar-summary-subtitle-size: 0.69rem;
+}
+
+.dockActions {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.dockBtn {
+  --icon-button-size: 38px;
+}
+
+@media (max-width: 980px) {
+  .backdrop {
+    padding: 0 0.75rem;
+  }
+
+  .panel {
+    width: 100%;
+  }
+
+  .body {
+    gap: 0.9rem;
+  }
+
+  .sidePanel {
+    top: 0.35rem;
+    left: 0.7rem;
+    right: 0.7rem;
+    bottom: auto;
+    width: auto;
+    max-height: calc(100% - 0.35rem);
+    padding: 0.82rem 0.84rem 0.84rem;
+    border-radius: 26px;
+    border: 1px solid color-mix(in srgb, var(--panel-border-soft) 74%, transparent);
+    box-shadow:
+      0 28px 58px rgb(2 8 20 / 0.28),
+      inset 0 1px 0 rgb(255 255 255 / 0.04);
+    animation-name: groupCallSideSheetIn;
+    resize: none;
+  }
+
+  .sidePanelChatMode {
+    height: clamp(340px, 48vh, 430px);
+  }
+
+  .sidePanelDetailsMode {
+    height: clamp(420px, 58vh, 620px);
+  }
+
+  .sidePanelHeader {
+    padding-bottom: 0.68rem;
+  }
+
+  .sidePanelContent {
+    padding-top: 0.72rem;
+  }
+
+  .detailsDrawer {
+    width: min(380px, calc(100vw - 1.5rem));
+  }
+
+  .mediaGrid {
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    justify-content: stretch;
+  }
+
+  .mediaGridCrowded {
+    max-height: min(48vh, 500px);
+  }
+
+  .mediaGridSolo {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .mediaStrip {
+    --group-call-strip-tile-width: clamp(172px, 32vw, 290px);
+    padding-bottom: 0.18rem;
+  }
+
+  .controlRail,
+  .actions,
+  .mediaEmpty {
+    width: 100%;
+  }
+
+  .stageShell {
+    width: 100%;
+  }
+}
+
+@media (max-width: 640px) {
+  .backdrop {
+    padding: 0;
+  }
+
+  .panel {
+    min-height: 100%;
+    padding:
+      calc(env(safe-area-inset-top, 0px) + 0.8rem)
+      0.7rem
+      calc(env(safe-area-inset-bottom, 0px) + 0.8rem);
+    gap: 0.85rem;
+  }
+
+  .header {
+    --header-bar-gap: 0.62rem;
+  }
+
+  .detailsToggleBtn {
+    min-height: 36px;
+    padding: 0 0.72rem;
+    font-size: 0.74rem;
+  }
+
+  .headerDangerBtn {
+    min-height: 36px;
+    padding: 0 0.7rem;
+    font-size: 0.75rem;
+  }
+
+  .controlRail {
+    gap: 0.5rem;
+  }
+
+  .controlBtn {
+    --call-control-stacked-min-height-narrow: 76px;
+    --call-control-stacked-padding-narrow: 0.62rem 0.42rem;
+    --call-control-stacked-radius-narrow: 20px;
+    --call-control-stacked-icon-size-narrow: 38px;
+    --call-control-stacked-icon-radius-narrow: 14px;
+    --call-control-stacked-label-size-narrow: 0.69rem;
+  }
+
+  .stageBar,
+  .stageStripBar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .stageViewerOverlay {
+    padding:
+      calc(env(safe-area-inset-top, 0px) + 0.7rem)
+      0.7rem
+      calc(env(safe-area-inset-bottom, 0px) + 0.7rem);
+  }
+
+  .stageViewerHeader {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .stageViewerBody {
+    align-items: stretch;
+  }
+
+  .stageActions {
+    justify-content: stretch;
+  }
+
+  .stageActionBtn {
+    width: 100%;
+  }
+
+  .mediaTileStage {
+    min-height: 220px;
+  }
+
+  .stageShell .mediaTileStage {
+    min-height: clamp(220px, 34vh, 320px);
+  }
+
+  .stageShell .mediaTileAudioOnly.mediaTileStage {
+    /* Mobile stage should not force giant square audio cards. */
+    aspect-ratio: auto;
+    max-width: none;
+    min-height: clamp(170px, 24vh, 220px);
+  }
+
+  .stageShell .mediaTileAudioOnly.mediaTileStage .mediaAvatarFallback {
+    --avatar-size: clamp(78px, 20vw, 106px);
+    --avatar-font-size: clamp(1.2rem, 5.3vw, 1.62rem);
+  }
+
+  .mediaTileScreenPreviewCompact {
+    aspect-ratio: 16 / 10;
+    min-height: clamp(172px, 26vh, 230px) !important;
+    max-width: min(100%, 520px);
+    margin-inline: auto;
+  }
+
+  .mediaTileViewer {
+    border-radius: 22px;
+  }
+
+  .mediaGridAudioOnly {
+    grid-template-columns: repeat(auto-fit, minmax(156px, 1fr));
+    gap: 0.75rem;
+  }
+
+  .mediaGridCrowded {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.5rem;
+    max-height: min(44vh, 380px);
+    padding-right: 0.08rem;
+  }
+
+  .mediaGridCrowded .mediaTileStage {
+    min-height: clamp(126px, 20vh, 172px);
+  }
+
+  .mediaGridCrowded .mediaTileAudioOnly.mediaTileStage {
+    min-height: clamp(136px, 22vh, 188px);
+  }
+
+  .mediaTileAudioOnly {
+    min-height: 188px;
+  }
+
+  .callChatSection {
+    height: auto;
+    margin-top: 0.15rem;
+  }
+
+  .callChatList {
+    width: 100%;
+    min-height: 0;
+    max-height: min(30vh, 220px);
+    padding: 0.58rem;
+    border-radius: 14px;
+  }
+
+  .callChatMessage {
+    max-width: min(100%, 92%);
+    padding: 0.52rem 0.58rem 0.5rem;
+    border-radius: 12px;
+  }
+
+  .callChatText {
+    font-size: 0.8rem;
+  }
+
+  .callChatComposer {
+    width: 100%;
+    gap: 0.34rem;
+  }
+
+  .callChatComposerLabel {
+    font-size: 0.72rem;
+  }
+
+  .callChatComposerRow {
+    grid-template-columns: 1fr;
+    gap: 0.45rem;
+  }
+
+  .callChatComposerInput {
+    min-height: 42px;
+    max-height: 120px;
+    border-radius: 12px;
+    padding: 0.58rem 0.66rem;
+    font-size: 0.82rem;
+  }
+
+  .callChatComposerBtn {
+    min-height: 40px;
+    width: 100%;
+    border-radius: 12px;
+    font-size: 0.78rem;
+  }
+
+  .sidePanel {
+    left: 0.55rem;
+    right: 0.55rem;
+    top: 0.3rem;
+    bottom: auto;
+    max-height: calc(100% - 0.3rem);
+    padding:
+      0.78rem
+      0.8rem
+      0.8rem;
+    border-radius: 26px;
+  }
+
+  .sidePanelChatMode {
+    height: clamp(320px, 44vh, 400px);
+  }
+
+  .sidePanelDetailsMode {
+    height: clamp(400px, 56vh, 560px);
+  }
+
+  .sidePanelHeader {
+    padding: 0.02rem 0.04rem 0.62rem;
+  }
+
+  .sidePanelTitle {
+    font-size: 0.72rem;
+  }
+
+  .sidePanelContent {
+    padding-top: 0.66rem;
+  }
+
+  .sidePanel .callChatComposerBtn {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .sectionHeader {
+    width: 100%;
+  }
+
+  .mediaStrip {
+    --group-call-strip-tile-width: clamp(132px, 40vw, 168px);
+    display: flex;
+    align-items: stretch;
+    gap: 0.5rem;
+    overflow-x: auto;
+    overflow-y: hidden;
+    overscroll-behavior-x: contain;
+    scroll-snap-type: x proximity;
+    scroll-padding-inline: 0.36rem;
+    padding: 0.08rem 0.08rem 0.28rem;
+    -webkit-overflow-scrolling: touch;
+    touch-action: pan-x;
+  }
+
+  .mediaStrip > .mediaTile {
+    flex: 0 0 var(--group-call-strip-tile-width);
+    width: var(--group-call-strip-tile-width);
+    max-width: none;
+    margin-inline: 0;
+    scroll-snap-align: start;
+    scroll-snap-stop: always;
+  }
+
+  .mediaStrip .mediaTileAudioOnly.mediaTileStrip {
+    aspect-ratio: auto;
+    min-height: clamp(132px, 20vh, 170px);
+    justify-content: center;
+  }
+
+  .mediaStrip .mediaTileAudioOnly.mediaTileStrip .mediaAudioPulse {
+    display: none;
+  }
+
+  .mediaStrip .mediaTileAudioOnly.mediaTileStrip .mediaAudioFallback {
+    padding: 1rem;
+  }
+
+  .mediaStrip .mediaTileAudioOnly.mediaTileStrip .mediaAvatarFallback {
+    --avatar-size: clamp(70px, 20vw, 94px);
+    --avatar-font-size: clamp(1.12rem, 4.8vw, 1.46rem);
+  }
+
+  .mediaStrip .mediaTileAudioOnly.mediaTileStrip .mediaTileMeta {
+    justify-content: flex-end;
+    align-items: center;
+    padding: 0.58rem 0.58rem 0.56rem;
+    background: linear-gradient(180deg, transparent 54%, rgb(2 8 20 / 0.34));
+    text-align: center;
+  }
+
+  .mediaStrip .mediaTileAudioOnly.mediaTileStrip .mediaTileLabel {
+    text-align: center;
+  }
+
+  .mediaTileActionBtn {
+    top: 0.54rem;
+    right: 0.54rem;
+    min-height: 28px;
+    padding: 0 0.52rem;
+    font-size: 0.64rem;
+  }
+
+  .memberList {
+    grid-template-columns: 1fr;
+  }
+
+  .actions {
+    grid-template-columns: 1fr;
+  }
+
+  .dangerActionBtn,
+  .dangerActionBtnPrimary {
+    width: 100%;
+  }
+
+  .dangerActionBtnSecondary {
+    min-width: 0;
+  }
+
+  .detailsDrawer {
+    top: calc(env(safe-area-inset-top, 0px) + 4.5rem);
+    right: 0.7rem;
+    left: 0.7rem;
+    width: auto;
+    max-height: min(46vh, calc(100vh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px) - 11.5rem));
+    padding: 0.85rem;
+    border-radius: 20px;
+  }
+
+  .dock {
+    --floating-dock-screen-gap: 0.8rem;
+    --floating-dock-bottom-offset: 10px;
+    --floating-dock-padding: 0.34rem;
+    --floating-dock-gap: 0.32rem;
+    --floating-dock-radius: 13px;
+  }
+
+  .dockSummary {
+    --avatar-summary-padding: 0.32rem 0.38rem;
+    --avatar-summary-radius: 10px;
+    --avatar-summary-avatar-size: 30px;
+    --avatar-summary-avatar-font-size: 0.67rem;
+    --avatar-summary-title-size: 0.78rem;
+    --avatar-summary-subtitle-size: 0.64rem;
+  }
+
+  .dockBtn {
+    --icon-button-size: 34px;
+  }
+}
+
+:global(:root[data-theme="light"]) .panel {
+  background:
+    radial-gradient(1200px 640px at 14% -10%, color-mix(in srgb, var(--accent) 10%, transparent), transparent 56%),
+    radial-gradient(900px 560px at 100% 120%, color-mix(in srgb, var(--panel-header-bg) 18%, transparent), transparent 58%),
+    color-mix(in srgb, #f4f8ff 86%, #edf2fb 14%);
+}
+
+:global(:root[data-theme="light"]) .headerDuration {
+  background: color-mix(in srgb, var(--surface-shell-strong) 95%, white);
+  border-color: color-mix(in srgb, var(--panel-border-soft) 86%, transparent);
+  color: color-mix(in srgb, var(--text-primary) 70%, var(--text-secondary));
+}
+
+:global(:root[data-theme="light"]) .mediaToolbarHint,
+:global(:root[data-theme="light"]) .sectionLabel,
+:global(:root[data-theme="light"]) .stageEyebrow {
+  color: color-mix(in srgb, var(--text-primary) 78%, var(--text-secondary));
+}
+
+:global(:root[data-theme="light"]) .headerMetaText {
+  color: color-mix(in srgb, var(--text-primary) 72%, var(--text-secondary));
+}
+
+:global(:root[data-theme="light"]) .stageShell {
+  border-color: color-mix(in srgb, var(--panel-border-soft) 90%, transparent);
+  background:
+    radial-gradient(circle at top left, color-mix(in srgb, var(--accent) 10%, transparent), transparent 52%),
+    color-mix(in srgb, var(--surface-shell-strong) 95%, white);
+}
+
+:global(:root[data-theme="light"]) .stageActionBtn {
+  border-color: color-mix(in srgb, var(--panel-border-soft) 86%, transparent);
+  background: color-mix(in srgb, var(--surface-shell-strong) 96%, white);
+  color: color-mix(in srgb, var(--text-primary) 94%, #0f172a);
+}
+
+:global(:root[data-theme="light"]) .mediaTileActionBtn {
+  border-color: color-mix(in srgb, var(--panel-border-soft) 88%, transparent);
+  background: color-mix(in srgb, var(--surface-shell-strong) 94%, white);
+  color: color-mix(in srgb, var(--text-primary) 92%, #0f172a);
+}
+
+:global(:root[data-theme="light"]) .mediaTileMeta {
+  background: linear-gradient(180deg, transparent 14%, rgb(15 23 42 / 0.74));
+}
+
+:global(:root[data-theme="light"]) .mediaTileAudioOnly {
+  border-color: color-mix(in srgb, var(--panel-border-soft) 90%, transparent);
+  background:
+    radial-gradient(circle at 50% 34%, color-mix(in srgb, var(--accent) 10%, transparent), transparent 50%),
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--surface-shell-strong) 98%, white),
+      color-mix(in srgb, #dbe7f7 52%, var(--surface-shell-strong))
+    );
+  box-shadow: 0 12px 24px rgb(133 151 176 / 0.18);
+}
+
+:global(:root[data-theme="light"]) .mediaTileAudioOnly .mediaTileMeta {
+  background: transparent;
+  backdrop-filter: none;
+}
+
+:global(:root[data-theme="light"]) .mediaTileAudioOnly.mediaTileStage .mediaTileMeta {
+  background: linear-gradient(180deg, transparent 56%, rgb(15 23 42 / 0.12));
+}
+
+:global(:root[data-theme="light"]) .mediaStrip .mediaTileAudioOnly.mediaTileStrip .mediaTileMeta {
+  background: linear-gradient(180deg, transparent 58%, rgb(15 23 42 / 0.12));
+}
+
+:global(:root[data-theme="light"]) .mediaTileAudioOnly .mediaTileLabel {
+  color: color-mix(in srgb, var(--text-primary) 92%, #0f172a);
+}
+
+:global(:root[data-theme="light"]) .dangerActionBtn {
+  --pill-border: color-mix(in srgb, var(--danger) 44%, var(--panel-border-soft));
+  --pill-bg: color-mix(in srgb, var(--danger) 16%, var(--surface-shell-strong));
+  --pill-bg-hover: color-mix(in srgb, var(--danger) 22%, var(--surface-shell-strong));
+  --pill-fg: color-mix(in srgb, var(--danger) 86%, #7f1d1d);
+}
+
+:global(:root[data-theme="light"]) .dangerActionBtnPrimary {
+  --pill-bg:
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--danger) 28%, var(--surface-float)),
+      color-mix(in srgb, var(--danger) 22%, var(--surface-shell-strong))
+    );
+  --pill-bg-hover:
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--danger) 34%, var(--surface-float)),
+      color-mix(in srgb, var(--danger) 26%, var(--surface-shell-strong))
+    );
+  --pill-fg: color-mix(in srgb, var(--danger) 92%, #7f1d1d);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .backdrop,
+  .panel,
+  .dock,
+  .iconBtn,
+  .detailsDrawer,
+  .detailsToggleBtn {
+    animation: none !important;
+    transition: none !important;
+    transform: none !important;
+  }
+}
+
+/* 2026-04 Visual Refresh */
+
+.bottomDock {
+  position: relative;
+  z-index: 5; /* Always above the details drawer (z-index: 3) */
+  width: min(100%, 1040px);
+  margin: auto auto 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  padding: 0.56rem;
+  border-radius: 32px;
+  border: 1px solid color-mix(in srgb, var(--panel-border-soft) 76%, transparent);
+  background:
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--surface-float) 94%, transparent),
+      color-mix(in srgb, var(--surface-shell) 98%, transparent)
+    );
+  box-shadow:
+    0 22px 52px rgb(2 8 20 / 0.24),
+    inset 0 1px 0 rgb(255 255 255 / 0.04);
+  backdrop-filter: blur(20px);
+}
+
+.bottomDockActions {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+}
+
+@media (min-width: 961px) {
+  /* Shrink the dock bar to hug its content on desktop — the 1040px base
+     width left large dead space on either side of the control buttons. */
+  .bottomDock {
+    width: fit-content;
+    max-width: 100%;
+  }
+
+  /* In compact mode on desktop, body still fills available height (flex:1).
+     mainColumn fills body via align-items:stretch (default), then
+     justify-content:center centers the tile section vertically. */
+  .bodyCompact {
+    flex: 1;
+    min-height: 0;
+    overflow: hidden;
+  }
+
+  .bodyCompact .mainColumn {
+    overflow: hidden;
+    justify-content: center;
+  }
+
+  /* Audio-only compact gallery: centered flex row of square tiles. */
+  .mediaGridCompact.mediaGridAudioOnly {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    align-items: flex-start;
+    gap: 0.8rem;
+  }
+
+  .mediaGridCompact.mediaGridAudioOnly > .mediaTile {
+    flex: 0 0 auto;
+    width: clamp(260px, 36vh, 380px);
+  }
+
+  /* Desktop bottom dock: inline pill controls + matching-height danger buttons. */
+  .controlRail {
+    width: auto;
+    display: flex;
+    flex-shrink: 0;
+    gap: 0.45rem;
+  }
+
+  /* Override the base .actions width/grid that gets merged into bottomDockActions. */
+  .bottomDockActions {
+    width: auto;
+    display: flex;
+    flex-wrap: nowrap;
+    gap: 0.45rem;
+    /* Visual separator between controls group and danger group. */
+    padding-left: 1rem;
+    border-left: 1px solid color-mix(in srgb, var(--panel-border-soft) 54%, transparent);
+  }
+
+  /* Reset base width:100% so buttons size to their label, not the container. */
+  .dangerActionBtn {
+    width: auto;
+    min-width: 140px;
+    min-height: 56px;
+    border-radius: 16px;
+    padding-inline: 1.1rem;
+    font-size: 0.81rem;
+  }
+}
+
+@media (max-width: 960px) {
+  .panel {
+    padding:
+      calc(env(safe-area-inset-top, 0px) + 0.9rem)
+      0.85rem
+      calc(env(safe-area-inset-bottom, 0px) + 0.95rem);
+  }
+
+  .mainColumn > .section {
+    width: 100%;
+  }
+
+  .stageShell {
+    padding: 0.78rem;
+    border-radius: 24px;
+  }
+
+  .bottomDock {
+    width: min(100%, 440px);
+    flex-direction: column;
+    align-items: stretch;
+    border-radius: 26px;
+  }
+
+  .bottomDockActions {
+    width: 100%;
+  }
+
+  .bottomDockActions > * {
+    flex: 1 1 auto;
+  }
+
+  .controlRail {
+    width: 100%;
+  }
+
+  .dangerActionBtn {
+    min-height: 50px;
+    border-radius: 18px;
+    font-size: 0.8rem;
+  }
+
+  /* Undo visual-refresh tile-height increase for mobile — base values are enough. */
+  .mediaTileStage {
+    min-height: clamp(180px, 26vh, 240px);
+  }
+
+  .mediaTileStrip {
+    min-height: 160px;
+  }
+
+  /* Audio-only stage tiles in gallery grids: remove forced square on mobile.
+     Solo-waiting grid (.mediaGridSoloWaiting) overrides with higher specificity → unaffected. */
+  .mediaGrid .mediaTileAudioOnly.mediaTileStage,
+  .mediaGridCompact .mediaTileAudioOnly.mediaTileStage {
+    aspect-ratio: unset;
+    max-width: none;
+    width: 100%;
+    margin-inline: 0;
+    min-height: clamp(160px, 22vh, 210px);
+  }
+
+  .detailsDrawer {
+    top: auto;
+    left: 0.75rem;
+    right: 0.75rem;
+    bottom: calc(env(safe-area-inset-bottom, 0px) + 88px);
+    width: auto;
+    max-height: min(64dvh, 560px);
+    transform: translateY(24px);
+  }
+
+  .detailsDrawerOpen {
+    transform: translateY(0);
+  }
+}

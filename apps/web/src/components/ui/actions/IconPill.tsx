@@ -1,0 +1,42 @@
+import type { HTMLAttributes, ReactNode } from "react";
+import styles from "./IconPill.module.css";
+
+type IconPillSize = "sm" | "md";
+
+export interface IconPillProps extends Readonly<HTMLAttributes<HTMLSpanElement>> {
+  /** Leading icon rendered inside the pill. */
+  readonly icon: ReactNode;
+  /** Size recipe for compact or standard pill presentations. */
+  readonly size?: IconPillSize;
+  readonly children: ReactNode;
+}
+
+/**
+ * Shared icon-plus-label pill for compact contextual labels such as call mode,
+ * media type, and floating toolbar states.
+ */
+export function IconPill({
+  icon,
+  size = "md",
+  className = "",
+  children,
+  ...props
+}: Readonly<IconPillProps>) {
+  return (
+    <span
+      {...props}
+      className={[
+        styles.root,
+        size === "sm" ? styles.sm : styles.md,
+        className,
+      ]
+        .filter(Boolean)
+        .join(" ")}
+    >
+      <span className={styles.icon} aria-hidden="true">
+        {icon}
+      </span>
+      <span className={styles.label}>{children}</span>
+    </span>
+  );
+}

@@ -1,0 +1,262 @@
+/* ─── Trigger ─────────────────────────────────────────────────────────────── */
+
+.trigger {
+  position: relative;
+  width: 100%;
+  min-width: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  border: 1px solid color-mix(in srgb, var(--panel-border-soft) 92%, transparent);
+  background: color-mix(in srgb, var(--surface-shell) 88%, var(--glass-surface-fill, transparent));
+  -webkit-backdrop-filter: blur(var(--glass-blur-soft, 0px)) saturate(var(--glass-saturate, 1));
+  backdrop-filter: blur(var(--glass-blur-soft, 0px)) saturate(var(--glass-saturate, 1));
+  color: var(--text-primary);
+  text-align: left;
+  cursor: pointer;
+  transition:
+    border-color 0.14s ease,
+    background-color 0.14s ease,
+    box-shadow 0.14s ease;
+}
+
+.trigger:hover:not(:disabled) {
+  border-color: color-mix(in srgb, var(--accent) 40%, var(--panel-border-soft));
+  background: color-mix(in srgb, var(--surface-shell) 96%, var(--glass-surface-fill, transparent));
+}
+
+.triggerOpen,
+.trigger:focus-visible {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 22%, transparent);
+  outline: none;
+}
+
+.trigger:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.md {
+  min-height: 44px;
+  padding: 0 0.78rem;
+  border-radius: 16px;
+}
+
+.pill {
+  min-height: 44px;
+  padding: 0 0.84rem;
+  border-radius: 999px;
+}
+
+.leading {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+  color: var(--text-muted);
+  pointer-events: none;
+}
+
+.triggerValue {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 0.84rem;
+  font-weight: 550;
+}
+
+.chevron {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  color: var(--text-muted);
+  pointer-events: none;
+  transition: color 0.14s ease;
+}
+
+.triggerOpen .chevron,
+.trigger:hover .chevron {
+  color: var(--text-secondary);
+}
+
+.chevronIcon {
+  transition: transform 200ms var(--motion-ease-standard, cubic-bezier(0.2, 0, 0, 1));
+}
+
+.chevronOpen {
+  transform: rotate(180deg);
+}
+
+/* ─── Dropdown portal ─────────────────────────────────────────────────────── */
+
+.dropdown {
+  position: fixed;
+  z-index: 9000;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  max-height: 260px;
+  border-radius: 16px;
+  border: 1px solid color-mix(in srgb, var(--panel-border-soft) 88%, transparent);
+  background:
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--surface-float) 96%, var(--glass-surface-fill, transparent)),
+      color-mix(in srgb, var(--surface-shell) 98%, transparent)
+    );
+  -webkit-backdrop-filter: blur(var(--glass-blur-medium, 16px)) saturate(var(--glass-saturate, 1.08));
+  backdrop-filter: blur(var(--glass-blur-medium, 16px)) saturate(var(--glass-saturate, 1.08));
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.06),
+    0 8px 32px rgb(2 8 20 / 0.32),
+    0 2px 8px rgb(2 8 20 / 0.18);
+  padding: 0.28rem;
+  outline: none;
+}
+
+.dropdownDown {
+  transform-origin: top center;
+  animation: dropdownInDown 160ms cubic-bezier(0.18, 0.9, 0.2, 1) both;
+}
+
+.dropdownUp {
+  transform-origin: bottom center;
+  animation: dropdownInUp 160ms cubic-bezier(0.18, 0.9, 0.2, 1) both;
+}
+
+.dropdownClosingDown {
+  pointer-events: none;
+  animation: dropdownOutDown 160ms var(--motion-ease-exit, cubic-bezier(0.4, 0, 1, 1)) both;
+}
+
+.dropdownClosingUp {
+  pointer-events: none;
+  animation: dropdownOutUp 160ms var(--motion-ease-exit, cubic-bezier(0.4, 0, 1, 1)) both;
+}
+
+@keyframes dropdownInDown {
+  from {
+    opacity: 0;
+    transform: translateY(-6px) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes dropdownInUp {
+  from {
+    opacity: 0;
+    transform: translateY(6px) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes dropdownOutDown {
+  from {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(-4px) scale(0.985);
+  }
+}
+
+@keyframes dropdownOutUp {
+  from {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(4px) scale(0.985);
+  }
+}
+
+/* ─── Options ─────────────────────────────────────────────────────────────── */
+
+.option {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-height: 38px;
+  padding: 0.52rem 0.7rem;
+  border-radius: 11px;
+  cursor: pointer;
+  user-select: none;
+  transition: background 100ms ease;
+}
+
+.optionLabel {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 0.84rem;
+  font-weight: 510;
+  color: var(--text-primary);
+}
+
+.optionCheck {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 16px;
+  height: 16px;
+  color: var(--accent);
+}
+
+.optionActive {
+  background: color-mix(in srgb, var(--accent) 12%, var(--surface-float));
+}
+
+.optionActive .optionLabel {
+  color: var(--text-primary);
+}
+
+.optionSelected .optionLabel {
+  font-weight: 640;
+  color: var(--text-primary);
+}
+
+.optionSelected.optionActive .optionLabel {
+  color: var(--accent);
+}
+
+/* Light theme adjustments */
+:global(:root[data-theme="light"]) .dropdown {
+  background:
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--surface-float) 94%, white),
+      color-mix(in srgb, var(--surface-shell-strong) 96%, white)
+    );
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.7),
+    0 8px 32px rgb(2 8 20 / 0.14),
+    0 2px 8px rgb(2 8 20 / 0.08);
+}
+
+:global(:root[data-theme="light"]) .optionActive {
+  background: color-mix(in srgb, var(--accent) 10%, var(--surface-float));
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dropdown,
+  .chevronIcon {
+    animation: none !important;
+    transition: none !important;
+  }
+}

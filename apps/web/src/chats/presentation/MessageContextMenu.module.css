@@ -1,0 +1,68 @@
+.wrapper {
+  position: relative;
+  display: contents;
+}
+
+.menu {
+  position: fixed;
+  left: var(--menu-x);
+  top: var(--menu-y);
+  z-index: 200;
+  min-width: 148px;
+  padding: 0.3rem;
+  border-radius: 14px;
+  border: 1px solid color-mix(in srgb, var(--panel-border-soft) 90%, transparent);
+  background: color-mix(in srgb, var(--surface-float) 96%, transparent);
+  -webkit-backdrop-filter: blur(16px) saturate(1.3);
+  backdrop-filter: blur(16px) saturate(1.3);
+  box-shadow:
+    0 8px 24px rgb(2 8 20 / 0.22),
+    inset 0 1px 0 rgb(255 255 255 / 0.06);
+  animation: menuIn var(--motion-duration-fast, 140ms) var(--motion-ease-emphasized, cubic-bezier(.2,.8,.3,1)) both;
+}
+
+.menuClosing {
+  pointer-events: none;
+  animation: menuOut var(--motion-duration-fast, 140ms) var(--motion-ease-exit, cubic-bezier(0.4, 0, 1, 1)) both;
+}
+
+.item {
+  display: flex;
+  align-items: center;
+  gap: 0.54rem;
+  width: 100%;
+  padding: 0.5rem 0.7rem;
+  border: none;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--text-primary);
+  font-size: 0.875rem;
+  font-weight: 500;
+  line-height: 1.2;
+  cursor: pointer;
+  text-align: left;
+  transition: background var(--motion-duration-fast, 140ms) ease;
+}
+
+.item:hover {
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+}
+
+.item:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+}
+
+@keyframes menuIn {
+  from { opacity: 0; transform: scale(0.92) translateY(-4px); }
+  to   { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+@keyframes menuOut {
+  from { opacity: 1; transform: scale(1) translateY(0); }
+  to   { opacity: 0; transform: scale(0.96) translateY(-2px); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .menu { animation: none; }
+}

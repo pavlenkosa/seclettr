@@ -1,0 +1,48 @@
+.root {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--icon-pill-gap, 0.45rem);
+  min-height: var(--icon-pill-min-height, 38px);
+  padding: var(--icon-pill-padding, 0 0.8rem);
+  border-radius: 999px;
+  border: 1px solid color-mix(in srgb, var(--panel-border-soft) 88%, transparent);
+  background:
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--surface-float) 72%, var(--glass-surface-fill, transparent)),
+      color-mix(in srgb, var(--surface-shell) 82%, var(--glass-surface-fill, transparent))
+    );
+  color: var(--text-primary);
+  -webkit-backdrop-filter: blur(var(--glass-blur-medium, 0px)) saturate(var(--glass-saturate, 1));
+  backdrop-filter: blur(var(--glass-blur-medium, 0px)) saturate(var(--glass-saturate, 1));
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.12),
+    0 8px 18px rgb(15 23 42 / 0.06);
+}
+
+.icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: inherit;
+  line-height: 0;
+}
+
+.label {
+  display: inline-flex;
+  align-items: center;
+  min-width: 0;
+  white-space: nowrap;
+}
+
+.sm {
+  font-size: 0.74rem;
+  font-weight: 620;
+  letter-spacing: 0.01em;
+}
+
+.md {
+  font-size: 0.8rem;
+  font-weight: 650;
+  letter-spacing: 0.01em;
+}

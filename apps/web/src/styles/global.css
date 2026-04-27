@@ -1,0 +1,518 @@
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+:root {
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 16px;
+  --radius-full: 9999px;
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+  --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+  --font-mono: "SF Mono", "Fira Code", Consolas, monospace;
+  --glass-blur-strong: 22px;
+  --glass-blur-medium: 16px;
+  --glass-blur-soft: 10px;
+  --glass-saturate: 1.08;
+  --glass-surface-fill: rgb(255 255 255 / 0.04);
+  --glass-surface-fill-subtle: rgb(255 255 255 / 0.07);
+  --brand-mark-primary-start: color-mix(in srgb, var(--accent, #2563eb) 72%, white 28%);
+  --brand-mark-primary-mid: color-mix(in srgb, var(--accent, #2563eb) 90%, white 10%);
+  --brand-mark-primary-end: color-mix(in srgb, var(--accent, #2563eb) 64%, #071425 36%);
+  --brand-mark-accent-start: color-mix(in srgb, var(--accent, #2563eb) 36%, white 64%);
+  --brand-mark-accent-mid: color-mix(in srgb, var(--accent, #2563eb) 54%, white 46%);
+  --brand-mark-accent-end: color-mix(in srgb, var(--accent, #2563eb) 84%, white 16%);
+  --brand-mark-base-start: color-mix(in srgb, var(--accent, #2563eb) 54%, white 20%);
+  --brand-mark-base-mid: color-mix(in srgb, var(--accent, #2563eb) 88%, #071425 12%);
+  --brand-mark-base-end: color-mix(in srgb, var(--accent, #2563eb) 56%, #04101f 44%);
+  --brand-mark-filter: none;
+  --motion-duration-fast: 140ms;
+  --motion-duration-base: 200ms;
+  --motion-duration-slow: 280ms;
+  --motion-duration-slower: 360ms;
+  --motion-ease-standard: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --motion-ease-emphasized: cubic-bezier(0.22, 1, 0.36, 1);
+  --motion-ease-exit: cubic-bezier(0.4, 0, 1, 1);
+}
+
+:root,
+:root[data-theme="dark"] {
+  color-scheme: dark;
+
+  --bg-primary: #0b1526;
+  --bg-secondary: #152236;
+  --bg-tertiary: #22344c;
+  --bg-message-out: #2563eb;
+  --bg-message-in: #16263b;
+
+  --text-primary: #edf4ff;
+  --text-secondary: #91a5bf;
+  --text-muted: #627892;
+
+  --border: #29405b;
+  --danger: #ef4444;
+  --success: #22c55e;
+  --warning: #f59e0b;
+  --danger-contrast: #fee2e2;
+  --danger-soft-bg: rgb(127 29 29 / 0.35);
+  --danger-soft-border: rgb(248 113 113 / 0.36);
+
+  --accent: #3b82f6;
+  --accent-hover: #2563eb;
+  --accent-gradient: linear-gradient(145deg, #2ea6ff, #2f6fff);
+
+  --app-glow-left: transparent;
+  --app-glow-right: transparent;
+  --panel-sidebar-bg: linear-gradient(180deg, rgb(8 19 34 / 0.96), rgb(11 21 38 / 0.98));
+  --panel-header-bg: rgb(10 23 40 / 0.62);
+  --panel-border: rgb(61 92 127 / 0.42);
+  --panel-border-soft: rgb(61 92 127 / 0.34);
+  --panel-modal-bg: rgb(13 26 44 / 0.84);
+  --surface-shell: rgb(14 28 47 / 0.72);
+  --surface-shell-strong: rgb(12 24 41 / 0.82);
+  --surface-float: rgb(18 34 55 / 0.76);
+  --shadow: none;
+  --elevated-shadow-sm: 0 10px 22px rgb(2 6 23 / 0.2);
+  --elevated-shadow-md: 0 14px 30px rgb(2 6 23 / 0.25);
+  --elevated-shadow-lg: 0 18px 38px rgb(2 6 23 / 0.3);
+  --glass-surface-fill: rgb(6 15 28 / 0.24);
+  --glass-surface-fill-subtle: rgb(10 21 36 / 0.34);
+
+  --icon-btn-bg: rgb(29 47 70 / 0.82);
+  --icon-btn-border: rgb(85 115 149 / 0.28);
+  --icon-btn-color: #c8d8ee;
+  --icon-btn-hover-bg: rgb(39 61 90 / 0.9);
+  --icon-btn-hover-color: #f8fbff;
+
+  --avatar-grad-start: #33b0ff;
+  --avatar-grad-end: #2f6fff;
+  --avatar-text: #e0f2fe;
+  --avatar-shadow: none;
+  --brand-mark-primary-start: color-mix(in srgb, var(--accent) 74%, white 26%);
+  --brand-mark-primary-mid: color-mix(in srgb, var(--accent) 92%, white 8%);
+  --brand-mark-primary-end: color-mix(in srgb, var(--accent) 64%, #071425 36%);
+  --brand-mark-accent-start: color-mix(in srgb, var(--accent) 34%, white 66%);
+  --brand-mark-accent-mid: color-mix(in srgb, var(--accent) 54%, white 46%);
+  --brand-mark-accent-end: color-mix(in srgb, var(--accent) 86%, white 14%);
+  --brand-mark-base-start: color-mix(in srgb, var(--accent) 58%, white 20%);
+  --brand-mark-base-mid: color-mix(in srgb, var(--accent) 90%, #071425 10%);
+  --brand-mark-base-end: color-mix(in srgb, var(--accent) 56%, #04101f 44%);
+  --brand-mark-filter: drop-shadow(0 8px 18px rgb(2 6 23 / 0.16));
+
+  --list-item-hover-bg: rgb(26 44 67 / 0.66);
+  --list-item-active-bg: linear-gradient(145deg, rgb(37 95 171 / 0.32), rgb(55 137 233 / 0.18));
+  --list-item-active-ring: rgb(71 162 255 / 0.2);
+
+  --message-container-bg:
+    linear-gradient(180deg, rgb(11 21 38 / 0.9), rgb(10 20 35 / 0.96));
+  --timestamp-bg: rgb(15 28 46 / 0.84);
+  --timestamp-border: rgb(66 96 129 / 0.42);
+  --bubble-shadow: 0 2px 8px rgb(2 6 23 / 0.05);
+
+  --message-out-bg: linear-gradient(145deg, rgb(49 126 255 / 0.92), rgb(37 99 235 / 0.96));
+  --message-out-tail: #2f6fff;
+  --message-out-text: #eff7ff;
+  --message-out-ui: rgb(255 255 255 / 0.92);
+  --message-out-ui-muted: rgb(255 255 255 / 0.76);
+  --message-out-ui-soft: rgb(255 255 255 / 0.16);
+  --message-out-ui-strong: rgb(255 255 255 / 0.26);
+  --message-out-wave: rgb(255 255 255 / 0.22);
+  --message-out-wave-active: rgb(255 255 255 / 0.9);
+  --message-in-bg: linear-gradient(145deg, rgb(21 34 54 / 0.96), rgb(28 48 74 / 0.88));
+  --message-in-border: rgb(76 107 142 / 0.22);
+  --message-in-tail: #16263b;
+  --message-in-text: #f8fafc;
+  --message-delivered: #76c8ff;
+  --message-ui-accent: #75c8ff;
+
+  --voice-decrypt-bg: rgb(20 34 54 / 0.58);
+  --voice-decrypt-border: rgb(104 162 214 / 0.28);
+  --voice-decrypt-text: #dfe9f8;
+  --voice-decrypt-icon: color-mix(in srgb, var(--accent) 74%, #eff6ff 26%);
+  --voice-decrypt-hover-bg: rgb(25 42 66 / 0.72);
+  --voice-play-bg: rgb(51 129 255 / 0.88);
+  --voice-play-border: rgb(173 216 255 / 0.34);
+  --voice-play-hover-bg: rgb(37 99 235 / 0.92);
+  --voice-bar: rgb(167 203 243 / 0.26);
+  --voice-bar-active: rgb(178 223 255 / 0.94);
+
+  --composer-bg: linear-gradient(180deg, rgb(11 21 38 / 0.95), rgb(11 21 38 / 0.98));
+  --composer-inner-bg: rgb(20 33 53 / 0.86);
+  --composer-inner-border: rgb(71 104 142 / 0.34);
+  --composer-shadow: 0 10px 24px rgb(2 6 23 / 0.34);
+  --composer-shadow-focus: 0 12px 28px rgb(2 6 23 / 0.4);
+}
+
+:root[data-theme="light"] {
+  color-scheme: light;
+
+  --bg-primary: #eef3fa;
+  --bg-secondary: #ffffff;
+  --bg-tertiary: #d7e0ec;
+  --bg-message-out: #2563eb;
+  --bg-message-in: #ffffff;
+
+  --text-primary: #0f172a;
+  --text-secondary: #27384f;
+  --text-muted: #3c4f67;
+
+  --border: #aebbd0;
+  --danger: #dc2626;
+  --success: #16a34a;
+  --warning: #ca8a04;
+  --danger-contrast: #7f1d1d;
+  --danger-soft-bg: rgb(254 226 226 / 0.75);
+  --danger-soft-border: rgb(248 113 113 / 0.5);
+
+  --accent: #2563eb;
+  --accent-hover: #1d4ed8;
+  --accent-gradient: linear-gradient(145deg, #3b82f6, #2563eb);
+
+  --app-glow-left: rgb(59 130 246 / 0.24);
+  --app-glow-right: rgb(14 165 233 / 0.2);
+  --panel-sidebar-bg: linear-gradient(180deg, rgb(246 249 254 / 0.96), rgb(240 246 252 / 0.98));
+  --glass-blur-strong: 28px;
+  --glass-blur-medium: 22px;
+  --glass-blur-soft: 14px;
+  --glass-saturate: 1.16;
+  --glass-surface-fill: rgb(255 255 255 / 0.44);
+  --glass-surface-fill-subtle: rgb(255 255 255 / 0.6);
+  --panel-header-bg: rgb(255 255 255 / 0.64);
+  --panel-border: rgb(116 136 164 / 0.48);
+  --panel-border-soft: rgb(116 136 164 / 0.4);
+  --panel-modal-bg: rgb(247 250 253 / 0.8);
+  --surface-shell: rgb(255 255 255 / 0.72);
+  --surface-shell-strong: rgb(255 255 255 / 0.82);
+  --surface-float: rgb(255 255 255 / 0.66);
+  --shadow: none;
+  --elevated-shadow-sm: 0 10px 22px rgb(71 85 105 / 0.11);
+  --elevated-shadow-md: 0 14px 28px rgb(71 85 105 / 0.14);
+  --elevated-shadow-lg: 0 18px 36px rgb(71 85 105 / 0.17);
+
+  --icon-btn-bg: rgb(243 247 252 / 0.95);
+  --icon-btn-border: rgb(133 151 176 / 0.52);
+  --icon-btn-color: #233247;
+  --icon-btn-hover-bg: rgb(228 236 246 / 0.98);
+  --icon-btn-hover-color: #0f172a;
+
+  --avatar-grad-start: #38bdf8;
+  --avatar-grad-end: #3b82f6;
+  --avatar-text: #f8fafc;
+  --avatar-shadow: none;
+  --brand-mark-primary-start: color-mix(in srgb, var(--accent) 56%, white 44%);
+  --brand-mark-primary-mid: color-mix(in srgb, var(--accent) 88%, white 12%);
+  --brand-mark-primary-end: color-mix(in srgb, var(--accent) 80%, #071425 20%);
+  --brand-mark-accent-start: color-mix(in srgb, var(--accent) 28%, white 72%);
+  --brand-mark-accent-mid: color-mix(in srgb, var(--accent) 44%, white 56%);
+  --brand-mark-accent-end: color-mix(in srgb, var(--accent) 78%, white 22%);
+  --brand-mark-base-start: color-mix(in srgb, var(--accent) 66%, white 26%);
+  --brand-mark-base-mid: color-mix(in srgb, var(--accent) 88%, #13233f 12%);
+  --brand-mark-base-end: color-mix(in srgb, var(--accent) 74%, #091427 26%);
+  --brand-mark-filter: none;
+
+  --list-item-hover-bg: rgb(220 229 241 / 0.9);
+  --list-item-active-bg: linear-gradient(145deg, rgb(186 214 252 / 0.92), rgb(180 226 250 / 0.86));
+  --list-item-active-ring: rgb(59 130 246 / 0.3);
+
+  --message-container-bg:
+    radial-gradient(860px 380px at 12% -8%, rgb(59 130 246 / 0.09), transparent 54%),
+    radial-gradient(760px 380px at 108% 102%, rgb(14 165 233 / 0.08), transparent 57%),
+    linear-gradient(180deg, rgb(248 250 252 / 0.95), rgb(241 245 249 / 1));
+  --timestamp-bg: rgb(255 255 255 / 0.96);
+  --timestamp-border: rgb(133 151 176 / 0.5);
+  --bubble-shadow: 0 4px 12px rgb(15 23 42 / 0.1);
+
+  --message-out-bg: linear-gradient(145deg, rgb(37 99 235 / 0.95), rgb(59 130 246 / 0.95));
+  --message-out-tail: #2563eb;
+  --message-out-text: #eff6ff;
+  --message-out-ui: rgb(255 255 255 / 0.94);
+  --message-out-ui-muted: rgb(255 255 255 / 0.8);
+  --message-out-ui-soft: rgb(255 255 255 / 0.18);
+  --message-out-ui-strong: rgb(255 255 255 / 0.28);
+  --message-out-wave: rgb(255 255 255 / 0.24);
+  --message-out-wave-active: rgb(255 255 255 / 0.94);
+  --message-in-bg: linear-gradient(145deg, rgb(255 255 255 / 0.995), rgb(244 248 253 / 0.98));
+  --message-in-border: rgb(133 151 176 / 0.46);
+  --message-in-tail: #ffffff;
+  --message-in-text: #0f172a;
+  --message-delivered: #0284c7;
+  --message-ui-accent: #2563eb;
+
+  --voice-decrypt-bg: rgb(255 255 255 / 0.94);
+  --voice-decrypt-border: rgb(133 151 176 / 0.56);
+  --voice-decrypt-text: #1f2e43;
+  --voice-decrypt-icon: color-mix(in srgb, var(--accent) 86%, #0f172a 14%);
+  --voice-decrypt-hover-bg: rgb(247 250 255 / 1);
+  --voice-play-bg: rgb(37 99 235 / 0.9);
+  --voice-play-border: rgb(147 197 253 / 0.7);
+  --voice-play-hover-bg: rgb(29 78 216 / 0.92);
+  --voice-bar: color-mix(in srgb, var(--accent) 34%, transparent);
+  --voice-bar-active: color-mix(in srgb, var(--accent) 90%, transparent);
+
+  --composer-bg: linear-gradient(180deg, rgb(248 250 252 / 0.92), rgb(241 245 249 / 0.92));
+  --composer-inner-bg: rgb(255 255 255 / 0.78);
+  --composer-inner-border: rgb(133 151 176 / 0.48);
+  --composer-shadow: 0 12px 26px rgb(133 151 176 / 0.14);
+  --composer-shadow-focus: 0 16px 34px rgb(59 130 246 / 0.15);
+}
+
+:root[data-accent="blue"] {
+  --accent: #2563eb;
+  --accent-hover: #1d4ed8;
+  --accent-gradient: linear-gradient(145deg, #0ea5e9, #2563eb);
+  --avatar-grad-start: #0ea5e9;
+  --avatar-grad-end: #2563eb;
+  --message-ui-accent: #7fd2ff;
+  --message-out-bg: linear-gradient(145deg, rgb(2 132 199 / 0.92), rgb(37 99 235 / 0.92));
+  --message-out-tail: #2563eb;
+  --list-item-active-bg: linear-gradient(145deg, rgb(14 116 144 / 0.48), rgb(37 99 235 / 0.35));
+  --list-item-active-ring: rgb(56 189 248 / 0.28);
+  --voice-play-bg: rgb(14 165 233 / 0.82);
+  --voice-play-hover-bg: rgb(2 132 199 / 0.88);
+}
+
+:root[data-theme="light"][data-accent="blue"] {
+  --message-ui-accent: #2563eb;
+  --message-out-bg: linear-gradient(145deg, rgb(37 99 235 / 0.95), rgb(59 130 246 / 0.95));
+  --message-out-tail: #2563eb;
+}
+
+:root[data-accent="emerald"] {
+  --accent: #059669;
+  --accent-hover: #047857;
+  --accent-gradient: linear-gradient(145deg, #10b981, #059669);
+  --avatar-grad-start: #34d399;
+  --avatar-grad-end: #059669;
+  --message-ui-accent: #6ee7d4;
+  --message-out-bg: linear-gradient(145deg, rgb(15 118 110 / 0.94), rgb(13 148 136 / 0.92));
+  --message-out-tail: #0f766e;
+  --list-item-active-bg: linear-gradient(145deg, rgb(5 150 105 / 0.42), rgb(16 185 129 / 0.32));
+  --list-item-active-ring: rgb(52 211 153 / 0.32);
+  --voice-play-bg: rgb(20 184 166 / 0.84);
+  --voice-play-hover-bg: rgb(13 148 136 / 0.9);
+  --app-glow-left: transparent;
+  --app-glow-right: transparent;
+}
+
+:root[data-theme="light"][data-accent="emerald"] {
+  --message-ui-accent: #0f766e;
+  --message-out-bg: linear-gradient(145deg, rgb(15 118 110 / 0.92), rgb(20 184 166 / 0.9));
+  --message-out-tail: #0f766e;
+  --list-item-active-bg: linear-gradient(145deg, rgb(110 231 183 / 0.58), rgb(167 243 208 / 0.6));
+  --list-item-active-ring: rgb(5 150 105 / 0.32);
+  --app-glow-left: transparent;
+  --app-glow-right: transparent;
+}
+
+:root[data-accent="rose"] {
+  --accent: #e11d48;
+  --accent-hover: #be123c;
+  --accent-gradient: linear-gradient(145deg, #fb7185, #e11d48);
+  --avatar-grad-start: #fb7185;
+  --avatar-grad-end: #e11d48;
+  --message-ui-accent: #f9a8b4;
+  --message-out-bg: linear-gradient(145deg, rgb(190 24 93 / 0.92), rgb(157 23 77 / 0.94));
+  --message-out-tail: #9d174d;
+  --list-item-active-bg: linear-gradient(145deg, rgb(251 113 133 / 0.36), rgb(225 29 72 / 0.3));
+  --list-item-active-ring: rgb(251 113 133 / 0.34);
+  --voice-play-bg: rgb(244 63 94 / 0.84);
+  --voice-play-hover-bg: rgb(225 29 72 / 0.9);
+  --app-glow-left: transparent;
+  --app-glow-right: transparent;
+}
+
+:root[data-theme="light"][data-accent="rose"] {
+  --message-ui-accent: #be123c;
+  --message-out-bg: linear-gradient(145deg, rgb(225 29 72 / 0.9), rgb(244 63 94 / 0.88));
+  --message-out-tail: #e11d48;
+  --list-item-active-bg: linear-gradient(145deg, rgb(254 205 211 / 0.66), rgb(254 226 226 / 0.6));
+  --list-item-active-ring: rgb(225 29 72 / 0.32);
+  --app-glow-left: transparent;
+  --app-glow-right: transparent;
+}
+
+:root[data-accent="violet"] {
+  --accent: #7c3aed;
+  --accent-hover: #6d28d9;
+  --accent-gradient: linear-gradient(145deg, #a78bfa, #7c3aed);
+  --avatar-grad-start: #a78bfa;
+  --avatar-grad-end: #7c3aed;
+  --message-ui-accent: #c4b5fd;
+  --message-out-bg: linear-gradient(145deg, rgb(109 40 217 / 0.92), rgb(91 33 182 / 0.94));
+  --message-out-tail: #6d28d9;
+  --list-item-active-bg: linear-gradient(145deg, rgb(139 92 246 / 0.38), rgb(124 58 237 / 0.32));
+  --list-item-active-ring: rgb(167 139 250 / 0.34);
+  --voice-play-bg: rgb(124 58 237 / 0.84);
+  --voice-play-hover-bg: rgb(109 40 217 / 0.9);
+  --app-glow-left: transparent;
+  --app-glow-right: transparent;
+}
+
+:root[data-theme="light"][data-accent="violet"] {
+  --message-ui-accent: #6d28d9;
+  --message-out-bg: linear-gradient(145deg, rgb(124 58 237 / 0.9), rgb(139 92 246 / 0.88));
+  --message-out-tail: #7c3aed;
+  --list-item-active-bg: linear-gradient(145deg, rgb(221 214 254 / 0.68), rgb(237 233 254 / 0.64));
+  --list-item-active-ring: rgb(124 58 237 / 0.3);
+  --app-glow-left: transparent;
+  --app-glow-right: transparent;
+}
+
+:root[data-glass="off"] {
+  --glass-blur-strong: 0px;
+  --glass-blur-medium: 0px;
+  --glass-blur-soft: 0px;
+  --glass-saturate: 1;
+  --glass-surface-fill: var(--bg-secondary);
+  --glass-surface-fill-subtle: color-mix(in srgb, var(--bg-secondary) 82%, var(--bg-primary));
+  --panel-header-bg: color-mix(in srgb, var(--bg-secondary) 84%, var(--bg-primary));
+  --panel-modal-bg: color-mix(in srgb, var(--bg-secondary) 96%, var(--bg-primary));
+  --surface-shell: color-mix(in srgb, var(--bg-secondary) 92%, var(--bg-primary));
+  --surface-shell-strong: color-mix(in srgb, var(--bg-secondary) 96%, var(--bg-primary));
+  --surface-float: color-mix(in srgb, var(--bg-secondary) 88%, var(--bg-primary));
+  --icon-btn-bg: color-mix(in srgb, var(--bg-secondary) 86%, var(--bg-primary));
+  --voice-decrypt-bg: color-mix(in srgb, var(--bg-secondary) 90%, var(--bg-primary));
+  --composer-inner-bg: color-mix(in srgb, var(--bg-secondary) 94%, var(--bg-primary));
+}
+
+html, body {
+  height: 100%;
+  width: 100%;
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+  font-family: var(--font-sans);
+  font-size: 16px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+#root {
+  height: 100%;
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--bg-tertiary);
+  border-radius: var(--radius-full);
+}
+
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+input, textarea, select {
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  color: var(--text-primary);
+  font-family: var(--font-sans);
+  font-size: 0.9375rem;
+  padding: 0.5rem 0.75rem;
+  width: 100%;
+  transition: border-color 0.15s ease;
+}
+
+:root[data-theme="light"] input,
+:root[data-theme="light"] textarea,
+:root[data-theme="light"] select {
+  background: color-mix(in srgb, var(--surface-shell-strong) 88%, white);
+  border-color: color-mix(in srgb, var(--panel-border-soft) 92%, transparent);
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.72),
+    0 0 0 1px rgb(255 255 255 / 0.16);
+  -webkit-backdrop-filter: blur(var(--glass-blur-soft, 0px)) saturate(var(--glass-saturate, 1));
+  backdrop-filter: blur(var(--glass-blur-soft, 0px)) saturate(var(--glass-saturate, 1));
+}
+
+:root[data-theme="light"] input::placeholder,
+:root[data-theme="light"] textarea::placeholder {
+  color: color-mix(in srgb, var(--text-secondary) 84%, var(--text-muted));
+}
+
+input:focus, textarea:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+button {
+  cursor: pointer;
+  font-family: var(--font-sans);
+  border: none;
+  border-radius: var(--radius-md);
+  font-size: 0.9375rem;
+  font-weight: 500;
+  transition: background-color 0.15s ease, opacity 0.15s ease;
+}
+
+button,
+[role="button"],
+a,
+input,
+textarea,
+select {
+  -webkit-tap-highlight-color: transparent;
+}
+
+button,
+[role="button"],
+a {
+  touch-action: manipulation;
+}
+
+button svg {
+  display: block;
+  flex-shrink: 0;
+}
+
+button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html:focus-within {
+    scroll-behavior: auto;
+  }
+}
+
+@media (max-width: 640px) {
+  input,
+  textarea,
+  select {
+    font-size: 16px;
+  }
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.truncate {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}

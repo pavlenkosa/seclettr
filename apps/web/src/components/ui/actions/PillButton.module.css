@@ -1,0 +1,123 @@
+.button {
+  --pill-border: color-mix(in srgb, var(--panel-border-soft) 92%, transparent);
+  --pill-bg: color-mix(in srgb, var(--glass-surface-fill-subtle, var(--surface-shell)) 92%, var(--surface-shell));
+  --pill-bg-hover: color-mix(in srgb, var(--glass-surface-fill, var(--surface-shell)) 94%, var(--surface-shell));
+  --pill-fg: var(--text-primary);
+  appearance: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.36rem;
+  width: fit-content;
+  max-width: 100%;
+  font: inherit;
+  border-radius: 999px;
+  border: 1px solid var(--pill-border);
+  background: var(--pill-bg);
+  color: var(--pill-fg);
+  font-weight: 600;
+  line-height: 1;
+  text-align: center;
+  white-space: nowrap;
+  backdrop-filter: blur(var(--glass-blur-soft)) saturate(var(--glass-saturate));
+  cursor: pointer;
+  transition: background-color 0.14s ease, border-color 0.14s ease, transform 0.14s ease, opacity 0.14s ease;
+}
+
+.button:hover:not(:disabled) {
+  background: var(--pill-bg-hover);
+  transform: translateY(-1px);
+}
+
+.button:disabled {
+  opacity: 0.62;
+}
+
+.button:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--accent) 76%, transparent);
+  outline-offset: 2px;
+}
+
+.sm {
+  min-height: 38px;
+  padding: 0 0.82rem;
+  font-size: 0.74rem;
+}
+
+.md {
+  min-height: 40px;
+  padding: 0 0.92rem;
+  font-size: 0.82rem;
+}
+
+.fullWidth {
+  width: 100%;
+}
+
+.neutral {
+  --pill-border: color-mix(in srgb, var(--panel-border-soft) 92%, transparent);
+  --pill-fg: var(--text-primary);
+}
+
+.neutral.soft {
+  --pill-bg: color-mix(in srgb, var(--glass-surface-fill-subtle, var(--surface-shell)) 92%, var(--surface-shell));
+  --pill-bg-hover: color-mix(in srgb, var(--glass-surface-fill, var(--surface-shell)) 94%, var(--surface-shell));
+}
+
+.neutral.strong {
+  --pill-bg: color-mix(in srgb, var(--glass-surface-fill, var(--surface-shell)) 96%, var(--surface-shell));
+  --pill-bg-hover: color-mix(in srgb, var(--glass-surface-fill, var(--surface-shell)) 100%, var(--surface-shell));
+}
+
+.accent {
+  --pill-border: color-mix(in srgb, var(--accent) 48%, transparent);
+  --pill-fg: var(--text-primary);
+}
+
+.accent.soft {
+  --pill-bg: color-mix(in srgb, var(--accent) 16%, var(--glass-surface-fill-subtle, var(--surface-shell)));
+  --pill-bg-hover: color-mix(in srgb, var(--accent) 24%, var(--glass-surface-fill, var(--surface-shell)));
+}
+
+.accent.strong {
+  --pill-border: color-mix(in srgb, var(--accent) 62%, transparent);
+  --pill-bg: color-mix(in srgb, var(--accent) 24%, var(--glass-surface-fill, var(--surface-shell)));
+  --pill-bg-hover: color-mix(in srgb, var(--accent) 32%, var(--glass-surface-fill, var(--surface-shell)));
+}
+
+.danger {
+  --pill-border: color-mix(in srgb, var(--danger) 44%, transparent);
+  --pill-fg: var(--text-primary);
+}
+
+.danger.soft {
+  --pill-bg: color-mix(in srgb, var(--danger) 14%, var(--glass-surface-fill-subtle, var(--surface-shell)));
+  --pill-bg-hover: color-mix(in srgb, var(--danger) 20%, var(--glass-surface-fill, var(--surface-shell)));
+}
+
+.danger.strong {
+  --pill-border: color-mix(in srgb, var(--danger) 58%, transparent);
+  --pill-bg: color-mix(in srgb, var(--danger) 22%, var(--glass-surface-fill, var(--surface-shell)));
+  --pill-bg-hover: color-mix(in srgb, var(--danger) 28%, var(--glass-surface-fill, var(--surface-shell)));
+}
+
+.leading,
+.trailing {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+}
+
+.content {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .button {
+    transition: none !important;
+    transform: none !important;
+  }
+}

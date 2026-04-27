@@ -1,0 +1,474 @@
+/* ─── Overlay ────────────────────────────────────────────────────────────── */
+
+.overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 8000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  background: rgb(0 0 0 / 0.52);
+  -webkit-backdrop-filter: blur(4px);
+  backdrop-filter: blur(4px);
+  animation: overlayIn 160ms ease both;
+}
+
+@keyframes overlayIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+.overlayOut {
+  animation: overlayOut 200ms ease both;
+  pointer-events: none;
+}
+
+@keyframes overlayOut {
+  from { opacity: 1; backdrop-filter: blur(4px); }
+  to   { opacity: 0; backdrop-filter: blur(0px); }
+}
+
+/* ─── Dialog surface ─────────────────────────────────────────────────────── */
+
+.surface {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  width: min(480px, 100%);
+  max-height: min(700px, calc(100dvh - 2rem));
+  border-radius: 22px;
+  border: 1px solid color-mix(in srgb, var(--panel-border-soft) 88%, transparent);
+  background:
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--surface-float) 96%, var(--glass-surface-fill, transparent)),
+      color-mix(in srgb, var(--surface-shell) 98%, transparent)
+    );
+  -webkit-backdrop-filter: blur(var(--glass-blur-medium, 16px)) saturate(var(--glass-saturate, 1.08));
+  backdrop-filter: blur(var(--glass-blur-medium, 16px)) saturate(var(--glass-saturate, 1.08));
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.07),
+    0 24px 64px rgb(2 8 20 / 0.42),
+    0 4px 16px rgb(2 8 20 / 0.22);
+  overflow: hidden;
+  outline: none;
+  animation: surfaceIn 200ms cubic-bezier(0.18, 0.9, 0.2, 1) both;
+}
+
+@keyframes surfaceIn {
+  from {
+    opacity: 0;
+    transform: scale(0.96) translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+.surfaceOut {
+  animation: surfaceOut 200ms cubic-bezier(0.4, 0, 1, 1) both;
+}
+
+@keyframes surfaceOut {
+  from {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+  to {
+    opacity: 0;
+    transform: scale(0.96) translateY(6px);
+  }
+}
+
+/* ─── Header ─────────────────────────────────────────────────────────────── */
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0.9rem 1rem 0.9rem 1.2rem;
+  border-bottom: 1px solid color-mix(in srgb, var(--panel-border-soft) 72%, transparent);
+  flex-shrink: 0;
+}
+
+.headerTitle {
+  font-size: 0.95rem;
+  font-weight: 670;
+  color: var(--text-primary);
+  letter-spacing: -0.01em;
+}
+
+.headerClose {
+  all: unset;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: background 120ms ease, color 120ms ease;
+  flex-shrink: 0;
+}
+
+.headerClose:hover {
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+  color: var(--text-primary);
+}
+
+.headerClose:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+/* ─── Scrollable body ────────────────────────────────────────────────────── */
+
+.thumbGrid,
+.fileList,
+.captionWrap,
+.qualityBlock {
+  flex-shrink: 0;
+}
+
+.thumbGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+  gap: 0.38rem;
+  padding: 0.72rem 0.72rem 0;
+  max-height: 340px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.thumbGridSingle {
+  grid-template-columns: 1fr;
+}
+
+.thumbGridSingle .thumb {
+  aspect-ratio: unset;
+  max-height: 260px;
+}
+
+/* ─── Thumbnail ──────────────────────────────────────────────────────────── */
+
+.thumb {
+  position: relative;
+  border-radius: 12px;
+  overflow: hidden;
+  aspect-ratio: 1 / 1;
+  background: color-mix(in srgb, var(--surface-shell) 80%, transparent);
+}
+
+.thumbImg {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.thumbGridSingle .thumbImg {
+  object-fit: contain;
+  max-height: 260px;
+}
+
+.thumbVideoOverlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgb(0 0 0 / 0.3);
+  color: #fff;
+  pointer-events: none;
+}
+
+.thumbRemove {
+  position: absolute;
+  top: 5px;
+  right: 5px;
+  all: unset;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: rgb(0 0 0 / 0.6);
+  color: #fff;
+  cursor: pointer;
+  transition: background 120ms ease, transform 120ms ease;
+}
+
+.thumbRemove:hover {
+  background: rgb(0 0 0 / 0.82);
+  transform: scale(1.08);
+}
+
+.thumbRemove:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+/* ─── File list ──────────────────────────────────────────────────────────── */
+
+.fileList {
+  display: flex;
+  flex-direction: column;
+  gap: 0.28rem;
+  padding: 0.72rem 0.72rem 0;
+  max-height: 220px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.fileRow {
+  display: flex;
+  align-items: center;
+  gap: 0.52rem;
+  padding: 0.58rem 0.62rem;
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--surface-shell) 72%, transparent);
+  border: 1px solid color-mix(in srgb, var(--panel-border-soft) 60%, transparent);
+}
+
+.fileRowIcon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-muted);
+  flex-shrink: 0;
+}
+
+.fileRowName {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 0.82rem;
+  font-weight: 550;
+  color: var(--text-primary);
+}
+
+.fileRowSize {
+  font-size: 0.74rem;
+  font-weight: 500;
+  color: var(--text-muted);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.fileRowRemove {
+  all: unset;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  color: var(--text-muted);
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: background 120ms ease, color 120ms ease;
+}
+
+.fileRowRemove:hover {
+  background: color-mix(in srgb, var(--danger, #ef4444) 14%, transparent);
+  color: var(--danger, #ef4444);
+}
+
+.fileRowRemove:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+/* ─── Caption ────────────────────────────────────────────────────────────── */
+
+.captionWrap {
+  padding: 0.62rem 0.72rem 0;
+}
+
+.caption {
+  width: 100%;
+  box-sizing: border-box;
+  resize: none;
+  font-family: inherit;
+  font-size: 0.86rem;
+  line-height: 1.5;
+  color: var(--text-primary);
+  border: 1px solid color-mix(in srgb, var(--panel-border-soft) 100%, transparent);
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--surface-shell) 90%, var(--bg-primary));
+  padding: 0.58rem 0.8rem;
+  outline: none;
+  /* height driven by JS; CSS only enforces max */
+  min-height: 40px;
+  max-height: 120px;
+  overflow-y: auto;
+  transition: border-color 140ms ease, background 140ms ease, box-shadow 140ms ease;
+}
+
+.caption::placeholder {
+  color: var(--text-muted);
+}
+
+.caption:focus {
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--surface-shell) 96%, var(--bg-primary));
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 18%, transparent);
+}
+
+/* ─── Quality options ────────────────────────────────────────────────────── */
+
+.qualityBlock {
+  display: flex;
+  gap: 0.42rem;
+  padding: 0.62rem 0.72rem 0;
+}
+
+.qualityOption {
+  flex: 1 1 0;
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.62rem 0.8rem;
+  border-radius: 14px;
+  border: 1px solid color-mix(in srgb, var(--panel-border-soft) 72%, transparent);
+  background: color-mix(in srgb, var(--surface-shell) 60%, transparent);
+  cursor: pointer;
+  user-select: none;
+  transition: border-color 140ms ease, background 140ms ease;
+}
+
+.qualityOption:hover {
+  border-color: color-mix(in srgb, var(--accent) 36%, var(--panel-border-soft));
+  background: color-mix(in srgb, var(--surface-shell) 80%, transparent);
+}
+
+.qualityOptionChecked {
+  border-color: color-mix(in srgb, var(--accent) 56%, transparent);
+  background: color-mix(in srgb, var(--accent) 10%, var(--surface-shell));
+}
+
+.qualityRadio {
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+  pointer-events: none;
+}
+
+.qualityDot {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  border: 1.5px solid color-mix(in srgb, var(--text-muted) 72%, transparent);
+  flex-shrink: 0;
+  position: relative;
+  transition: border-color 140ms ease;
+}
+
+.qualityOptionChecked .qualityDot {
+  border-color: var(--accent);
+  background: var(--accent);
+  box-shadow: inset 0 0 0 3px color-mix(in srgb, var(--surface-shell) 92%, transparent);
+}
+
+.qualityText {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  min-width: 0;
+}
+
+.qualityLabel {
+  font-size: 0.82rem;
+  font-weight: 620;
+  color: var(--text-primary);
+  white-space: nowrap;
+}
+
+.qualitySubLabel {
+  font-size: 0.72rem;
+  font-weight: 480;
+  color: var(--text-muted);
+  white-space: nowrap;
+  line-height: 1.3;
+}
+
+/* ─── Footer ─────────────────────────────────────────────────────────────── */
+
+.footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.62rem;
+  padding: 0.82rem 0.84rem 0.9rem;
+  border-top: 1px solid color-mix(in srgb, var(--panel-border-soft) 60%, transparent);
+  margin-top: 0.62rem;
+  flex-shrink: 0;
+}
+
+.sizeHint {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-size: 0.78rem;
+  font-weight: 520;
+  color: var(--text-muted);
+  min-width: 0;
+}
+
+.footerActions {
+  display: flex;
+  align-items: center;
+  gap: 0.42rem;
+  flex-shrink: 0;
+}
+
+/* ─── Spinner ────────────────────────────────────────────────────────────── */
+
+.spinner {
+  animation: spin 900ms linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* ─── Light theme ────────────────────────────────────────────────────────── */
+
+:global(:root[data-theme="light"]) .surface {
+  background:
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--surface-float) 94%, white),
+      color-mix(in srgb, var(--surface-shell-strong) 96%, white)
+    );
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.7),
+    0 24px 64px rgb(2 8 20 / 0.18),
+    0 4px 16px rgb(2 8 20 / 0.1);
+}
+
+/* ─── Reduced motion ─────────────────────────────────────────────────────── */
+
+@media (prefers-reduced-motion: reduce) {
+  .overlay,
+  .overlayOut,
+  .surface,
+  .surfaceOut,
+  .thumbRemove,
+  .headerClose,
+  .qualityOption,
+  .caption,
+  .fileRowRemove {
+    animation: none !important;
+    transition: none !important;
+    transform: none !important;
+  }
+}

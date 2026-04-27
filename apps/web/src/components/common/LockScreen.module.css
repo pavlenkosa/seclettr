@@ -1,0 +1,250 @@
+.root {
+  position: fixed;
+  inset: 0;
+  /* Override dialog UA width: fit-content so inset: 0 actually fills the viewport */
+  width: 100%;
+  height: 100%;
+  z-index: 9000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg-primary);
+  animation: fadeIn var(--motion-duration-base, 200ms) ease both;
+  /* dialog UA style resets */
+  margin: 0;
+  border: none;
+  padding: 0;
+  max-width: none;
+  max-height: none;
+  color: inherit;
+  overflow: auto;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+.card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  width: min(340px, 92vw);
+  padding: 2rem 1.75rem 1.5rem;
+  border-radius: 20px;
+  border: 1px solid var(--panel-border-soft);
+  background: var(--surface-float);
+  box-shadow: 0 8px 32px rgb(0 0 0 / 0.18);
+  text-align: center;
+  animation: cardIn var(--motion-duration-base, 200ms) var(--motion-ease-emphasized, cubic-bezier(.2,.8,.3,1)) both;
+}
+
+@keyframes cardIn {
+  from { opacity: 0; transform: translateY(12px) scale(0.97); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.lockIcon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 52px;
+  height: 52px;
+  border-radius: 18px;
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+  color: var(--accent);
+  margin-bottom: 0.4rem;
+}
+
+.title {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin: 0;
+}
+
+.username {
+  font-size: 0.84rem;
+  color: var(--text-secondary);
+  font-weight: 500;
+  margin: 0;
+}
+
+.description {
+  font-size: 0.82rem;
+  color: var(--text-secondary);
+  line-height: 1.5;
+  margin: 0.2rem 0 0;
+  max-width: 26ch;
+}
+
+.notice {
+  font-size: 0.76rem;
+  color: color-mix(in srgb, var(--text-secondary) 86%, transparent);
+  line-height: 1.45;
+  margin: 0 0 0.6rem;
+  max-width: 28ch;
+}
+
+.error {
+  font-size: 0.8rem;
+  color: var(--danger, #e74c3c);
+  margin: 0;
+  padding: 0.4rem 0.75rem;
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--danger, #e74c3c) 10%, transparent);
+  border: 1px solid color-mix(in srgb, var(--danger, #e74c3c) 24%, transparent);
+  width: 100%;
+}
+
+.unlockBtn {
+  all: unset;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  padding: 0.72rem 1.2rem;
+  border-radius: 14px;
+  background: var(--accent);
+  color: #fff;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  margin-top: 0.4rem;
+  transition: opacity 140ms ease, transform 140ms ease;
+}
+
+.unlockBtn:hover:not(:disabled) {
+  opacity: 0.9;
+}
+
+.unlockBtn:active:not(:disabled) {
+  transform: scale(0.98);
+}
+
+.unlockBtn:disabled {
+  opacity: 0.55;
+  cursor: default;
+}
+
+.logoutBtn {
+  all: unset;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  padding: 0.56rem 1.2rem;
+  border-radius: 12px;
+  color: var(--text-secondary);
+  font-size: 0.82rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: color 140ms ease, background 140ms ease;
+}
+
+.logoutBtn:hover:not(:disabled) {
+  color: var(--text-primary);
+  background: color-mix(in srgb, var(--accent) 8%, transparent);
+}
+
+.logoutBtn:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+/* ── PIN pad ──────────────────────────────────────────────── */
+
+.pinDots {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  margin: 0.6rem 0 0;
+}
+
+.pinDot {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  border: 2px solid color-mix(in srgb, var(--accent) 50%, var(--text-secondary) 50%);
+  background: transparent;
+  transition: background 120ms ease, border-color 120ms ease, transform 120ms ease;
+}
+
+.pinDotFilled {
+  background: var(--accent);
+  border-color: var(--accent);
+  transform: scale(1.12);
+}
+
+.pinHint {
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+  margin: 0.2rem 0 0.4rem;
+  min-height: 1.2em;
+  text-align: center;
+}
+
+.pinHintError {
+  color: var(--danger, #e74c3c);
+}
+
+.pinPad {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  width: 100%;
+  max-width: 260px;
+  margin: 0.4rem 0 0.4rem;
+}
+
+.pinKey {
+  all: unset;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 56px;
+  border-radius: 16px;
+  background: color-mix(in srgb, var(--accent) 8%, var(--surface-float) 92%);
+  color: var(--text-primary);
+  font-size: 1.3rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 110ms ease, transform 90ms ease;
+  user-select: none;
+}
+
+.pinKey:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--accent) 16%, var(--surface-float) 84%);
+}
+
+.pinKey:active:not(:disabled) {
+  transform: scale(0.92);
+  background: color-mix(in srgb, var(--accent) 26%, var(--surface-float) 74%);
+}
+
+.pinKey:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.pinKeyDelete {
+  color: var(--text-secondary);
+  background: color-mix(in srgb, var(--surface-float) 60%, transparent);
+}
+
+.pinKeyDelete:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--danger, #e74c3c) 10%, var(--surface-float) 90%);
+  color: var(--danger, #e74c3c);
+}
+
+.pinPadSpacer {
+  display: block;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .root, .card { animation: none; }
+  .pinDot { transition: none; }
+  .pinKey { transition: none; }
+}

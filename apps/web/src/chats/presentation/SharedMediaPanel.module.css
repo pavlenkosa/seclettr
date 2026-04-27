@@ -1,0 +1,212 @@
+.panel {
+  position: absolute;
+  inset: 0;
+  z-index: 30;
+  display: flex;
+  flex-direction: column;
+  /* Force opaque background — glass --surface-shell is semi-transparent (72% alpha)
+     which makes underlying messages bleed through this full-cover panel. */
+  background: color-mix(in srgb, var(--bg-secondary) 96%, var(--bg-primary));
+  border-left: 1px solid color-mix(in srgb, var(--panel-border-soft) 80%, transparent);
+  border-radius: 20px;
+  overflow: hidden;
+  animation: panelIn var(--motion-duration-base, 200ms) var(--motion-ease-emphasized, cubic-bezier(.2,.8,.3,1)) both;
+}
+
+@keyframes panelIn {
+  from { opacity: 0; transform: translateX(24px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.82rem 0.9rem 0.72rem;
+  border-bottom: 1px solid color-mix(in srgb, var(--panel-border-soft) 70%, transparent);
+  flex-shrink: 0;
+}
+
+.title {
+  font-size: 0.92rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.closeBtn {
+  all: unset;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: background var(--motion-duration-fast) ease, color var(--motion-duration-fast) ease;
+}
+
+.closeBtn:hover {
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+  color: var(--text-primary);
+}
+
+.closeBtn:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -1px;
+}
+
+.tabs {
+  display: flex;
+  gap: 0.2rem;
+  padding: 0.36rem 0.62rem 0;
+  border-bottom: 1px solid color-mix(in srgb, var(--panel-border-soft) 70%, transparent);
+  flex-shrink: 0;
+}
+
+.tab {
+  all: unset;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.42rem 0.68rem 0.54rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+  transition: color var(--motion-duration-fast) ease, border-color var(--motion-duration-fast) ease;
+}
+
+.tab:hover {
+  color: var(--text-primary);
+}
+
+.tabActive {
+  color: var(--accent);
+  border-bottom-color: var(--accent);
+}
+
+.tabCount {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  height: 16px;
+  padding: 0 0.3rem;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--accent) 16%, transparent);
+  color: var(--accent);
+  font-size: 0.66rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.content {
+  flex: 1;
+  overflow-y: auto;
+  min-height: 0;
+}
+
+.empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.82rem;
+  height: 100%;
+  padding: 2rem;
+  color: var(--text-muted);
+  font-size: 0.85rem;
+  text-align: center;
+}
+
+.emptyIcon {
+  opacity: 0.4;
+  display: flex;
+}
+
+.list {
+  list-style: none;
+  padding: 0.36rem 0;
+  margin: 0;
+}
+
+.item {
+  display: flex;
+  align-items: center;
+  gap: 0.64rem;
+  padding: 0.56rem 0.9rem;
+  transition: background var(--motion-duration-fast) ease;
+}
+
+.item:hover {
+  background: color-mix(in srgb, var(--accent) 6%, transparent);
+}
+
+.itemIcon {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+  color: var(--accent);
+}
+
+.itemBody {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.12rem;
+}
+
+.itemLabel {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.itemMeta {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.7rem;
+  color: var(--text-secondary);
+  font-variant-numeric: tabular-nums;
+}
+
+.itemGoBtn {
+  all: unset;
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: background var(--motion-duration-fast) ease, color var(--motion-duration-fast) ease;
+}
+
+.itemGoBtn:hover {
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+  color: var(--accent);
+}
+
+.itemGoBtn:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -1px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .panel { animation: none; }
+}

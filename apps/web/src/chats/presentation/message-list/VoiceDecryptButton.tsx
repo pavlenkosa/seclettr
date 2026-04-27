@@ -1,0 +1,64 @@
+import { useI18n } from "@/i18n";
+import styles from "../MessageList.module.css";
+
+const GHOST_WAVE_BAR_KEYS = Array.from({ length: 12 }, (_, i) => `ghost-bar-${i}`);
+
+/**
+ * Props for the encrypted voice-note decrypt action.
+ */
+interface VoiceDecryptButtonProps {
+  readonly loading: boolean;
+  readonly onDecrypt: () => void;
+}
+
+/**
+ * Button shown before a voice note is decrypted locally.
+ */
+export function VoiceDecryptButton({ loading, onDecrypt }: VoiceDecryptButtonProps) {
+  const { t } = useI18n();
+  const title = loading ? t("message.voice.decrypting") : t("message.voice.decryptAndPlay");
+
+  return (
+    <button
+      type="button"
+      onClick={onDecrypt}
+      disabled={loading}
+      className={styles.voiceDecryptBtn}
+      aria-label={t("message.voice.decryptAria")}
+    >
+      <span className={styles.voiceDecryptPreview} aria-hidden="true">
+        <span className={styles.voiceDecryptGhostWave}>
+          {GHOST_WAVE_BAR_KEYS.map((barKey) => (
+            <span key={barKey} className={styles.voiceDecryptGhostBar} />
+          ))}
+        </span>
+        <span className={styles.voiceDecryptIcon}>
+          <svg viewBox="0 0 18 18" fill="none">
+            <path
+              d="M5.7 8.05V6.7a3.3 3.3 0 1 1 6.6 0v1.35"
+              stroke="currentColor"
+              strokeWidth="1.5"
+              strokeLinecap="round"
+            />
+            <rect
+              x="4.35"
+              y="8.05"
+              width="9.3"
+              height="6.25"
+              rx="2.05"
+              fill="currentColor"
+              fillOpacity="0.18"
+              stroke="currentColor"
+              strokeWidth="1.2"
+            />
+            <circle cx="9" cy="11.2" r="1" fill="currentColor" />
+          </svg>
+        </span>
+      </span>
+      <span className={styles.voiceDecryptText}>
+        <span className={styles.voiceDecryptTitle}>{title}</span>
+        <span className={styles.voiceDecryptPlaceholder} aria-hidden="true" />
+      </span>
+    </button>
+  );
+}

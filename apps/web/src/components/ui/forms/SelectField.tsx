@@ -1,0 +1,47 @@
+import { forwardRef, type ReactNode, type SelectHTMLAttributes } from "react";
+import styles from "./SelectField.module.css";
+
+type SelectFieldSize = "md" | "pill";
+
+export interface SelectFieldProps extends Omit<SelectHTMLAttributes<HTMLSelectElement>, "size"> {
+  /** Shared size preset for modal and toolbar select controls. */
+  readonly size?: SelectFieldSize;
+  /** Optional leading visual rendered before the select value. */
+  readonly leading?: ReactNode;
+  /** Optional className for the outer select shell. */
+  readonly wrapperClassName?: string;
+}
+
+/**
+ * Shared native select shell for modal forms and compact settings controls.
+ * It keeps borders, glass-aware fills, and caret treatment aligned with InputField.
+ */
+export const SelectField = forwardRef<HTMLSelectElement, SelectFieldProps>(function SelectField(
+  {
+    size = "md",
+    leading,
+    wrapperClassName = "",
+    className = "",
+    children,
+    ...props
+  },
+  ref
+) {
+  return (
+    <label className={[styles.root, styles[size], wrapperClassName].filter(Boolean).join(" ")}>
+      {leading ? <span className={styles.leading} aria-hidden="true">{leading}</span> : null}
+      <select
+        {...props}
+        ref={ref}
+        className={[styles.select, className].filter(Boolean).join(" ")}
+      >
+        {children}
+      </select>
+      <span className={styles.chevron} aria-hidden="true">
+        <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+          <path d="m3.5 5 3.5 4 3.5-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
+      </span>
+    </label>
+  );
+});

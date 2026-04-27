@@ -19,6 +19,8 @@ export interface PendingFile {
   compressed: File | null;
 }
 
+export type MediaSendValidationError = "tooManyFiles" | "batchTooLarge";
+
 export interface UseMediaSendDialogResult {
   isOpen: boolean;
   pendingFiles: PendingFile[];
@@ -31,6 +33,8 @@ export interface UseMediaSendDialogResult {
   totalCompressedSize: number | null;
   /** At least one file supports compression. */
   hasCompressible: boolean;
+  /** Preflight validation error — set when openDialog rejects the batch. */
+  validationError: MediaSendValidationError | null;
   openDialog: (files: File[]) => void;
   removeFile: (id: string) => void;
   setCaption: (caption: string) => void;
@@ -45,6 +49,9 @@ interface Options {
 }
 
 const DIALOG_CLOSE_ANIMATION_MS = 220;
+const MAX_ATTACHMENT_FILES = 10;
+/** 100 MB — client-side guard before reading file bytes into memory. */
+const MAX_ATTACHMENT_BATCH_BYTES = 100 * 1024 * 1024;
 
 function buildPendingFile(file: File): PendingFile {
   const isImage = file.type.startsWith("image/");
@@ -116,6 +123,7 @@ export function useMediaSendDialog({ onSendFiles }: Options): UseMediaSendDialog
   const [caption, setCaption] = useState("");
   const [quality, setQuality] = useState<SendQuality>("compressed");
   const [isSending, setIsSending] = useState(false);
+  const [validationError, setValidationError] = useState<MediaSendValidationError | null>(null);
 
   // Track outstanding compression tasks so we can cancel on dialog close.
   const compressionAbortRef = useRef<AbortController | null>(null);
@@ -141,11 +149,24 @@ export function useMediaSendDialog({ onSendFiles }: Options): UseMediaSendDialog
     setCaption("");
     setQuality("compressed");
     setIsSending(false);
+    setValidationError(null);
     setIsOpen(false);
   }, [revokeAllUrls]);
 
   const openDialog = useCallback((files: File[]) => {
     if (!files.length) return;
+
+    if (files.length > MAX_ATTACHMENT_FILES) {
+      setValidationError("tooManyFiles");
+      return;
+    }
+    const totalBytes = files.reduce((sum, f) => sum + f.size, 0);
+    if (totalBytes > MAX_ATTACHMENT_BATCH_BYTES) {
+      setValidationError("batchTooLarge");
+      return;
+    }
+
+    setValidationError(null);
     compressionAbortRef.current?.abort();
     compressionAbortRef.current = null;
 
@@ -243,6 +264,7 @@ export function useMediaSendDialog({ onSendFiles }: Options): UseMediaSendDialog
     caption,
     quality,
     isSending,
+    validationError,
     totalOriginalSize,
     totalCompressedSize,
     hasCompressible,

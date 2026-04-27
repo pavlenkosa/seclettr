@@ -1,6 +1,8 @@
 interface SeclettrRuntimeConfig {
   apiUrl?: string;
   sfuUrl?: string;
+  /** STUN server URLs. Empty array disables STUN (TURN-only). Defaults to [] when unset. */
+  stunUrls?: string[];
 }
 
 function stripTrailingSlashes(value: string): string {
@@ -45,4 +47,13 @@ export function resolveApiBaseUrl(): string {
 export function resolveSfuBaseUrl(): string {
   const runtime = readRuntimeConfig();
   return normalizeUrl(runtime.sfuUrl, normalizeUrl(import.meta.env["VITE_SFU_URL"], "/sfu"));
+}
+
+export function resolveStunUrls(): string[] {
+  const runtime = readRuntimeConfig();
+  if (Array.isArray(runtime.stunUrls)) {
+    return runtime.stunUrls.filter((u) => typeof u === "string" && u.length > 0);
+  }
+  // Default: no STUN — rely solely on TURN for privacy-safe deployments.
+  return [];
 }

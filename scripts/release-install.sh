@@ -38,7 +38,51 @@ RED='\033[0;31m'
 GRN='\033[0;32m'
 YLW='\033[0;33m'
 CYN='\033[0;36m'
+BLD='\033[1m'
+DIM='\033[2m'
 RST='\033[0m'
+
+# ── Progress tracking ──────────────────────────────────────────────────────────
+_TOTAL_STEPS=7
+_CURRENT_STEP=0
+
+step() {
+  _CURRENT_STEP=$(( _CURRENT_STEP + 1 ))
+  local label="$*"
+  echo -e ""
+  echo -e "${CYN}${BLD}  [$_CURRENT_STEP/$_TOTAL_STEPS]${RST}${BLD} ${label}${RST}"
+}
+
+# Run a command with a spinner; suppress its stdout/stderr unless it fails.
+run_quiet() {
+  local label="$1"; shift
+  local tmpout
+  tmpout="$(mktemp)"
+  local spin_chars=('⠋' '⠙' '⠹' '⠸' '⠼' '⠴' '⠦' '⠧' '⠇' '⠏')
+  local spin_idx=0
+
+  printf "       %s %s" "${spin_chars[0]}" "$label"
+
+  "$@" >"$tmpout" 2>&1 &
+  local pid=$!
+  while kill -0 "$pid" 2>/dev/null; do
+    printf "\r       %s %s" "${spin_chars[$spin_idx]}" "$label"
+    spin_idx=$(( (spin_idx + 1) % ${#spin_chars[@]} ))
+    sleep 0.12
+  done
+  wait "$pid"
+  local rc=$?
+  if [[ $rc -eq 0 ]]; then
+    printf "\r       ${GRN}✓${RST} %s\n" "$label"
+  else
+    printf "\r       ${RED}✗${RST} %s\n" "$label"
+    echo -e "${RED}--- output ---${RST}"
+    cat "$tmpout" >&2
+    echo -e "${RED}--------------${RST}"
+  fi
+  rm -f "$tmpout"
+  return $rc
+}
 
 DOCKER_CMD=(docker)
 SUDO_CMD=(sudo)
@@ -965,13 +1009,18 @@ configure_network_mode() {
     local cert_path="$BUNDLE_DIR/nginx/certs/cert.pem"
     local key_path="$BUNDLE_DIR/nginx/certs/key.pem"
 
-    if [[ ! -f "$cert_path" || ! -f "$key_path" ]]; then
+    if [[ -f "$cert_path" && -f "$key_path" ]]; then
+      # Certificate already exists — ensure nginx (root) can read it.
+      log_ok "TLS certificate found — using existing nginx/certs/{cert,key}.pem"
+      chmod 644 "$cert_path" "$key_path" 2>/dev/null || true
+    else
       local cert_domain="${TURN_DOMAIN:-localhost}"
       local cert_ip="${ANNOUNCED_IP:-}"
       local effective_cert_mode="${CERT_MODE:-selfsigned}"
 
       if [[ "$effective_cert_mode" == "letsencrypt" ]]; then
         if provision_letsencrypt_cert "$cert_domain" "$LETSENCRYPT_EMAIL" "$BUNDLE_DIR/nginx/certs"; then
+          chmod 644 "$cert_path" "$key_path" 2>/dev/null || true
           setup_letsencrypt_renewal "$cert_domain" "$BUNDLE_DIR/nginx/certs"
         else
           log_warn "Let's Encrypt failed — falling back to self-signed certificate"
@@ -982,7 +1031,8 @@ configure_network_mode() {
       if [[ "$effective_cert_mode" == "selfsigned" ]]; then
         log_step "No TLS certificate found — generating self-signed cert for ${cert_domain}"
         gen_self_signed_cert "$BUNDLE_DIR/nginx/certs" "$cert_domain" "$cert_ip"
-        log_ok "Self-signed certificate written to $BUNDLE_DIR/nginx/certs/"
+        # gen_self_signed_cert already sets 644 on key.pem
+        log_ok "Self-signed certificate written to nginx/certs/"
         log_warn "Self-signed certificate is in use. Browsers will show a security warning."
         log_warn "Replace nginx/certs/cert.pem and key.pem with a trusted certificate for production."
       fi
@@ -1191,6 +1241,13 @@ if [[ "$DEPLOY_MODE" == "web" && "$WEB_RUNTIME_SFU_URL" == "/sfu" ]]; then
   log_warn "Web-only mode uses default /sfu runtime URL. This only works if /sfu is routed to an external backend."
 fi
 
+# ── Installation steps ─────────────────────────────────────────────────────────
+
+# Adjust total step count for skipped optional phases before any output.
+[[ "$SKIP_LOAD" == "true" ]]    && _TOTAL_STEPS=$(( _TOTAL_STEPS - 1 ))
+[[ "$SKIP_MIGRATE" == "true" ]] && _TOTAL_STEPS=$(( _TOTAL_STEPS - 1 ))
+
+step "Preparing configuration"
 configure_network_mode
 set_selected_services
 
@@ -1199,62 +1256,85 @@ if is_mode_with_backend; then
 fi
 
 if [[ "$DEPLOY_MODE" == "web" && "$SKIP_MIGRATE" == "false" ]]; then
-  log_warn "Skipping migrations in web-only mode because backend services are not being deployed."
+  log_warn "Skipping migrations in web-only mode."
   SKIP_MIGRATE=true
 fi
 
 write_runtime_config
+echo "       ${GRN}✓${RST} Runtime config written"
 
-log_step "Validating Docker Compose configuration"
-docker_compose config >/dev/null
+step "Validating Compose file"
+run_quiet "Checking docker-compose.yml" docker_compose config
 
 if [[ "$SKIP_LOAD" == "false" ]]; then
+  step "Loading Docker images"
   [[ -f "$IMAGE_ARCHIVE" ]] || die "Image archive not found: $IMAGE_ARCHIVE"
-  log_step "Loading bundled Docker images"
-  "${DOCKER_CMD[@]}" load -i "$IMAGE_ARCHIVE"
+  run_quiet "Importing prebuilt-images.tar.gz (this may take a minute…)" \
+    "${DOCKER_CMD[@]}" load -i "$IMAGE_ARCHIVE"
 fi
 
 if [[ "$SKIP_MIGRATE" == "false" ]]; then
-  log_step "Running database migrations"
-  docker_compose --profile ops run --rm migrate
+  step "Running database migrations"
+  run_quiet "Applying pending migrations" \
+    docker_compose --profile ops run --rm migrate
 fi
 
+step "Stopping unused services"
 reconcile_service_mode
 
-log_step "Starting Seclettr services for mode '$DEPLOY_MODE'"
-docker_compose up -d "${SELECTED_SERVICES[@]}"
+step "Starting Seclettr"
+echo "       Services: ${SELECTED_SERVICES[*]}"
+run_quiet "Launching containers" \
+  docker_compose up -d "${SELECTED_SERVICES[@]}"
 
-docker_compose ps
+step "Verifying container health"
+# Give containers a moment to initialise before showing status
+sleep 3
+docker_compose ps --format "table {{.Name}}\t{{.Status}}\t{{.Ports}}" 2>/dev/null \
+  || docker_compose ps
+
+# ── Final summary ──────────────────────────────────────────────────────────────
+
+_WEB_PROTO="https"
+[[ "$NETWORK_MODE" == "http" ]] && _WEB_PROTO="http"
+_WEB_HOST="${TURN_DOMAIN:-$(hostname -f 2>/dev/null || hostname)}"
+
 echo ""
-echo -e "${GRN}╔═══════════════════════════════════════════════╗${RST}"
-echo -e "${GRN}║       Seclettr is up and running!             ║${RST}"
-echo -e "${GRN}╚═══════════════════════════════════════════════╝${RST}"
+echo -e "${GRN}${BLD}╔══════════════════════════════════════════════════╗${RST}"
+echo -e "${GRN}${BLD}║        Seclettr is up and running!  🚀            ║${RST}"
+echo -e "${GRN}${BLD}╚══════════════════════════════════════════════════╝${RST}"
 echo ""
 
 if is_mode_with_web; then
-  _WEB_PROTO="https"
-  [[ "$NETWORK_MODE" == "http" ]] && _WEB_PROTO="http"
-  _WEB_HOST="${TURN_DOMAIN:-$(hostname -f 2>/dev/null || hostname)}"
-  echo -e "  ${GRN}Open in your browser:${RST}  ${_WEB_PROTO}://${_WEB_HOST}"
-  echo ""
+  echo -e "  ${BLD}URL:${RST}              ${GRN}${_WEB_PROTO}://${_WEB_HOST}${RST}"
 fi
 
 if is_mode_with_backend; then
-  echo "  API health check:   http://127.0.0.1:${API_HOST_PORT:-3001}/health"
+  echo -e "  ${BLD}API health:${RST}       http://127.0.0.1:${API_HOST_PORT:-3001}/health"
+fi
+
+if [[ "$NETWORK_MODE" == "tls" ]]; then
+  _cert_type="trusted"
+  if command -v openssl >/dev/null 2>&1 && [[ -f "$BUNDLE_DIR/nginx/certs/cert.pem" ]]; then
+    _cert_issuer="$(openssl x509 -noout -issuer  -in "$BUNDLE_DIR/nginx/certs/cert.pem" 2>/dev/null)"
+    _cert_subject="$(openssl x509 -noout -subject -in "$BUNDLE_DIR/nginx/certs/cert.pem" 2>/dev/null)"
+    [[ "$_cert_issuer" == "$_cert_subject" ]] && _cert_type="self-signed"
+  fi
+  if [[ "$_cert_type" == "self-signed" ]]; then
+    echo -e "  ${BLD}TLS certificate:${RST}  ${YLW}self-signed${RST} (browsers will warn — replace for production)"
+  else
+    echo -e "  ${BLD}TLS certificate:${RST}  ${GRN}trusted${RST}"
+  fi
 fi
 
 echo ""
-echo "  Useful commands:"
-echo "    View logs:   docker compose -p ${PROJECT_NAME} --env-file \"${ENV_FILE}\" -f \"${COMPOSE_FILE}\" logs -f"
-echo "    Stop:        docker compose -p ${PROJECT_NAME} --env-file \"${ENV_FILE}\" -f \"${COMPOSE_FILE}\" down"
-echo "    Restart:     docker compose -p ${PROJECT_NAME} --env-file \"${ENV_FILE}\" -f \"${COMPOSE_FILE}\" restart"
+echo -e "  ${DIM}───────────────────────────────────────────────────${RST}"
+echo -e "  ${BLD}Settings file:${RST}    ${ENV_FILE}"
+echo -e "  ${DIM}Keep this file safe — it contains your secret keys.${RST}"
 echo ""
-echo "  Settings file: ${ENV_FILE}"
-echo "  Keep this file safe — it contains your server's secret keys."
-
-if [[ "$NETWORK_MODE" == "tls" && -f "$BUNDLE_DIR/nginx/certs/cert.pem" ]]; then
-  echo ""
-  echo -e "  ${YLW}Note:${RST} Using a self-signed TLS certificate."
-  echo "        Browsers will show a security warning until you replace it"
-  echo "        with a trusted certificate in nginx/certs/."
-fi
+echo -e "  ${BLD}Useful commands:${RST}"
+_DC_PREFIX="docker compose -p ${PROJECT_NAME} --env-file \"${ENV_FILE}\" -f \"${COMPOSE_FILE}\""
+echo -e "    ${DIM}Logs:${RST}    ${_DC_PREFIX} logs -f"
+echo -e "    ${DIM}Stop:${RST}    ${_DC_PREFIX} down"
+echo -e "    ${DIM}Restart:${RST} ${_DC_PREFIX} restart"
+echo ""

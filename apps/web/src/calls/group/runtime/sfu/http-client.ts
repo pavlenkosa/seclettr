@@ -21,6 +21,8 @@ import {
   type SfuRoomProducer,
 } from "@seclettr/protocol";
 
+const SFU_REQUEST_TIMEOUT_MS = 10_000;
+
 interface SfuRequestOptions extends RequestInit {
   bodyJson?: unknown;
 }
@@ -139,6 +141,7 @@ export function createSfuHttpClient(
       headers: mergeSfuRequestHeaders(token, bodyJson, rawHeaders),
       credentials: "include",
       body: bodyJson === undefined ? rest.body : JSON.stringify(bodyJson),
+      signal: rest.signal ?? AbortSignal.timeout(SFU_REQUEST_TIMEOUT_MS),
     });
 
     if (response.status === 401 && retry) {

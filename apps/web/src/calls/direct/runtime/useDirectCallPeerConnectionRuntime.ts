@@ -23,6 +23,7 @@ import {
   type ActiveCall,
   type CallNotice,
 } from "@/calls/direct/model/direct-call-types";
+import { resolveStunUrls } from "@/lib/runtime-config";
 import { logger } from "@/lib/logger.js";
 
 type Translate = (key: string, params?: Record<string, string | number | undefined>) => string;
@@ -83,16 +84,14 @@ export function useDirectCallPeerConnectionRuntime({
   t,
 }: UseDirectCallPeerConnectionRuntimeOptions) {
   const createPeerConnection = useCallback(async (callId: string): Promise<RTCPeerConnection> => {
-    const creds = await getTurnCredentials();
+    const [creds, stunUrls] = await Promise.all([getTurnCredentials(), Promise.resolve(resolveStunUrls())]);
+    const iceServers: RTCIceServer[] = [];
+    if (stunUrls.length > 0) {
+      iceServers.push({ urls: stunUrls });
+    }
+    iceServers.push({ urls: creds.uris, username: creds.username, credential: creds.password });
     const pc = new RTCPeerConnection({
-      iceServers: [
-        { urls: "stun:stun.l.google.com:19302" },
-        {
-          urls: creds.uris,
-          username: creds.username,
-          credential: creds.password,
-        },
-      ],
+      iceServers,
       bundlePolicy: "max-bundle",
       rtcpMuxPolicy: "require",
     });

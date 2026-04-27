@@ -580,7 +580,10 @@ const MessageComposerView = forwardRef<MessageComposerHandle, Props>(function Me
     stopCurrentRecording({ discard: true });
   }, [stopCurrentRecording]);
 
-  const composerError = getComposerErrorMessage(draft.composerErrorKey, t);
+  const composerError =
+    mediaSend.validationError
+      ? t(`composer.error.${mediaSend.validationError}`)
+      : getComposerErrorMessage(draft.composerErrorKey, t);
   const currentRecordMode = getCurrentRecordMode(primaryAction, preferredRecordMode);
   const currentRecordModeLabel = getRecordModeLabel(currentRecordMode, t);
   const nextRecordMode = currentRecordMode === "voice" ? "video" : "voice";

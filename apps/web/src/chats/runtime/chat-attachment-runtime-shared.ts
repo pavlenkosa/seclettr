@@ -58,6 +58,36 @@ function isTransientAttachmentStorageError(error: unknown): boolean {
   );
 }
 
+async function fetchAttachmentCiphertextViaDownloadUrl(
+  attachmentId: string
+): Promise<{ ciphertext: string; encryptedDigest: string }> {
+  const meta = await api.get<{
+    downloadUrl: string;
+    encryptedDigest: string;
+    encryptedSize: number;
+  }>(`/attachments/${encodeURIComponent(attachmentId)}/download-url`);
+
+  const response = await fetch(meta.downloadUrl);
+  if (!response.ok) {
+    throw createChatAttachmentRuntimeError(
+      "downloadFailed",
+      `Presigned download failed (${response.status})`
+    );
+  }
+  const bytes = new Uint8Array(await response.arrayBuffer());
+  // Encode to base64url in 8 KB chunks to avoid stack overflow and slow string concat.
+  const CHUNK = 8192;
+  let binary = "";
+  for (let offset = 0; offset < bytes.length; offset += CHUNK) {
+    binary += String.fromCharCode(...bytes.subarray(offset, offset + CHUNK));
+  }
+  const ciphertext = btoa(binary)
+    .replace(/\+/g, "-")
+    .replace(/\//g, "_")
+    .replace(/=+$/, "");
+  return { ciphertext, encryptedDigest: meta.encryptedDigest };
+}
+
 async function fetchAttachmentCiphertext(
   attachmentId: string
 ): Promise<{
@@ -73,6 +103,10 @@ async function fetchAttachmentCiphertext(
         encryptedDigest: string;
       }>(`/attachments/${encodeURIComponent(attachmentId)}/ciphertext`);
     } catch (error) {
+      if (error instanceof ApiError && error.status === 413) {
+        // Attachment is too large for inline transfer — fetch via presigned URL.
+        return fetchAttachmentCiphertextViaDownloadUrl(attachmentId);
+      }
       if (!isTransientAttachmentStorageError(error)) {
         throw error;
       }

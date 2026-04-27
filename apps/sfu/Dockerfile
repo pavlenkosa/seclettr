@@ -19,8 +19,7 @@ RUN pnpm --filter @seclettr/protocol build
 RUN pnpm --filter @seclettr/sfu build
 
 FROM node:22-alpine AS production
-RUN apk add --no-cache python3 py3-pip make g++ linux-headers && \
-    corepack enable && corepack prepare pnpm@8.15.0 --activate
+RUN corepack enable && corepack prepare pnpm@8.15.0 --activate
 WORKDIR /app
 
 # Copy full workspace to preserve pnpm workspace links at runtime.

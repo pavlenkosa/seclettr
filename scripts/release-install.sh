@@ -283,8 +283,7 @@ detect_public_ip() {
 }
 
 gen_vapid_keys() {
-  local pub priv
-  # Try via Node.js (available in the bundle environment)
+  # Try via Node.js first
   if command -v node >/dev/null 2>&1; then
     local vapid_out
     vapid_out="$(node - <<'NODE_SCRIPT' 2>/dev/null
@@ -300,13 +299,32 @@ console.log(toBase64Url(ecdh.getPrivateKey()));
 NODE_SCRIPT
     )" || vapid_out=""
     if [[ -n "$vapid_out" ]]; then
-      pub="$(echo "$vapid_out" | head -1)"
-      priv="$(echo "$vapid_out" | tail -1)"
-      printf '%s\n%s' "$pub" "$priv"
+      printf '%s' "$vapid_out"
       return
     fi
   fi
-  # Fallback: empty (push notifications will be disabled)
+
+  # Fallback: generate P-256 key pair via openssl (no Node required)
+  if command -v openssl >/dev/null 2>&1; then
+    local _tmp_key _pub_hex _priv_hex
+    _tmp_key="$(mktemp)"
+    openssl ecparam -name prime256v1 -genkey -noout -out "$_tmp_key" 2>/dev/null || { rm -f "$_tmp_key"; printf '\n'; return; }
+    # Public key: uncompressed point, base64url
+    _pub_hex="$(openssl ec -in "$_tmp_key" -pubout -outform DER 2>/dev/null \
+      | tail -c 65 | od -An -tx1 | tr -d ' \n')"
+    _priv_hex="$(openssl ec -in "$_tmp_key" -outform DER 2>/dev/null \
+      | tail -c 32 | od -An -tx1 | tr -d ' \n')"
+    rm -f "$_tmp_key"
+    if [[ -n "$_pub_hex" && -n "$_priv_hex" ]]; then
+      local _pub_b64 _priv_b64
+      _pub_b64="$(printf '%b' "$(echo "$_pub_hex" | sed 's/../\\x&/g')" | base64 | tr '+/' '-_' | tr -d '=')"
+      _priv_b64="$(printf '%b' "$(echo "$_priv_hex" | sed 's/../\\x&/g')" | base64 | tr '+/' '-_' | tr -d '=')"
+      printf '%s\n%s' "$_pub_b64" "$_priv_b64"
+      return
+    fi
+  fi
+
+  # Last resort: empty — push notifications will be disabled
   printf '\n'
 }
 
@@ -442,7 +460,7 @@ provision_letsencrypt_cert() {
     return 0
   fi
 
-  local certbot_args=(certonly --standalone --non-interactive --agree-tos -d "$domain")
+  local certbot_args=(certonly --non-interactive --agree-tos -d "$domain")
   if [[ -n "$email" ]]; then
     certbot_args+=(--email "$email")
   else
@@ -450,7 +468,15 @@ provision_letsencrypt_cert() {
   fi
 
   log_step "Obtaining Let's Encrypt certificate for $domain"
-  certbot "${certbot_args[@]}" || return 1
+
+  # Run certbot; allow non-zero exit — we verify success by checking the output files.
+  certbot "${certbot_args[@]}" --standalone || true
+
+  if [[ ! -f "$live_dir/fullchain.pem" || ! -f "$live_dir/privkey.pem" ]]; then
+    log_warn "certbot did not produce a certificate. If port 80 is in use, free it and re-run install.sh."
+    log_warn "Or place your certificate manually in nginx/certs/cert.pem and nginx/certs/key.pem."
+    return 1
+  fi
 
   mkdir -p "$cert_dir"
   cp "$live_dir/fullchain.pem" "$cert_dir/cert.pem"
@@ -1273,7 +1299,7 @@ if [[ "$DEPLOY_MODE" == "web" && "$SKIP_MIGRATE" == "false" ]]; then
 fi
 
 write_runtime_config
-echo "       ${GRN}✓${RST} Runtime config written"
+echo -e "       ${GRN}✓${RST} Runtime config written"
 
 step "Validating Compose file"
 run_quiet "Checking docker-compose.yml" docker_compose config

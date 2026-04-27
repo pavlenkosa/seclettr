@@ -1,0 +1,90 @@
+.root {
+  --bottom-dock-side-inset: 0.7rem;
+  --bottom-dock-bottom-offset: 0.62rem;
+  --bottom-dock-z-index: 25;
+  --bottom-dock-inline-width-offset: 0.1rem;
+  position: absolute;
+  left: var(--bottom-dock-side-inset);
+  right: var(--bottom-dock-side-inset);
+  bottom: calc(var(--bottom-dock-bottom-offset) + var(--safe-bottom));
+  z-index: var(--bottom-dock-z-index);
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  align-items: end;
+  gap: 0.44rem;
+  padding: 0.44rem 0.52rem 0.48rem;
+  border: 1px solid color-mix(in srgb, var(--panel-border-soft) 90%, transparent);
+  border-radius: 28px;
+  background:
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--surface-float) 90%, transparent),
+      color-mix(in srgb, var(--surface-shell-strong) 90%, transparent)
+    );
+  -webkit-backdrop-filter: blur(var(--glass-blur-medium, 18px)) saturate(var(--glass-saturate, 1.08));
+  backdrop-filter: blur(var(--glass-blur-medium, 18px)) saturate(var(--glass-saturate, 1.08));
+  box-shadow: var(--elevated-shadow-sm);
+  will-change: transform, opacity;
+  transform: translate3d(0, 0, 0);
+  transition:
+    transform var(--motion-duration-slow) var(--motion-ease-emphasized),
+    opacity var(--motion-duration-base) var(--motion-ease-standard);
+  animation: bottomDockSurfaceIn var(--motion-duration-slow) var(--motion-ease-emphasized) both;
+}
+
+.inline {
+  position: relative;
+  left: auto;
+  right: auto;
+  bottom: auto;
+  width: calc(100% - var(--bottom-dock-inline-width-offset));
+  margin-inline: calc(var(--bottom-dock-inline-width-offset) / 2);
+  z-index: var(--bottom-dock-inline-z-index, var(--bottom-dock-z-index));
+}
+
+.rootClosing {
+  pointer-events: none;
+  animation: bottomDockSurfaceOut var(--motion-duration-base) var(--motion-ease-exit) both;
+}
+
+:global(:root[data-theme="light"]) .root {
+  border-color: color-mix(in srgb, var(--panel-border-soft) 92%, transparent);
+}
+
+@media (max-width: 760px) {
+  .root {
+    --bottom-dock-side-inset: 0.7rem;
+    --bottom-dock-bottom-offset: 0.62rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .root {
+    transition: none !important;
+    animation: none !important;
+  }
+}
+
+@keyframes bottomDockSurfaceIn {
+  0% {
+    opacity: 0;
+    transform: translateY(12px) scale(0.98);
+  }
+
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes bottomDockSurfaceOut {
+  0% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+
+  100% {
+    opacity: 0;
+    transform: translateY(10px) scale(0.985);
+  }
+}

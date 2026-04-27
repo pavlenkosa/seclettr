@@ -1,0 +1,181 @@
+.container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100dvh;
+  padding: clamp(1rem, 4vw, 2.5rem);
+  background:
+    radial-gradient(920px 520px at 16% -8%, rgb(30 64 175 / 0.12), transparent 56%),
+    radial-gradient(840px 520px at 100% 110%, rgb(8 47 73 / 0.08), transparent 54%),
+    linear-gradient(180deg, var(--bg-primary), color-mix(in srgb, var(--bg-primary) 92%, #050b14));
+}
+
+.card {
+  width: 100%;
+  max-width: 560px;
+  background: color-mix(in srgb, var(--panel-header-bg) 76%, var(--bg-secondary));
+  border: 1px solid var(--panel-border-soft);
+  border-radius: 24px;
+  padding: clamp(1.25rem, 3vw, 2rem);
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  box-shadow: 0 12px 30px rgb(2 6 23 / 0.14);
+}
+
+.cardTop {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.logo {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 0.125rem;
+}
+
+.logoMark {
+  width: 56px;
+  height: 56px;
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--accent);
+}
+
+.logoMark :global(svg) {
+  width: 56px;
+  height: 56px;
+  display: block;
+}
+
+.logoName {
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  letter-spacing: -0.01em;
+}
+
+.title {
+  font-size: clamp(1.4rem, 3.2vw, 1.75rem);
+  font-weight: 700;
+  color: var(--text-primary);
+  letter-spacing: -0.02em;
+  margin: 0;
+}
+
+.subtitle {
+  font-size: 0.92rem;
+  color: var(--text-secondary);
+  line-height: 1.55;
+  margin: -0.15rem 0 0;
+}
+
+.section {
+  border: 1px solid var(--panel-border-soft);
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--bg-secondary) 82%, var(--panel-header-bg));
+  padding: 0.85rem 0.95rem;
+}
+
+.sectionTitle {
+  margin: 0;
+  color: var(--text-primary);
+  font-size: 0.93rem;
+  font-weight: 650;
+}
+
+.sectionText {
+  margin: 0.5rem 0 0;
+  font-size: 0.86rem;
+  color: var(--text-secondary);
+  line-height: 1.45;
+}
+
+.resetButton {
+  margin-top: 0.75rem;
+  min-height: 44px;
+  border-radius: 999px;
+  border: 1px solid color-mix(in srgb, var(--danger-soft-border) 74%, var(--text-secondary));
+  background: color-mix(in srgb, var(--danger-soft-bg) 70%, var(--bg-secondary));
+  color: var(--text-primary);
+  font-weight: 620;
+  padding: 0 0.9rem;
+}
+
+.resetButton:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--danger-soft-bg) 82%, var(--bg-secondary));
+}
+
+.success {
+  margin-top: 0.7rem;
+  border-radius: 10px;
+  border: 1px solid color-mix(in srgb, var(--accent) 28%, transparent);
+  background: color-mix(in srgb, var(--accent) 16%, transparent);
+  color: var(--text-primary);
+  font-size: 0.825rem;
+  padding: 0.52rem 0.64rem;
+}
+
+.error {
+  background: var(--danger-soft-bg);
+  border: 1px solid var(--danger-soft-border);
+  border-radius: 12px;
+  color: var(--danger-contrast);
+  padding: 0.72rem 0.82rem;
+}
+
+.errorText {
+  margin: 0;
+  font-size: 0.87rem;
+  line-height: 1.45;
+}
+
+.errorDetail {
+  margin: 0.38rem 0 0;
+  font-size: 0.76rem;
+  color: color-mix(in srgb, var(--danger-contrast) 78%, var(--text-secondary));
+  line-height: 1.4;
+}
+
+.actions {
+  display: flex;
+  justify-content: flex-start;
+}
+
+.primaryLink {
+  color: var(--accent);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.primaryLink:hover {
+  color: var(--accent-hover);
+  text-decoration: underline;
+}
+
+@media (max-width: 640px) {
+  .card {
+    max-width: 100%;
+    border-radius: 20px;
+    padding: 1.1rem;
+  }
+
+  .logoMark {
+    width: 48px;
+    height: 48px;
+  }
+
+  .logoMark :global(svg) {
+    width: 48px;
+    height: 48px;
+  }
+
+  .logoName {
+    font-size: 1.05rem;
+  }
+}

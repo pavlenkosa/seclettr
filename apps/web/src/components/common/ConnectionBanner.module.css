@@ -1,0 +1,73 @@
+@keyframes bannerIn {
+  from {
+    opacity: 0;
+    transform: translateY(-100%);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.stack {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 400;
+  animation: bannerIn 200ms cubic-bezier(0.18, 0.9, 0.2, 1) both;
+}
+
+.banner {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.38rem 1rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
+  background: color-mix(in srgb, var(--bg-primary) 92%, #0f172a);
+  border-bottom: 1px solid color-mix(in srgb, var(--panel-border) 72%, transparent);
+  color: var(--text-secondary);
+  animation: none;
+}
+
+.bannerWarning {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.38rem 1rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
+  background: color-mix(in srgb, #f59e0b 12%, var(--bg-primary));
+  border-bottom: 1px solid color-mix(in srgb, #f59e0b 36%, transparent);
+  color: #d97706;
+}
+
+.dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 999px;
+  background: var(--text-muted, #64748b);
+  animation: pulse 1.4s ease-in-out infinite;
+  flex-shrink: 0;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.35; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .stack,
+  .dot {
+    animation: none;
+  }
+}

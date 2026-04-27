@@ -1,0 +1,98 @@
+.bar {
+  display: flex;
+  align-items: center;
+  gap: 0.36rem;
+  padding: 0.42rem 0.6rem 0.42rem 0.74rem;
+  border-bottom: 1px solid color-mix(in srgb, var(--panel-border-soft) 70%, transparent);
+  background: color-mix(in srgb, var(--surface-shell) 92%, transparent);
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+  flex-shrink: 0;
+  animation: searchBarIn var(--motion-duration-fast, 140ms) var(--motion-ease-emphasized, cubic-bezier(.2,.8,.3,1)) both;
+}
+
+@keyframes searchBarIn {
+  from { opacity: 0; transform: translateY(-6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.icon {
+  flex-shrink: 0;
+  color: var(--text-secondary);
+  pointer-events: none;
+}
+
+.input {
+  flex: 1;
+  min-width: 0;
+  background: transparent;
+  border: none;
+  outline: none;
+  color: var(--text-primary);
+  font-size: 0.84rem;
+  line-height: 1;
+}
+
+.input::placeholder {
+  color: var(--text-muted);
+}
+
+.input::-webkit-search-decoration,
+.input::-webkit-search-cancel-button {
+  appearance: none;
+}
+
+.counter {
+  flex-shrink: 0;
+  font-size: 0.73rem;
+  color: var(--text-secondary);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  min-width: 3.2rem;
+  text-align: right;
+}
+
+.counterEmpty {
+  color: var(--danger, #e74c3c);
+}
+
+.nav {
+  display: flex;
+  align-items: center;
+  gap: 0.1rem;
+}
+
+.navBtn,
+.closeBtn {
+  all: unset;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: background var(--motion-duration-fast) ease, color var(--motion-duration-fast) ease;
+}
+
+.navBtn:hover:not(:disabled),
+.closeBtn:hover {
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+  color: var(--text-primary);
+}
+
+.navBtn:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+
+.navBtn:focus-visible,
+.closeBtn:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -1px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bar { animation: none; }
+}

@@ -1,0 +1,361 @@
+.root {
+  --kit-space: 1rem;
+  height: 100%;
+  overflow: auto;
+  padding: clamp(1.1rem, 2vw, 2rem);
+  display: grid;
+  grid-template-columns: minmax(320px, 420px) minmax(0, 1fr);
+  gap: clamp(1rem, 2vw, 1.6rem);
+  background:
+    radial-gradient(1000px 520px at -4% -12%, color-mix(in srgb, var(--accent) 15%, transparent), transparent 58%),
+    radial-gradient(860px 440px at 112% 6%, color-mix(in srgb, var(--message-ui-accent, var(--accent)) 18%, transparent), transparent 60%),
+    linear-gradient(180deg, color-mix(in srgb, var(--bg-primary) 86%, black 14%), var(--bg-primary));
+}
+
+.rootCompact {
+  --kit-space: 0.9rem;
+}
+
+.rootAiry {
+  --kit-space: 1.2rem;
+}
+
+.previewColumn {
+  display: grid;
+  gap: 1rem;
+  align-self: start;
+  position: sticky;
+  top: clamp(1rem, 2vw, 1.5rem);
+}
+
+.catalogColumn {
+  display: grid;
+  gap: 1rem;
+  align-content: start;
+}
+
+.heroPanel {
+  overflow: hidden;
+}
+
+.heroHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+  flex-wrap: wrap;
+}
+
+.heroTitle {
+  font-size: clamp(1.8rem, 3.3vw, 2.4rem);
+  line-height: 1.02;
+  letter-spacing: -0.04em;
+  margin-bottom: 0.85rem;
+  max-width: 12ch;
+}
+
+.heroCopy {
+  color: var(--text-secondary);
+  font-size: 0.98rem;
+  line-height: 1.65;
+  max-width: 54ch;
+}
+
+.heroMetrics {
+  margin-top: 1.25rem;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.7rem;
+}
+
+.heroMetrics > div {
+  display: grid;
+  gap: 0.18rem;
+  padding: 0.8rem 0.9rem;
+  border-radius: 18px;
+  background: color-mix(in srgb, var(--surface-shell-strong) 70%, transparent);
+  border: 1px solid color-mix(in srgb, var(--panel-border-soft) 88%, transparent);
+}
+
+.metricValue {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.metricLabel {
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+  line-height: 1.4;
+}
+
+.deviceFrame {
+  padding: 0.85rem;
+  border-radius: 36px;
+  background:
+    linear-gradient(180deg, rgb(255 255 255 / 0.08), rgb(255 255 255 / 0.02)),
+    linear-gradient(180deg, color-mix(in srgb, var(--bg-secondary) 72%, black 28%), color-mix(in srgb, var(--bg-primary) 86%, black 14%));
+  border: 1px solid color-mix(in srgb, var(--panel-border) 80%, transparent);
+  box-shadow: 0 22px 50px rgb(2 6 23 / 0.32);
+}
+
+.deviceBezel {
+  border-radius: 30px;
+  padding: 0.5rem;
+  background: linear-gradient(180deg, rgb(0 0 0 / 0.36), rgb(0 0 0 / 0.12));
+}
+
+.deviceScreen {
+  min-height: min(820px, calc(100dvh - 8rem));
+  display: grid;
+  gap: var(--kit-space);
+  padding: 1rem;
+  border-radius: 26px;
+  overflow: hidden;
+  background:
+    radial-gradient(440px 280px at 12% 0%, color-mix(in srgb, var(--accent) 18%, transparent), transparent 64%),
+    linear-gradient(180deg, color-mix(in srgb, var(--bg-primary) 90%, black 10%), color-mix(in srgb, var(--bg-primary) 98%, black 2%));
+}
+
+.statusStrip {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 0.72rem;
+  color: var(--text-secondary);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.previewHeaderPanel {
+  padding: 0.85rem 0.9rem;
+}
+
+.headerIdentity {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.headerCopy {
+  display: grid;
+  gap: 0.16rem;
+}
+
+.headerCopy strong {
+  font-size: 0.96rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.headerEyebrow {
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--text-secondary);
+}
+
+.headerActions {
+  display: inline-flex;
+  gap: 0.45rem;
+}
+
+.previewSearchPanel {
+  padding: 0.55rem;
+}
+
+.previewList {
+  display: grid;
+  gap: 0.55rem;
+}
+
+.previewRow {
+  border-radius: 20px;
+  background: color-mix(in srgb, var(--surface-shell) 58%, transparent);
+  border: 1px solid color-mix(in srgb, var(--panel-border-soft) 84%, transparent);
+}
+
+.rowMeta {
+  display: inline-flex;
+}
+
+.rowTime {
+  font-size: 0.74rem;
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
+
+.previewNotice {
+  border-radius: 18px;
+}
+
+.previewDock {
+  margin-top: auto;
+}
+
+.previewDockSummary {
+  width: 100%;
+}
+
+.previewTabBarWrap {
+  position: relative;
+  min-height: 86px;
+}
+
+.previewTabBar {
+  --bottom-dock-z-index: 1;
+}
+
+.previewTabButton {
+  min-height: 54px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.42rem;
+  border-radius: 20px;
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.previewTabButtonPrimary {
+  background: var(--accent-gradient);
+  color: white;
+}
+
+.controlPanel,
+.sectionPanel {
+  display: grid;
+  gap: 1rem;
+}
+
+.sectionGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+.sectionHeading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.sectionEyebrow {
+  display: inline-block;
+  margin-bottom: 0.3rem;
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--text-secondary);
+}
+
+.sectionTitle {
+  font-size: 1.08rem;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.controlGrid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.9rem;
+}
+
+.controlGroup {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.controlLabel {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  font-weight: 700;
+}
+
+.inlineCluster {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.55rem;
+}
+
+.formStack {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.identityStack {
+  display: grid;
+  gap: 0.7rem;
+}
+
+.recipeList {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.recipeItem {
+  padding: 0.9rem 1rem;
+  border-radius: 18px;
+  background: color-mix(in srgb, var(--surface-shell-strong) 74%, transparent);
+  border: 1px solid color-mix(in srgb, var(--panel-border-soft) 84%, transparent);
+}
+
+.recipeItem strong {
+  display: block;
+  margin-bottom: 0.28rem;
+  font-size: 0.95rem;
+  color: var(--text-primary);
+}
+
+.recipeItem p {
+  color: var(--text-secondary);
+  line-height: 1.6;
+}
+
+@media (max-width: 1100px) {
+  .root {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .previewColumn {
+    position: static;
+  }
+
+  .sectionGrid,
+  .controlGrid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .deviceScreen {
+    min-height: 720px;
+  }
+}
+
+@media (max-width: 640px) {
+  .root {
+    padding: 0.8rem;
+  }
+
+  .heroMetrics {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .deviceFrame {
+    padding: 0.55rem;
+    border-radius: 28px;
+  }
+
+  .deviceScreen {
+    min-height: 680px;
+    padding: 0.8rem;
+  }
+
+  .previewTabButton span {
+    font-size: 0.76rem;
+  }
+}

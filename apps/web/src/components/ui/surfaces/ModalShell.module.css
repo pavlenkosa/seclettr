@@ -1,0 +1,201 @@
+@keyframes overlayIn {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes overlayOut {
+  from {
+    opacity: 1;
+  }
+
+  to {
+    opacity: 0;
+  }
+}
+
+@keyframes surfaceIn {
+  from {
+    opacity: 0;
+    transform: translateY(16px) scale(0.985);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes surfaceOut {
+  from {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+
+  to {
+    opacity: 0;
+    transform: translateY(10px) scale(0.988);
+  }
+}
+
+.overlay {
+  position: fixed;
+  inset: 0;
+  z-index: var(--modal-z-index, 1200);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--modal-overlay-padding, 1rem);
+  background: rgb(2 6 23 / 0.52);
+  -webkit-backdrop-filter: blur(var(--glass-blur-soft, 10px));
+  backdrop-filter: blur(var(--glass-blur-soft, 10px));
+  animation: overlayIn var(--motion-duration-base) var(--motion-ease-standard) both;
+}
+
+.overlayClosing {
+  pointer-events: none;
+  animation: overlayOut var(--motion-duration-base) var(--motion-ease-exit) both;
+}
+
+.surface {
+  width: min(var(--modal-width, 480px), calc(100vw - 1.4rem));
+  max-height: min(var(--modal-max-height, 86dvh), 760px);
+  display: flex;
+  flex-direction: column;
+  border-radius: 24px;
+  border: 1px solid color-mix(in srgb, var(--panel-border-soft) 92%, transparent);
+  background:
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--surface-float) 96%, var(--glass-surface-fill, transparent)),
+      color-mix(in srgb, var(--surface-shell-strong) 98%, var(--glass-surface-fill, transparent))
+    );
+  -webkit-backdrop-filter: blur(var(--glass-blur-medium, 16px)) saturate(var(--glass-saturate, 1.08));
+  backdrop-filter: blur(var(--glass-blur-medium, 16px)) saturate(var(--glass-saturate, 1.08));
+  box-shadow:
+    0 24px 44px rgb(2 6 23 / 0.22),
+    var(--elevated-shadow-lg);
+  background-clip: padding-box;
+  overflow: clip;
+  animation: surfaceIn var(--motion-duration-slow) var(--motion-ease-emphasized) both;
+}
+
+.surfaceClosing {
+  animation: surfaceOut var(--motion-duration-base) var(--motion-ease-exit) both;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 1rem 1rem 0.82rem;
+}
+
+.headerMain {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.title {
+  margin: 0;
+  font-size: 1.02rem;
+  font-weight: 720;
+  color: var(--text-primary);
+  letter-spacing: -0.02em;
+}
+
+.closeButton {
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border-radius: 999px;
+  border: 1px solid color-mix(in srgb, var(--icon-btn-border) 92%, transparent);
+  background: color-mix(in srgb, var(--icon-btn-bg) 92%, transparent);
+  color: var(--icon-btn-color);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 0;
+  flex-shrink: 0;
+  transition:
+    background-color var(--motion-duration-fast) var(--motion-ease-standard),
+    border-color var(--motion-duration-fast) var(--motion-ease-standard),
+    color var(--motion-duration-fast) var(--motion-ease-standard),
+    transform var(--motion-duration-fast) var(--motion-ease-standard);
+}
+
+.closeButton:hover {
+  background: var(--icon-btn-hover-bg);
+  border-color: color-mix(in srgb, var(--accent) 30%, transparent);
+  color: var(--icon-btn-hover-color);
+  transform: translateY(-1px);
+}
+
+.closeButton svg {
+  display: block;
+}
+
+.body {
+  padding: 0 1rem 1rem;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+:global(:root[data-theme="light"]) .overlay {
+  background: rgb(15 23 42 / 0.3);
+  -webkit-backdrop-filter: blur(var(--glass-blur-medium, 14px)) saturate(var(--glass-saturate, 1.12));
+  backdrop-filter: blur(var(--glass-blur-medium, 14px)) saturate(var(--glass-saturate, 1.12));
+}
+
+:global(:root[data-theme="light"]) .surface {
+  border-color: color-mix(in srgb, var(--panel-border-soft) 92%, transparent);
+  background:
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--surface-float) 84%, white),
+      color-mix(in srgb, var(--surface-shell-strong) 88%, white)
+    );
+  box-shadow: 0 22px 40px rgb(71 85 105 / 0.18);
+}
+
+:global(:root[data-theme="light"]) .closeButton {
+  border-color: color-mix(in srgb, var(--panel-border-soft) 94%, transparent);
+  background: color-mix(in srgb, var(--surface-shell-strong) 90%, white);
+}
+
+.footer {
+  flex-shrink: 0;
+}
+
+@media (max-width: 640px) {
+  .overlay {
+    align-items: flex-end;
+    padding: 0;
+  }
+
+  .surface {
+    width: 100%;
+    max-height: min(var(--modal-max-height-mobile, 86dvh), 760px);
+    border-radius: 24px 24px 0 0;
+    border-bottom: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .overlay,
+  .overlayClosing,
+  .surface,
+  .surfaceClosing,
+  .closeButton {
+    animation: none !important;
+    transition: none !important;
+    transform: none !important;
+  }
+}

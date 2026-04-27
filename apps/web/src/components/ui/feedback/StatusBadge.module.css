@@ -1,0 +1,126 @@
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.32rem;
+  width: fit-content;
+  max-width: 100%;
+  border-radius: 999px;
+  border: 1px solid transparent;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+
+.content {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.leading {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.leading :global(svg) {
+  width: var(--status-badge-icon-size, 0.72rem);
+  height: var(--status-badge-icon-size, 0.72rem);
+  display: block;
+}
+
+.dot {
+  width: var(--status-badge-dot-size, 6px);
+  height: var(--status-badge-dot-size, 6px);
+  border-radius: 50%;
+  background: currentColor;
+}
+
+.sm {
+  min-height: 24px;
+  padding: 0 0.45rem;
+  font-size: 0.67rem;
+  font-weight: 700;
+}
+
+.md {
+  min-height: 28px;
+  padding: 0 0.56rem;
+  font-size: 0.715rem;
+  font-weight: 650;
+}
+
+.lg {
+  min-height: 34px;
+  padding: 0 0.72rem;
+  font-size: 0.82rem;
+  font-weight: 600;
+}
+
+.success {
+  color: color-mix(in srgb, var(--success) 82%, var(--text-primary));
+  background: color-mix(in srgb, var(--success) 12%, var(--glass-surface-fill-subtle, transparent));
+  border-color: color-mix(in srgb, var(--success) 26%, transparent);
+}
+
+.warning {
+  color: color-mix(in srgb, var(--warning) 84%, var(--text-primary));
+  background: color-mix(in srgb, var(--warning) 12%, var(--glass-surface-fill-subtle, transparent));
+  border-color: color-mix(in srgb, var(--warning) 26%, transparent);
+}
+
+.danger {
+  color: color-mix(in srgb, var(--danger) 84%, var(--text-primary));
+  background: color-mix(in srgb, var(--danger) 12%, var(--glass-surface-fill-subtle, transparent));
+  border-color: color-mix(in srgb, var(--danger) 26%, transparent);
+}
+
+.accent {
+  color: color-mix(in srgb, var(--accent) 82%, var(--text-primary));
+  background: color-mix(in srgb, var(--accent) 13%, var(--glass-surface-fill-subtle, transparent));
+  border-color: color-mix(in srgb, var(--accent) 26%, transparent);
+}
+
+.neutral {
+  color: var(--text-secondary);
+  background: color-mix(in srgb, var(--surface-shell) 84%, var(--glass-surface-fill, transparent));
+  border-color: color-mix(in srgb, var(--panel-border-soft) 90%, transparent);
+}
+
+:global(:root[data-theme="light"]) .success {
+  color: color-mix(in srgb, var(--success) 88%, #14532d);
+  background: color-mix(in srgb, var(--success) 22%, white);
+  border-color: color-mix(in srgb, var(--success) 34%, transparent);
+}
+
+:global(:root[data-theme="light"]) .warning {
+  color: color-mix(in srgb, var(--warning) 92%, #78350f);
+  background: color-mix(in srgb, var(--warning) 22%, white);
+  border-color: color-mix(in srgb, var(--warning) 34%, transparent);
+}
+
+:global(:root[data-theme="light"]) .danger {
+  color: color-mix(in srgb, var(--danger) 90%, #7f1d1d);
+  background: color-mix(in srgb, var(--danger) 22%, white);
+  border-color: color-mix(in srgb, var(--danger) 34%, transparent);
+}
+
+:global(:root[data-theme="light"]) .accent {
+  color: color-mix(in srgb, var(--accent) 88%, #1e3a8a);
+  background: color-mix(in srgb, var(--accent) 22%, white);
+  border-color: color-mix(in srgb, var(--accent) 34%, transparent);
+}
+
+:global(:root[data-theme="light"]) .neutral {
+  color: color-mix(in srgb, var(--text-primary) 76%, var(--text-secondary));
+  background: color-mix(in srgb, var(--surface-shell-strong) 96%, white);
+  border-color: color-mix(in srgb, var(--panel-border-soft) 92%, transparent);
+}
+
+@media (max-width: 640px) {
+  .lg {
+    min-height: 32px;
+    padding: 0 0.66rem;
+    font-size: 0.78rem;
+  }
+}

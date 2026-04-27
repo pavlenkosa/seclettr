@@ -1,0 +1,46 @@
+interface EncodedStreamsPrototype {
+  createEncodedStreams?: () => unknown;
+}
+
+type ScriptTransformConstructor = new (worker: Worker, options?: unknown) => unknown;
+
+interface ScriptTransformWindow extends Window {
+  RTCRtpScriptTransform?: ScriptTransformConstructor;
+}
+
+function hasWebCrypto(): boolean {
+  return globalThis.crypto?.subtle !== undefined;
+}
+
+function supportsLegacyEncodedFrameTransforms(): boolean {
+  if (globalThis.window === undefined) return false;
+  if (!hasWebCrypto()) return false;
+  if (typeof RTCRtpSender === "undefined" || typeof RTCRtpReceiver === "undefined") return false;
+  const senderPrototype = RTCRtpSender.prototype as EncodedStreamsPrototype;
+  const receiverPrototype = RTCRtpReceiver.prototype as EncodedStreamsPrototype;
+  return (
+    typeof senderPrototype.createEncodedStreams === "function" &&
+    typeof receiverPrototype.createEncodedStreams === "function"
+  );
+}
+
+function supportsScriptEncodedFrameTransforms(): boolean {
+  if (globalThis.window === undefined) return false;
+  if (!hasWebCrypto()) return false;
+  if (typeof Worker === "undefined") return false;
+  if (typeof RTCRtpSender === "undefined" || typeof RTCRtpReceiver === "undefined") return false;
+
+  const senderPrototype = RTCRtpSender.prototype as { transform?: unknown };
+  const receiverPrototype = RTCRtpReceiver.prototype as { transform?: unknown };
+  const transformConstructor = (globalThis as unknown as ScriptTransformWindow).RTCRtpScriptTransform;
+
+  return (
+    typeof transformConstructor === "function" &&
+    "transform" in senderPrototype &&
+    "transform" in receiverPrototype
+  );
+}
+
+export function supportsEncodedFrameTransforms(): boolean {
+  return supportsLegacyEncodedFrameTransforms() || supportsScriptEncodedFrameTransforms();
+}

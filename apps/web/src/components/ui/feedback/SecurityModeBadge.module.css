@@ -1,0 +1,26 @@
+.badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  align-self: flex-start;
+  min-height: 27px;
+  padding: 0.26rem 0.56rem;
+  border-radius: 999px;
+  border: 1px solid transparent;
+  font-size: 0.715rem;
+  font-weight: 650;
+  line-height: 1.1;
+  white-space: nowrap;
+}
+
+.frame {
+  color: color-mix(in srgb, #0f766e 82%, var(--text-primary));
+  background: color-mix(in srgb, #14b8a6 16%, var(--bg-secondary));
+  border-color: color-mix(in srgb, #14b8a6 34%, var(--panel-border-soft));
+}
+
+.transport {
+  color: color-mix(in srgb, #475569 84%, var(--text-primary));
+  background: color-mix(in srgb, #94a3b8 20%, var(--bg-secondary));
+  border-color: color-mix(in srgb, #94a3b8 34%, var(--panel-border-soft));
+}

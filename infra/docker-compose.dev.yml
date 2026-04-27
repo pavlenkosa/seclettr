@@ -1,0 +1,90 @@
+services:
+  api:
+    environment:
+      NODE_ENV: development
+      TURN_PORT: ${DEV_TURN_PORT:-53478}
+      TURNS_PORT: ${DEV_TURNS_PORT:-55349}
+      SFU_URL: http://sfu:3002
+      S3_PUBLIC_URL: ${S3_PUBLIC_URL:-}
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+  sfu:
+    network_mode: ""
+    environment:
+      NODE_ENV: development
+      API_INTERNAL_URL: http://api:3001
+      RTC_MIN_PORT: ${DEV_SFU_RTC_MIN_PORT:-46000}
+      RTC_MAX_PORT: ${DEV_SFU_RTC_MAX_PORT:-46049}
+    ports:
+      - "127.0.0.1:${DEV_SFU_PORT:-4302}:3002"
+      - "127.0.0.1:${DEV_SFU_RTC_MIN_PORT:-46000}-${DEV_SFU_RTC_MAX_PORT:-46049}:${DEV_SFU_RTC_MIN_PORT:-46000}-${DEV_SFU_RTC_MAX_PORT:-46049}/udp"
+      - "127.0.0.1:${DEV_SFU_RTC_MIN_PORT:-46000}-${DEV_SFU_RTC_MAX_PORT:-46049}:${DEV_SFU_RTC_MIN_PORT:-46000}-${DEV_SFU_RTC_MAX_PORT:-46049}/tcp"
+
+  # Optional TURN container for the canonical Docker-based dev profile.
+  coturn:
+    profiles: ["dev-turn"]
+    network_mode: bridge
+    ports:
+      - "127.0.0.1:${DEV_TURN_PORT:-53478}:3478/udp"
+      - "127.0.0.1:${DEV_TURN_PORT:-53478}:3478/tcp"
+      - "127.0.0.1:${DEV_TURNS_PORT:-55349}:5349/tcp"
+      - "127.0.0.1:${TURN_MIN_PORT:-55000}-${TURN_MAX_PORT:-55199}:${TURN_MIN_PORT:-55000}-${TURN_MAX_PORT:-55199}/udp"
+    command: >
+      -n
+      --lt-cred-mech
+      --use-auth-secret
+      --static-auth-secret=${TURN_SECRET:-changeme_turn_secret}
+      --realm=${TURN_DOMAIN:-localhost}
+      --external-ip=${TURN_EXTERNAL_IP:-127.0.0.1}
+      --min-port=${TURN_MIN_PORT:-55000}
+      --max-port=${TURN_MAX_PORT:-55199}
+      --log-file=stdout
+      --fingerprint
+
+  web-dev:
+    profiles: ["dev-web"]
+    build:
+      context: ..
+      dockerfile: apps/web/Dockerfile
+      target: deps
+    working_dir: /app
+    environment:
+      NODE_ENV: development
+      VITE_DEV_API_HOST: api
+      VITE_DEV_API_PORT: "3001"
+      VITE_DEV_SFU_HOST: sfu
+      VITE_DEV_SFU_PORT: "3002"
+      VITE_DEV_MINIO_HOST: minio
+      VITE_DEV_MINIO_PORT: "9000"
+      VITE_DISABLE_SW_DEV: "true"
+      CHOKIDAR_USEPOLLING: "true"
+      WATCHPACK_POLLING: "true"
+    command: >
+      sh -c "pnpm install --frozen-lockfile --filter @seclettr/crypto... --filter @seclettr/protocol... --filter @seclettr/web... &&
+      pnpm --filter @seclettr/web exec vite --host 0.0.0.0 --port 5173"
+    volumes:
+      - ../package.json:/app/package.json:ro
+      - ../pnpm-lock.yaml:/app/pnpm-lock.yaml:ro
+      - ../pnpm-workspace.yaml:/app/pnpm-workspace.yaml:ro
+      - ../apps/web:/app/apps/web
+      - web_dev_apps_web_node_modules:/app/apps/web/node_modules
+      - ../packages/crypto:/app/packages/crypto
+      - web_dev_packages_crypto_node_modules:/app/packages/crypto/node_modules
+      - ../packages/protocol:/app/packages/protocol
+      - web_dev_packages_protocol_node_modules:/app/packages/protocol/node_modules
+      - ../tsconfig.base.json:/app/tsconfig.base.json:ro
+    ports:
+      - "127.0.0.1:${DEV_WEB_PORT:-5175}:5173"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    depends_on:
+      api:
+        condition: service_started
+      sfu:
+        condition: service_started
+
+volumes:
+  web_dev_apps_web_node_modules:
+  web_dev_packages_crypto_node_modules:
+  web_dev_packages_protocol_node_modules:

@@ -1,0 +1,30 @@
+.root {
+  min-width: 0;
+}
+
+.inline {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  column-gap: var(--call-identity-gap, 0.82rem);
+  row-gap: var(--call-identity-row-gap, 0.44rem);
+}
+
+.stacked {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--call-identity-gap, 0.5rem);
+}
+
+.leading {
+  min-width: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.info {
+  min-width: 0;
+}

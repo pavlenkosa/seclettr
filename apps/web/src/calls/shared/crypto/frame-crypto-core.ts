@@ -1,0 +1,283 @@
+import type { SfuProducerSource } from "@seclettr/protocol";
+
+export type FrameCryptoDirection = "send" | "recv";
+
+export type EncodedFrame = {
+  data: ArrayBuffer;
+};
+
+export interface GroupCallFrameCryptoContext {
+  roomId: string;
+  deviceId: string;
+  kind: "audio" | "video";
+  source?: SfuProducerSource | null;
+}
+
+export interface MutableKeyState {
+  keyId: string;
+  epoch: number | null;
+  rawKey: Uint8Array | null;
+  importedKey: Promise<CryptoKey> | null;
+  importedKeyFingerprint: string | null;
+}
+
+export interface GroupCallFrameKeyContext {
+  keyId: string;
+  epoch: number | null;
+  keyBytes: Uint8Array;
+}
+
+export type GroupCallFrameKeyInput =
+  | Uint8Array
+  | readonly GroupCallFrameKeyContext[]
+  | null;
+
+export interface FrameCryptoRuntime {
+  direction: FrameCryptoDirection;
+  additionalData: Uint8Array;
+  keyStates: MutableKeyState[];
+}
+
+export interface FrameCryptoWorkerConfigMessage {
+  type: "configure";
+  handleId: string;
+  direction: FrameCryptoDirection;
+  context: GroupCallFrameCryptoContext;
+  keyContexts: readonly GroupCallFrameKeyContext[];
+}
+
+export interface FrameCryptoWorkerCloseMessage {
+  type: "close";
+  handleId: string;
+}
+
+export interface FrameCryptoWorkerPipelineFailedMessage {
+  type: "pipeline-failed";
+  handleId: string;
+}
+
+export type FrameCryptoWorkerMessage =
+  | FrameCryptoWorkerConfigMessage
+  | FrameCryptoWorkerCloseMessage;
+
+export type FrameCryptoWorkerEventMessage = FrameCryptoWorkerPipelineFailedMessage;
+
+// Keep legacy transmit framing until the peer negotiates frame header/version
+// support. The parser accepts both markers during rollout.
+const NEXT_FRAME_MAGIC = new Uint8Array([0x53, 0x44, 0x46, 0x45, 0x50]); // SDFEP
+const FRAME_MAGIC = new Uint8Array([0x51, 0x4d, 0x47, 0x43, 0x01]); // QMGC\x01 - legacy tag from first project iteration, kept for compatibility with rolled out clients.
+const FRAME_IV_LENGTH = 12;
+const FRAME_AUTH_TAG_LENGTH = 16;
+const MIN_ENCRYPTED_FRAME_LENGTH = FRAME_MAGIC.length + FRAME_IV_LENGTH + FRAME_AUTH_TAG_LENGTH;
+
+export function cloneKeyContext(context: GroupCallFrameKeyContext): GroupCallFrameKeyContext {
+  return {
+    keyId: context.keyId,
+    epoch: context.epoch,
+    keyBytes: Uint8Array.from(context.keyBytes),
+  };
+}
+
+function fingerprintKeyBytes(keyBytes: Uint8Array): string {
+  return Array.from(keyBytes)
+    .map((byte) => byte.toString(16).padStart(2, "0"))
+    .join("");
+}
+
+export function buildAssociatedData(context: GroupCallFrameCryptoContext): Uint8Array {
+  return new TextEncoder().encode(
+    `seclettr.group-call.frame:${context.roomId}:${context.deviceId}:${context.kind}:${context.source ?? "-"}`
+  );
+}
+
+function matchesMagic(data: Uint8Array, magic: Uint8Array): boolean {
+  if (data.length < magic.length) return false;
+  for (let index = 0; index < magic.length; index += 1) {
+    if (data[index] !== magic[index]) {
+      return false;
+    }
+  }
+  return true;
+}
+
+export function startsWithMagic(data: Uint8Array): boolean {
+  return matchesMagic(data, FRAME_MAGIC) || matchesMagic(data, NEXT_FRAME_MAGIC);
+}
+
+function toExactArrayBuffer(data: Uint8Array): ArrayBuffer {
+  const buffer = new ArrayBuffer(data.byteLength);
+  new Uint8Array(buffer).set(data);
+  return buffer;
+}
+
+async function importAesKey(rawKey: Uint8Array): Promise<CryptoKey> {
+  return crypto.subtle.importKey("raw", toExactArrayBuffer(rawKey), { name: "AES-GCM" }, false, ["encrypt", "decrypt"]);
+}
+
+async function resolveImportedKey(state: MutableKeyState): Promise<CryptoKey | null> {
+  const { rawKey } = state;
+  if (!rawKey) return null;
+
+  const nextFingerprint = fingerprintKeyBytes(rawKey);
+  if (!state.importedKey || state.importedKeyFingerprint !== nextFingerprint) {
+    state.importedKey = importAesKey(rawKey);
+    state.importedKeyFingerprint = nextFingerprint;
+  }
+
+  return state.importedKey;
+}
+
+function createAnonymousKeyContext(keyBytes: Uint8Array): GroupCallFrameKeyContext {
+  return {
+    keyId: fingerprintKeyBytes(keyBytes),
+    epoch: null,
+    keyBytes: Uint8Array.from(keyBytes),
+  };
+}
+
+export function cloneKeyInputContexts(input: GroupCallFrameKeyInput): GroupCallFrameKeyContext[] {
+  const keyStates = normalizeKeyInput(input);
+  try {
+    return keyStates.map((state) => ({
+      keyId: state.keyId,
+      epoch: state.epoch,
+      keyBytes: Uint8Array.from(state.rawKey ?? new Uint8Array()),
+    }));
+  } finally {
+    clearMutableKeyStates(keyStates);
+  }
+}
+
+export function clearMutableKeyStates(keyStates: MutableKeyState[]): void {
+  for (const state of keyStates) {
+    state.rawKey?.fill(0);
+    state.rawKey = null;
+    state.importedKey = null;
+    state.importedKeyFingerprint = null;
+  }
+}
+
+export function normalizeKeyInput(input: GroupCallFrameKeyInput): MutableKeyState[] {
+  if (!input) {
+    return [];
+  }
+
+  const contexts = input instanceof Uint8Array
+    ? [createAnonymousKeyContext(input)]
+    : input;
+
+  return contexts
+    .filter((context) => context.keyBytes.length > 0)
+    .map((context) => {
+      const cloned = cloneKeyContext(context);
+      return {
+        keyId: cloned.keyId,
+        epoch: cloned.epoch,
+        rawKey: cloned.keyBytes,
+        importedKey: null,
+        importedKeyFingerprint: null,
+      } satisfies MutableKeyState;
+    });
+}
+
+async function encryptFramePayload(
+  plaintext: Uint8Array,
+  cryptoKey: CryptoKey,
+  additionalData: Uint8Array
+): Promise<ArrayBuffer> {
+  const iv = crypto.getRandomValues(new Uint8Array(FRAME_IV_LENGTH));
+  const ciphertext = new Uint8Array(await crypto.subtle.encrypt(
+    { name: "AES-GCM", iv, additionalData: toExactArrayBuffer(additionalData) },
+    cryptoKey,
+    toExactArrayBuffer(plaintext)
+  ));
+
+  const encoded = new Uint8Array(FRAME_MAGIC.length + FRAME_IV_LENGTH + ciphertext.length);
+  encoded.set(FRAME_MAGIC, 0);
+  encoded.set(iv, FRAME_MAGIC.length);
+  encoded.set(ciphertext, FRAME_MAGIC.length + FRAME_IV_LENGTH);
+  return encoded.buffer;
+}
+
+async function decryptFramePayload(
+  encodedFrame: Uint8Array,
+  cryptoKey: CryptoKey,
+  additionalData: Uint8Array
+): Promise<ArrayBuffer> {
+  if (encodedFrame.length < MIN_ENCRYPTED_FRAME_LENGTH) {
+    throw new Error("Invalid encrypted group-call frame");
+  }
+
+  const iv = encodedFrame.slice(FRAME_MAGIC.length, FRAME_MAGIC.length + FRAME_IV_LENGTH);
+  const ciphertext = encodedFrame.slice(FRAME_MAGIC.length + FRAME_IV_LENGTH);
+  return crypto.subtle.decrypt(
+    { name: "AES-GCM", iv: toExactArrayBuffer(iv), additionalData: toExactArrayBuffer(additionalData) },
+    cryptoKey,
+    toExactArrayBuffer(ciphertext)
+  );
+}
+
+export async function encryptGroupCallFramePayload(
+  plaintext: Uint8Array,
+  keyBytes: Uint8Array,
+  additionalData: Uint8Array
+): Promise<Uint8Array> {
+  const cryptoKey = await importAesKey(keyBytes);
+  return new Uint8Array(await encryptFramePayload(plaintext, cryptoKey, additionalData));
+}
+
+export async function decryptGroupCallFramePayload(
+  encodedFrame: Uint8Array,
+  keyBytes: Uint8Array,
+  additionalData: Uint8Array
+): Promise<Uint8Array> {
+  if (!startsWithMagic(encodedFrame)) {
+    return Uint8Array.from(encodedFrame);
+  }
+
+  const cryptoKey = await importAesKey(keyBytes);
+  return new Uint8Array(await decryptFramePayload(encodedFrame, cryptoKey, additionalData));
+}
+
+export async function processFrameBuffer(
+  frameData: ArrayBuffer,
+  runtime: FrameCryptoRuntime
+): Promise<ArrayBuffer | null> {
+  const data = new Uint8Array(frameData);
+  if (runtime.direction === "send") {
+    const primaryKeyState = runtime.keyStates[0] ?? null;
+    const cryptoKey = primaryKeyState
+      ? await resolveImportedKey(primaryKeyState)
+      : null;
+    if (!cryptoKey || !primaryKeyState?.rawKey) {
+      return frameData;
+    }
+    return encryptFramePayload(data, cryptoKey, runtime.additionalData);
+  }
+
+  if (!startsWithMagic(data)) {
+    return frameData;
+  }
+
+  if (runtime.keyStates.length === 0 || data.length < MIN_ENCRYPTED_FRAME_LENGTH) {
+    return null;
+  }
+
+  try {
+    for (const keyState of runtime.keyStates) {
+      const cryptoKey = await resolveImportedKey(keyState);
+      if (!cryptoKey || !keyState.rawKey) {
+        continue;
+      }
+      try {
+        return await decryptFramePayload(data, cryptoKey, runtime.additionalData);
+      } catch {
+        continue;
+      }
+    }
+  } catch {
+    // Drop corrupted/undecryptable encrypted frames instead of feeding garbage into the decoder.
+  }
+
+  return null;
+}

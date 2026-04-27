@@ -1,0 +1,83 @@
+.root {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.42rem;
+}
+
+fieldset{
+  border: none;
+}
+
+.grouped {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+  flex-wrap: nowrap;
+  padding: 0.14rem;
+  border-radius: 999px;
+  border: 1px solid var(--icon-btn-border);
+  background: color-mix(in srgb, var(--panel-header-bg) 76%, var(--bg-secondary));
+  -webkit-backdrop-filter: blur(var(--glass-blur-soft, 0px)) saturate(var(--glass-saturate, 1));
+  backdrop-filter: blur(var(--glass-blur-soft, 0px)) saturate(var(--glass-saturate, 1));
+}
+
+.button {
+  min-height: 38px;
+  padding: 0.48rem 0.82rem;
+  border-radius: 999px;
+  border: 1px solid color-mix(in srgb, var(--panel-border-soft) 92%, transparent);
+  background: color-mix(in srgb, var(--surface-shell) 86%, var(--glass-surface-fill, transparent));
+  color: var(--text-primary);
+  font-size: 0.84rem;
+  font-weight: 600;
+  -webkit-backdrop-filter: blur(var(--glass-blur-soft, 0px)) saturate(var(--glass-saturate, 1));
+  backdrop-filter: blur(var(--glass-blur-soft, 0px)) saturate(var(--glass-saturate, 1));
+  transition: border-color 0.14s ease, background-color 0.14s ease, color 0.14s ease, transform 0.14s ease;
+}
+
+.grouped .button {
+  min-width: 36px;
+  height: 26px;
+  min-height: 26px;
+  padding: 0 0.72rem;
+  border: none;
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: 0.7rem;
+  font-weight: 650;
+  letter-spacing: 0.02em;
+}
+
+.button:hover:not(:disabled) {
+  border-color: color-mix(in srgb, var(--accent) 55%, var(--panel-border-soft));
+  transform: translateY(-1px);
+}
+
+.grouped .button:hover:not(:disabled) {
+  border-color: transparent;
+}
+
+.active {
+  background: color-mix(in srgb, var(--accent) 18%, var(--bg-secondary));
+  border-color: color-mix(in srgb, var(--accent) 75%, var(--panel-border-soft));
+  color: var(--text-primary);
+}
+
+.grouped .active {
+  background: color-mix(in srgb, var(--accent) 24%, var(--bg-secondary));
+  border-color: transparent;
+}
+
+.compact .button {
+  min-width: 32px;
+  height: 22px;
+  min-height: 22px;
+  font-size: 0.66rem;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .button {
+    transition: none !important;
+    transform: none !important;
+  }
+}

@@ -1,0 +1,437 @@
+.groupStack {
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+}
+
+.groupPanel {
+  --surface-panel-shadow: 0 12px 28px rgb(2 8 20 / 0.08);
+}
+
+.groupHeader {
+  display: flex;
+  flex-direction: column;
+  gap: 0.22rem;
+  margin-bottom: 0.9rem;
+}
+
+.groupEyebrow {
+  color: var(--text-secondary);
+  font-size: 0.72rem;
+  font-weight: 760;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.groupTitle {
+  margin: 0;
+  color: var(--text-primary);
+  font-size: 0.98rem;
+  line-height: 1.18;
+  font-weight: 720;
+  letter-spacing: -0.02em;
+}
+
+.groupDescription {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 0.78rem;
+  line-height: 1.5;
+}
+
+.groupBody {
+  display: flex;
+  flex-direction: column;
+}
+
+.settingRow {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0.9rem;
+}
+
+.settingRowStacked {
+  grid-template-columns: minmax(0, 1fr);
+  align-items: stretch;
+  gap: 0.72rem;
+}
+
+.settingRowStacked .settingControl {
+  justify-content: flex-start;
+}
+
+.settingRow + .settingRow {
+  margin-top: 0.82rem;
+  padding-top: 0.82rem;
+  border-top: 1px solid color-mix(in srgb, var(--panel-border-soft) 74%, transparent);
+}
+
+.settingField {
+  min-width: 0;
+  gap: 0.34rem;
+}
+
+.settingFieldDescription {
+  gap: 0.22rem;
+}
+
+.settingControl {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  min-width: 0;
+}
+
+.settingControlWide {
+  justify-content: flex-start;
+}
+
+.swatches {
+  display: flex;
+  align-items: center;
+  gap: 0.62rem;
+  flex-wrap: wrap;
+}
+
+.swatchBtn {
+  width: 34px;
+  height: 34px;
+  border-radius: 999px;
+  border: 2px solid rgb(255 255 255 / 0.24);
+  box-shadow:
+    inset 0 0 0 1px rgb(2 6 23 / 0.22),
+    0 8px 18px rgb(2 8 20 / 0.08);
+  transition: transform 0.16s ease, border-color 0.16s ease, box-shadow 0.16s ease;
+}
+
+.swatchBtn:hover {
+  transform: translateY(-1px);
+}
+
+.swatchBtnActive {
+  transform: scale(1.08);
+  box-shadow:
+    0 0 0 2px color-mix(in srgb, var(--accent) 55%, transparent),
+    0 12px 22px color-mix(in srgb, var(--accent) 16%, transparent),
+    inset 0 0 0 1px rgb(2 6 23 / 0.2);
+}
+
+.swatchBlue {
+  background: linear-gradient(145deg, #0ea5e9, #2563eb);
+}
+
+.swatchEmerald {
+  background: linear-gradient(145deg, #10b981, #059669);
+}
+
+.swatchRose {
+  background: linear-gradient(145deg, #fb7185, #e11d48);
+}
+
+.swatchViolet {
+  background: linear-gradient(145deg, #a78bfa, #7c3aed);
+}
+
+.feedbackPanel,
+.footerPanel {
+  --surface-panel-shadow: none;
+}
+
+
+.sectionSkeletonStack {
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+  min-height: clamp(420px, 54dvh, 540px);
+}
+
+.skeletonGroupPanel {
+  --surface-panel-shadow: none;
+  position: relative;
+  overflow: hidden;
+}
+
+.skeletonGroupPanel::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  transform: translateX(-100%);
+  background: linear-gradient(
+    90deg,
+    transparent,
+    color-mix(in srgb, var(--surface-float) 30%, transparent),
+    transparent
+  );
+  animation: settingsSkeletonSweep 1.35s ease-in-out infinite;
+  pointer-events: none;
+}
+
+.skeletonGroupHeader {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  margin-bottom: 0.92rem;
+}
+
+.skeletonRows {
+  display: flex;
+  flex-direction: column;
+}
+
+.skeletonRow {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(104px, 28%);
+  align-items: center;
+  gap: 0.9rem;
+  min-height: 42px;
+}
+
+.skeletonRow + .skeletonRow {
+  margin-top: 0.82rem;
+  padding-top: 0.82rem;
+  border-top: 1px solid color-mix(in srgb, var(--panel-border-soft) 68%, transparent);
+}
+
+.skeletonRowText {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.42rem;
+}
+
+.skeletonLine {
+  display: block;
+  border-radius: 999px;
+  background: linear-gradient(
+    90deg,
+    color-mix(in srgb, var(--text-muted) 14%, transparent),
+    color-mix(in srgb, var(--accent) 10%, transparent)
+  );
+}
+
+.skeletonEyebrow {
+  width: 28%;
+  max-width: 120px;
+  height: 0.62rem;
+}
+
+.skeletonTitle {
+  width: 62%;
+  height: 0.86rem;
+}
+
+.skeletonDescription {
+  width: 82%;
+  height: 0.7rem;
+}
+
+.skeletonLabel {
+  width: 58%;
+  height: 0.78rem;
+}
+
+.skeletonHint {
+  width: 88%;
+  height: 0.64rem;
+}
+
+.skeletonControl {
+  justify-self: end;
+  width: min(132px, 100%);
+  height: 34px;
+}
+
+@keyframes settingsSkeletonSweep {
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+.note,
+.error {
+  margin: 0;
+  font-size: 0.78rem;
+  line-height: 1.55;
+}
+
+.note {
+  color: var(--text-secondary);
+}
+
+.error {
+  color: var(--danger-contrast);
+}
+
+.deviceList {
+  display: flex;
+  flex-direction: column;
+  gap: 0.72rem;
+}
+
+.deviceCard {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.9rem;
+  padding: 0.88rem 0.92rem;
+  border-radius: 18px;
+  border: 1px solid color-mix(in srgb, var(--accent) 14%, var(--panel-border-soft));
+  background:
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--surface-float) 92%, var(--glass-surface-fill, transparent)),
+      color-mix(in srgb, var(--surface-shell) 94%, var(--glass-surface-fill, transparent))
+    );
+  -webkit-backdrop-filter: blur(var(--glass-blur-soft, 0px)) saturate(var(--glass-saturate, 1));
+  backdrop-filter: blur(var(--glass-blur-soft, 0px)) saturate(var(--glass-saturate, 1));
+  box-shadow: var(--elevated-shadow-sm);
+}
+
+.deviceMeta {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.34rem;
+}
+
+.deviceTitleRow {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+}
+
+.deviceTitle {
+  color: var(--text-primary);
+  font-size: 0.82rem;
+  font-weight: 600;
+  line-height: 1.45;
+  word-break: break-word;
+}
+
+.deviceStatus {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 0.74rem;
+  line-height: 1.45;
+}
+
+.deviceAction {
+  flex: 0 0 auto;
+  align-self: center;
+}
+
+.deviceEmpty {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 0.78rem;
+  line-height: 1.5;
+}
+
+.pinButtonRow {
+  display: flex;
+  gap: 8px;
+}
+
+.pinInputGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: 100%;
+}
+
+.pinInput {
+  background: color-mix(in srgb, var(--surface-float) 70%, transparent);
+  border: 1px solid var(--panel-border-soft);
+  border-radius: 10px;
+  padding: 0.5rem 0.75rem;
+  color: var(--text-primary);
+  font-size: 0.9rem;
+  outline: none;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.pinFeedback {
+  font-size: 0.78rem;
+  margin: 0;
+  line-height: 1.45;
+}
+
+.pinFeedbackBottom {
+  margin-bottom: 0.25rem;
+}
+
+.pinFeedbackError {
+  color: var(--danger, #e74c3c);
+}
+
+.pinFeedbackSuccess {
+  color: var(--success, #27ae60);
+}
+
+:global(:root[data-theme="light"]) .groupDescription,
+:global(:root[data-theme="light"]) .note,
+:global(:root[data-theme="light"]) .deviceStatus,
+:global(:root[data-theme="light"]) .deviceEmpty {
+  color: color-mix(in srgb, var(--text-primary) 68%, var(--text-secondary));
+}
+
+:global(:root[data-theme="light"]) .groupPanel,
+:global(:root[data-theme="light"]) .deviceCard {
+  --surface-panel-shadow: 0 12px 24px rgb(133 151 176 / 0.14);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .swatchBtn {
+    transition: none !important;
+    transform: none !important;
+  }
+
+  .skeletonGroupPanel::after {
+    animation: none !important;
+  }
+}
+
+@media (max-width: 640px) {
+  .settingRow {
+    grid-template-columns: 1fr;
+    align-items: stretch;
+    gap: 0.62rem;
+  }
+
+  .settingControl {
+    justify-content: flex-start;
+    width: 100%;
+  }
+
+  .settingControl :global(.root) {
+    max-width: 100%;
+  }
+
+  .deviceCard {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .deviceAction {
+    width: 100%;
+  }
+
+  .sectionSkeletonStack {
+    min-height: clamp(360px, 50dvh, 500px);
+  }
+
+  .skeletonRow {
+    grid-template-columns: 1fr;
+    align-items: stretch;
+    gap: 0.62rem;
+  }
+
+  .skeletonControl {
+    justify-self: start;
+    width: min(148px, 56%);
+  }
+}

@@ -1,0 +1,58 @@
+.root {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: var(--label-pill-min-height, 24px);
+  padding: var(--label-pill-padding, 0 0.55rem);
+  border-radius: 999px;
+  border: 1px solid var(--label-pill-border, color-mix(in srgb, var(--panel-border-soft) 88%, transparent));
+  background: var(--label-pill-bg, color-mix(in srgb, var(--surface-shell) 88%, var(--glass-surface-fill, transparent)));
+  color: var(--label-pill-color, var(--text-primary));
+  font-weight: 650;
+  line-height: 1.1;
+  white-space: nowrap;
+  -webkit-backdrop-filter: blur(var(--label-pill-blur, var(--glass-blur-soft, 0px))) saturate(var(--glass-saturate, 1));
+  backdrop-filter: blur(var(--label-pill-blur, var(--glass-blur-soft, 0px))) saturate(var(--glass-saturate, 1));
+}
+
+.xs {
+  --label-pill-min-height: 22px;
+  --label-pill-padding: 0.18rem 0.42rem;
+  font-size: 0.62rem;
+}
+
+.sm {
+  --label-pill-min-height: 24px;
+  --label-pill-padding: 0 0.55rem;
+  font-size: 0.7rem;
+}
+
+.md {
+  --label-pill-min-height: 28px;
+  --label-pill-padding: 0 0.62rem;
+  font-size: 0.74rem;
+}
+
+.default {
+  --label-pill-bg: color-mix(in srgb, var(--surface-shell) 88%, var(--glass-surface-fill, transparent));
+  --label-pill-border: color-mix(in srgb, var(--panel-border-soft) 88%, transparent);
+  --label-pill-color: var(--text-primary);
+}
+
+.overlay {
+  --label-pill-bg: color-mix(in srgb, var(--panel-header-bg) 74%, transparent);
+  --label-pill-border: color-mix(in srgb, var(--panel-border-soft) 88%, transparent);
+  --label-pill-color: rgb(226 232 240 / 0.92);
+}
+
+:global(:root[data-theme="light"]) .default {
+  --label-pill-bg: color-mix(in srgb, var(--surface-shell-strong) 96%, white);
+  --label-pill-border: color-mix(in srgb, var(--panel-border-soft) 90%, transparent);
+  --label-pill-color: color-mix(in srgb, var(--text-primary) 90%, #0f172a);
+}
+
+:global(:root[data-theme="light"]) .overlay {
+  --label-pill-bg: color-mix(in srgb, var(--surface-shell-strong) 92%, white);
+  --label-pill-border: color-mix(in srgb, var(--panel-border-soft) 90%, transparent);
+  --label-pill-color: color-mix(in srgb, var(--text-primary) 88%, #0f172a);
+}

@@ -1,0 +1,343 @@
+.scrim {
+  position: fixed;
+  inset: 0;
+  z-index: 54;
+  display: block;
+  padding: 0;
+  background:
+    radial-gradient(circle at 50% 100%, color-mix(in srgb, var(--accent) 12%, transparent), transparent 34%),
+    linear-gradient(180deg, rgb(2 6 23 / 0.16), rgb(2 6 23 / 0.28) 42%, rgb(2 6 23 / 0.46) 100%);
+  border: 0;
+  -webkit-backdrop-filter: blur(10px) saturate(1.04);
+  backdrop-filter: blur(10px) saturate(1.04);
+  will-change: opacity;
+  animation: mobileScrimIn var(--motion-duration-base) var(--motion-ease-standard) both;
+}
+
+.scrimClosing {
+  pointer-events: none;
+  animation: mobileScrimOut var(--motion-duration-base) var(--motion-ease-exit) both;
+}
+
+.menuOpen {
+  --bottom-dock-z-index: 61;
+}
+
+.tabButton {
+  min-height: 56px;
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.24rem;
+  border-radius: 20px;
+  background: transparent;
+  color: var(--text-secondary);
+  border: 1px solid transparent;
+  padding: 0.38rem 0.3rem;
+  line-height: 1;
+  transition:
+    background-color var(--motion-duration-fast) var(--motion-ease-standard),
+    border-color var(--motion-duration-fast) var(--motion-ease-standard),
+    color var(--motion-duration-fast) var(--motion-ease-standard),
+    transform var(--motion-duration-fast) var(--motion-ease-standard);
+}
+
+.tabButtonActive {
+  background: color-mix(in srgb, var(--surface-float) 74%, transparent);
+  border-color: color-mix(in srgb, var(--accent) 26%, transparent);
+  color: var(--text-primary);
+}
+
+.tabButton:hover {
+  transform: translateY(-1px);
+  color: var(--text-primary);
+}
+
+.tabIcon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+}
+
+.tabLabel {
+  font-size: 0.63rem;
+  font-weight: 650;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+
+.createDock {
+  position: relative;
+  z-index: 3;
+  display: flex;
+  justify-content: center;
+  align-self: stretch;
+}
+
+.createMenu {
+  position: absolute;
+  left: 50%;
+  bottom: calc(100% + 0.58rem);
+  transform: translateX(-50%) translateY(0.42rem) scale(0.96);
+  transform-origin: center bottom;
+  opacity: 0;
+  width: min(16rem, calc(100vw - 2rem));
+  display: grid;
+  gap: 0.44rem;
+  padding: 0.5rem;
+  border-radius: 24px;
+  border: 1px solid color-mix(in srgb, var(--panel-border-soft) 88%, transparent);
+  background:
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--surface-float) 96%, var(--bg-secondary)),
+      color-mix(in srgb, var(--surface-shell-strong) 97%, var(--bg-secondary))
+    );
+  -webkit-backdrop-filter: blur(var(--glass-blur-medium, 18px)) saturate(var(--glass-saturate, 1.08));
+  backdrop-filter: blur(var(--glass-blur-medium, 18px)) saturate(var(--glass-saturate, 1.08));
+  z-index: 5;
+  box-shadow: 0 18px 34px rgb(2 6 23 / 0.3);
+  animation: mobileCreateMenuIn var(--motion-duration-slow) var(--motion-ease-emphasized) forwards;
+}
+
+.createMenuClosing {
+  pointer-events: none;
+  animation: mobileCreateMenuOut var(--motion-duration-base) var(--motion-ease-exit) forwards;
+}
+
+.createMenuButton {
+  min-height: 54px;
+  display: flex;
+  align-items: center;
+  gap: 0.62rem;
+  padding: 0.56rem 0.62rem;
+  border-radius: 18px;
+  border: 1px solid color-mix(in srgb, var(--panel-border-soft) 84%, transparent);
+  background: color-mix(in srgb, var(--surface-shell-strong) 86%, transparent);
+  color: var(--text-primary);
+  text-align: left;
+  transition:
+    background-color var(--motion-duration-fast) var(--motion-ease-standard),
+    border-color var(--motion-duration-fast) var(--motion-ease-standard),
+    transform var(--motion-duration-fast) var(--motion-ease-standard);
+  opacity: 0;
+  transform: translateY(0.42rem);
+  animation: mobileCreateMenuItemIn var(--motion-duration-slow) var(--motion-ease-emphasized) forwards;
+}
+
+.createMenuButton:nth-child(2) {
+  animation-delay: 34ms;
+}
+
+.createMenuButton:hover {
+  transform: translateY(-1px);
+  background: color-mix(in srgb, var(--surface-float) 90%, transparent);
+  border-color: color-mix(in srgb, var(--accent) 28%, transparent);
+}
+
+.createMenuIcon {
+  width: 36px;
+  height: 36px;
+  border-radius: 14px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  color: #f7fbff;
+  background: linear-gradient(145deg, color-mix(in srgb, var(--accent) 82%, white 18%), var(--accent));
+  box-shadow: 0 10px 18px rgb(15 23 42 / 0.12);
+}
+
+.createMenuText {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.14rem;
+}
+
+.createMenuTitle {
+  font-size: 0.8rem;
+  font-weight: 700;
+  line-height: 1.15;
+  color: var(--text-primary);
+}
+
+.createMenuSubtitle {
+  font-size: 0.66rem;
+  line-height: 1.2;
+  color: var(--text-secondary);
+}
+
+.createFab {
+  min-width: 118px;
+  min-height: 60px;
+  margin-top: -0.78rem;
+  position: relative;
+  z-index: 4;
+  isolation: isolate;
+  padding: 0.56rem 0.9rem 0.68rem;
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.26rem;
+  border-radius: 22px;
+  border: 1px solid color-mix(in srgb, var(--accent) 16%, var(--panel-border-soft));
+  color: var(--text-primary);
+  background:
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--surface-float) 94%, var(--bg-secondary)),
+      color-mix(in srgb, var(--surface-shell-strong) 97%, var(--bg-secondary))
+    );
+  -webkit-backdrop-filter: blur(var(--glass-blur-medium, 16px)) saturate(var(--glass-saturate, 1.04));
+  backdrop-filter: blur(var(--glass-blur-medium, 16px)) saturate(var(--glass-saturate, 1.04));
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.08),
+    0 10px 22px rgb(15 23 42 / 0.1);
+  transition:
+    transform var(--motion-duration-base) var(--motion-ease-standard),
+    box-shadow var(--motion-duration-base) var(--motion-ease-standard),
+    border-color var(--motion-duration-base) var(--motion-ease-standard),
+    background-color var(--motion-duration-base) var(--motion-ease-standard),
+    color var(--motion-duration-base) var(--motion-ease-standard);
+}
+
+.createFab:hover {
+  transform: translateY(-1px);
+  border-color: color-mix(in srgb, var(--accent) 24%, transparent);
+}
+
+.createFabActive {
+  transform: translateY(-1px);
+  color: color-mix(in srgb, var(--text-primary) 88%, white 12%);
+  border-color: color-mix(in srgb, var(--accent) 30%, transparent);
+  background:
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--surface-float) 90%, var(--accent) 10%),
+      color-mix(in srgb, var(--surface-shell-strong) 94%, var(--accent) 12%)
+    );
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.1),
+    0 12px 24px rgb(15 23 42 / 0.12);
+}
+
+.createFabIcon {
+  width: 32px;
+  height: 32px;
+  border-radius: 12px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: color-mix(in srgb, var(--accent) 78%, white 8%);
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+  border: 1px solid color-mix(in srgb, var(--accent) 18%, transparent);
+  transition:
+    transform var(--motion-duration-slow) var(--motion-ease-emphasized),
+    background-color var(--motion-duration-base) var(--motion-ease-standard),
+    border-color var(--motion-duration-base) var(--motion-ease-standard),
+    color var(--motion-duration-base) var(--motion-ease-standard);
+}
+
+.createFabActive .createFabIcon {
+  transform: rotate(45deg);
+  background: color-mix(in srgb, var(--accent) 16%, transparent);
+  border-color: color-mix(in srgb, var(--accent) 26%, transparent);
+  color: color-mix(in srgb, var(--accent) 84%, white 10%);
+}
+
+.createFabLabel {
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+}
+
+@keyframes mobileScrimOut {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}
+
+@keyframes mobileCreateMenuOut {
+  from {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0) scale(1);
+  }
+
+  to {
+    opacity: 0;
+    transform: translateX(-50%) translateY(0.4rem) scale(0.97);
+  }
+}
+
+:global(:root[data-theme="light"]) .createMenu,
+:global(:root[data-theme="light"]) .createMenuButton {
+  border-color: color-mix(in srgb, var(--panel-border-soft) 92%, transparent);
+}
+
+:global(:root[data-theme="light"]) .createMenuButton {
+  background:
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--surface-float) 84%, white),
+      color-mix(in srgb, var(--surface-shell-strong) 88%, white)
+    );
+}
+
+:global(:root[data-theme="light"]) .scrim {
+  background:
+    radial-gradient(circle at 50% 100%, color-mix(in srgb, var(--accent) 10%, transparent), transparent 34%),
+    linear-gradient(180deg, rgb(148 163 184 / 0.14), rgb(148 163 184 / 0.22) 42%, rgb(148 163 184 / 0.32) 100%);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .scrim,
+  .tabButton,
+  .createMenu,
+  .createMenuButton,
+  .createFab,
+  .createFabIcon {
+    animation: none !important;
+    transition: none !important;
+    transform: none !important;
+  }
+}
+
+@keyframes mobileCreateMenuIn {
+  0% {
+    opacity: 0;
+    transform: translateX(-50%) translateY(0.42rem) scale(0.96);
+  }
+
+  100% {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0) scale(1);
+  }
+}
+
+@keyframes mobileCreateMenuItemIn {
+  0% {
+    opacity: 0;
+    transform: translateY(0.42rem);
+  }
+
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes mobileScrimIn {
+  0% {
+    opacity: 0;
+  }
+
+  100% {
+    opacity: 1;
+  }
+}

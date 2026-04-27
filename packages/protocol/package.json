@@ -1,0 +1,29 @@
+{
+  "name": "@seclettr/protocol",
+  "version": "1.0.0-beta",
+  "private": true,
+  "description": "Shared Zod schemas and TypeScript types for Seclettr protocol",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "zod": "^3.22.4"
+  },
+  "devDependencies": {
+    "typescript": "^5.3.0",
+    "vitest": "^1.6.1"
+  },
+  "license": "Apache-2.0"
+}

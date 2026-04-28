@@ -283,49 +283,79 @@ detect_public_ip() {
 }
 
 gen_vapid_keys() {
-  # Try via Node.js first
+  # Method 1: Node.js — most reliable, produces exact VAPID format
   if command -v node >/dev/null 2>&1; then
-    local vapid_out
-    vapid_out="$(node - <<'NODE_SCRIPT' 2>/dev/null
+    local _out
+    _out="$(node - 2>/dev/null <<'NODE_SCRIPT'
 const { createECDH } = require("node:crypto");
-function toBase64Url(buf) {
-  return Buffer.from(buf).toString("base64")
-    .replace(/\+/g,"-").replace(/\//g,"_").replace(/=+$/,"");
-}
-const ecdh = createECDH("prime256v1");
-ecdh.generateKeys();
-console.log(toBase64Url(ecdh.getPublicKey(undefined,"uncompressed")));
-console.log(toBase64Url(ecdh.getPrivateKey()));
+const b64u = (buf) => Buffer.from(buf).toString("base64").replace(/\+/g,"-").replace(/\//g,"_").replace(/=+$/,"");
+const ec = createECDH("prime256v1");
+ec.generateKeys();
+// uncompressed public key (65 bytes, starts with 0x04) + raw private key (32 bytes)
+console.log(b64u(ec.getPublicKey(null,"uncompressed")));
+console.log(b64u(ec.getPrivateKey()));
 NODE_SCRIPT
-    )" || vapid_out=""
-    if [[ -n "$vapid_out" ]]; then
-      printf '%s' "$vapid_out"
-      return
+    )" || _out=""
+    if [[ "$(echo "$_out" | wc -l)" -ge 2 ]]; then
+      printf '%s' "$_out"
+      return 0
     fi
   fi
 
-  # Fallback: generate P-256 key pair via openssl (no Node required)
+  # Method 2: Python 3 — present on virtually every Linux server
+  local _py
+  for _py in python3 python; do
+    command -v "$_py" >/dev/null 2>&1 || continue
+    local _out
+    _out="$("$_py" - 2>/dev/null <<'PYEOF'
+import base64, os
+try:
+    from cryptography.hazmat.primitives.asymmetric.ec import generate_private_key, SECP256R1, EllipticCurvePublicKey
+    from cryptography.hazmat.backends import default_backend
+    from cryptography.hazmat.primitives.serialization import Encoding, PublicFormat
+    key = generate_private_key(SECP256R1(), default_backend())
+    pub_bytes = key.public_key().public_bytes(Encoding.X962, PublicFormat.UncompressedPoint)
+    priv_bytes = key.private_numbers().private_value.to_bytes(32, "big")
+    b64u = lambda b: base64.urlsafe_b64encode(b).rstrip(b"=").decode()
+    print(b64u(pub_bytes))
+    print(b64u(priv_bytes))
+except Exception:
+    pass
+PYEOF
+    )" || _out=""
+    if [[ "$(echo "$_out" | wc -l)" -ge 2 && -n "$_out" ]]; then
+      printf '%s' "$_out"
+      return 0
+    fi
+    break
+  done
+
+  # Method 3: openssl — parse DER output carefully
   if command -v openssl >/dev/null 2>&1; then
-    local _tmp_key _pub_hex _priv_hex
-    _tmp_key="$(mktemp)"
-    openssl ecparam -name prime256v1 -genkey -noout -out "$_tmp_key" 2>/dev/null || { rm -f "$_tmp_key"; printf '\n'; return; }
-    # Public key: uncompressed point, base64url
-    _pub_hex="$(openssl ec -in "$_tmp_key" -pubout -outform DER 2>/dev/null \
-      | tail -c 65 | od -An -tx1 | tr -d ' \n')"
-    _priv_hex="$(openssl ec -in "$_tmp_key" -outform DER 2>/dev/null \
-      | tail -c 32 | od -An -tx1 | tr -d ' \n')"
-    rm -f "$_tmp_key"
-    if [[ -n "$_pub_hex" && -n "$_priv_hex" ]]; then
-      local _pub_b64 _priv_b64
-      _pub_b64="$(printf '%b' "$(echo "$_pub_hex" | sed 's/../\\x&/g')" | base64 | tr '+/' '-_' | tr -d '=')"
-      _priv_b64="$(printf '%b' "$(echo "$_priv_hex" | sed 's/../\\x&/g')" | base64 | tr '+/' '-_' | tr -d '=')"
-      printf '%s\n%s' "$_pub_b64" "$_priv_b64"
-      return
+    local _tmp _pub64 _priv64
+    _tmp="$(mktemp)"
+    openssl genpkey -algorithm EC -pkeyopt ec_paramgen_curve:P-256 -out "$_tmp" 2>/dev/null || {
+      rm -f "$_tmp"; printf '\n'; return 1
+    }
+    # Public key: SubjectPublicKeyInfo DER ends with 65-byte uncompressed point
+    _pub64="$(openssl pkey -in "$_tmp" -pubout -outform DER 2>/dev/null \
+      | dd bs=1 skip=27 2>/dev/null | base64 -w0 | tr '+/' '-_' | tr -d '=')"
+    # Private key: ECPrivateKey DER has 32-byte scalar at offset 7
+    _priv64="$(openssl pkey -in "$_tmp" -outform DER 2>/dev/null \
+      | dd bs=1 skip=7 count=32 2>/dev/null | base64 -w0 | tr '+/' '-_' | tr -d '=')"
+    rm -f "$_tmp"
+    # Validate lengths: pub=87 chars (65 bytes b64url), priv=43 chars (32 bytes b64url)
+    if [[ ${#_pub64} -eq 87 && ${#_priv64} -eq 43 ]]; then
+      printf '%s\n%s' "$_pub64" "$_priv64"
+      return 0
     fi
   fi
 
-  # Last resort: empty — push notifications will be disabled
+  # Nothing worked — push notifications will be disabled; warn loudly
+  log_warn "Could not generate VAPID keys (no node/python3/openssl available)."
+  log_warn "Set VAPID_PUBLIC_KEY and VAPID_PRIVATE_KEY manually in .env to enable push notifications."
   printf '\n'
+  return 0
 }
 
 fill_env_secrets() {

@@ -24,6 +24,11 @@ class MockMediaRecorder {
   ondataavailable: ((event: BlobEvent) => void) | null = null;
   onstop: ((event: Event) => void) | null = null;
   onerror: ((event: Event) => void) | null = null;
+  requestData = vi.fn(() => {
+    this.ondataavailable?.({
+      data: new Blob(["partial"], { type: this.mimeType }),
+    } as BlobEvent);
+  });
   stop = vi.fn(() => {
     this.state = "inactive";
     this.ondataavailable?.({
@@ -37,9 +42,9 @@ class MockMediaRecorder {
     MockMediaRecorder.instances.push(this);
   }
 
-  start() {
+  start = vi.fn((_timeslice?: number) => {
     this.state = "recording";
-  }
+  });
 }
 
 interface LifecycleHookValue {
@@ -224,6 +229,8 @@ describe("useComposerRecorderLifecycle", () => {
     expect(startVoiceWaveform).toHaveBeenCalledTimes(1);
     expect(onSendVoiceBlob).toHaveBeenCalledTimes(1);
     expect(onSendVoiceBlob.mock.calls[0]?.[1]).toBe(1500);
+    expect(MockMediaRecorder.instances[0]?.start).toHaveBeenCalledWith(1000);
+    expect(MockMediaRecorder.instances[0]?.requestData).toHaveBeenCalledTimes(1);
     expect(stopTrack).toHaveBeenCalled();
   });
 

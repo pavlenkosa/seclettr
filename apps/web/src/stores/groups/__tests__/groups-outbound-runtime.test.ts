@@ -10,10 +10,20 @@ const {
   apiPostMock,
   encryptGroupTextEnvelopeMock,
   ensureSenderKeyDistributedToGroupMembersMock,
+  persistGroupOutboundQueueItemMock,
+  removeGroupOutboundQueueItemMock,
+  loadGroupOutboundQueueItemMock,
+  incrementGroupOutboundRetryCountMock,
+  loadAllPendingGroupOutboundItemsMock,
 } = vi.hoisted(() => ({
   apiPostMock: vi.fn(),
   encryptGroupTextEnvelopeMock: vi.fn(),
   ensureSenderKeyDistributedToGroupMembersMock: vi.fn(),
+  persistGroupOutboundQueueItemMock: vi.fn(),
+  removeGroupOutboundQueueItemMock: vi.fn(),
+  loadGroupOutboundQueueItemMock: vi.fn(),
+  incrementGroupOutboundRetryCountMock: vi.fn(),
+  loadAllPendingGroupOutboundItemsMock: vi.fn(),
 }));
 
 vi.mock("@/lib/api", () => ({
@@ -31,6 +41,14 @@ vi.mock("@/stores/groups/group-helpers", () => ({
     ensureSenderKeyDistributedToGroupMembersMock,
   formatSenderLabel: (deviceId: string, isOwn: boolean) =>
     isOwn ? "You" : `@${deviceId}`,
+}));
+
+vi.mock("@/stores/groups/group-outbound-queue", () => ({
+  persistGroupOutboundQueueItem: persistGroupOutboundQueueItemMock,
+  removeGroupOutboundQueueItem: removeGroupOutboundQueueItemMock,
+  loadGroupOutboundQueueItem: loadGroupOutboundQueueItemMock,
+  incrementGroupOutboundRetryCount: incrementGroupOutboundRetryCountMock,
+  loadAllPendingGroupOutboundItems: loadAllPendingGroupOutboundItemsMock,
 }));
 
 function createGroup(): GroupChat {
@@ -98,15 +116,23 @@ describe("createGroupsOutboundRuntime", () => {
       createdAt: "2026-01-01T00:00:00.000Z",
     });
     encryptGroupTextEnvelopeMock.mockReset().mockResolvedValue({
+      groupId: "group-1",
+      senderDeviceId: "device-me",
       distributionId: "distribution-1",
       chainId: 1,
-      messageId: "encrypted-1",
+      messageId: 1,
       ciphertext: "ciphertext",
       signature: "signature",
+      aeadVersion: 1,
     });
     ensureSenderKeyDistributedToGroupMembersMock
       .mockReset()
       .mockResolvedValue({});
+    persistGroupOutboundQueueItemMock.mockReset().mockResolvedValue(undefined);
+    removeGroupOutboundQueueItemMock.mockReset().mockResolvedValue(undefined);
+    loadGroupOutboundQueueItemMock.mockReset().mockResolvedValue(null);
+    incrementGroupOutboundRetryCountMock.mockReset().mockResolvedValue(1);
+    loadAllPendingGroupOutboundItemsMock.mockReset().mockResolvedValue([]);
   });
 
   it("sends group text with optimistic insert and marks it sent on success", async () => {
@@ -166,9 +192,64 @@ describe("createGroupsOutboundRuntime", () => {
       "33333333-3333-4333-8333-333333333333"
     );
     expect(state.groups["group-1"]?.messages[0]?.id.startsWith("local-")).toBe(false);
+    expect(persistGroupOutboundQueueItemMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        groupId: "group-1",
+        clientMessageId: expect.any(String),
+        messageType: "text",
+        retryCount: 0,
+      })
+    );
+    expect(removeGroupOutboundQueueItemMock).toHaveBeenCalledWith(
+      persistGroupOutboundQueueItemMock.mock.calls[0]?.[0].localMessageId
+    );
   });
 
-  it("retries only messages in error state", async () => {
+  it("persists group text queue before POST", async () => {
+    const refreshGroup = vi.fn(async () => {});
+    let state = createState({
+      groups: {
+        "group-1": createGroup(),
+      },
+      refreshGroup,
+    });
+    const setState = (
+      partial:
+        | Partial<GroupsState>
+        | ((current: GroupsState) => Partial<GroupsState>)
+    ) => {
+      const update = typeof partial === "function" ? partial(state) : partial;
+      state = { ...state, ...update };
+    };
+
+    let persistedBeforePost = false;
+    apiPostMock.mockImplementation(async () => {
+      persistedBeforePost = persistGroupOutboundQueueItemMock.mock.calls.length > 0;
+      return {
+        ok: true,
+        serverMessageId: "33333333-3333-4333-8333-333333333333",
+        createdAt: "2026-01-01T00:00:00.000Z",
+      };
+    });
+
+    const runtime = createGroupsOutboundRuntime({
+      set: setState,
+      get: () => state,
+      shared: {
+        getMyUserId: () => "me",
+        getMyDeviceId: () => "device-me",
+        getStorageKey: () => ({}) as CryptoKey,
+        createUnknownGroupChat: vi.fn(),
+      } as unknown as GroupsRuntimeShared,
+      sendSenderKeyDistribution: vi.fn(async () => ["device-alice"]),
+    });
+
+    await runtime.sendGroupText("group-1", "durable queue");
+
+    expect(persistedBeforePost).toBe(true);
+  });
+
+  it("does not retry messages without a cached encrypted envelope", async () => {
     const refreshGroup = vi.fn(async () => {});
     let state = createState({
       groups: {
@@ -253,23 +334,8 @@ describe("createGroupsOutboundRuntime", () => {
 
     await runtime.retryGroupMessage("group-1", "local-error-1");
 
-    expect(apiPostMock).toHaveBeenCalledTimes(1);
-    expect(encryptGroupTextEnvelopeMock).toHaveBeenCalledWith(
-      expect.anything(),
-      "group-1",
-      "device-me",
-      "retry me",
-      {
-        id: "11111111-1111-4111-8111-111111111111",
-        snippet: "original reply",
-      }
-    );
-    expect(
-      state.groups["group-1"]?.messages.find((message) =>
-        message.id === "33333333-3333-4333-8333-333333333333"
-      )
-        ?.status
-    ).toBe("sent");
+    expect(apiPostMock).not.toHaveBeenCalled();
+    expect(encryptGroupTextEnvelopeMock).not.toHaveBeenCalled();
   });
 
   it("retries group text send once after sender-key conflict (409)", async () => {
@@ -291,19 +357,15 @@ describe("createGroupsOutboundRuntime", () => {
 
     encryptGroupTextEnvelopeMock
       .mockReset()
-      .mockResolvedValueOnce({
+      .mockResolvedValue({
+        groupId: "group-1",
+        senderDeviceId: "device-me",
         distributionId: "distribution-1",
         chainId: 1,
-        messageId: "encrypted-1",
+        messageId: 7,
         ciphertext: "ciphertext-1",
         signature: "signature-1",
-      })
-      .mockResolvedValueOnce({
-        distributionId: "distribution-1",
-        chainId: 1,
-        messageId: "encrypted-2",
-        ciphertext: "ciphertext-2",
-        signature: "signature-2",
+        aeadVersion: 1,
       });
 
     apiPostMock
@@ -335,10 +397,164 @@ describe("createGroupsOutboundRuntime", () => {
     await runtime.sendGroupText("group-1", "conflict-safe");
 
     expect(apiPostMock).toHaveBeenCalledTimes(2);
-    expect(encryptGroupTextEnvelopeMock).toHaveBeenCalledTimes(2);
+    expect(encryptGroupTextEnvelopeMock).toHaveBeenCalledTimes(1);
+    expect(apiPostMock.mock.calls[1]?.[1]).toEqual(apiPostMock.mock.calls[0]?.[1]);
     expect(state.groups["group-1"]?.messages[0]?.status).toBe("sent");
     expect(state.groups["group-1"]?.messages[0]?.id).toBe(
       "44444444-4444-4444-8444-444444444444"
     );
+  });
+
+  it("manual group text retry reuses the cached encrypted envelope", async () => {
+    const refreshGroup = vi.fn(async () => {});
+    let state = createState({
+      groups: {
+        "group-1": createGroup(),
+      },
+      refreshGroup,
+    });
+    const setState = (
+      partial:
+        | Partial<GroupsState>
+        | ((current: GroupsState) => Partial<GroupsState>)
+    ) => {
+      const update = typeof partial === "function" ? partial(state) : partial;
+      state = { ...state, ...update };
+    };
+
+    encryptGroupTextEnvelopeMock.mockResolvedValue({
+      groupId: "group-1",
+      senderDeviceId: "device-me",
+      distributionId: "distribution-1",
+      chainId: 1,
+      messageId: 9,
+      ciphertext: "cached-ciphertext",
+      signature: "cached-signature",
+      aeadVersion: 1,
+    });
+    apiPostMock.mockReset().mockRejectedValueOnce(new Error("offline"));
+
+    const runtime = createGroupsOutboundRuntime({
+      set: setState,
+      get: () => state,
+      shared: {
+        getMyUserId: () => "me",
+        getMyDeviceId: () => "device-me",
+        getStorageKey: () => ({}) as CryptoKey,
+        createUnknownGroupChat: vi.fn(),
+      } as unknown as GroupsRuntimeShared,
+      sendSenderKeyDistribution: vi.fn(async () => ["device-alice"]),
+    });
+
+    await expect(runtime.sendGroupText("group-1", "retry same envelope")).rejects.toThrow(
+      "offline"
+    );
+
+    const failedMessage = state.groups["group-1"]?.messages[0];
+    const firstPayload = apiPostMock.mock.calls[0]?.[1];
+    expect(failedMessage?.status).toBe("error");
+    expect(failedMessage?.id.startsWith("local-")).toBe(true);
+
+    apiPostMock.mockReset().mockResolvedValueOnce({
+      ok: true,
+      serverMessageId: "55555555-5555-4555-8555-555555555555",
+      createdAt: "2026-01-01T00:00:00.000Z",
+    });
+    encryptGroupTextEnvelopeMock.mockClear();
+
+    await runtime.retryGroupMessage("group-1", failedMessage?.id ?? "");
+
+    expect(encryptGroupTextEnvelopeMock).not.toHaveBeenCalled();
+    expect(apiPostMock).toHaveBeenCalledWith("/groups/group-1/messages", firstPayload);
+    expect(state.groups["group-1"]?.messages[0]).toMatchObject({
+      id: "55555555-5555-4555-8555-555555555555",
+      status: "sent",
+    });
+  });
+
+  it("resumes persisted group text without re-encrypting after reload", async () => {
+    let state = createState({
+      groups: {},
+    });
+    const setState = (
+      partial:
+        | Partial<GroupsState>
+        | ((current: GroupsState) => Partial<GroupsState>)
+    ) => {
+      const update = typeof partial === "function" ? partial(state) : partial;
+      state = { ...state, ...update };
+    };
+    const optimisticMessage = {
+      id: "local-aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+      senderDeviceId: "device-me",
+      senderLabel: "You",
+      content: "restored",
+      timestamp: 10,
+      status: "error" as const,
+      isOwn: true,
+      rawType: "text" as const,
+    };
+    const payload = {
+      version: 1 as const,
+      clientMessageId: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+      groupId: "group-1",
+      distributionId: "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb",
+      chainId: 1,
+      messageId: 5,
+      ciphertext: "stored-ciphertext",
+      signature: "stored-signature",
+      type: "text" as const,
+      aeadVersion: 1,
+    };
+    loadAllPendingGroupOutboundItemsMock.mockResolvedValueOnce([
+      {
+        localMessageId: optimisticMessage.id,
+        groupId: "group-1",
+        clientMessageId: payload.clientMessageId,
+        messageType: "text",
+        payload,
+        optimisticMessage,
+        createdAt: 10,
+        retryCount: 0,
+      },
+    ]);
+    apiPostMock.mockReset().mockResolvedValueOnce({
+      ok: true,
+      serverMessageId: "77777777-7777-4777-8777-777777777777",
+      createdAt: "2026-01-01T00:00:00.000Z",
+    });
+
+    const runtime = createGroupsOutboundRuntime({
+      set: setState,
+      get: () => state,
+      shared: {
+        getMyUserId: () => "me",
+        getMyDeviceId: () => "device-me",
+        getStorageKey: () => ({}) as CryptoKey,
+        createUnknownGroupChat: vi.fn((groupId: string) => ({
+          groupId,
+          name: "Unknown",
+          createdAt: "0",
+          members: [],
+          memberDeviceLabels: {},
+          messages: [],
+          lastMessageAt: 0,
+          unreadCount: 0,
+          historyLoaded: true,
+        })),
+      } as unknown as GroupsRuntimeShared,
+      sendSenderKeyDistribution: vi.fn(async () => ["device-alice"]),
+    });
+
+    await runtime.resumePendingGroupOutboundMessages();
+
+    expect(encryptGroupTextEnvelopeMock).not.toHaveBeenCalled();
+    expect(apiPostMock).toHaveBeenCalledWith("/groups/group-1/messages", payload);
+    expect(removeGroupOutboundQueueItemMock).toHaveBeenCalledWith(optimisticMessage.id);
+    expect(state.groups["group-1"]?.messages[0]).toMatchObject({
+      id: "77777777-7777-4777-8777-777777777777",
+      status: "sent",
+      content: "restored",
+    });
   });
 });

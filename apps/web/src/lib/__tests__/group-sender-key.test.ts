@@ -146,4 +146,85 @@ describe("group-sender-key", () => {
     );
     expect(ids.size).toBe(envelopes.length);
   });
+
+  it("keeps local sender-key state monotonic while marking distribution", async () => {
+    const storageKey = {} as CryptoKey;
+    const groupId = crypto.randomUUID();
+    const senderDeviceId = crypto.randomUUID();
+    const targetDeviceId = crypto.randomUUID();
+
+    const localRecord = await ensureLocalSenderKeyRecord(
+      storageKey,
+      groupId,
+      senderDeviceId
+    );
+
+    const [first, second] = await Promise.all([
+      encryptGroupTextEnvelope(storageKey, groupId, senderDeviceId, "first"),
+      markSenderKeyDistributedToDevices(
+        storageKey,
+        groupId,
+        senderDeviceId,
+        localRecord.distributionId,
+        [targetDeviceId]
+      ).then(() =>
+        encryptGroupTextEnvelope(storageKey, groupId, senderDeviceId, "second")
+      ),
+    ]);
+
+    const updated = await ensureLocalSenderKeyRecord(
+      storageKey,
+      groupId,
+      senderDeviceId
+    );
+    const ids = new Set([
+      `${first.chainId}:${first.messageId}`,
+      `${second.chainId}:${second.messageId}`,
+    ]);
+    expect(ids.size).toBe(2);
+    expect(updated.distributedToDeviceIds).toContain(targetDeviceId);
+    expect(updated.state.chainId).toBeGreaterThanOrEqual(second.chainId);
+  });
+
+  it("uses browser Web Locks for local sender-key mutations when available", async () => {
+    const storageKey = {} as CryptoKey;
+    const groupId = crypto.randomUUID();
+    const senderDeviceId = crypto.randomUUID();
+    const originalDescriptor = Object.getOwnPropertyDescriptor(
+      globalThis.navigator,
+      "locks"
+    );
+    const request = vi.fn(
+      async <T>(
+        _name: string,
+        _options: { mode: "exclusive" },
+        callback: () => Promise<T>
+      ) => callback()
+    );
+
+    Object.defineProperty(globalThis.navigator, "locks", {
+      configurable: true,
+      value: { request },
+    });
+
+    try {
+      await ensureLocalSenderKeyRecord(storageKey, groupId, senderDeviceId);
+      await encryptGroupTextEnvelope(storageKey, groupId, senderDeviceId, "locked");
+    } finally {
+      if (originalDescriptor) {
+        Object.defineProperty(
+          globalThis.navigator,
+          "locks",
+          originalDescriptor
+        );
+      } else {
+        Reflect.deleteProperty(globalThis.navigator, "locks");
+      }
+    }
+
+    expect(request).toHaveBeenCalledTimes(2);
+    expect(request.mock.calls[0]?.[0]).toContain(groupId);
+    expect(request.mock.calls[0]?.[0]).toContain(senderDeviceId);
+    expect(request.mock.calls[0]?.[1]).toEqual({ mode: "exclusive" });
+  });
 });

@@ -2406,7 +2406,9 @@ describe("Group call lifecycle events", () => {
         ownerToken
       );
       expect(created.status).toBe(200);
-      const callId = (created.body as { callId: string }).callId;
+      const createdBody = created.body as { callId: string; created?: boolean };
+      const callId = createdBody.callId;
+      expect(createdBody.created).toBe(true);
 
       const startedEvent = await waitForWsMessage(
         memberWs,
@@ -2426,7 +2428,9 @@ describe("Group call lifecycle events", () => {
         memberToken
       );
       expect(reused.status).toBe(200);
-      expect((reused.body as { callId: string }).callId).toBe(callId);
+      const reusedBody = reused.body as { callId: string; created?: boolean };
+      expect(reusedBody.callId).toBe(callId);
+      expect(reusedBody.created).toBe(false);
 
       const joinedEvent = await waitForWsMessage(
         ownerWs,

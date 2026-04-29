@@ -376,6 +376,95 @@ describe("createMessagesOutboundRuntime", () => {
     expect(removeOutboundQueueItemMock).not.toHaveBeenCalled();
   });
 
+  it("persists sender-key distribution before POST and removes it on success", async () => {
+    let state = createState();
+    const setState = (
+      partial:
+        | Partial<MessagesState>
+        | ((current: MessagesState) => Partial<MessagesState>)
+    ) => {
+      const update = typeof partial === "function" ? partial(state) : partial;
+      state = { ...state, ...update };
+    };
+
+    const senderDeviceId = "22222222-2222-4222-8222-222222222222";
+    const recipientDeviceId = "33333333-3333-4333-8333-333333333333";
+    let persistCalledBeforePost = false;
+    apiPostMock.mockImplementation(async () => {
+      persistCalledBeforePost = persistOutboundQueueItemMock.mock.calls.length > 0;
+      return {};
+    });
+
+    const runtime = createMessagesOutboundRuntime({
+      set: setState,
+      get: () => state,
+      shared: {
+        recipientDeviceDirectory: {
+          ensureDirectRelationship: vi.fn(async () => {}),
+          getDeliverableRecipientDevices: vi.fn(),
+          invalidateRecipientDeviceCache: vi.fn(),
+        },
+        messageSessionRuntime: {
+          getOrCreateOutboundSession: vi.fn(async () => ({
+            state: { label: "session" },
+            x3dhHeader: null,
+            oneTimePreKeyReservationToken: null,
+            peerIdentityKeyB64: "identity-peer",
+          })),
+          saveSession: vi.fn(async () => {}),
+          clearSession: vi.fn(async () => {}),
+        },
+        peerIdentityRuntime: {
+          cachePeerIdentity: vi.fn(),
+          getConversationIdentityAlert: vi.fn(),
+          acceptPeerIdentityChange: vi.fn(),
+        },
+        getMyUserId: () => "user-self",
+        getMyDeviceId: () => senderDeviceId,
+        assertPeerIdentityContinuity: vi.fn(async () => {}),
+        withSessionLock: async (_: string, fn: () => Promise<unknown>) => fn(),
+        commitConversationIdentityUpdate: vi.fn(async () => {}),
+        warmPeerTrustStore: vi.fn(async () => {}),
+      } as unknown as MessagesRuntimeShared,
+      schedulePendingMessageSync: vi.fn(),
+    });
+
+    const delivered = await runtime.sendSenderKeyDistribution(
+      "user-peer",
+      {
+        schemaVersion: 1,
+        type: "sender_key_distribution",
+        groupId: "11111111-1111-4111-8111-111111111111",
+        senderDeviceId,
+        distributionId: "44444444-4444-4444-8444-444444444444",
+        chainId: 0,
+        chainKey: "AAAA",
+        signingKey: "BBBB",
+      },
+      {
+        prefetchedDevices: [
+          {
+            deviceId: recipientDeviceId,
+            identityKeyPublic: "identity-peer",
+          },
+        ],
+      }
+    );
+
+    expect(delivered).toEqual([recipientDeviceId]);
+    expect(persistCalledBeforePost).toBe(true);
+    expect(persistOutboundQueueItemMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        recipientUserId: "user-peer",
+        messageType: "sender_key_distribution",
+        retryCount: 0,
+      })
+    );
+    expect(removeOutboundQueueItemMock).toHaveBeenCalledWith(
+      persistOutboundQueueItemMock.mock.calls[0]?.[0].clientMessageId
+    );
+  });
+
   it("resumePendingOutboundMessages retries error messages without re-encrypting", async () => {
     const clientMessageId = "msg-resume-test";
     let state = createState({
@@ -460,6 +549,74 @@ describe("createMessagesOutboundRuntime", () => {
     );
     expect(state.conversations["user-peer"]?.messages[0]?.status).toBe("sent");
     expect(removeOutboundQueueItemMock).toHaveBeenCalledWith(clientMessageId);
+  });
+
+  it("resumePendingOutboundMessages retries sender-key distribution without a UI bubble", async () => {
+    const clientMessageId = "sender-key-resume";
+    let state = createState();
+    const setState = (
+      partial:
+        | Partial<MessagesState>
+        | ((current: MessagesState) => Partial<MessagesState>)
+    ) => {
+      const update = typeof partial === "function" ? partial(state) : partial;
+      state = { ...state, ...update };
+    };
+
+    loadAllPendingOutboundItemsMock.mockResolvedValue([
+      {
+        clientMessageId,
+        recipientUserId: "user-peer",
+        messageType: "sender_key_distribution",
+        envelopes: [
+          {
+            recipientDeviceId: "device-peer",
+            ciphertext: "stored-sender-key",
+            type: "sender_key_distribution",
+          },
+        ],
+        createdAt: Date.now() - 1000,
+        retryCount: 1,
+      },
+    ]);
+    incrementOutboundRetryCountMock.mockResolvedValue(2);
+    apiPostMock.mockResolvedValue({});
+
+    const runtime = createMessagesOutboundRuntime({
+      set: setState,
+      get: () => state,
+      shared: {
+        recipientDeviceDirectory: { ensureDirectRelationship: vi.fn(), getDeliverableRecipientDevices: vi.fn(), invalidateRecipientDeviceCache: vi.fn() },
+        messageSessionRuntime: { getOrCreateOutboundSession: vi.fn(), saveSession: vi.fn(), clearSession: vi.fn() },
+        peerIdentityRuntime: { cachePeerIdentity: vi.fn(), getConversationIdentityAlert: vi.fn(), acceptPeerIdentityChange: vi.fn() },
+        getMyUserId: () => "user-self",
+        getMyDeviceId: () => "device-self",
+        assertPeerIdentityContinuity: vi.fn(),
+        withSessionLock: async (_: string, fn: () => Promise<unknown>) => fn(),
+        commitConversationIdentityUpdate: vi.fn(),
+        warmPeerTrustStore: vi.fn(),
+      } as unknown as MessagesRuntimeShared,
+      schedulePendingMessageSync: vi.fn(),
+    });
+
+    await runtime.resumePendingOutboundMessages();
+
+    expect(ratchetEncryptMock).not.toHaveBeenCalled();
+    expect(apiPostMock).toHaveBeenCalledWith(
+      "/messages",
+      expect.objectContaining({
+        clientMessageId,
+        recipientUserId: "user-peer",
+        messages: [
+          expect.objectContaining({
+            ciphertext: "stored-sender-key",
+            type: "sender_key_distribution",
+          }),
+        ],
+      })
+    );
+    expect(removeOutboundQueueItemMock).toHaveBeenCalledWith(clientMessageId);
+    expect(persistConversationsMock).not.toHaveBeenCalled();
   });
 
   it("resumePendingOutboundMessages quarantines messages that exceed retry budget", async () => {

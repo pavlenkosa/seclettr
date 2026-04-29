@@ -74,6 +74,10 @@ type GroupCallReservation = {
   reused: boolean;
 };
 
+type CreateCallResponse =
+  | { callId: string }
+  | { callId: string; created: boolean };
+
 const CALL_ROUTE_RATE_LIMIT_WINDOW_SEC = 60;
 const CALL_ROUTE_RATE_LIMIT_MAX = 90;
 
@@ -541,7 +545,7 @@ async function createOrJoinGroupCall(
     sessionId: string;
     callType: CreateCallBody["callType"];
   }
-): Promise<{ callId: string }> {
+): Promise<{ callId: string; created: boolean }> {
   const { groupId, userId, deviceId, sessionId, callType } = params;
   const groupCall = await reserveGroupCall(groupId, userId, callType);
 
@@ -553,7 +557,7 @@ async function createOrJoinGroupCall(
       deviceId,
       sessionId,
     });
-    return { callId: groupCall.callId };
+    return { callId: groupCall.callId, created: false };
   }
 
   recordCallEvent("initiated");
@@ -588,7 +592,7 @@ async function createOrJoinGroupCall(
     initialPresence
   );
 
-  return { callId: groupCall.callId };
+  return { callId: groupCall.callId, created: true };
 }
 
 function notifyOfflineDirectCalleeAboutInvite(
@@ -662,7 +666,7 @@ async function createDirectCall(
 async function handleCreateCallRequest(
   request: FastifyRequest,
   reply: FastifyReply
-): Promise<{ callId: string } | undefined> {
+): Promise<CreateCallResponse | undefined> {
   const body = parseOrReply(reply, CreateCallBodySchema, request.body);
   if (!body) return undefined;
   if (!(await validateCreateCallTarget(reply, request.auth.sub, body))) {

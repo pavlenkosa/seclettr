@@ -19,6 +19,11 @@ const {
   clearUploadLocalSourceMock,
   ensureSenderKeyDistributedToGroupMembersMock,
   encryptGroupAttachmentEnvelopeMock,
+  persistGroupOutboundQueueItemMock,
+  removeGroupOutboundQueueItemMock,
+  loadGroupOutboundQueueItemMock,
+  incrementGroupOutboundRetryCountMock,
+  loadAllPendingGroupOutboundItemsMock,
 } = vi.hoisted(() => ({
   apiPostMock: vi.fn(),
   apiUploadMock: vi.fn(),
@@ -32,6 +37,11 @@ const {
   clearUploadLocalSourceMock: vi.fn(),
   ensureSenderKeyDistributedToGroupMembersMock: vi.fn(),
   encryptGroupAttachmentEnvelopeMock: vi.fn(),
+  persistGroupOutboundQueueItemMock: vi.fn(),
+  removeGroupOutboundQueueItemMock: vi.fn(),
+  loadGroupOutboundQueueItemMock: vi.fn(),
+  incrementGroupOutboundRetryCountMock: vi.fn(),
+  loadAllPendingGroupOutboundItemsMock: vi.fn(),
 }));
 
 vi.mock("@/lib/api", () => ({
@@ -63,19 +73,24 @@ vi.mock("@/lib/group-sender-key", () => ({
 
 function mockEncryptedAttachmentEnvelope(
   overrides: Partial<{
+    groupId: string;
+    senderDeviceId: string;
     distributionId: string;
     chainId: number;
-    messageId: string;
+    messageId: number;
     ciphertext: string;
     signature: string;
   }> = {}
 ) {
   return {
+    groupId: "group-1",
+    senderDeviceId: "device-me",
     distributionId: "distribution-1",
     chainId: 1,
-    messageId: "encrypted-attachment-1",
+    messageId: 1,
     ciphertext: "ciphertext",
     signature: "signature",
+    aeadVersion: 1,
     ...overrides,
   };
 }
@@ -85,6 +100,14 @@ vi.mock("@/stores/groups/group-helpers", () => ({
     ensureSenderKeyDistributedToGroupMembersMock,
   formatSenderLabel: (deviceId: string, isOwn: boolean) =>
     isOwn ? "You" : `@${deviceId}`,
+}));
+
+vi.mock("@/stores/groups/group-outbound-queue", () => ({
+  persistGroupOutboundQueueItem: persistGroupOutboundQueueItemMock,
+  removeGroupOutboundQueueItem: removeGroupOutboundQueueItemMock,
+  loadGroupOutboundQueueItem: loadGroupOutboundQueueItemMock,
+  incrementGroupOutboundRetryCount: incrementGroupOutboundRetryCountMock,
+  loadAllPendingGroupOutboundItems: loadAllPendingGroupOutboundItemsMock,
 }));
 
 function createGroup(): GroupChat {
@@ -166,6 +189,11 @@ describe("createGroupsOutboundRuntime attachment flow", () => {
     encryptGroupAttachmentEnvelopeMock
       .mockReset()
       .mockResolvedValue(mockEncryptedAttachmentEnvelope());
+    persistGroupOutboundQueueItemMock.mockReset().mockResolvedValue(undefined);
+    removeGroupOutboundQueueItemMock.mockReset().mockResolvedValue(undefined);
+    loadGroupOutboundQueueItemMock.mockReset().mockResolvedValue(null);
+    incrementGroupOutboundRetryCountMock.mockReset().mockResolvedValue(1);
+    loadAllPendingGroupOutboundItemsMock.mockReset().mockResolvedValue([]);
   });
 
   it("removes the optimistic group attachment when upload is cancelled", async () => {
@@ -400,18 +428,12 @@ describe("createGroupsOutboundRuntime attachment flow", () => {
     });
 
     encryptGroupAttachmentEnvelopeMock
-      .mockResolvedValueOnce(
+      .mockReset()
+      .mockResolvedValue(
         mockEncryptedAttachmentEnvelope({
-          messageId: "encrypted-attachment-1",
+          messageId: 2,
           ciphertext: "ciphertext-1",
           signature: "signature-1",
-        })
-      )
-      .mockResolvedValueOnce(
-        mockEncryptedAttachmentEnvelope({
-          messageId: "encrypted-attachment-2",
-          ciphertext: "ciphertext-2",
-          signature: "signature-2",
         })
       );
 
@@ -452,10 +474,87 @@ describe("createGroupsOutboundRuntime attachment flow", () => {
       ([url]) => url === "/groups/group-1/messages"
     );
     expect(groupMessagePosts).toHaveLength(2);
-    expect(encryptGroupAttachmentEnvelopeMock).toHaveBeenCalledTimes(2);
+    expect(encryptGroupAttachmentEnvelopeMock).toHaveBeenCalledTimes(1);
+    expect(groupMessagePosts[1]?.[1]).toEqual(groupMessagePosts[0]?.[1]);
     expect(state.groups["group-1"]?.messages[0]).toMatchObject({
       id: "55555555-5555-4555-8555-555555555555",
       status: "sent",
+    });
+  });
+
+  it("manual attachment retry reuses the cached encrypted group envelope", async () => {
+    const refreshGroup = vi.fn(async () => {});
+    let state = createState({
+      groups: {
+        "group-1": createGroup(),
+      },
+      refreshGroup,
+    });
+    const setState = (
+      partial:
+        | Partial<GroupsState>
+        | ((current: GroupsState) => Partial<GroupsState>)
+    ) => {
+      const update = typeof partial === "function" ? partial(state) : partial;
+      state = { ...state, ...update };
+    };
+
+    const file = new File([new Uint8Array([1, 2, 3])], "photo.png", {
+      type: "image/png",
+    });
+
+    apiPostMock
+      .mockResolvedValueOnce({
+        attachmentId: "11111111-1111-4111-8111-111111111111",
+        uploadUrl: "https://upload.invalid",
+        fields: {},
+      })
+      .mockRejectedValueOnce(new Error("message post failed"));
+    uploadFormDataWithProgressMock.mockResolvedValue(true);
+
+    const runtime = createGroupsOutboundRuntime({
+      set: setState,
+      get: () => state,
+      shared: {
+        getMyUserId: () => "me",
+        getMyDeviceId: () => "device-me",
+        getStorageKey: () => ({}) as CryptoKey,
+        createUnknownGroupChat: vi.fn(),
+      } as unknown as GroupsRuntimeShared,
+      sendSenderKeyDistribution: vi.fn(async () => ["device-alice"]),
+    });
+
+    await expect(runtime.sendGroupFileAttachment("group-1", file)).rejects.toThrow(
+      "message post failed"
+    );
+
+    const failedMessage = state.groups["group-1"]?.messages[0];
+    const groupMessagePosts = apiPostMock.mock.calls.filter(
+      ([url]) => url === "/groups/group-1/messages"
+    );
+    const firstPayload = groupMessagePosts[0]?.[1];
+    expect(failedMessage?.status).toBe("error");
+
+    apiPostMock.mockReset().mockResolvedValueOnce({
+      ok: true,
+      serverMessageId: "66666666-6666-4666-8666-666666666666",
+      createdAt: "2026-01-01T00:00:00.000Z",
+    });
+    encryptAttachmentMock.mockClear();
+    encryptGroupAttachmentEnvelopeMock.mockClear();
+    uploadFormDataWithProgressMock.mockClear();
+
+    await runtime.retryGroupMessage("group-1", failedMessage?.id ?? "");
+
+    expect(encryptAttachmentMock).not.toHaveBeenCalled();
+    expect(encryptGroupAttachmentEnvelopeMock).not.toHaveBeenCalled();
+    expect(uploadFormDataWithProgressMock).not.toHaveBeenCalled();
+    expect(apiPostMock).toHaveBeenCalledWith("/groups/group-1/messages", firstPayload);
+    expect(clearUploadLocalSourceMock).toHaveBeenCalledWith(failedMessage?.id);
+    expect(state.groups["group-1"]?.messages[0]).toMatchObject({
+      id: "66666666-6666-4666-8666-666666666666",
+      status: "sent",
+      type: "attachment",
     });
   });
 });

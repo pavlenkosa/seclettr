@@ -8,6 +8,8 @@ import type {
 } from "./composer-recording-runtime-shared";
 import { logger } from "@/lib/logger.js";
 
+const RECORDER_TIMESLICE_MS = 1_000;
+
 interface UseComposerRecorderLifecycleOptions extends UseComposerRecordingOptions {
   recordingKind: RecordMode | null;
   refs: ComposerRecordingRuntimeRefs;
@@ -76,6 +78,16 @@ async function requestVideoCaptureStream(): Promise<MediaStream> {
   return resolvedStream;
 }
 
+function requestFinalRecorderData(recorder: MediaRecorder): void {
+  if (recorder.state === "inactive") return;
+  try {
+    recorder.requestData();
+  } catch {
+    // Some browsers throw if the recorder is already finishing; stop() still
+    // emits the final dataavailable event there.
+  }
+}
+
 export function useComposerRecorderLifecycle({
   sending,
   onSendVoiceBlob,
@@ -100,6 +112,7 @@ export function useComposerRecorderLifecycle({
     refs.discardRecordingOnStopRef.current = !!(options?.discard);
     if (!recorder) return;
     if (recorder.state !== "inactive") {
+      requestFinalRecorderData(recorder);
       recorder.stop();
       return;
     }
@@ -175,7 +188,7 @@ export function useComposerRecorderLifecycle({
       };
 
       refs.mediaRecorderRef.current = recorder;
-      recorder.start();
+      recorder.start(RECORDER_TIMESLICE_MS);
     } catch (error) {
       cleanupRecorderState();
       logger.error(`${kind} recording failed:`, error);
@@ -197,6 +210,7 @@ export function useComposerRecorderLifecycle({
     cleanupRecordingFeedback();
     if (refs.mediaRecorderRef.current && refs.mediaRecorderRef.current.state !== "inactive") {
       refs.discardRecordingOnStopRef.current = true;
+      requestFinalRecorderData(refs.mediaRecorderRef.current);
       refs.mediaRecorderRef.current.stop();
     }
     stopMediaCapture(refs);

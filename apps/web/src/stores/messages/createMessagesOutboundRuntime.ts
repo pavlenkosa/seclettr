@@ -614,13 +614,30 @@ export function createMessagesOutboundRuntime({
       });
     }
 
+    const clientMessageId = crypto.randomUUID();
+    await persistOutboundQueueItem({
+      clientMessageId,
+      recipientUserId,
+      messageType: "sender_key_distribution",
+      envelopes: messages.map((message) => ({
+        recipientDeviceId: message.recipientDeviceId,
+        ciphertext: message.ciphertext,
+        type: message.type,
+        x3dhHeader: message.x3dhHeader as OutboundQueueDeviceEnvelope["x3dhHeader"],
+        oneTimePreKeyReservationToken: message.oneTimePreKeyReservationToken,
+      })),
+      createdAt: Date.now(),
+      retryCount: 0,
+    });
+
     try {
       await api.post("/messages", {
         version: MESSAGE_PROTOCOL_VERSION,
-        clientMessageId: crypto.randomUUID(),
+        clientMessageId,
         recipientUserId,
         messages,
       });
+      removeOutboundQueueItem(clientMessageId).catch(() => null);
     } catch (error) {
       if (error instanceof ApiError && error.status === 404) {
         shared.recipientDeviceDirectory.invalidateRecipientDeviceCache(
@@ -944,17 +961,22 @@ export function createMessagesOutboundRuntime({
     for (const item of items) {
       const conv = state.conversations[item.recipientUserId];
       const bubble = conv?.messages.find((m) => m.id === item.clientMessageId);
+      const requiresVisibleBubble =
+        item.messageType !== "sender_key_distribution";
 
-      if (!bubble) {
+      if (requiresVisibleBubble && !bubble) {
         // Orphan — no UI bubble, prune.
         await removeOutboundQueueItem(item.clientMessageId);
         continue;
       }
 
       if (
-        bubble.status === "sent" ||
-        bubble.status === "delivered" ||
-        bubble.status === "read"
+        bubble &&
+        (
+          bubble.status === "sent" ||
+          bubble.status === "delivered" ||
+          bubble.status === "read"
+        )
       ) {
         await removeOutboundQueueItem(item.clientMessageId);
         continue;
@@ -988,26 +1010,28 @@ export function createMessagesOutboundRuntime({
           })),
         });
 
-        let sentConversations: Record<string, Conversation> | null = null;
-        set((s) => {
-          const c = s.conversations[item.recipientUserId];
-          if (!c) return {};
-          const nextConversations = {
-            ...s.conversations,
-            [item.recipientUserId]: {
-              ...c,
-              messages: c.messages.map((m) =>
-                m.id === item.clientMessageId
-                  ? { ...m, status: "sent" as const }
-                  : m
-              ),
-            },
-          };
-          sentConversations = nextConversations;
-          return { conversations: nextConversations };
-        });
-        if (sentConversations) {
-          await persistConversations(sentConversations);
+        if (requiresVisibleBubble) {
+          let sentConversations: Record<string, Conversation> | null = null;
+          set((s) => {
+            const c = s.conversations[item.recipientUserId];
+            if (!c) return {};
+            const nextConversations = {
+              ...s.conversations,
+              [item.recipientUserId]: {
+                ...c,
+                messages: c.messages.map((m) =>
+                  m.id === item.clientMessageId
+                    ? { ...m, status: "sent" as const }
+                    : m
+                ),
+              },
+            };
+            sentConversations = nextConversations;
+            return { conversations: nextConversations };
+          });
+          if (sentConversations) {
+            await persistConversations(sentConversations);
+          }
         }
         await removeOutboundQueueItem(item.clientMessageId);
       } catch {

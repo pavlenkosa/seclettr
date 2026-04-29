@@ -20,12 +20,14 @@ interface CreateGroupsLiveSyncRuntimeOptions {
   set: SetGroupsState;
   get: GetGroupsState;
   shared: GroupsRuntimeShared;
+  resumePendingGroupOutboundMessages?: () => Promise<void>;
 }
 
 export function createGroupsLiveSyncRuntime({
   set,
   get,
   shared,
+  resumePendingGroupOutboundMessages,
 }: CreateGroupsLiveSyncRuntimeOptions) {
   async function handleIncomingGroupMessage(
     incoming: Parameters<GroupsState["handleIncomingGroupMessage"]>[0]
@@ -136,7 +138,14 @@ export function createGroupsLiveSyncRuntime({
   }
 
   function startListening(): () => void {
-    return wsClient.on((message) => {
+    const unsubscribeConnection = wsClient.onConnectionChange((connected) => {
+      if (!connected) return;
+      resumePendingGroupOutboundMessages?.().catch((error) => {
+        logger.warn("[GROUP] outbound queue resume on reconnect failed", error);
+      });
+    });
+
+    const unsubscribeMessages = wsClient.on((message) => {
       if (message.type === "group_message.new") {
         handleIncomingGroupMessage(message).catch((error) => {
           logger.error(
@@ -154,6 +163,11 @@ export function createGroupsLiveSyncRuntime({
         });
       }
     });
+
+    return () => {
+      unsubscribeConnection();
+      unsubscribeMessages();
+    };
   }
 
   return {

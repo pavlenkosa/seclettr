@@ -477,16 +477,21 @@ export function useGroupCallSessionLifecycle({
           const existing = await api.getActiveGroupCall(session.groupId);
           await abortIfStaleSessionRun();
           const nextHostUserId = existing?.callerUserId ?? userId;
-          const resolvedCallId =
-            existing?.callId ??
-            (
-              await api.post<{ callId: string }>("/calls", {
+          let resolvedCallId = existing?.callId ?? null;
+          let serverCreatedCall = existing === null;
+          if (!resolvedCallId) {
+            const created = await api.post<{ callId: string; created?: boolean }>(
+              "/calls",
+              {
                 groupId: session.groupId,
                 callType: session.callType,
-              })
-            ).callId;
+              }
+            );
+            resolvedCallId = created.callId;
+            serverCreatedCall = created.created ?? true;
+          }
           createdCallId = resolvedCallId;
-          createdHere = existing === null;
+          createdHere = existing === null && serverCreatedCall;
           joinedHere = false;
           await abortIfStaleSessionRun(endCreatedCall);
 
@@ -517,6 +522,20 @@ export function useGroupCallSessionLifecycle({
           );
           syncParticipantDevices(participantDevices);
 
+          try {
+            await api.put<{ ok: boolean }>(`/calls/${resolvedCallId}/status`, {
+              status: "active",
+            });
+          } catch {
+            // Best-effort room state update.
+          }
+
+          await abortIfStaleSessionRun(async () => {
+            await leaveJoinedCall();
+            stopLocalStream(stream);
+            await endCreatedCall();
+          });
+
           const sfuClient = await createSfuClientWithRetry(
             resolvedCallId,
             stream,
@@ -526,14 +545,6 @@ export function useGroupCallSessionLifecycle({
             sfuClient.close();
           });
           sfuClientRef.current = sfuClient;
-
-          try {
-            await api.put<{ ok: boolean }>(`/calls/${resolvedCallId}/status`, {
-              status: "active",
-            });
-          } catch {
-            // Best-effort room state update.
-          }
 
           await abortIfStaleSessionRun();
           dispatchStatus({ type: "SESSION_READY" });

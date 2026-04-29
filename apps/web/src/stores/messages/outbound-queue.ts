@@ -6,7 +6,7 @@ const OUTBOUND_QUEUE_PREFIX = "outbound-queue:v1:";
 export interface OutboundQueueDeviceEnvelope {
   recipientDeviceId: string;
   ciphertext: string;
-  type: "text" | "attachment";
+  type: "text" | "attachment" | "sender_key_distribution";
   attachmentId?: string;
   x3dhHeader?: {
     ephemeralKey: string;
@@ -20,7 +20,7 @@ export interface OutboundQueueDeviceEnvelope {
 export interface OutboundQueueItem {
   clientMessageId: string;
   recipientUserId: string;
-  messageType: "text" | "attachment";
+  messageType: "text" | "attachment" | "sender_key_distribution";
   envelopes: OutboundQueueDeviceEnvelope[];
   createdAt: number;
   retryCount: number;

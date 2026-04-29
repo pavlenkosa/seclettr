@@ -1,6 +1,7 @@
 import {
   MESSAGE_PROTOCOL_VERSION,
   PlaintextAttachmentMessageSchema,
+  type SendGroupMessageRequestWire,
   type SendGroupMessageResponse,
   type PlaintextSenderKeyDistributionMessage,
 } from "@seclettr/protocol";
@@ -18,17 +19,28 @@ import {
 import {
   encryptGroupAttachmentEnvelope,
   encryptGroupTextEnvelope,
+  type GroupCipherEnvelope,
 } from "@/lib/group-sender-key";
 import {
   ensureSenderKeyDistributedToGroupMembers,
   formatSenderLabel,
 } from "./group-helpers";
+import {
+  incrementGroupOutboundRetryCount,
+  loadAllPendingGroupOutboundItems,
+  loadGroupOutboundQueueItem,
+  persistGroupOutboundQueueItem,
+  removeGroupOutboundQueueItem,
+  type GroupOutboundQueueItem,
+} from "./group-outbound-queue";
 import type {
   GetGroupsState,
   GroupChatMessage,
   SetGroupsState,
 } from "./groups-store-runtime-types";
 import type { GroupsRuntimeShared } from "./groups-runtime-shared";
+
+const MAX_GROUP_OUTBOUND_RETRIES = 5;
 
 function toSafeBlobChunk(data: Uint8Array): ArrayBuffer {
   const buffer = new ArrayBuffer(data.byteLength);
@@ -69,6 +81,69 @@ interface OptimisticGroupAttachmentParams {
   set: SetGroupsState;
   groupId: string;
   optimisticId: string;
+}
+
+const UUID_PATTERN =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
+function createLocalMessageIdentifiers(): {
+  optimisticId: string;
+  clientMessageId: string;
+} {
+  const clientMessageId = crypto.randomUUID();
+  return {
+    optimisticId: `local-${clientMessageId}`,
+    clientMessageId,
+  };
+}
+
+function clientMessageIdForOptimisticId(optimisticId: string): string {
+  const candidate = optimisticId.startsWith("local-")
+    ? optimisticId.slice("local-".length)
+    : optimisticId;
+  return UUID_PATTERN.test(candidate) ? candidate : crypto.randomUUID();
+}
+
+function buildGroupMessagePayload(
+  encryptedEnvelope: GroupCipherEnvelope,
+  clientMessageId: string,
+  type: "text" | "attachment",
+  attachmentId?: string
+): SendGroupMessageRequestWire {
+  const payload: SendGroupMessageRequestWire = {
+    version: MESSAGE_PROTOCOL_VERSION,
+    clientMessageId,
+    groupId: encryptedEnvelope.groupId,
+    distributionId: encryptedEnvelope.distributionId,
+    chainId: encryptedEnvelope.chainId,
+    messageId: encryptedEnvelope.messageId,
+    ciphertext: encryptedEnvelope.ciphertext,
+    signature: encryptedEnvelope.signature,
+    type,
+    aeadVersion: encryptedEnvelope.aeadVersion,
+  };
+
+  return attachmentId ? { ...payload, attachmentId } : payload;
+}
+
+async function postGroupMessagePayloadWithRetry(
+  groupId: string,
+  payload: SendGroupMessageRequestWire
+): Promise<SendGroupMessageResponse> {
+  const postPayload = () =>
+    api.post<SendGroupMessageResponse>(
+      `/groups/${encodeURIComponent(groupId)}/messages`,
+      payload
+    );
+
+  try {
+    return await postPayload();
+  } catch (error) {
+    if (!isSenderKeyConflictError(error)) {
+      throw error;
+    }
+    return postPayload();
+  }
 }
 
 function markOptimisticGroupAttachmentError({
@@ -177,44 +252,6 @@ async function uploadCiphertextBlob(
   }
 }
 
-async function sendAttachmentEnvelopeWithRetry(
-  storageKey: CryptoKey,
-  groupId: string,
-  myDeviceId: string,
-  attachmentPayload: ReturnType<typeof PlaintextAttachmentMessageSchema.parse>,
-  attachmentId: string
-): Promise<SendGroupMessageResponse> {
-  const sendEnvelope = async () => {
-    const encryptedEnvelope = await encryptGroupAttachmentEnvelope(
-      storageKey,
-      groupId,
-      myDeviceId,
-      attachmentPayload
-    );
-    return api.post<SendGroupMessageResponse>(`/groups/${encodeURIComponent(groupId)}/messages`, {
-      version: MESSAGE_PROTOCOL_VERSION,
-      clientMessageId: crypto.randomUUID(),
-      groupId,
-      distributionId: encryptedEnvelope.distributionId,
-      chainId: encryptedEnvelope.chainId,
-      messageId: encryptedEnvelope.messageId,
-      ciphertext: encryptedEnvelope.ciphertext,
-      signature: encryptedEnvelope.signature,
-      type: "attachment" as const,
-      attachmentId,
-    });
-  };
-
-  try {
-    return await sendEnvelope();
-  } catch (error) {
-    if (!isSenderKeyConflictError(error)) {
-      throw error;
-    }
-    return sendEnvelope();
-  }
-}
-
 interface CreateGroupsOutboundRuntimeOptions {
   set: SetGroupsState;
   get: GetGroupsState;
@@ -252,6 +289,8 @@ export function createGroupsOutboundRuntime({
   shared,
   sendSenderKeyDistribution,
 }: CreateGroupsOutboundRuntimeOptions) {
+  const pendingGroupOutboundEnvelopes = new Map<string, GroupOutboundQueueItem>();
+
   async function ensureGroupSenderKeys(
     groupId: string,
     members: ReturnType<GetGroupsState>["groups"][string]["members"]
@@ -278,46 +317,134 @@ export function createGroupsOutboundRuntime({
     };
   }
 
-  async function postEncryptedGroupText(
+  async function encryptGroupTextPayload(
     groupId: string,
+    clientMessageId: string,
     content: string,
     reply?: { id: string; snippet: string }
-  ): Promise<SendGroupMessageResponse> {
+  ): Promise<SendGroupMessageRequestWire> {
     const myDeviceId = shared.getMyDeviceId();
     const storageKey = shared.getStorageKey();
     if (!myDeviceId || !storageKey) {
       throw new Error("Not authenticated");
     }
 
-    const sendWithEnvelope = async () => {
-      const encryptedEnvelope = await encryptGroupTextEnvelope(
-        storageKey,
-        groupId,
-        myDeviceId,
-        content,
-        reply
-      );
-      return api.post<SendGroupMessageResponse>(`/groups/${encodeURIComponent(groupId)}/messages`, {
-        version: MESSAGE_PROTOCOL_VERSION,
-        clientMessageId: crypto.randomUUID(),
-        groupId,
-        distributionId: encryptedEnvelope.distributionId,
-        chainId: encryptedEnvelope.chainId,
-        messageId: encryptedEnvelope.messageId,
-        ciphertext: encryptedEnvelope.ciphertext,
-        signature: encryptedEnvelope.signature,
-        type: "text" as const,
-      });
-    };
+    const encryptedEnvelope = await encryptGroupTextEnvelope(
+      storageKey,
+      groupId,
+      myDeviceId,
+      content,
+      reply
+    );
+    return buildGroupMessagePayload(encryptedEnvelope, clientMessageId, "text");
+  }
 
-    try {
-      return await sendWithEnvelope();
-    } catch (error) {
-      if (!isSenderKeyConflictError(error)) {
-        throw error;
+  function markLocalGroupMessageStatus(
+    groupId: string,
+    localMessageId: string,
+    status: GroupChatMessage["status"]
+  ): void {
+    set((state) => {
+      const currentGroup = state.groups[groupId];
+      if (!currentGroup) return {};
+      return {
+        groups: {
+          ...state.groups,
+          [groupId]: {
+            ...currentGroup,
+            messages: currentGroup.messages.map((entry) =>
+              entry.id === localMessageId ? { ...entry, status } : entry
+            ),
+          },
+        },
+      };
+    });
+  }
+
+  function ensureQueuedOptimisticMessage(item: GroupOutboundQueueItem): void {
+    set((state) => {
+      const currentGroup =
+        state.groups[item.groupId] ??
+        shared.createUnknownGroupChat(item.groupId, { historyLoaded: true });
+      const hasMessage = currentGroup.messages.some(
+        (message) => message.id === item.localMessageId
+      );
+      if (hasMessage) {
+        return {
+          groups: {
+            ...state.groups,
+            [item.groupId]: {
+              ...currentGroup,
+              messages: currentGroup.messages.map((message) =>
+                message.id === item.localMessageId
+                  ? { ...message, status: "sending" as const }
+                  : message
+              ),
+            },
+          },
+        };
       }
-      return sendWithEnvelope();
-    }
+
+      const restoredMessage = {
+        ...item.optimisticMessage,
+        status: "sending" as const,
+      };
+      const nextMessages = [...currentGroup.messages, restoredMessage].sort(
+        (left, right) => left.timestamp - right.timestamp
+      );
+      return {
+        groups: {
+          ...state.groups,
+          [item.groupId]: {
+            ...currentGroup,
+            messages: nextMessages,
+            lastMessageAt: nextMessages.at(-1)?.timestamp ?? currentGroup.lastMessageAt,
+          },
+        },
+      };
+    });
+  }
+
+  function markQueuedMessageSent(
+    item: GroupOutboundQueueItem,
+    sentMessage: SendGroupMessageResponse
+  ): void {
+    set((state) => {
+      const currentGroup = state.groups[item.groupId];
+      if (!currentGroup) return {};
+      const timestamp = parseServerMessageTimestamp(
+        sentMessage.createdAt,
+        item.optimisticMessage.timestamp
+      );
+      const nextMessages = currentGroup.messages
+        .map((message) =>
+          message.id === item.localMessageId
+            ? {
+                ...message,
+                id: sentMessage.serverMessageId,
+                timestamp,
+                status: "sent" as const,
+              }
+            : message
+        )
+        .sort((left, right) => left.timestamp - right.timestamp);
+      return {
+        groups: {
+          ...state.groups,
+          [item.groupId]: {
+            ...currentGroup,
+            messages: nextMessages,
+            lastMessageAt: nextMessages.at(-1)?.timestamp ?? currentGroup.lastMessageAt,
+          },
+        },
+      };
+    });
+  }
+
+  async function deliverQueuedGroupOutboundItem(
+    item: GroupOutboundQueueItem
+  ): Promise<SendGroupMessageResponse> {
+    return postGroupMessagePayloadWithRetry(item.groupId, item.payload);
   }
 
   async function uploadAndEncryptGroupAttachment({
@@ -354,7 +481,11 @@ export function createGroupsOutboundRuntime({
 
     // Add optimistic message early (before upload) so the sender sees it with a progress bar.
     const isRetry = Boolean(replaceMessageId);
-    const optimisticId = replaceMessageId ?? `local-${crypto.randomUUID()}`;
+    const localMessageIds = createLocalMessageIdentifiers();
+    const optimisticId = replaceMessageId ?? localMessageIds.optimisticId;
+    const clientMessageId = replaceMessageId
+      ? clientMessageIdForOptimisticId(replaceMessageId)
+      : localMessageIds.clientMessageId;
     const effectiveTimestamp = optimisticTimestamp ?? Date.now();
     const optimisticMessage: GroupChatMessage = {
       id: optimisticId,
@@ -440,45 +571,35 @@ export function createGroupsOutboundRuntime({
     await ensureGroupSenderKeys(groupId, members);
 
     try {
-      const sentMessage = await sendAttachmentEnvelopeWithRetry(
+      const encryptedEnvelope = await encryptGroupAttachmentEnvelope(
         storageKey,
         groupId,
         myDeviceId,
-        attachmentPayload,
+        attachmentPayload
+      );
+      const outboundPayload = buildGroupMessagePayload(
+        encryptedEnvelope,
+        clientMessageId,
+        "attachment",
         uploadInit.attachmentId
       );
+      const queueItem: GroupOutboundQueueItem = {
+        localMessageId: optimisticId,
+        groupId,
+        clientMessageId,
+        messageType: "attachment",
+        payload: outboundPayload,
+        optimisticMessage,
+        createdAt: Date.now(),
+        retryCount: 0,
+      };
+      pendingGroupOutboundEnvelopes.set(optimisticId, queueItem);
+      await persistGroupOutboundQueueItem(queueItem);
+      const sentMessage = await deliverQueuedGroupOutboundItem(queueItem);
 
-      set((state) => {
-        const group = state.groups[groupId];
-        if (!group) return {};
-        const timestamp = parseServerMessageTimestamp(
-          sentMessage.createdAt,
-          optimisticMessage.timestamp
-        );
-        const nextMessages = group.messages
-          .map((msg) =>
-            msg.id === optimisticId
-              ? {
-                  ...msg,
-                  id: sentMessage.serverMessageId,
-                  timestamp,
-                  status: "sent" as const,
-                }
-              : msg
-          )
-          .sort((left, right) => left.timestamp - right.timestamp);
-        return {
-          groups: {
-            ...state.groups,
-            [groupId]: {
-              ...group,
-              messages: nextMessages,
-              lastMessageAt: nextMessages.at(-1)?.timestamp ?? group.lastMessageAt,
-            },
-          },
-        };
-      });
-
+      markQueuedMessageSent(queueItem, sentMessage);
+      pendingGroupOutboundEnvelopes.delete(optimisticId);
+      await removeGroupOutboundQueueItem(optimisticId).catch(() => null);
       clearUploadLocalSource(optimisticId);
     } catch (error) {
       markOptimisticGroupAttachmentError(optimisticAttachmentParams);
@@ -486,7 +607,54 @@ export function createGroupsOutboundRuntime({
     }
   }
 
+  async function resumePendingGroupOutboundMessages(): Promise<void> {
+    const items = await loadAllPendingGroupOutboundItems();
+    for (const item of items) {
+      const group = get().groups[item.groupId];
+      const existingMessage = group?.messages.find(
+        (message) => message.id === item.localMessageId
+      );
+      if (
+        existingMessage?.status === "sent" ||
+        existingMessage?.status === "delivered"
+      ) {
+        await removeGroupOutboundQueueItem(item.localMessageId);
+        pendingGroupOutboundEnvelopes.delete(item.localMessageId);
+        continue;
+      }
+
+      const newCount = await incrementGroupOutboundRetryCount(item.localMessageId);
+      if (newCount > MAX_GROUP_OUTBOUND_RETRIES) {
+        ensureQueuedOptimisticMessage({
+          ...item,
+          optimisticMessage: {
+            ...item.optimisticMessage,
+            status: "error",
+          },
+        });
+        markLocalGroupMessageStatus(item.groupId, item.localMessageId, "error");
+        await removeGroupOutboundQueueItem(item.localMessageId);
+        pendingGroupOutboundEnvelopes.delete(item.localMessageId);
+        continue;
+      }
+
+      pendingGroupOutboundEnvelopes.set(item.localMessageId, item);
+      ensureQueuedOptimisticMessage(item);
+
+      try {
+        const sentMessage = await deliverQueuedGroupOutboundItem(item);
+        markQueuedMessageSent(item, sentMessage);
+        pendingGroupOutboundEnvelopes.delete(item.localMessageId);
+        await removeGroupOutboundQueueItem(item.localMessageId);
+      } catch {
+        markLocalGroupMessageStatus(item.groupId, item.localMessageId, "error");
+      }
+    }
+  }
+
   return {
+    resumePendingGroupOutboundMessages,
+
     sendGroupText: async (
       groupId: string,
       text: string,
@@ -500,7 +668,7 @@ export function createGroupsOutboundRuntime({
         throw new Error("Not authenticated");
       }
 
-      const optimisticId = `local-${crypto.randomUUID()}`;
+      const { optimisticId, clientMessageId } = createLocalMessageIdentifiers();
       const optimisticTimestamp = Date.now();
       const optimisticMessage: GroupChatMessage = {
         id: optimisticId,
@@ -536,38 +704,29 @@ export function createGroupsOutboundRuntime({
         await get().refreshGroup(groupId, { refreshDeviceLabels: false });
         const members = get().groups[groupId]?.members ?? [];
         await ensureGroupSenderKeys(groupId, members);
-        const sentMessage = await postEncryptedGroupText(groupId, trimmed, reply);
+        const outboundPayload = await encryptGroupTextPayload(
+          groupId,
+          clientMessageId,
+          trimmed,
+          reply
+        );
+        const queueItem: GroupOutboundQueueItem = {
+          localMessageId: optimisticId,
+          groupId,
+          clientMessageId,
+          messageType: "text",
+          payload: outboundPayload,
+          optimisticMessage,
+          createdAt: Date.now(),
+          retryCount: 0,
+        };
+        pendingGroupOutboundEnvelopes.set(optimisticId, queueItem);
+        await persistGroupOutboundQueueItem(queueItem);
+        const sentMessage = await deliverQueuedGroupOutboundItem(queueItem);
 
-        set((state) => {
-          const group = state.groups[groupId];
-          if (!group) return {};
-          const timestamp = parseServerMessageTimestamp(
-            sentMessage.createdAt,
-            optimisticTimestamp
-          );
-          const nextMessages = group.messages
-            .map((message) =>
-              message.id === optimisticId
-                ? {
-                    ...message,
-                    id: sentMessage.serverMessageId,
-                    timestamp,
-                    status: "sent" as const,
-                  }
-                : message
-            )
-            .sort((left, right) => left.timestamp - right.timestamp);
-          return {
-            groups: {
-              ...state.groups,
-              [groupId]: {
-                ...group,
-                messages: nextMessages,
-                lastMessageAt: nextMessages.at(-1)?.timestamp ?? group.lastMessageAt,
-              },
-            },
-          };
-        });
+        markQueuedMessageSent(queueItem, sentMessage);
+        pendingGroupOutboundEnvelopes.delete(optimisticId);
+        await removeGroupOutboundQueueItem(optimisticId).catch(() => null);
       } catch (error) {
         set((state) => {
           const group = state.groups[groupId];
@@ -602,6 +761,27 @@ export function createGroupsOutboundRuntime({
         return;
       }
 
+      const cachedQueueItem =
+        pendingGroupOutboundEnvelopes.get(message.id) ??
+        (await loadGroupOutboundQueueItem(message.id));
+      if (cachedQueueItem?.groupId === groupId) {
+        pendingGroupOutboundEnvelopes.set(message.id, cachedQueueItem);
+        markLocalGroupMessageStatus(groupId, messageId, "sending");
+
+        try {
+          const sentMessage = await deliverQueuedGroupOutboundItem(cachedQueueItem);
+          markQueuedMessageSent(cachedQueueItem, sentMessage);
+          pendingGroupOutboundEnvelopes.delete(message.id);
+          await removeGroupOutboundQueueItem(message.id).catch(() => null);
+          if (cachedQueueItem.messageType === "attachment") {
+            clearUploadLocalSource(message.id);
+          }
+        } catch {
+          markLocalGroupMessageStatus(groupId, messageId, "error");
+        }
+        return;
+      }
+
       if (message.rawType === "attachment" && message.type === "attachment") {
         const localSource = getUploadLocalSource(message.id);
         if (!localSource || !message.attachment) return;
@@ -625,91 +805,6 @@ export function createGroupsOutboundRuntime({
       }
 
       if (message.rawType !== "text" || message.type === "attachment") return;
-
-      const retryReply = message.replyTo
-        ? {
-            id: message.replyTo.id,
-            snippet: message.replyTo.content,
-          }
-        : undefined;
-
-      set((state) => {
-        const currentGroup = state.groups[groupId];
-        if (!currentGroup) return {};
-        return {
-          groups: {
-            ...state.groups,
-            [groupId]: {
-              ...currentGroup,
-              messages: currentGroup.messages.map((entry) =>
-                entry.id === messageId
-                  ? { ...entry, status: "sending" as const }
-                  : entry
-              ),
-            },
-          },
-        };
-      });
-
-      try {
-        await get().refreshGroup(groupId, { refreshDeviceLabels: false });
-        const members = get().groups[groupId]?.members ?? [];
-        await ensureGroupSenderKeys(groupId, members);
-        const sentMessage = await postEncryptedGroupText(
-          groupId,
-          message.content,
-          retryReply
-        );
-        set((state) => {
-          const currentGroup = state.groups[groupId];
-          if (!currentGroup) return {};
-          const timestamp = parseServerMessageTimestamp(
-            sentMessage.createdAt,
-            message.timestamp
-          );
-          const nextMessages = currentGroup.messages
-            .map((entry) =>
-              entry.id === messageId
-                ? {
-                    ...entry,
-                    id: sentMessage.serverMessageId,
-                    timestamp,
-                    status: "sent" as const,
-                  }
-                : entry
-            )
-            .sort((left, right) => left.timestamp - right.timestamp);
-          return {
-            groups: {
-              ...state.groups,
-              [groupId]: {
-                ...currentGroup,
-                messages: nextMessages,
-                lastMessageAt:
-                  nextMessages.at(-1)?.timestamp ?? currentGroup.lastMessageAt,
-              },
-            },
-          };
-        });
-      } catch {
-        set((state) => {
-          const currentGroup = state.groups[groupId];
-          if (!currentGroup) return {};
-          return {
-            groups: {
-              ...state.groups,
-              [groupId]: {
-                ...currentGroup,
-                messages: currentGroup.messages.map((entry) =>
-                  entry.id === messageId
-                    ? { ...entry, status: "error" as const }
-                    : entry
-                ),
-              },
-            },
-          };
-        });
-      }
     },
 
     sendGroupFileAttachment: async (groupId: string, file: File, mediaGroupId?: string) => {

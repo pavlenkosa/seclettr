@@ -10,6 +10,7 @@ const { listeners, fetchGroupDetailsMock, scheduleGroupLabelRefreshMock, toGroup
   vi.hoisted(() => ({
     listeners: {
       message: null as ((message: unknown) => void) | null,
+      connection: null as ((connected: boolean) => void) | null,
     },
     fetchGroupDetailsMock: vi.fn(),
     scheduleGroupLabelRefreshMock: vi.fn(),
@@ -35,6 +36,12 @@ vi.mock("@/lib/websocket", () => ({
       listeners.message = listener;
       return () => {
         listeners.message = null;
+      };
+    },
+    onConnectionChange: (listener: (connected: boolean) => void) => {
+      listeners.connection = listener;
+      return () => {
+        listeners.connection = null;
       };
     },
   },
@@ -83,6 +90,7 @@ function createState(overrides: Partial<GroupsState> = {}): GroupsState {
 describe("createGroupsLiveSyncRuntime", () => {
   beforeEach(() => {
     listeners.message = null;
+    listeners.connection = null;
     fetchGroupDetailsMock.mockReset();
     scheduleGroupLabelRefreshMock.mockReset();
     toGroupChatMock.mockClear();
@@ -278,6 +286,38 @@ describe("createGroupsLiveSyncRuntime", () => {
     await new Promise((resolve) => setTimeout(resolve, 0));
 
     expect(state.groups["group-1"]?.messages).toHaveLength(1);
+    stopListening();
+  });
+
+  it("resumes queued group outbound envelopes on reconnect", async () => {
+    let state = createState();
+    const setState = (
+      partial:
+        | Partial<GroupsState>
+        | ((current: GroupsState) => Partial<GroupsState>)
+    ) => {
+      const update = typeof partial === "function" ? partial(state) : partial;
+      state = { ...state, ...update };
+    };
+    const resumePendingGroupOutboundMessages = vi.fn(async () => {});
+
+    const runtime = createGroupsLiveSyncRuntime({
+      set: setState,
+      get: () => state,
+      shared: {
+        getMyDeviceId: () => "device-me",
+        getStorageKey: () => null,
+        createUnknownGroupChat: vi.fn(),
+        trimProcessedGroupMessageKeys: (keys: Set<string>) => keys,
+      } as unknown as GroupsRuntimeShared,
+      resumePendingGroupOutboundMessages,
+    });
+
+    const stopListening = runtime.startListening();
+    listeners.connection?.(true);
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    expect(resumePendingGroupOutboundMessages).toHaveBeenCalledTimes(1);
     stopListening();
   });
 });

@@ -38,6 +38,11 @@ const mocks = vi.hoisted(() => ({
 }));
 
 vi.mock("@/lib/api", () => ({
+  ApiError: class ApiError extends Error {
+    constructor(message: string, readonly status: number) {
+      super(message);
+    }
+  },
   api: {
     getActiveGroupCall: mocks.getActiveGroupCall,
     post: mocks.post,
@@ -209,6 +214,64 @@ describe("useGroupCallSessionLifecycle reconnect", () => {
     container.remove();
     vi.useRealTimers();
     delete (globalThis as typeof globalThis & { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT;
+  });
+
+  it("marks the joined room active before opening the SFU client", async () => {
+    const statusActions: string[] = [];
+    mocks.startGroupSfuClient.mockResolvedValue(createFakeSfuClient());
+
+    await act(async () => {
+      root.render(
+        <LifecycleHarness
+          onStatus={(action) => {
+            statusActions.push(action.type);
+          }}
+        />
+      );
+    });
+    await flushMicrotasks();
+
+    const activeStatusCallIndex = mocks.put.mock.calls.findIndex(([path, body]) =>
+      path === "/calls/call-1/status" &&
+      (body as { status?: string }).status === "active"
+    );
+    expect(activeStatusCallIndex).toBeGreaterThanOrEqual(0);
+    expect(mocks.startGroupSfuClient).toHaveBeenCalledTimes(1);
+    expect(mocks.put.mock.invocationCallOrder[activeStatusCallIndex]).toBeLessThan(
+      mocks.startGroupSfuClient.mock.invocationCallOrder[0] ?? Number.MAX_SAFE_INTEGER
+    );
+    expect(statusActions).toContain("SESSION_READY");
+  });
+
+  it("does not end a room when POST reuses a call created by a race", async () => {
+    const statusActions: string[] = [];
+    mocks.post.mockResolvedValueOnce({ callId: "call-1", created: false });
+    mocks.startGroupSfuClient.mockRejectedValue(new Error("sfu unavailable"));
+
+    await act(async () => {
+      root.render(
+        <LifecycleHarness
+          onStatus={(action) => {
+            statusActions.push(action.type);
+          }}
+        />
+      );
+    });
+    await flushMicrotasks();
+
+    for (const delayMs of [350, 700]) {
+      await act(async () => {
+        vi.advanceTimersByTime(delayMs);
+        await Promise.resolve();
+      });
+      await flushMicrotasks();
+    }
+
+    expect(mocks.startGroupSfuClient).toHaveBeenCalledTimes(3);
+    expect(statusActions).toContain("SESSION_ERROR");
+    expect(mocks.put.mock.calls).toEqual([
+      ["/calls/call-1/status", { status: "active" }],
+    ]);
   });
 
   it("rejoins the SFU transport after a transport failure", async () => {

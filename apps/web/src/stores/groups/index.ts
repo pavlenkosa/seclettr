@@ -34,7 +34,16 @@ export const useGroupsStore = create<GroupsState>((set, get) => {
     sendSenderKeyDistribution: (recipientUserId, payload, options) =>
       useMessagesStore.getState().sendSenderKeyDistribution(recipientUserId, payload, options),
   });
-  const liveSyncRuntime = createGroupsLiveSyncRuntime({ set, get, shared });
+  const {
+    resumePendingGroupOutboundMessages,
+    ...outboundActions
+  } = outboundRuntime;
+  const liveSyncRuntime = createGroupsLiveSyncRuntime({
+    set,
+    get,
+    shared,
+    resumePendingGroupOutboundMessages,
+  });
 
   return {
     ...createBaseState(),
@@ -60,7 +69,7 @@ export const useGroupsStore = create<GroupsState>((set, get) => {
 
     ...adminRuntime,
     ...historyRuntime,
-    ...outboundRuntime,
+    ...outboundActions,
     ...liveSyncRuntime,
 
     reset: () => {

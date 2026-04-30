@@ -261,6 +261,7 @@ interface CellPreviewController {
 
 interface MediaGroupCellProps {
   readonly msg: Message;
+  readonly fallbackCaption: string | undefined;
   readonly isLast: boolean;
   readonly isOwn: boolean;
   readonly timeLabel: string;
@@ -271,6 +272,7 @@ interface MediaGroupCellProps {
 
 function MediaGroupCell({
   msg,
+  fallbackCaption,
   isLast,
   isOwn,
   timeLabel,
@@ -321,16 +323,21 @@ function MediaGroupCell({
   );
 
   const buildPreviewData = useCallback((url: string, downloading: boolean): CellPreviewData => {
+    const caption = msg.attachment?.caption?.trim()
+      ? msg.attachment.caption
+      : fallbackCaption;
+
     return {
       url,
       mimeType: msg.attachment?.mimeType ?? "",
-      caption: msg.attachment?.caption,
+      caption,
       fileName: msg.attachment?.fileName,
       onDownload: () => void decryptAndDownload(),
       downloading,
     };
   }, [
     decryptAndDownload,
+    fallbackCaption,
     msg.attachment?.caption,
     msg.attachment?.fileName,
     msg.attachment?.mimeType,
@@ -459,6 +466,10 @@ export function MediaGroupAttachment({ messages, isOwn, timeLabel }: Props) {
   const controllerRef = useRef<Map<string, CellPreviewController>>(new Map());
   const mediaGroupRef = useRef<HTMLDivElement | null>(null);
 
+  const fallbackCaption = useMemo(() => {
+    const source = messages.find((message) => message.attachment?.caption?.trim());
+    return source?.attachment?.caption;
+  }, [messages]);
   const needsExpand = messages.length > MAX_COLLAPSED;
   const visible = needsExpand && !expanded ? messages.slice(0, MAX_COLLAPSED) : messages;
   const hiddenCount = messages.length - visible.length;
@@ -577,6 +588,7 @@ export function MediaGroupAttachment({ messages, isOwn, timeLabel }: Props) {
             <div key={msg.id} style={absoluteCellStyle}>
               <MediaGroupCell
                 msg={msg}
+                fallbackCaption={fallbackCaption}
                 isLast={isLast && hiddenCount === 0}
                 isOwn={isOwn}
                 timeLabel={timeLabel}

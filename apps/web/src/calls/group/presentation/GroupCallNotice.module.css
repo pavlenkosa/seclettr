@@ -4,6 +4,8 @@
   align-items: center;
   column-gap: 0.82rem;
   row-gap: 0.44rem;
+  z-index: 0;
+  overflow: hidden;
   --surface-panel-border: color-mix(in srgb, var(--panel-border-soft) 78%, transparent);
   --surface-panel-bg-start: color-mix(in srgb, var(--surface-float) 66%, var(--glass-surface-fill, transparent));
   --surface-panel-bg-end: color-mix(in srgb, var(--surface-shell-strong) 52%, var(--glass-surface-fill, transparent));
@@ -29,7 +31,7 @@
 @keyframes groupCallNoticeIn {
   from {
     opacity: 0;
-    transform: translateY(-8px) scale(0.985);
+    transform: translateY(4px) scale(0.992);
   }
   to {
     opacity: 1;

@@ -18,6 +18,7 @@ export function useGroupCallSessionRuntime({
   session,
   callId,
   userId,
+  callHostUserId,
   deviceId,
   identityDhKeyPair,
   localAdvertisedMediaEncryptionMode,
@@ -161,6 +162,9 @@ export function useGroupCallSessionRuntime({
     if (actionInFlightRef.current) {
       return;
     }
+    if (!userId || callHostUserId !== userId) {
+      return;
+    }
     actionInFlightRef.current = true;
 
     try {
@@ -181,10 +185,12 @@ export function useGroupCallSessionRuntime({
     }
   }, [
     cleanupLocalMedia,
+    callHostUserId,
     dispatchStatus,
     endServerRoom,
     onClose,
     resetMinimizedDock,
+    userId,
   ]);
 
   useGroupCallSessionLifecycle({

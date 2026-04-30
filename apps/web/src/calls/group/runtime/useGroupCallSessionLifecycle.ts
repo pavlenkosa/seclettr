@@ -54,6 +54,14 @@ function isRecoverableGroupCallBootstrapError(error: unknown): boolean {
     || message.includes("network");
 }
 
+const INITIAL_CALL_BOOTSTRAP_ATTEMPTS = 2;
+
+type CreateGroupCallResponse = {
+  callId: string;
+  created?: boolean;
+  callerUserId?: string;
+};
+
 interface UseGroupCallSessionLifecycleOptions {
   session: GroupCallPanelSession | null;
   userId: string | null;
@@ -241,7 +249,6 @@ export function useGroupCallSessionLifecycle({
       onRemoteMediaUpdate: updateRemoteMediaIfCurrent,
       onTransportFailed,
     });
-    const INITIAL_CALL_BOOTSTRAP_ATTEMPTS = 2;
     const INITIAL_SFU_START_ATTEMPTS = 3;
     const wait = (delayMs: number) =>
       new Promise<void>((resolve) => setTimeout(resolve, delayMs));
@@ -476,11 +483,11 @@ export function useGroupCallSessionLifecycle({
         try {
           const existing = await api.getActiveGroupCall(session.groupId);
           await abortIfStaleSessionRun();
-          const nextHostUserId = existing?.callerUserId ?? userId;
+          let nextHostUserId = existing?.callerUserId ?? session.hostUserId ?? userId;
           let resolvedCallId = existing?.callId ?? null;
           let serverCreatedCall = existing === null;
           if (!resolvedCallId) {
-            const created = await api.post<{ callId: string; created?: boolean }>(
+            const created = await api.post<CreateGroupCallResponse>(
               "/calls",
               {
                 groupId: session.groupId,
@@ -489,6 +496,15 @@ export function useGroupCallSessionLifecycle({
             );
             resolvedCallId = created.callId;
             serverCreatedCall = created.created ?? true;
+            if (created.callerUserId) {
+              nextHostUserId = created.callerUserId;
+            } else if (!serverCreatedCall) {
+              const activeCall = await api.getActiveGroupCall(session.groupId);
+              await abortIfStaleSessionRun();
+              if (activeCall?.callId === resolvedCallId) {
+                nextHostUserId = activeCall.callerUserId;
+              }
+            }
           }
           createdCallId = resolvedCallId;
           createdHere = existing === null && serverCreatedCall;

@@ -2,12 +2,14 @@
   display: flex;
   flex-direction: column;
   gap: 0.52rem;
+  isolation: isolate;
 }
 
 .headerSurface {
   min-width: 0;
   isolation: isolate;
   overflow: visible;
+  z-index: 1;
   --surface-panel-blur: calc(var(--glass-blur-strong, 0px) + 8px);
   --surface-panel-bg-start: color-mix(in srgb, var(--panel-header-bg) 92%, var(--glass-surface-fill, transparent));
   --surface-panel-bg-end: color-mix(in srgb, var(--surface-shell) 62%, var(--glass-surface-fill, transparent));

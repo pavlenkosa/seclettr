@@ -199,9 +199,9 @@ It supports single-node deployment modes without rebuilding images:
 
 ## First-Run Flow
 
-1. Copy \`.env.example\` to \`.env\` and replace all placeholder secrets.
-2. If using built-in TLS, place \`cert.pem\` and \`key.pem\` into \`./nginx/certs/\`.
-3. Run one of the installer commands:
+1. Run the interactive installer. It can generate secrets and a self-signed certificate automatically.
+2. For a trusted TLS certificate, place \`cert.pem\` and \`key.pem\` into \`./nginx/certs/\` before running the installer, or choose Let's Encrypt in the wizard.
+3. Optional: copy \`.env.example\` to \`.env\` if you want to review values before the first run.
 
 \`\`\`bash
 ./install.sh --interactive
@@ -223,6 +223,18 @@ It supports single-node deployment modes without rebuilding images:
   --web-api-url https://api.example.com/api \\
   --web-sfu-url https://api.example.com/sfu
 \`\`\`
+
+## Update Flow
+
+Put the new release archive into the current unpacked release directory and run:
+
+\`\`\`bash
+./install.sh --update ./seclettr-release-main-NEW.tar.gz
+\`\`\`
+
+The installer unpacks the new bundle next to the current one, copies \`.env\`
+and TLS certificates, creates a backup, runs migrations, loads new images, and
+restarts containers without deleting Docker volumes.
 EOF
 
 log_step "Packing release bundle to $ARCHIVE_PATH"

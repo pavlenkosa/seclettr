@@ -158,8 +158,8 @@ async function assertSenderCanUseAttachment(
   attachmentId: string,
   senderUserId: string
 ): Promise<void> {
-  const ownedAttachment = await client.query<{ id: string }>(
-    `SELECT a.id
+  const ownedAttachment = await client.query<{ id: string; upload_state: string }>(
+    `SELECT a.id, a.upload_state
      FROM attachments a
      JOIN devices uploader ON uploader.id = a.uploader_device_id
      WHERE a.id = $1
@@ -169,6 +169,9 @@ async function assertSenderCanUseAttachment(
   );
   if ((ownedAttachment.rowCount ?? 0) === 0) {
     throw routeError(403, "Attachment is not accessible to sender");
+  }
+  if (ownedAttachment.rows[0]?.upload_state !== "verified") {
+    throw routeError(409, "Attachment is not verified");
   }
 }
 
@@ -697,8 +700,8 @@ async function validateGroupMessageAttachment(
     throw routeError(400, "attachmentId is required for attachment messages");
   }
 
-  const ownedAttachment = await query<{ id: string }>(
-    `SELECT a.id
+  const ownedAttachment = await query<{ id: string; upload_state: string }>(
+    `SELECT a.id, a.upload_state
      FROM attachments a
      JOIN devices uploader ON uploader.id = a.uploader_device_id
      WHERE a.id = $1 AND a.deleted_at IS NULL AND uploader.user_id = $2`,
@@ -706,6 +709,9 @@ async function validateGroupMessageAttachment(
   );
   if (ownedAttachment.length === 0) {
     throw routeError(403, "Attachment is not accessible to sender");
+  }
+  if (ownedAttachment[0]?.upload_state !== "verified") {
+    throw routeError(409, "Attachment is not verified");
   }
 
   return attachmentId;

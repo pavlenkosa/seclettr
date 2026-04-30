@@ -53,12 +53,14 @@ const InitUploadSchema = z.object({
 const INLINE_CIPHERTEXT_MAX_BYTES = 16 * 1024 * 1024;
 const USE_IN_MEMORY_ATTACHMENT_STORAGE = process.env["QM_API_TEST_USE_IN_MEMORY_SERVICES"] === "1";
 const inMemoryAttachmentObjects = new Map<string, Buffer>();
+type AttachmentUploadState = "initialized" | "uploaded" | "verified" | "failed" | "expired";
 
 interface AttachmentRow {
   storage_key: string;
   encrypted_digest: string;
   content_type: string;
   encrypted_size: string;
+  upload_state: AttachmentUploadState;
   uploader_device_id?: string;
 }
 
@@ -94,22 +96,13 @@ function rewriteS3Url(url: string): string {
   }
 }
 
-async function getAttachmentById(attachmentId: string): Promise<AttachmentRow | null> {
-  const rows = await query<AttachmentRow>(
-    `SELECT storage_key, encrypted_digest, content_type, encrypted_size
-     FROM attachments WHERE id = $1 AND deleted_at IS NULL`,
-    [attachmentId]
-  );
-  return rows[0] ?? null;
-}
-
 async function getAuthorizedAttachmentById(
   attachmentId: string,
   requesterUserId: string,
   requesterDeviceId: string
 ): Promise<AttachmentRow | null> {
   const rows = await query<AttachmentRow>(
-    `SELECT a.storage_key, a.encrypted_digest, a.content_type, a.encrypted_size
+    `SELECT a.storage_key, a.encrypted_digest, a.content_type, a.encrypted_size, a.upload_state
      FROM attachments a
      JOIN devices uploader ON uploader.id = a.uploader_device_id
      WHERE a.id = $1
@@ -159,6 +152,105 @@ function formatAttachmentStorageError(error: unknown): string {
     return error.message;
   }
   return "Unknown attachment storage error";
+}
+
+function isMissingAttachmentObjectError(error: unknown): boolean {
+  const code =
+    (error as { name?: string; code?: string; Code?: string }).Code ??
+    (error as { name?: string; code?: string; Code?: string }).code ??
+    (error as { name?: string; code?: string; Code?: string }).name;
+  return code === "NoSuchKey" || code === "NotFound";
+}
+
+async function fetchAttachmentObjectBytes(storageKey: string): Promise<Uint8Array | null> {
+  if (USE_IN_MEMORY_ATTACHMENT_STORAGE) {
+    return inMemoryAttachmentObjects.get(storageKey) ?? null;
+  }
+
+  let object;
+  try {
+    object = await s3.send(
+      new GetObjectCommand({ Bucket: config.S3_BUCKET, Key: storageKey })
+    );
+  } catch (error) {
+    if (isMissingAttachmentObjectError(error)) {
+      return null;
+    }
+    throw error;
+  }
+
+  const body = object.Body;
+  if (!body) {
+    return null;
+  }
+  return body instanceof Uint8Array
+    ? body
+    : new Uint8Array(await body.transformToByteArray());
+}
+
+async function verifyAttachmentObject(
+  attachmentId: string,
+  att: AttachmentRow
+): Promise<{ ok: true } | { ok: false; status: number; error: string; markFailed?: boolean }> {
+  const expectedSize = Number.parseInt(att.encrypted_size, 10);
+  const bytes = await fetchAttachmentObjectBytes(att.storage_key);
+  if (!bytes) {
+    return { ok: false, status: 409, error: "Attachment object not ready" };
+  }
+  await query(
+    `UPDATE attachments
+     SET upload_state = 'uploaded',
+         uploaded_at = COALESCE(uploaded_at, now())
+     WHERE id = $1
+       AND upload_state IN ('initialized', 'uploaded')`,
+    [attachmentId]
+  );
+  if (bytes.byteLength !== expectedSize) {
+    return {
+      ok: false,
+      status: 400,
+      error: "Encrypted size mismatch",
+      markFailed: true,
+    };
+  }
+
+  const digest = createHash("sha256").update(bytes).digest("base64url");
+  if (digest !== att.encrypted_digest) {
+    return {
+      ok: false,
+      status: 400,
+      error: "Encrypted digest mismatch",
+      markFailed: true,
+    };
+  }
+
+  await query(
+    `UPDATE attachments
+     SET upload_state = 'verified',
+         uploaded_at = COALESCE(uploaded_at, now()),
+         verified_at = now(),
+         failed_at = NULL,
+         upload_failure_reason = NULL
+     WHERE id = $1`,
+    [attachmentId]
+  );
+
+  return { ok: true };
+}
+
+async function markAttachmentUploadFailed(
+  attachmentId: string,
+  reason: string
+): Promise<void> {
+  await query(
+    `UPDATE attachments
+     SET upload_state = 'failed',
+         failed_at = now(),
+         upload_failure_reason = $2
+     WHERE id = $1
+       AND upload_state <> 'verified'`,
+    [attachmentId, reason]
+  );
 }
 
 export async function attachmentRoutes(fastify: FastifyInstance): Promise<void> {
@@ -286,6 +378,9 @@ export async function attachmentRoutes(fastify: FastifyInstance): Promise<void> 
       if (!att) {
         return reply.code(404).send({ error: "Attachment not found" });
       }
+      if (att.upload_state !== "verified") {
+        return reply.code(409).send({ error: "Attachment object not ready" });
+      }
       const downloadUrl = USE_IN_MEMORY_ATTACHMENT_STORAGE
         ? buildInMemoryAttachmentUrl(att.storage_key)
         : await getSignedUrl(
@@ -316,7 +411,8 @@ export async function attachmentRoutes(fastify: FastifyInstance): Promise<void> 
       const { attachmentId } = request.params;
       const { deviceId } = request.auth;
       const attRows = await query<AttachmentRow & { uploader_device_id: string }>(
-        `SELECT storage_key, encrypted_digest, content_type, encrypted_size, uploader_device_id
+        `SELECT storage_key, encrypted_digest, content_type, encrypted_size,
+                upload_state, uploader_device_id
          FROM attachments
          WHERE id = $1 AND deleted_at IS NULL`,
         [attachmentId]
@@ -327,6 +423,12 @@ export async function attachmentRoutes(fastify: FastifyInstance): Promise<void> 
       }
       if (att.uploader_device_id !== deviceId) {
         return reply.code(403).send({ error: "Forbidden" });
+      }
+      if (att.upload_state === "verified") {
+        return reply.code(204).send();
+      }
+      if (att.upload_state === "failed" || att.upload_state === "expired") {
+        return reply.code(409).send({ error: "Attachment upload is not usable" });
       }
 
       const file = await request.file();
@@ -359,6 +461,7 @@ export async function attachmentRoutes(fastify: FastifyInstance): Promise<void> 
           );
         } catch (error) {
           if ((error as { code?: string }).code === "ATTACHMENT_TOO_LARGE") {
+            await markAttachmentUploadFailed(attachmentId, "Attachment too large");
             return reply.code(413).send({ error: "Attachment too large" });
           }
           throw error;
@@ -366,11 +469,13 @@ export async function attachmentRoutes(fastify: FastifyInstance): Promise<void> 
 
         const expectedSize = Number.parseInt(att.encrypted_size, 10);
         if (totalBytes !== expectedSize) {
+          await markAttachmentUploadFailed(attachmentId, "Encrypted size mismatch");
           return reply.code(400).send({ error: "Encrypted size mismatch" });
         }
 
         const digest = digestHash.digest("base64url");
         if (digest !== att.encrypted_digest) {
+          await markAttachmentUploadFailed(attachmentId, "Encrypted digest mismatch");
           return reply.code(400).send({ error: "Encrypted digest mismatch" });
         }
 
@@ -388,10 +493,64 @@ export async function attachmentRoutes(fastify: FastifyInstance): Promise<void> 
           );
         }
 
+        await query(
+          `UPDATE attachments
+           SET upload_state = 'verified',
+               uploaded_at = COALESCE(uploaded_at, now()),
+               verified_at = now(),
+               failed_at = NULL,
+               upload_failure_reason = NULL
+           WHERE id = $1`,
+          [attachmentId]
+        );
+
         return reply.code(204).send();
       } finally {
         await unlink(tempFilePath).catch(() => undefined);
       }
+    }
+  );
+
+  fastify.post<{ Params: { attachmentId: string } }>(
+    "/:attachmentId/complete",
+    { preHandler: requireAuth },
+    async (request, reply) => {
+      if (!(await ensureAttachmentStorageReady())) {
+        return sendAttachmentStorageUnavailable(reply);
+      }
+
+      const { attachmentId } = request.params;
+      const { deviceId } = request.auth;
+      const attRows = await query<AttachmentRow & { uploader_device_id: string }>(
+        `SELECT storage_key, encrypted_digest, content_type, encrypted_size,
+                upload_state, uploader_device_id
+         FROM attachments
+         WHERE id = $1 AND deleted_at IS NULL`,
+        [attachmentId]
+      );
+      const att = attRows[0];
+      if (!att) {
+        return reply.code(404).send({ error: "Attachment not found" });
+      }
+      if (att.uploader_device_id !== deviceId) {
+        return reply.code(403).send({ error: "Forbidden" });
+      }
+      if (att.upload_state === "verified") {
+        return reply.code(204).send();
+      }
+      if (att.upload_state === "failed" || att.upload_state === "expired") {
+        return reply.code(409).send({ error: "Attachment upload is not usable" });
+      }
+
+      const verification = await verifyAttachmentObject(attachmentId, att);
+      if (!verification.ok) {
+        if (verification.markFailed) {
+          await markAttachmentUploadFailed(attachmentId, verification.error);
+        }
+        return reply.code(verification.status).send({ error: verification.error });
+      }
+
+      return reply.code(204).send();
     }
   );
 
@@ -410,38 +569,16 @@ export async function attachmentRoutes(fastify: FastifyInstance): Promise<void> 
       if (!att) {
         return reply.code(404).send({ error: "Attachment not found" });
       }
+      if (att.upload_state !== "verified") {
+        return reply.code(409).send({ error: "Attachment object not ready" });
+      }
 
       const encryptedSize = Number.parseInt(att.encrypted_size, 10);
       if (encryptedSize > INLINE_CIPHERTEXT_MAX_BYTES) {
         return reply.code(413).send({ error: "Attachment too large for inline ciphertext transfer" });
       }
 
-      const bytes = USE_IN_MEMORY_ATTACHMENT_STORAGE
-        ? inMemoryAttachmentObjects.get(att.storage_key) ?? null
-        : await (async () => {
-            let object;
-            try {
-              object = await s3.send(
-                new GetObjectCommand({ Bucket: config.S3_BUCKET, Key: att.storage_key })
-              );
-            } catch (error) {
-              const code =
-                (error as { name?: string; code?: string; Code?: string }).Code ??
-                (error as { name?: string; code?: string; Code?: string }).code ??
-                (error as { name?: string; code?: string; Code?: string }).name;
-              if (code === "NoSuchKey" || code === "NotFound") {
-                return null;
-              }
-              throw error;
-            }
-            const body = object.Body;
-            if (!body) {
-              return null;
-            }
-            return body instanceof Uint8Array
-              ? body
-              : new Uint8Array(await body.transformToByteArray());
-          })();
+      const bytes = await fetchAttachmentObjectBytes(att.storage_key);
       if (!bytes) {
         return reply.code(409).send({ error: "Attachment object not ready" });
       }

@@ -201,9 +201,6 @@ export function AuthPage() {
         </div>
 
         <div className={styles.e2eeBadge}>
-          <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
-            <path d="M6 1L9 3.5V7C9 9 6 11 6 11C6 11 3 9 3 7V3.5L6 1Z" fill="currentColor" />
-          </svg>
           {`v${__APP_VERSION__}`}
         </div>
       </div>

@@ -19,6 +19,7 @@ interface MediaLightboxProps {
   readonly isOpen?: boolean;
   readonly url: string;
   readonly mimeType: string;
+  readonly caption?: string;
   readonly fileName?: string;
   readonly downloading?: boolean;
   readonly currentIndex?: number;
@@ -308,13 +309,25 @@ function LightboxMediaPreview({
 
 interface MobileSequenceHintProps {
   readonly currentIndex: number;
+  readonly hasCaption: boolean;
   readonly totalCount: number;
   readonly t: Translate;
 }
 
-function MobileSequenceHint({ currentIndex, totalCount, t }: MobileSequenceHintProps) {
+function MobileSequenceHint({
+  currentIndex,
+  hasCaption,
+  totalCount,
+  t,
+}: MobileSequenceHintProps) {
   return (
-    <div className={styles.mobileSequenceHint} aria-hidden="true">
+    <div
+      className={[
+        styles.mobileSequenceHint,
+        hasCaption ? styles.mobileSequenceHintWithCaption : "",
+      ].join(" ")}
+      aria-hidden="true"
+    >
       <div className={styles.mobileSequenceDots}>
         {Array.from({ length: totalCount }, (_, index) => (
           <span
@@ -336,6 +349,7 @@ export function MediaLightbox({
   isOpen = true,
   url,
   mimeType,
+  caption,
   fileName,
   downloading = false,
   currentIndex,
@@ -347,6 +361,7 @@ export function MediaLightbox({
 }: MediaLightboxProps) {
   const { t } = useI18n();
   const isVideo = mimeType.startsWith("video/");
+  const trimmedCaption = caption?.trim() || null;
   const { isMounted, isClosing } = useAnimatedPresence({
     isOpen,
     durationMs: 180,
@@ -465,11 +480,16 @@ export function MediaLightbox({
         {showSequenceUi && currentIndex !== undefined && totalCount !== undefined ? (
           <MobileSequenceHint
             currentIndex={currentIndex}
+            hasCaption={trimmedCaption !== null}
             totalCount={totalCount}
             t={t}
           />
         ) : null}
       </div>
+
+      {trimmedCaption ? (
+        <div className={styles.captionBar}>{trimmedCaption}</div>
+      ) : null}
     </dialog>,
     document.body
   );

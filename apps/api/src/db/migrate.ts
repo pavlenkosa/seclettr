@@ -134,6 +134,8 @@ const baselineChecks: Record<string, () => Promise<boolean>> = {
     indexExists("gm_group_active"),
   "014_call_sessions_integrity.sql": async () =>
     constraintExists("call_sessions", "cs_call_target_xor"),
+  "016_attachment_upload_state.sql": async () =>
+    columnExists("attachments", "upload_state"),
 };
 
 async function baselineBootstrappedMigrations(files: string[]): Promise<void> {

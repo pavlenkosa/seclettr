@@ -179,6 +179,7 @@ export function InlineMediaAttachment({ msg, isOwn }: InlineMediaAttachmentProps
           isOpen={lightboxOpen}
           url={previewUrl}
           mimeType={msg.attachment?.mimeType ?? ""}
+          caption={msg.attachment?.caption}
           fileName={msg.attachment?.fileName}
           onClose={() => setLightboxOpen(false)}
           onDownload={() => void decryptAndDownload()}

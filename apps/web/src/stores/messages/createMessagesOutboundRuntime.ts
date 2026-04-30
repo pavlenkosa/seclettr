@@ -231,6 +231,10 @@ async function uploadEncryptedAttachmentCiphertext({
   }
 }
 
+async function completeAttachmentUpload(attachmentId: string): Promise<void> {
+  await api.post<void>(`/attachments/${encodeURIComponent(attachmentId)}/complete`);
+}
+
 export function createMessagesOutboundRuntime({
   set,
   get,
@@ -326,6 +330,17 @@ export function createMessagesOutboundRuntime({
       clientMessageId,
       abortController,
     });
+
+    try {
+      await completeAttachmentUpload(uploadInit.attachmentId);
+    } catch (err) {
+      await markOptimisticAttachmentError({
+        set,
+        recipientUserId: params.recipientUserId,
+        clientMessageId,
+      });
+      throw err;
+    }
 
     unregisterUpload(clientMessageId);
 

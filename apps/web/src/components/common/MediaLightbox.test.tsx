@@ -147,4 +147,21 @@ describe("MediaLightbox", () => {
       document.body.querySelectorAll('[class*="mobileSequenceDots"] > span').length
     ).toBe(3);
   });
+
+  it("renders media captions at the bottom of the lightbox", () => {
+    act(() => {
+      root.render(
+        <MediaLightbox
+          url="blob:preview-1"
+          mimeType="image/jpeg"
+          caption="  A quiet caption  "
+          fileName="photo.jpg"
+          onClose={() => {}}
+          onDownload={() => {}}
+        />
+      );
+    });
+
+    expect(document.body.textContent).toContain("A quiet caption");
+  });
 });

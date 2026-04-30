@@ -238,6 +238,29 @@ describe("MediaGroupAttachment", () => {
     );
   });
 
+  it("uses the album caption for lightbox items without their own caption", async () => {
+    const messages = createGroupedMediaMessages(2);
+    messages.forEach((message, index) => {
+      configureRuntime(message.id, {
+        initialPreviewUrl: `blob:preview-${index + 1}`,
+        decryptedPreviewUrl: `blob:preview-${index + 1}`,
+      });
+    });
+
+    act(() => {
+      root.render(<MediaGroupAttachment messages={messages} isOwn={false} timeLabel="2:12" />);
+    });
+
+    const cells = container.querySelectorAll<HTMLElement>('button[aria-label="message.media.tapToViewImage"]');
+    await act(async () => {
+      cells[1]?.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true }));
+    });
+
+    expect(container.querySelector<HTMLElement>('[data-testid="lightbox"]')?.dataset.caption).toBe(
+      "album caption"
+    );
+  });
+
   it("does not open the lightbox when preview decryption returns no media", async () => {
     const messages = createGroupedMediaMessages(1);
     const decryptSpy = vi.fn();

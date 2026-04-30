@@ -245,7 +245,7 @@ export async function buildApp() {
   return fastify;
 }
 
-const EXPECTED_LATEST_MIGRATION = "015_audit_log.sql";
+const EXPECTED_LATEST_MIGRATION = "016_attachment_upload_state.sql";
 
 async function checkDbSchemaVersion(): Promise<void> {
   const rows = await query<{ filename: string }>(

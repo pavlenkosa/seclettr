@@ -95,7 +95,6 @@ interface UseGroupCallPanelPresentationResult {
   mediaGridClassName: string;
   mediaEmptyClassName: string;
   controlRailClassName: string;
-  actionsClassName: string;
 }
 
 type Translate = ReturnType<typeof useI18n>["t"];
@@ -381,7 +380,6 @@ function resolvePanelClassNames(params: {
   | "mediaGridClassName"
   | "mediaEmptyClassName"
   | "controlRailClassName"
-  | "actionsClassName"
 > {
   const {
     galleryTiles,
@@ -415,10 +413,6 @@ function resolvePanelClassNames(params: {
     controlRailClassName: appendClassName(
       styles.controlRail,
       shouldUseCompactBodyLayout ? styles.controlRailCompact : undefined
-    ),
-    actionsClassName: appendClassName(
-      styles.actions,
-      shouldUseCompactBodyLayout ? styles.actionsCompact : undefined
     ),
   };
 }
@@ -650,7 +644,6 @@ export function useGroupCallPanelPresentation({
     mediaGridClassName,
     mediaEmptyClassName,
     controlRailClassName,
-    actionsClassName,
   } = resolvePanelClassNames({
     galleryTiles,
     isAudioOnlyGalleryLayout,
@@ -702,6 +695,5 @@ export function useGroupCallPanelPresentation({
     mediaGridClassName,
     mediaEmptyClassName,
     controlRailClassName,
-    actionsClassName,
   };
 }

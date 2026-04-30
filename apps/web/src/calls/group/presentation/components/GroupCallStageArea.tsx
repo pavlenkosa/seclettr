@@ -1,5 +1,7 @@
 import type { RefObject } from "react";
 import type { GroupCallStageTile } from "@/calls/group/model/group-call-types";
+import { CameraIcon, ExpandIcon, FocusIcon, ScreenShareIcon } from "@/calls/shared/presentation/CallIcons";
+import { IconButton } from "@/components/ui";
 
 import { GroupCallMediaTile } from "./GroupCallMediaTile";
 import styles from "@/calls/group/presentation/GroupCallPanel.module.css";
@@ -23,39 +25,70 @@ export interface GroupCallStageAreaProps {
 interface GroupCallStageActionsProps {
   readonly hasPinnedStageSelection: boolean;
   readonly canToggleStagePresentation: boolean;
+  readonly canStopWatchingStageTile: boolean;
+  readonly stopWatchingStageLabel?: string;
+  readonly videoSource: GroupCallStageTile["videoSource"];
   readonly fullscreenToggleLabel: string;
   readonly resetStageFocusLabel: string;
   readonly onResetStageFocus: () => void;
   readonly onToggleStagePresentation: () => void | Promise<void>;
+  readonly onStopWatchingStageTile: () => void;
 }
 
 function GroupCallStageActions({
   hasPinnedStageSelection,
   canToggleStagePresentation,
+  canStopWatchingStageTile,
+  stopWatchingStageLabel,
+  videoSource,
   fullscreenToggleLabel,
   resetStageFocusLabel,
   onResetStageFocus,
   onToggleStagePresentation,
+  onStopWatchingStageTile,
 }: GroupCallStageActionsProps) {
+  const hasActions = hasPinnedStageSelection || canStopWatchingStageTile || canToggleStagePresentation;
+  if (!hasActions) return null;
+
+  const stopIcon = videoSource === "screen" ? <ScreenShareIcon /> : <CameraIcon />;
+
   return (
-    <div className={styles.stageActions}>
+    <div className={styles.stageActionRail}>
       {hasPinnedStageSelection ? (
-        <button
-          type="button"
+        <IconButton
           onClick={onResetStageFocus}
-          className={styles.stageActionBtn}
+          className={styles.stageActionIconBtn}
+          size={34}
+          variant="glass"
+          aria-label={resetStageFocusLabel}
+          title={resetStageFocusLabel}
         >
-          {resetStageFocusLabel}
-        </button>
+          <FocusIcon />
+        </IconButton>
+      ) : null}
+      {canStopWatchingStageTile && stopWatchingStageLabel ? (
+        <IconButton
+          onClick={onStopWatchingStageTile}
+          className={styles.stageActionIconBtn}
+          size={34}
+          variant="glass"
+          aria-label={stopWatchingStageLabel}
+          title={stopWatchingStageLabel}
+        >
+          {stopIcon}
+        </IconButton>
       ) : null}
       {canToggleStagePresentation ? (
-        <button
-          type="button"
+        <IconButton
           onClick={() => { onToggleStagePresentation(); }}
-          className={styles.stageActionBtn}
+          className={styles.stageActionIconBtn}
+          size={34}
+          variant="glass"
+          aria-label={fullscreenToggleLabel}
+          title={fullscreenToggleLabel}
         >
-          {fullscreenToggleLabel}
-        </button>
+          <ExpandIcon />
+        </IconButton>
       ) : null}
     </div>
   );
@@ -67,7 +100,7 @@ export function GroupCallStageArea({
   hasPinnedStageSelection,
   canToggleStagePresentation,
   isCompactStagePreview,
-  stageEyebrowLabel,
+  stageEyebrowLabel: _stageEyebrowLabel,
   fullscreenToggleLabel,
   resetStageFocusLabel,
   canStopWatchingStageTile,
@@ -82,20 +115,6 @@ export function GroupCallStageArea({
 
   return (
     <div ref={stageShellRef} className={styles.stageShell}>
-      <div className={styles.stageBar}>
-        <div className={styles.stageMeta}>
-          <span className={styles.stageEyebrow}>{stageEyebrowLabel}</span>
-          <span className={styles.stageTitle}>{stageTile.label}</span>
-        </div>
-        <GroupCallStageActions
-          hasPinnedStageSelection={hasPinnedStageSelection}
-          canToggleStagePresentation={canToggleStagePresentation}
-          fullscreenToggleLabel={fullscreenToggleLabel}
-          resetStageFocusLabel={resetStageFocusLabel}
-          onResetStageFocus={onResetStageFocus}
-          onToggleStagePresentation={onToggleStagePresentation}
-        />
-      </div>
       <GroupCallMediaTile
         label={stageTile.label}
         stream={stageTile.stream}
@@ -107,14 +126,21 @@ export function GroupCallStageArea({
         className={isCompactStagePreview ? styles.mediaTileScreenPreviewCompact : undefined}
         videoSource={stageTile.videoSource}
         onSelect={handleSelectCompactStagePreview}
-        onStopWatching={
-          canStopWatchingStageTile
-            ? () => onStopWatchingStageTile(stageTile.id)
-            : undefined
-        }
-        stopWatchingLabel={canStopWatchingStageTile ? stopWatchingStageLabel : undefined}
         interactiveLabel={isCompactStagePreview ? fullscreenToggleLabel : undefined}
-      />
+      >
+        <GroupCallStageActions
+          hasPinnedStageSelection={hasPinnedStageSelection}
+          canToggleStagePresentation={canToggleStagePresentation}
+          canStopWatchingStageTile={canStopWatchingStageTile}
+          stopWatchingStageLabel={stopWatchingStageLabel}
+          videoSource={stageTile.videoSource}
+          fullscreenToggleLabel={fullscreenToggleLabel}
+          resetStageFocusLabel={resetStageFocusLabel}
+          onResetStageFocus={onResetStageFocus}
+          onToggleStagePresentation={onToggleStagePresentation}
+          onStopWatchingStageTile={() => onStopWatchingStageTile(stageTile.id)}
+        />
+      </GroupCallMediaTile>
     </div>
   );
 }

@@ -1,4 +1,4 @@
-import { useRef } from "react";
+import { useRef, type ReactNode } from "react";
 import { useMediaElementBinding } from "@/calls/shared/media/useMediaElementBinding";
 import { useGroupCallAudioActivity } from "@/calls/group/runtime/useGroupCallAudioActivity";
 import {
@@ -24,6 +24,7 @@ export interface GroupCallMediaTileProps {
   readonly onStopWatching?: () => void;
   readonly stopWatchingLabel?: string;
   readonly interactiveLabel?: string;
+  readonly children?: ReactNode;
 }
 
 function StreamVideo({
@@ -135,6 +136,7 @@ export function GroupCallMediaTile({
   onStopWatching,
   stopWatchingLabel,
   interactiveLabel,
+  children,
 }: GroupCallMediaTileProps) {
   const hasVideo = Boolean(stream?.getVideoTracks().length);
   const isAudioOnly = !hasVideo;
@@ -199,6 +201,7 @@ export function GroupCallMediaTile({
       secondaryActionLabel={stopWatchingLabel}
       secondaryActionClassName={styles.mediaTileActionBtn}
     >
+      {children}
       {/* Sentinel fills the tile for IntersectionObserver (tile has position:relative). */}
       <span ref={sentinelRef} style={{ position: "absolute", inset: 0, pointerEvents: "none" }} aria-hidden />
       {/* Audio sink is always active regardless of visibility. */}

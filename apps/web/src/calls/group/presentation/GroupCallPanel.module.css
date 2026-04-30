@@ -173,29 +173,6 @@
   --icon-button-size: 38px;
 }
 
-.headerDangerBtn {
-  min-height: 38px;
-  padding: 0 0.8rem;
-  border-radius: 999px;
-  border: 1px solid rgb(252 165 165 / 0.3);
-  background: linear-gradient(180deg, #dc2626, #b91c1c);
-  color: #fff;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.4rem;
-  font-size: 0.78rem;
-  font-weight: 700;
-  line-height: 1;
-  white-space: nowrap;
-  transition: transform 0.12s ease, filter 0.12s ease;
-}
-
-.headerDangerBtn:hover {
-  filter: brightness(1.04);
-  transform: translateY(-1px);
-}
-
 .body {
   flex: 1;
   min-height: 0;
@@ -390,44 +367,6 @@
   text-align: center;
 }
 
-.mediaToolbar {
-  display: flex;
-  align-items: center;
-  gap: 0.55rem;
-  flex-wrap: wrap;
-}
-
-.mediaToggleBtn {
-  min-height: 36px;
-  padding: 0 0.7rem;
-  border-radius: 999px;
-  border: 1px solid color-mix(in srgb, var(--panel-border-soft) 88%, transparent);
-  background: color-mix(in srgb, var(--surface-shell) 90%, transparent);
-  color: var(--text-primary);
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.38rem;
-  font-size: 0.76rem;
-  font-weight: 700;
-  transition: transform 0.12s ease, border-color 0.12s ease, background-color 0.12s ease;
-}
-
-.mediaToggleBtn:hover:not(:disabled) {
-  transform: translateY(-1px);
-  border-color: color-mix(in srgb, var(--accent) 28%, var(--panel-border-soft));
-}
-
-.mediaToggleBtn:disabled {
-  cursor: not-allowed;
-  opacity: 0.58;
-}
-
-.mediaToggleBtnActive {
-  border-color: color-mix(in srgb, var(--accent) 34%, transparent);
-  background: color-mix(in srgb, var(--accent) 14%, var(--surface-shell));
-}
-
 .mediaToolbarHint {
   color: var(--text-secondary);
   font-size: 0.76rem;
@@ -436,20 +375,21 @@
 
 .controlRail {
   flex-shrink: 0;
-  width: min(100%, 520px);
+  width: auto;
   margin: 0;
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 0.6rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 0.45rem;
 }
 
 .controlBtn {
-  --call-control-stacked-min-height: 72px;
-  --call-control-stacked-padding: 0.58rem 0.48rem;
-  --call-control-stacked-radius: 18px;
-  --call-control-stacked-icon-size: 36px;
-  --call-control-stacked-icon-radius: 13px;
-  --call-control-stacked-label-size: 0.74rem;
+  --call-control-inline-min-width: 96px;
+  --call-control-inline-height: 56px;
+  --call-control-inline-padding: 0 0.85rem;
+  --call-control-inline-radius: 999px;
+  --call-control-inline-blur: 12px;
 }
 
 .sectionLabel {
@@ -487,65 +427,13 @@
 }
 
 .stageShell {
+  position: relative;
   display: flex;
   flex-direction: column;
-  gap: 0.7rem;
   width: min(100%, 1560px);
-  padding: 0.95rem;
-  border-radius: 32px;
-  border: 1px solid color-mix(in srgb, var(--panel-border-soft) 80%, transparent);
-  background:
-    radial-gradient(circle at top left, color-mix(in srgb, var(--accent) 12%, transparent), transparent 48%),
-    color-mix(in srgb, var(--surface-shell) 92%, transparent);
-  box-shadow:
-    0 30px 70px rgb(2 8 20 / 0.22),
-    inset 0 1px 0 rgb(255 255 255 / 0.04);
-}
-
-.stageViewerOverlay {
-  position: fixed;
-  inset: 0;
-  /* 260 > backdrop's z-index:255; dialog portals to document.body to escape
-     the panel's persistent transform:scale(1) containing block. */
-  z-index: 260;
-  display: flex;
-  flex-direction: column;
-  gap: 0.8rem;
-  padding:
-    calc(env(safe-area-inset-top, 0px) + 0.9rem)
-    0.9rem
-    calc(env(safe-area-inset-bottom, 0px) + 0.9rem);
-  background: rgb(3 8 18 / 0.94);
-  backdrop-filter: blur(18px);
-}
-
-.stageViewerHeader {
-  width: min(100%, 1120px);
   margin-inline: auto;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.75rem;
 }
 
-.stageViewerMeta {
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 0.12rem;
-}
-
-.stageViewerBody {
-  flex: 1;
-  min-height: 0;
-  width: min(100%, 1120px);
-  margin-inline: auto;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.stageBar,
 .stageStripBar {
   display: flex;
   align-items: center;
@@ -576,29 +464,19 @@
   white-space: nowrap;
 }
 
-.stageActions {
+.stageActionRail {
+  position: absolute;
+  top: 0.72rem;
+  right: 0.72rem;
+  z-index: 3;
   display: inline-flex;
   align-items: center;
-  gap: 0.45rem;
-  flex-wrap: wrap;
   justify-content: flex-end;
+  gap: 0.4rem;
 }
 
-.stageActionBtn {
-  min-height: 34px;
-  padding: 0 0.7rem;
-  border-radius: 999px;
-  border: 1px solid color-mix(in srgb, var(--panel-border-soft) 88%, transparent);
-  background: color-mix(in srgb, var(--surface-float) 90%, transparent);
-  color: var(--text-primary);
-  font-size: 0.74rem;
-  font-weight: 700;
-  transition: transform 0.12s ease, border-color 0.12s ease;
-}
-
-.stageActionBtn:hover {
-  transform: translateY(-1px);
-  border-color: color-mix(in srgb, var(--accent) 28%, var(--panel-border-soft));
+.stageActionIconBtn {
+  color: #f8fafc;
 }
 
 .mediaGrid {
@@ -1034,10 +912,6 @@
   background: rgb(3 8 18 / 0.98);
 }
 
-.stageShell:fullscreen .stageBar {
-  flex-wrap: wrap;
-}
-
 .stageShell:fullscreen .mediaTileStage {
   flex: 1;
   min-height: calc(100vh - 5.5rem);
@@ -1113,69 +987,9 @@
   margin-top: -0.1rem;
 }
 
-.actions {
-  flex-shrink: 0;
-  width: min(100%, 760px);
-  margin-inline: auto;
-  display: grid;
-  gap: 0.72rem;
-  align-items: stretch;
-}
-
-.actionsSingle {
-  grid-template-columns: minmax(240px, 360px);
-  justify-content: center;
-}
-
-.actionsDual {
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-}
-
-.controlRailCompact,
-.actionsCompact {
+.controlRailCompact {
   width: min(100%, 820px);
   margin-inline: auto;
-}
-
-.dangerActionBtn {
-  --pill-border: color-mix(in srgb, var(--danger) 30%, var(--panel-border-soft));
-  --pill-bg: color-mix(in srgb, var(--danger) 8%, var(--surface-shell));
-  --pill-bg-hover: color-mix(in srgb, var(--danger) 12%, var(--surface-shell-strong));
-  --pill-fg: color-mix(in srgb, var(--danger) 68%, white 12%);
-  min-height: 62px;
-  padding-inline: 1rem;
-  font-weight: 720;
-  font-size: 0.82rem;
-  width: 100%;
-  border-radius: 22px;
-  box-shadow:
-    inset 0 1px 0 rgb(255 255 255 / 0.05),
-    0 8px 16px rgb(2 8 20 / 0.05);
-}
-
-.dangerActionBtnSecondary {
-  min-width: 0;
-}
-
-.dangerActionBtnPrimary {
-  --pill-border: color-mix(in srgb, var(--danger) 42%, var(--panel-border-soft));
-  --pill-bg:
-    linear-gradient(
-      180deg,
-      color-mix(in srgb, var(--danger) 24%, var(--surface-float)),
-      color-mix(in srgb, var(--danger) 16%, var(--surface-shell-strong))
-    );
-  --pill-bg-hover:
-    linear-gradient(
-      180deg,
-      color-mix(in srgb, var(--danger) 28%, var(--surface-float)),
-      color-mix(in srgb, var(--danger) 20%, var(--surface-shell-strong))
-    );
-  --pill-fg: color-mix(in srgb, var(--danger) 76%, white 10%);
-  min-width: 0;
-  box-shadow:
-    inset 0 1px 0 rgb(255 255 255 / 0.1),
-    0 10px 22px color-mix(in srgb, var(--danger) 10%, transparent);
 }
 
 .dock {
@@ -1275,7 +1089,6 @@
   }
 
   .controlRail,
-  .actions,
   .mediaEmpty {
     width: 100%;
   }
@@ -1309,53 +1122,23 @@
     font-size: 0.74rem;
   }
 
-  .headerDangerBtn {
-    min-height: 36px;
-    padding: 0 0.7rem;
-    font-size: 0.75rem;
-  }
-
   .controlRail {
     gap: 0.5rem;
   }
 
   .controlBtn {
-    --call-control-stacked-min-height-narrow: 76px;
-    --call-control-stacked-padding-narrow: 0.62rem 0.42rem;
-    --call-control-stacked-radius-narrow: 20px;
-    --call-control-stacked-icon-size-narrow: 38px;
-    --call-control-stacked-icon-radius-narrow: 14px;
-    --call-control-stacked-label-size-narrow: 0.69rem;
+    --call-control-inline-height: 52px;
+    --call-control-inline-compact-width: 52px;
   }
 
-  .stageBar,
   .stageStripBar {
     flex-direction: column;
     align-items: stretch;
   }
 
-  .stageViewerOverlay {
-    padding:
-      calc(env(safe-area-inset-top, 0px) + 0.7rem)
-      0.7rem
-      calc(env(safe-area-inset-bottom, 0px) + 0.7rem);
-  }
-
-  .stageViewerHeader {
-    flex-direction: column;
-    align-items: stretch;
-  }
-
-  .stageViewerBody {
-    align-items: stretch;
-  }
-
-  .stageActions {
-    justify-content: stretch;
-  }
-
-  .stageActionBtn {
-    width: 100%;
+  .stageActionRail {
+    top: 0.58rem;
+    right: 0.58rem;
   }
 
   .mediaTileStage {
@@ -1574,19 +1357,6 @@
     grid-template-columns: 1fr;
   }
 
-  .actions {
-    grid-template-columns: 1fr;
-  }
-
-  .dangerActionBtn,
-  .dangerActionBtnPrimary {
-    width: 100%;
-  }
-
-  .dangerActionBtnSecondary {
-    min-width: 0;
-  }
-
   .detailsDrawer {
     top: calc(env(safe-area-inset-top, 0px) + 4.5rem);
     right: 0.7rem;
@@ -1642,19 +1412,6 @@
   color: color-mix(in srgb, var(--text-primary) 72%, var(--text-secondary));
 }
 
-:global(:root[data-theme="light"]) .stageShell {
-  border-color: color-mix(in srgb, var(--panel-border-soft) 90%, transparent);
-  background:
-    radial-gradient(circle at top left, color-mix(in srgb, var(--accent) 10%, transparent), transparent 52%),
-    color-mix(in srgb, var(--surface-shell-strong) 95%, white);
-}
-
-:global(:root[data-theme="light"]) .stageActionBtn {
-  border-color: color-mix(in srgb, var(--panel-border-soft) 86%, transparent);
-  background: color-mix(in srgb, var(--surface-shell-strong) 96%, white);
-  color: color-mix(in srgb, var(--text-primary) 94%, #0f172a);
-}
-
 :global(:root[data-theme="light"]) .mediaTileActionBtn {
   border-color: color-mix(in srgb, var(--panel-border-soft) 88%, transparent);
   background: color-mix(in srgb, var(--surface-shell-strong) 94%, white);
@@ -1692,29 +1449,6 @@
 
 :global(:root[data-theme="light"]) .mediaTileAudioOnly .mediaTileLabel {
   color: color-mix(in srgb, var(--text-primary) 92%, #0f172a);
-}
-
-:global(:root[data-theme="light"]) .dangerActionBtn {
-  --pill-border: color-mix(in srgb, var(--danger) 44%, var(--panel-border-soft));
-  --pill-bg: color-mix(in srgb, var(--danger) 16%, var(--surface-shell-strong));
-  --pill-bg-hover: color-mix(in srgb, var(--danger) 22%, var(--surface-shell-strong));
-  --pill-fg: color-mix(in srgb, var(--danger) 86%, #7f1d1d);
-}
-
-:global(:root[data-theme="light"]) .dangerActionBtnPrimary {
-  --pill-bg:
-    linear-gradient(
-      180deg,
-      color-mix(in srgb, var(--danger) 28%, var(--surface-float)),
-      color-mix(in srgb, var(--danger) 22%, var(--surface-shell-strong))
-    );
-  --pill-bg-hover:
-    linear-gradient(
-      180deg,
-      color-mix(in srgb, var(--danger) 34%, var(--surface-float)),
-      color-mix(in srgb, var(--danger) 26%, var(--surface-shell-strong))
-    );
-  --pill-fg: color-mix(in srgb, var(--danger) 92%, #7f1d1d);
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -1756,14 +1490,6 @@
   backdrop-filter: blur(20px);
 }
 
-.bottomDockActions {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.6rem;
-  flex-wrap: wrap;
-}
-
 @media (min-width: 961px) {
   /* Shrink the dock bar to hug its content on desktop — the 1040px base
      width left large dead space on either side of the control buttons. */
@@ -1800,33 +1526,11 @@
     width: clamp(260px, 36vh, 380px);
   }
 
-  /* Desktop bottom dock: inline pill controls + matching-height danger buttons. */
   .controlRail {
     width: auto;
     display: flex;
     flex-shrink: 0;
     gap: 0.45rem;
-  }
-
-  /* Override the base .actions width/grid that gets merged into bottomDockActions. */
-  .bottomDockActions {
-    width: auto;
-    display: flex;
-    flex-wrap: nowrap;
-    gap: 0.45rem;
-    /* Visual separator between controls group and danger group. */
-    padding-left: 1rem;
-    border-left: 1px solid color-mix(in srgb, var(--panel-border-soft) 54%, transparent);
-  }
-
-  /* Reset base width:100% so buttons size to their label, not the container. */
-  .dangerActionBtn {
-    width: auto;
-    min-width: 140px;
-    min-height: 56px;
-    border-radius: 16px;
-    padding-inline: 1.1rem;
-    font-size: 0.81rem;
   }
 }
 
@@ -1842,11 +1546,6 @@
     width: 100%;
   }
 
-  .stageShell {
-    padding: 0.78rem;
-    border-radius: 24px;
-  }
-
   .bottomDock {
     width: min(100%, 440px);
     flex-direction: column;
@@ -1854,22 +1553,8 @@
     border-radius: 26px;
   }
 
-  .bottomDockActions {
-    width: 100%;
-  }
-
-  .bottomDockActions > * {
-    flex: 1 1 auto;
-  }
-
   .controlRail {
     width: 100%;
-  }
-
-  .dangerActionBtn {
-    min-height: 50px;
-    border-radius: 18px;
-    font-size: 0.8rem;
   }
 
   /* Undo visual-refresh tile-height increase for mobile — base values are enough. */

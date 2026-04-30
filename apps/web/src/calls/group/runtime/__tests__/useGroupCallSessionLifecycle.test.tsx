@@ -98,7 +98,7 @@ function LifecycleHarness(props: {
   const [, setActiveParticipantDeviceIdsByUserId] = useState<Record<string, string[]>>({});
   const [, setRemoteParticipantMediaModes] = useState<Record<string, "off" | "best-effort" | "required">>({});
   const [, setRemoteMedia] = useState<GroupCallRemoteMedia[]>([]);
-  const [, setCallHostUserId] = useState<string | null>(null);
+  const [callHostUserId, setCallHostUserId] = useState<string | null>(null);
   const [, setLocalMediaKey] = useState<LocalGroupCallMediaKey | null>(null);
   const [, setSharedMediaKeyDeviceCount] = useState(0);
   const [, setReceivedMediaKeyCount] = useState(0);
@@ -177,7 +177,7 @@ function LifecycleHarness(props: {
     leaveCurrentCall,
   });
 
-  return <span data-call-id={callId ?? ""} />;
+  return <span data-call-id={callId ?? ""} data-host-user-id={callHostUserId ?? ""} />;
 }
 
 describe("useGroupCallSessionLifecycle reconnect", () => {
@@ -245,7 +245,11 @@ describe("useGroupCallSessionLifecycle reconnect", () => {
 
   it("does not end a room when POST reuses a call created by a race", async () => {
     const statusActions: string[] = [];
-    mocks.post.mockResolvedValueOnce({ callId: "call-1", created: false });
+    mocks.post.mockResolvedValueOnce({
+      callId: "call-1",
+      callerUserId: "user-2",
+      created: false,
+    });
     mocks.startGroupSfuClient.mockRejectedValue(new Error("sfu unavailable"));
 
     await act(async () => {
@@ -272,6 +276,9 @@ describe("useGroupCallSessionLifecycle reconnect", () => {
     expect(mocks.put.mock.calls).toEqual([
       ["/calls/call-1/status", { status: "active" }],
     ]);
+    expect(container.querySelector<HTMLElement>("span")?.dataset.hostUserId).toBe(
+      "user-2"
+    );
   });
 
   it("rejoins the SFU transport after a transport failure", async () => {

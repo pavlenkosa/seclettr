@@ -274,6 +274,7 @@ export function useGroupCallPanelRuntime({
     session,
     callId,
     userId,
+    callHostUserId,
     deviceId,
     identityDhKeyPair,
     localAdvertisedMediaEncryptionMode,

@@ -24,6 +24,7 @@ export interface UseGroupCallSessionRuntimeOptions {
   session: GroupCallPanelSession | null;
   callId: string | null;
   userId: string | null;
+  callHostUserId: string | null;
   deviceId: string | null;
   identityDhKeyPair: KeyPair | null;
   localAdvertisedMediaEncryptionMode: GroupCallRuntimeMediaEncryptionMode;

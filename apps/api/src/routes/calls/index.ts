@@ -71,12 +71,13 @@ type GroupCallParticipantDevice = {
 
 type GroupCallReservation = {
   callId: string;
+  callerUserId: string;
   reused: boolean;
 };
 
 type CreateCallResponse =
   | { callId: string }
-  | { callId: string; created: boolean };
+  | { callId: string; created: boolean; callerUserId: string };
 
 const CALL_ROUTE_RATE_LIMIT_WINDOW_SEC = 60;
 const CALL_ROUTE_RATE_LIMIT_MAX = 90;
@@ -410,7 +411,11 @@ async function reserveGroupCall(
       groupId
     );
     if (existingGroupCall) {
-      return { callId: existingGroupCall.id, reused: true };
+      return {
+        callId: existingGroupCall.id,
+        callerUserId: existingGroupCall.caller_user_id,
+        reused: true,
+      };
     }
 
     const inserted = await client.query<{ id: string }>(
@@ -421,7 +426,11 @@ async function reserveGroupCall(
       [userId, null, groupId, callType]
     );
 
-    return { callId: inserted.rows[0]!.id, reused: false };
+    return {
+      callId: inserted.rows[0]!.id,
+      callerUserId: userId,
+      reused: false,
+    };
   });
 }
 
@@ -545,7 +554,7 @@ async function createOrJoinGroupCall(
     sessionId: string;
     callType: CreateCallBody["callType"];
   }
-): Promise<{ callId: string; created: boolean }> {
+): Promise<Extract<CreateCallResponse, { created: boolean }>> {
   const { groupId, userId, deviceId, sessionId, callType } = params;
   const groupCall = await reserveGroupCall(groupId, userId, callType);
 
@@ -557,7 +566,11 @@ async function createOrJoinGroupCall(
       deviceId,
       sessionId,
     });
-    return { callId: groupCall.callId, created: false };
+    return {
+      callId: groupCall.callId,
+      callerUserId: groupCall.callerUserId,
+      created: false,
+    };
   }
 
   recordCallEvent("initiated");
@@ -592,7 +605,11 @@ async function createOrJoinGroupCall(
     initialPresence
   );
 
-  return { callId: groupCall.callId, created: true };
+  return {
+    callId: groupCall.callId,
+    callerUserId: groupCall.callerUserId,
+    created: true,
+  };
 }
 
 function notifyOfflineDirectCalleeAboutInvite(

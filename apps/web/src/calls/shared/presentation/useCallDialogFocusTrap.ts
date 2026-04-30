@@ -115,7 +115,7 @@ export function useCallDialogFocusTrap({
       }
 
       if (action === "focus-first") {
-        focusElement(initialFocusRefRef.current?.current ?? focusable[0] ?? currentContainer);
+        focusElement(focusable[0] ?? currentContainer);
         return;
       }
 

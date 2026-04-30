@@ -3,9 +3,10 @@ import { CallControlButton } from "@/calls/shared/presentation/CallControlButton
 import type { GroupCallStatus } from "@/calls/group/model/group-call-types";
 import {
   CameraIcon,
+  HangupIcon,
   MuteIcon,
   ScreenShareIcon,
-} from "./GroupCallIcons";
+} from "@/calls/shared/presentation/CallIcons";
 import styles from "@/calls/group/presentation/GroupCallPanel.module.css";
 
 interface GroupCallControlsProps {
@@ -21,9 +22,14 @@ interface GroupCallControlsProps {
   readonly muteToggleLabel: string;
   readonly videoToggleLabel: string;
   readonly screenShareToggleLabel: string;
+  readonly leaveActionLabel: string;
+  readonly endForEveryoneLabel: string;
+  readonly canEndForEveryone: boolean;
   readonly onToggleMute: () => void;
   readonly onToggleVideo: () => void | Promise<void>;
   readonly onToggleScreenShare: () => void | Promise<void>;
+  readonly onLeave: () => void;
+  readonly onEndForEveryone: () => void;
 }
 
 const canScreenShare =
@@ -43,9 +49,14 @@ export function GroupCallControls({
   muteToggleLabel,
   videoToggleLabel,
   screenShareToggleLabel,
+  leaveActionLabel,
+  endForEveryoneLabel,
+  canEndForEveryone,
   onToggleMute,
   onToggleVideo,
   onToggleScreenShare,
+  onLeave,
+  onEndForEveryone,
 }: GroupCallControlsProps) {
   const { t } = useI18n();
   const isReady = hasLocalMedia && status === "ready";
@@ -64,6 +75,8 @@ export function GroupCallControls({
         icon={<MuteIcon muted={isAudioMuted} />}
         label={muteToggleLabel}
         disabled={!isReady}
+        collapseLabelOnNarrow
+        compactOnNarrow
         aria-label={muteToggleLabel}
         aria-pressed={isAudioMuted}
       />
@@ -71,11 +84,14 @@ export function GroupCallControls({
         onClick={() => { onToggleVideo(); }}
         layout={layout}
         className={styles.controlBtn}
-        active={isLocalVideoEnabled}
+        active={!isLocalVideoEnabled}
         icon={<CameraIcon />}
         label={videoToggleLabel}
         disabled={!isReady || isVideoSwitching || isScreenSwitching}
+        collapseLabelOnNarrow
+        compactOnNarrow
         aria-label={videoToggleLabel}
+        aria-pressed={!isLocalVideoEnabled}
       />
       {canScreenShare ? (
         <CallControlButton
@@ -86,7 +102,34 @@ export function GroupCallControls({
           icon={<ScreenShareIcon />}
           label={screenShareToggleLabel}
           disabled={!isReady || isVideoSwitching || isScreenSwitching}
+          collapseLabelOnNarrow
+          compactOnNarrow
           aria-label={screenShareToggleLabel}
+          aria-pressed={isLocalScreenSharing}
+        />
+      ) : null}
+      <CallControlButton
+        onClick={onLeave}
+        layout={layout}
+        className={styles.controlBtn}
+        tone="danger"
+        icon={<HangupIcon />}
+        label={leaveActionLabel}
+        collapseLabelOnNarrow
+        compactOnNarrow
+        aria-label={leaveActionLabel}
+      />
+      {canEndForEveryone ? (
+        <CallControlButton
+          onClick={onEndForEveryone}
+          layout={layout}
+          className={styles.controlBtn}
+          tone="danger"
+          icon={<HangupIcon />}
+          label={endForEveryoneLabel}
+          collapseLabelOnNarrow
+          compactOnNarrow
+          aria-label={endForEveryoneLabel}
         />
       ) : null}
     </div>

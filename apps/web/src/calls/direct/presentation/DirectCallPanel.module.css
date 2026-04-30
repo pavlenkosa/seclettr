@@ -459,99 +459,6 @@
   font-variant-numeric: tabular-nums;
 }
 
-.stageViewerOverlay {
-  position: fixed;
-  inset: 0;
-  width: 100vw;
-  width: 100dvw;
-  height: 100vh;
-  height: 100dvh;
-  max-width: none;
-  max-height: none;
-  margin: 0;
-  padding: 0;
-  border: 0;
-  outline: 0;
-  box-sizing: border-box;
-  overflow: hidden;
-  z-index: 340;
-  background: rgb(3 8 18);
-  color: #f8fafc;
-}
-
-.stageViewerOverlay::backdrop {
-  background: transparent;
-}
-
-.stageViewerTopBar {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  z-index: 2;
-  padding:
-    calc(env(safe-area-inset-top, 0px) + 0.7rem)
-    calc(env(safe-area-inset-right, 0px) + 0.75rem)
-    0.8rem
-    calc(env(safe-area-inset-left, 0px) + 0.75rem);
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 0.75rem;
-  background: linear-gradient(180deg, rgb(3 8 18 / 0.72) 0%, transparent 100%);
-}
-
-.stageViewerMeta {
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 0.1rem;
-}
-
-.stageViewerEyebrow {
-  color: rgb(226 232 240 / 0.68);
-  font-size: 0.68rem;
-  font-weight: 700;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-}
-
-.stageViewerTitle {
-  color: #f8fafc;
-  font-size: 0.96rem;
-  font-weight: 700;
-}
-
-.stageViewerActions {
-  display: flex;
-  align-items: center;
-  gap: 0.4rem;
-  flex-shrink: 0;
-}
-
-.stageViewerVideo {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  object-fit: contain;
-}
-
-.stageViewerVideoHidden {
-  opacity: 0;
-  pointer-events: none;
-}
-
-.stageViewerEmpty {
-  position: absolute;
-  inset: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: var(--text-secondary);
-  font-size: 0.86rem;
-}
-
 :global(:root[data-theme="light"]) .callStage {
   border-color: color-mix(in srgb, var(--panel-border-soft) 92%, transparent);
   background:
@@ -1100,16 +1007,6 @@
     margin-left: auto;
     margin-right: 0;
     z-index: 2;
-  }
-
-  .stageViewerHeader {
-    gap: 0.6rem;
-  }
-
-  .stageViewerActions {
-    width: auto;
-    justify-content: flex-end;
-    gap: 0.38rem;
   }
 
   .callStageCamera {

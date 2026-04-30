@@ -87,6 +87,28 @@ export function ExpandIcon() {
   );
 }
 
+export function CloseIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+      <path d="M3 3l10 10M13 3 3 13" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+export function FocusIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+      <path
+        d="M5.25 2.75H3.8c-.58 0-1.05.47-1.05 1.05v1.45M10.75 2.75h1.45c.58 0 1.05.47 1.05 1.05v1.45M13.25 10.75v1.45c0 .58-.47 1.05-1.05 1.05h-1.45M5.25 13.25H3.8c-.58 0-1.05-.47-1.05-1.05v-1.45"
+        stroke="currentColor"
+        strokeWidth="1.5"
+        strokeLinecap="round"
+      />
+      <circle cx="8" cy="8" r="1.55" stroke="currentColor" strokeWidth="1.5" />
+    </svg>
+  );
+}
+
 export function ScreenShareIcon() {
   return (
     <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden="true">

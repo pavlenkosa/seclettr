@@ -18,30 +18,39 @@ const stageTile: GroupCallStageTile = {
   isLocal: false,
 };
 
+function flushLazyViewer() {
+  return act(async () => {
+    await vi.dynamicImportSettled();
+  });
+}
+
 describe("GroupCallStageViewerDialog", () => {
   let container: HTMLDivElement;
   let root: Root;
+  let loadSpy: { mockRestore: () => void };
 
   beforeEach(() => {
     (globalThis as typeof globalThis & { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
     container = document.createElement("div");
     document.body.appendChild(container);
     root = createRoot(container);
+    loadSpy = vi.spyOn(HTMLMediaElement.prototype, "load").mockImplementation(() => {});
   });
 
   afterEach(() => {
     act(() => {
       root.unmount();
     });
+    loadSpy.mockRestore();
     container.remove();
     delete (globalThis as typeof globalThis & { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT;
   });
 
-  it("closes on Escape without affecting stop-watching actions", () => {
+  it("closes on Escape without affecting stop-watching actions", async () => {
     const onClose = vi.fn();
     const onStopWatchingStageTile = vi.fn();
 
-    act(() => {
+    await act(async () => {
       root.render(
         <GroupCallStageViewerDialog
           isOpen
@@ -56,16 +65,19 @@ describe("GroupCallStageViewerDialog", () => {
       );
     });
 
-    act(() => {
+    await flushLazyViewer();
+
+    await act(async () => {
       document.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true }));
+      await Promise.resolve();
     });
 
     expect(onClose).toHaveBeenCalledTimes(1);
     expect(onStopWatchingStageTile).not.toHaveBeenCalled();
   });
 
-  it("traps focus inside the viewer dialog", () => {
-    act(() => {
+  it("traps focus inside the viewer dialog", async () => {
+    await act(async () => {
       root.render(
         <GroupCallStageViewerDialog
           isOpen
@@ -80,10 +92,10 @@ describe("GroupCallStageViewerDialog", () => {
       );
     });
 
+    await flushLazyViewer();
+
     // Dialog portals to document.body — query there, not inside container.
-    const closeButton = Array.from(document.body.querySelectorAll("button")).find(
-      (button) => button.textContent === "Close viewer"
-    ) ?? null;
+    const closeButton = document.body.querySelector('button[aria-label="Close viewer"]') as HTMLButtonElement | null;
     const stopWatchingButton = document.body.querySelector('[aria-label="Stop viewing"]') as HTMLButtonElement | null;
 
     expect(closeButton).not.toBeNull();
@@ -91,17 +103,17 @@ describe("GroupCallStageViewerDialog", () => {
     expect(document.activeElement).toBe(closeButton);
 
     act(() => {
-      stopWatchingButton?.focus();
+      closeButton?.focus();
       document.dispatchEvent(new KeyboardEvent("keydown", { key: "Tab", bubbles: true }));
     });
 
-    expect(document.activeElement).toBe(closeButton);
+    expect(document.activeElement).toBe(stopWatchingButton);
 
     act(() => {
-      closeButton?.focus();
+      stopWatchingButton?.focus();
       document.dispatchEvent(new KeyboardEvent("keydown", { key: "Tab", shiftKey: true, bubbles: true }));
     });
 
-    expect(document.activeElement).toBe(stopWatchingButton);
+    expect(document.activeElement).toBe(closeButton);
   });
 });

@@ -26,9 +26,7 @@ import { CallDurationText } from "@/calls/shared/presentation/CallDurationText";
 import { resolveGroupCallDockInlineStyle } from "@/calls/group/presentation/display";
 import { resolveGroupCallPanelSurface } from "@/calls/group/presentation/group-call-panel-surface";
 import type { GroupCallPanelSession } from "@/calls/group/model/entry";
-import { PillButton } from "@/components/ui";
 
-import { HangupIcon } from "@/calls/group/presentation/components/GroupCallIcons";
 import styles from "./GroupCallPanel.module.css";
 
 const GroupCallDevDebugBridge = import.meta.env.DEV
@@ -355,7 +353,7 @@ export function GroupCallPanel({ session, onClose }: Props) {
         <div className={styles.bottomDock}>
           <GroupCallControls
             className={presentation.controlRailClassName}
-            layout={isMobileViewport ? "stacked" : "inline"}
+            layout="inline"
             hasLocalMedia={Boolean(runtime.localStream)}
             status={runtime.status}
             isAudioMuted={runtime.isLocalAudioMuted}
@@ -366,46 +364,15 @@ export function GroupCallPanel({ session, onClose }: Props) {
             muteToggleLabel={presentation.muteToggleLabel}
             videoToggleLabel={presentation.videoToggleLabel}
             screenShareToggleLabel={presentation.screenShareToggleLabel}
+            leaveActionLabel={presentation.leaveActionLabel}
+            endForEveryoneLabel={presentation.endForEveryoneLabel}
+            canEndForEveryone={presentation.canEndForEveryone}
             onToggleMute={runtime.handleToggleMute}
             onToggleVideo={runtime.handleToggleVideo}
             onToggleScreenShare={runtime.handleToggleScreenShare}
+            onLeave={runtime.handleLeave}
+            onEndForEveryone={runtime.handleEndForEveryone}
           />
-
-          <div
-            className={[
-              styles.bottomDockActions,
-              presentation.actionsClassName,
-              presentation.canEndForEveryone ? styles.actionsDual : styles.actionsSingle,
-            ]
-              .filter(Boolean)
-              .join(" ")}
-          >
-            <PillButton
-              type="button"
-              onClick={() => runtime.handleLeave()}
-              className={`${styles.dangerActionBtn} ${styles.dangerActionBtnSecondary}`}
-              tone="danger"
-              appearance="soft"
-              size="md"
-              leading={<HangupIcon />}
-            >
-              {presentation.leaveActionLabel}
-            </PillButton>
-
-            {presentation.canEndForEveryone ? (
-              <PillButton
-                type="button"
-                onClick={() => runtime.handleEndForEveryone()}
-                className={`${styles.dangerActionBtn} ${styles.dangerActionBtnPrimary}`}
-                tone="danger"
-                appearance="strong"
-                size="md"
-                leading={<HangupIcon />}
-              >
-                {presentation.endForEveryoneLabel}
-              </PillButton>
-            ) : null}
-          </div>
         </div>
 
       </div>

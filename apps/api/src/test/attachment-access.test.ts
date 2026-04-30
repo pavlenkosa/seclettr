@@ -106,6 +106,17 @@ async function proxyUploadCiphertext(
   );
 }
 
+async function completeAttachment(
+  attachmentId: string,
+  token: string
+): Promise<{ status: number; body: unknown }> {
+  return apiRequest(
+    `/attachments/${attachmentId}/complete`,
+    { method: "POST" },
+    token
+  );
+}
+
 async function registerUser(username: string) {
   const fakeKey = "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA";
   const fakeSig = "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA";
@@ -188,20 +199,15 @@ describe("Attachment access control", () => {
     expect(group.status).toBe(201);
     groupId = (group.body as { groupId: string }).groupId;
 
-    const initUpload = await apiRequest(
-      "/attachments/init-upload",
-      {
-        method: "POST",
-        body: JSON.stringify({
-          encryptedSize: 32,
-          encryptedDigest: "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
-          contentType: "audio/webm",
-        }),
-      },
+    const mainAttachment = buildEncryptedAttachment(32);
+    const initUpload = await initAttachment(senderToken, mainAttachment.ciphertext, "audio/webm");
+    attachmentId = initUpload.attachmentId;
+    const upload = await proxyUploadCiphertext(
+      attachmentId,
+      mainAttachment.ciphertext,
       senderToken
     );
-    expect(initUpload.status).toBe(200);
-    attachmentId = (initUpload.body as { attachmentId: string }).attachmentId;
+    expect(upload.status).toBe(204);
 
     const messageSend = await apiRequest(
       "/messages",
@@ -358,6 +364,8 @@ describe("Attachment access control", () => {
 
     const upload = await proxyUploadCiphertext(proxiedAttachmentId, ciphertext, senderToken);
     expect(upload.status).toBe(204);
+    const complete = await completeAttachment(proxiedAttachmentId, senderToken);
+    expect(complete.status).toBe(204);
 
     const messageSend = await apiRequest(
       "/messages",
@@ -393,7 +401,7 @@ describe("Attachment access control", () => {
     expect((ciphertextRes.body as { encryptedSize?: number }).encryptedSize).toBe(ciphertext.length);
   });
 
-  it("returns a transient status while ciphertext is not uploaded yet", async () => {
+  it("rejects attachment messages before upload completion", async () => {
     const { ciphertext } = buildEncryptedAttachment(36);
     const { attachmentId: pendingAttachmentId } = await initAttachment(
       senderToken,
@@ -420,16 +428,48 @@ describe("Attachment access control", () => {
       },
       senderToken
     );
-    expect(messageSend.status).toBe(202);
-
-    const ciphertextRes = await apiRequest(
-      `/attachments/${pendingAttachmentId}/ciphertext`,
-      {},
-      recipientToken
+    expect(messageSend.status).toBe(409);
+    expect((messageSend.body as { error?: string }).error).toBe(
+      "Attachment is not verified"
     );
-    expect(ciphertextRes.status).toBe(409);
-    expect((ciphertextRes.body as { error?: string }).error).toBe(
+
+    const complete = await completeAttachment(pendingAttachmentId, senderToken);
+    expect(complete.status).toBe(409);
+    expect((complete.body as { error?: string }).error).toBe(
       "Attachment object not ready"
+    );
+  });
+
+  it("rejects group attachment messages before upload completion", async () => {
+    const { ciphertext } = buildEncryptedAttachment(36);
+    const { attachmentId: pendingAttachmentId } = await initAttachment(
+      senderToken,
+      ciphertext,
+      "image/png"
+    );
+
+    const send = await apiRequest(
+      `/groups/${groupId}/messages`,
+      {
+        method: "POST",
+        body: JSON.stringify({
+          version: MESSAGE_PROTOCOL_VERSION,
+          clientMessageId: crypto.randomUUID(),
+          groupId,
+          distributionId: crypto.randomUUID(),
+          chainId: 0,
+          messageId: Math.floor(Math.random() * 1_000_000) + 1,
+          ciphertext: "AAAA",
+          signature: "BBBB",
+          type: "attachment",
+          attachmentId: pendingAttachmentId,
+        }),
+      },
+      senderToken
+    );
+    expect(send.status).toBe(409);
+    expect((send.body as { error?: string }).error).toBe(
+      "Attachment is not verified"
     );
   });
 

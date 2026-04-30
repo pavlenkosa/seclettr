@@ -246,6 +246,7 @@ describe("createMessagesOutboundRuntime attachment flow", () => {
         uploadUrl: "https://upload.invalid",
         fields: {},
       })
+      .mockResolvedValueOnce({})
       .mockResolvedValueOnce({});
     apiUploadMock.mockResolvedValue(undefined);
     uploadFormDataWithProgressMock.mockRejectedValue(new Error("Upload network error"));
@@ -266,6 +267,9 @@ describe("createMessagesOutboundRuntime attachment flow", () => {
     expect(apiUploadMock).toHaveBeenCalledWith(
       "/attachments/11111111-1111-4111-8111-111111111111/upload-ciphertext",
       expect.any(FormData)
+    );
+    expect(apiPostMock).toHaveBeenCalledWith(
+      "/attachments/11111111-1111-4111-8111-111111111111/complete"
     );
     expect(state.conversations["user-peer"]?.messages).toHaveLength(1);
     expect(state.conversations["user-peer"]?.messages[0]?.status).toBe("sent");
@@ -288,6 +292,7 @@ describe("createMessagesOutboundRuntime attachment flow", () => {
         uploadUrl: "https://upload.invalid",
         fields: {},
       })
+      .mockResolvedValueOnce({})
       .mockResolvedValueOnce({});
     uploadFormDataWithProgressMock.mockResolvedValue(true);
 

@@ -443,6 +443,7 @@ describe("createGroupsOutboundRuntime attachment flow", () => {
         uploadUrl: "https://upload.invalid",
         fields: {},
       })
+      .mockResolvedValueOnce({})
       .mockRejectedValueOnce(
         Object.assign(
           new Error("group sender-key message id already used with different payload"),
@@ -508,6 +509,7 @@ describe("createGroupsOutboundRuntime attachment flow", () => {
         uploadUrl: "https://upload.invalid",
         fields: {},
       })
+      .mockResolvedValueOnce({})
       .mockResolvedValueOnce({
         ok: true,
         serverMessageId: "55555555-5555-4555-8555-555555555555",
@@ -577,6 +579,7 @@ describe("createGroupsOutboundRuntime attachment flow", () => {
         uploadUrl: "https://upload.invalid",
         fields: {},
       })
+      .mockResolvedValueOnce({})
       .mockRejectedValueOnce(new Error("message post failed"));
     uploadFormDataWithProgressMock.mockResolvedValue(true);
 

@@ -252,6 +252,10 @@ async function uploadCiphertextBlob(
   }
 }
 
+async function completeAttachmentUpload(attachmentId: string): Promise<void> {
+  await api.post<void>(`/attachments/${encodeURIComponent(attachmentId)}/complete`);
+}
+
 interface CreateGroupsOutboundRuntimeOptions {
   set: SetGroupsState;
   get: GetGroupsState;
@@ -555,6 +559,13 @@ export function createGroupsOutboundRuntime({
       updateProgress,
       abortController.signal
     );
+
+    try {
+      await completeAttachmentUpload(uploadInit.attachmentId);
+    } catch (err) {
+      markOptimisticGroupAttachmentError(optimisticAttachmentParams);
+      throw err;
+    }
 
     unregisterUpload(optimisticId);
 

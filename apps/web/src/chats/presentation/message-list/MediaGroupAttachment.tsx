@@ -248,6 +248,7 @@ function buildAbsoluteMediaGroupPlan(
 interface CellPreviewData {
   url: string;
   mimeType: string;
+  caption?: string;
   fileName?: string;
   onDownload: () => void;
   downloading: boolean;
@@ -323,11 +324,17 @@ function MediaGroupCell({
     return {
       url,
       mimeType: msg.attachment?.mimeType ?? "",
+      caption: msg.attachment?.caption,
       fileName: msg.attachment?.fileName,
       onDownload: () => void decryptAndDownload(),
       downloading,
     };
-  }, [decryptAndDownload, msg.attachment?.fileName, msg.attachment?.mimeType]);
+  }, [
+    decryptAndDownload,
+    msg.attachment?.caption,
+    msg.attachment?.fileName,
+    msg.attachment?.mimeType,
+  ]);
 
   useEffect(() => {
     previewDataRef.current = previewUrl
@@ -597,6 +604,7 @@ export function MediaGroupAttachment({ messages, isOwn, timeLabel }: Props) {
           isOpen={isLightboxOpen}
           url={lightboxData.url}
           mimeType={lightboxData.mimeType}
+          caption={lightboxData.caption}
           fileName={lightboxData.fileName}
           downloading={lightboxData.downloading}
           onClose={handleLightboxClose}

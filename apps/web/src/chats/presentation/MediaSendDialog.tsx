@@ -242,7 +242,7 @@ export function MediaSendDialog({
     }
   }
 
-  function onOverlayClick(e: MouseEvent<HTMLButtonElement>) {
+  function onOverlayClick(e: MouseEvent<HTMLDivElement>) {
     if (e.target === e.currentTarget) {
       closeDialog();
     }
@@ -271,12 +271,10 @@ export function MediaSendDialog({
     : t("mediaSend.title.many", { count: fileCount });
 
   return createPortal(
-    <button
-      type="button"
+    <div
       className={`${styles.overlay} ${isExiting ? styles.overlayOut : ""}`}
       onClick={onOverlayClick}
-      tabIndex={-1}
-      aria-label={title}
+      role="presentation"
     >
       <dialog
         ref={dialogRef}
@@ -391,7 +389,7 @@ export function MediaSendDialog({
           </div>
         </div>
       </dialog>
-    </button>,
+    </div>,
     document.body,
   );
 }

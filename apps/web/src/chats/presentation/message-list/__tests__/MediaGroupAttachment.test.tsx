@@ -79,7 +79,9 @@ vi.mock("@/components/common/MediaLightbox", () => ({
     onNavigate,
     totalCount,
     url,
+    caption,
   }: {
+    caption?: string;
     currentIndex?: number;
     onClose: () => void;
     onNavigate?: (delta: -1 | 1) => void | Promise<void>;
@@ -91,6 +93,7 @@ vi.mock("@/components/common/MediaLightbox", () => ({
       data-current-index={currentIndex ?? -1}
       data-total-count={totalCount ?? 0}
       data-url={url}
+      data-caption={caption ?? ""}
     >
       {onNavigate ? (
         <button
@@ -117,15 +120,16 @@ function createGroupedMediaMessages(count: number): Message[] {
     senderDeviceId: "device-1",
     content: "[attachment]",
     type: "attachment" as const,
-    attachment: {
-      attachmentId: `att-${index + 1}`,
+      attachment: {
+        attachmentId: `att-${index + 1}`,
       key: "key",
       digest: "digest",
       mimeType: "image/jpeg",
       size: 64_000,
-      fileName: `photo-${index + 1}.jpg`,
-      mediaGroupId: "group-1",
-    },
+        fileName: `photo-${index + 1}.jpg`,
+        caption: index === 0 ? "album caption" : undefined,
+        mediaGroupId: "group-1",
+      },
     timestamp: Date.UTC(2026, 2, 10, 13, 58) + index * 500,
     status: "sent" as const,
     isOwn: false,
@@ -202,6 +206,36 @@ describe("MediaGroupAttachment", () => {
     expect(lightbox?.dataset.totalCount).toBe("5");
     expect(lightbox?.dataset.currentIndex).toBe("4");
     expect(lightbox?.dataset.url).toBe("blob:preview-5");
+  });
+
+  it("passes the active media caption into the lightbox", async () => {
+    const messages = createGroupedMediaMessages(2);
+    messages[1] = {
+      ...messages[1]!,
+      attachment: {
+        ...messages[1]!.attachment!,
+        caption: "second caption",
+      },
+    };
+    messages.forEach((message, index) => {
+      configureRuntime(message.id, {
+        initialPreviewUrl: `blob:preview-${index + 1}`,
+        decryptedPreviewUrl: `blob:preview-${index + 1}`,
+      });
+    });
+
+    act(() => {
+      root.render(<MediaGroupAttachment messages={messages} isOwn={false} timeLabel="2:12" />);
+    });
+
+    const cells = container.querySelectorAll<HTMLElement>('button[aria-label="message.media.tapToViewImage"]');
+    await act(async () => {
+      cells[1]?.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true }));
+    });
+
+    expect(container.querySelector<HTMLElement>('[data-testid="lightbox"]')?.dataset.caption).toBe(
+      "second caption"
+    );
   });
 
   it("does not open the lightbox when preview decryption returns no media", async () => {

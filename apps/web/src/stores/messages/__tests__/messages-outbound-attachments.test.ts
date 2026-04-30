@@ -105,6 +105,7 @@ function createState(overrides: Partial<MessagesState> = {}): MessagesState {
     sendTypingSignal: () => {},
     markConversationRead: async () => {},
     sendMessage: async () => {},
+    retryDirectMessage: async () => {},
     sendAttachment: async () => {},
     sendVoiceNote: async () => {},
     sendVideoNote: async () => {},
@@ -268,5 +269,52 @@ describe("createMessagesOutboundRuntime attachment flow", () => {
     );
     expect(state.conversations["user-peer"]?.messages).toHaveLength(1);
     expect(state.conversations["user-peer"]?.messages[0]?.status).toBe("sent");
+  });
+
+  it("encrypts direct media captions inside the attachment payload", async () => {
+    let state = createState();
+    const setState = (
+      partial:
+        | Partial<MessagesState>
+        | ((current: MessagesState) => Partial<MessagesState>)
+    ) => {
+      const update = typeof partial === "function" ? partial(state) : partial;
+      state = { ...state, ...update };
+    };
+
+    apiPostMock
+      .mockResolvedValueOnce({
+        attachmentId: "11111111-1111-4111-8111-111111111111",
+        uploadUrl: "https://upload.invalid",
+        fields: {},
+      })
+      .mockResolvedValueOnce({});
+    uploadFormDataWithProgressMock.mockResolvedValue(true);
+
+    const runtime = createMessagesOutboundRuntime({
+      set: setState,
+      get: () => state,
+      shared: createShared(),
+      schedulePendingMessageSync: vi.fn(),
+    });
+
+    const file = new File([new Uint8Array([5, 6, 7])], "photo.png", {
+      type: "image/png",
+    });
+
+    await runtime.sendAttachment("user-peer", file, "  payload caption  ");
+
+    const plaintext = JSON.parse(
+      new TextDecoder().decode(ratchetEncryptMock.mock.calls[0]?.[1])
+    ) as { caption?: string; fileName?: string };
+
+    expect(plaintext.caption).toBe("payload caption");
+    expect(plaintext.fileName).toBe("photo.png");
+    expect(state.conversations["user-peer"]?.messages[0]?.content).toBe(
+      "payload caption"
+    );
+    expect(state.conversations["user-peer"]?.messages[0]?.attachment?.caption).toBe(
+      "payload caption"
+    );
   });
 });

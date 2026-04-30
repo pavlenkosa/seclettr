@@ -482,6 +482,74 @@ describe("createGroupsOutboundRuntime attachment flow", () => {
     });
   });
 
+  it("encrypts group media captions inside the attachment payload", async () => {
+    let state = createState({
+      groups: {
+        "group-1": createGroup(),
+      },
+    });
+    const setState = (
+      partial:
+        | Partial<GroupsState>
+        | ((current: GroupsState) => Partial<GroupsState>)
+    ) => {
+      const update = typeof partial === "function" ? partial(state) : partial;
+      state = { ...state, ...update };
+    };
+
+    const file = new File([new Uint8Array([1, 2, 3])], "photo.png", {
+      type: "image/png",
+    });
+    const mediaGroupId = "44444444-4444-4444-8444-444444444444";
+
+    apiPostMock
+      .mockResolvedValueOnce({
+        attachmentId: "11111111-1111-4111-8111-111111111111",
+        uploadUrl: "https://upload.invalid",
+        fields: {},
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        serverMessageId: "55555555-5555-4555-8555-555555555555",
+        createdAt: "2026-01-01T00:00:00.000Z",
+      });
+    uploadFormDataWithProgressMock.mockResolvedValue(true);
+
+    const runtime = createGroupsOutboundRuntime({
+      set: setState,
+      get: () => state,
+      shared: {
+        getMyUserId: () => "me",
+        getMyDeviceId: () => "device-me",
+        getStorageKey: () => ({}) as CryptoKey,
+        createUnknownGroupChat: vi.fn(),
+      } as unknown as GroupsRuntimeShared,
+      sendSenderKeyDistribution: vi.fn(async () => ["device-alice"]),
+    });
+
+    await runtime.sendGroupFileAttachment(
+      "group-1",
+      file,
+      mediaGroupId,
+      "  group caption  "
+    );
+
+    const attachmentPayload = encryptGroupAttachmentEnvelopeMock.mock.calls[0]?.[3];
+    expect(attachmentPayload).toMatchObject({
+      caption: "group caption",
+      fileName: "photo.png",
+      mediaGroupId,
+    });
+    expect(state.groups["group-1"]?.messages[0]).toMatchObject({
+      status: "sent",
+      content: "group caption",
+      attachment: {
+        caption: "group caption",
+        mediaGroupId,
+      },
+    });
+  });
+
   it("manual attachment retry reuses the cached encrypted group envelope", async () => {
     const refreshGroup = vi.fn(async () => {});
     let state = createState({

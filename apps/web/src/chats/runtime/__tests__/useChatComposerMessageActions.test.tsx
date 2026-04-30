@@ -45,7 +45,11 @@ interface HookValue {
     text: string,
     replyTo?: { id: string; content: string }
   ) => Promise<void>;
-  sendFileAttachment: (file: File) => Promise<void>;
+  sendFileAttachment: (
+    file: File,
+    mediaGroupId?: string,
+    caption?: string
+  ) => Promise<void>;
 }
 
 function HookHarness(props: {
@@ -142,8 +146,57 @@ describe("useChatComposerMessageActions", () => {
     expect(groupStoreState.sendGroupFileAttachment).toHaveBeenCalledWith(
       "group-1",
       file,
+      undefined,
       undefined
     );
     expect(messageStoreState.sendAttachment).not.toHaveBeenCalled();
+  });
+
+  it("routes file captions through direct attachment payloads", async () => {
+    messageStoreState.sendAttachment.mockResolvedValue(undefined);
+    act(() => {
+      root.render(
+        <HookHarness hookRef={hookRef} recipientUserId="user-peer" />
+      );
+    });
+
+    const file = new File(["hello"], "test.txt", { type: "text/plain" });
+    await act(async () => {
+      await hookRef.current?.sendFileAttachment(
+        file,
+        "group-media-id",
+        "caption"
+      );
+    });
+
+    expect(messageStoreState.sendAttachment).toHaveBeenCalledWith(
+      "user-peer",
+      file,
+      "caption",
+      "group-media-id"
+    );
+  });
+
+  it("routes file captions through group attachment payloads", async () => {
+    groupStoreState.sendGroupFileAttachment.mockResolvedValue(undefined);
+    act(() => {
+      root.render(<HookHarness hookRef={hookRef} groupId="group-1" />);
+    });
+
+    const file = new File(["hello"], "test.txt", { type: "text/plain" });
+    await act(async () => {
+      await hookRef.current?.sendFileAttachment(
+        file,
+        "group-media-id",
+        "caption"
+      );
+    });
+
+    expect(groupStoreState.sendGroupFileAttachment).toHaveBeenCalledWith(
+      "group-1",
+      file,
+      "group-media-id",
+      "caption"
+    );
   });
 });

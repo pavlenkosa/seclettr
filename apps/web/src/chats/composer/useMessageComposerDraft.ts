@@ -245,13 +245,18 @@ export function useMessageComposerDraft({
     setSending(true);
     clearComposerError();
     try {
+      const trimmedCaption = caption?.trim();
       const results = await Promise.allSettled(
-        files.map((file) => {
+        files.map((file, index) => {
           const fileGroupId =
             mediaGroupId && (file.type.startsWith("image/") || file.type.startsWith("video/"))
               ? mediaGroupId
               : undefined;
-          return sendFileAttachmentAction(file, fileGroupId);
+          return sendFileAttachmentAction(
+            file,
+            fileGroupId,
+            index === 0 ? trimmedCaption : undefined
+          );
         })
       );
 
@@ -262,11 +267,6 @@ export function useMessageComposerDraft({
         throw firstRejected.reason;
       }
 
-      // Send caption as a text message immediately after the files.
-      const trimmedCaption = caption?.trim();
-      if (trimmedCaption) {
-        await sendTextMessage(trimmedCaption);
-      }
     } catch (error) {
       logger.error("Attachment send failed:", error);
       setComposerErrorKey(resolveComposerErrorKey(error, "attachmentSendFailed"));
@@ -274,7 +274,7 @@ export function useMessageComposerDraft({
       setSending(false);
       refocusTextarea();
     }
-  }, [clearComposerError, refocusTextarea, sendFileAttachmentAction, sendTextMessage]);
+  }, [clearComposerError, refocusTextarea, sendFileAttachmentAction]);
 
   const handleAttachmentSelected = useCallback(async (event: ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(event.currentTarget.files ?? []);

@@ -38,7 +38,12 @@ export interface GroupsState {
     reply?: { id: string; snippet: string }
   ) => Promise<void>;
   retryGroupMessage: (groupId: string, messageId: string) => Promise<void>;
-  sendGroupFileAttachment: (groupId: string, file: File, mediaGroupId?: string) => Promise<void>;
+  sendGroupFileAttachment: (
+    groupId: string,
+    file: File,
+    mediaGroupId?: string,
+    caption?: string
+  ) => Promise<void>;
   sendGroupVoiceNote: (groupId: string, blob: Blob, durationMs: number) => Promise<void>;
   sendGroupVideoNote: (groupId: string, blob: Blob, durationMs: number) => Promise<void>;
   handleIncomingGroupMessage: (

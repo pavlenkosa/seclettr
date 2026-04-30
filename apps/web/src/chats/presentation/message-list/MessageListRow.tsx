@@ -47,6 +47,10 @@ type MessageBodyProps = Readonly<{
   activeMediaKey: string | null;
   onActiveMediaChange: (next: string | null) => void;
 }>;
+type AttachmentCaptionProps = Readonly<{
+  kind: MessageBodyKind;
+  presentation: MessageListRowPresentation;
+}>;
 type MessageMetaProps = Readonly<{
   message: MessageListRowMessage;
   presentation: MessageListRowPresentation;
@@ -86,6 +90,24 @@ function usesInlineAttachmentMeta(kind: MessageBodyKind): boolean {
 
 function canCopyMessage(message: MessageListRowMessage, kind: MessageBodyKind): boolean {
   return kind === "text" && Boolean(message.content) && !message.content.startsWith("[");
+}
+
+function resolveAttachmentCaption({
+  kind,
+  presentation,
+}: AttachmentCaptionProps): string | null {
+  if (kind === "text" || kind === "voice" || kind === "video") {
+    return null;
+  }
+
+  const caption =
+    kind === "mediaGroup"
+      ? presentation.mediaGroupMessages?.find(
+          (entry) => entry.attachment?.caption?.trim()
+        )?.attachment?.caption
+      : presentation.message.attachment?.caption;
+
+  return caption?.trim() || null;
 }
 
 function DateSeparator({ presentation }: DateSeparatorProps) {
@@ -222,6 +244,16 @@ function MessageBody({
     : <span className={styles.text}>{presentation.textPreview}</span>;
 }
 
+function AttachmentCaption({
+  kind,
+  presentation,
+}: AttachmentCaptionProps) {
+  const caption = resolveAttachmentCaption({ kind, presentation });
+  return caption ? (
+    <div className={styles.attachmentCaption}>{caption}</div>
+  ) : null;
+}
+
 function MessageMeta({
   message,
   presentation,
@@ -287,6 +319,7 @@ function MessageBubble({
         activeMediaKey={activeMediaKey}
         onActiveMediaChange={onActiveMediaChange}
       />
+      <AttachmentCaption kind={kind} presentation={presentation} />
       {showMeta ? (
         <div className={styles.meta}>
           <MessageMeta message={message} presentation={presentation} onRetry={onRetry} t={t} />

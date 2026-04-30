@@ -13,8 +13,10 @@ import { persistConversations } from "./conversation-persistence";
 import {
   incrementOutboundRetryCount,
   loadAllPendingOutboundItems,
+  loadOutboundQueueItem,
   persistOutboundQueueItem,
   removeOutboundQueueItem,
+  type OutboundQueueItem,
   type OutboundQueueDeviceEnvelope,
 } from "./outbound-queue";
 import {
@@ -949,8 +951,102 @@ export function createMessagesOutboundRuntime({
       }
     },
 
+    retryDirectMessage,
     resumePendingOutboundMessages,
   };
+
+  function buildQueuedDirectPayload(item: OutboundQueueItem) {
+    return {
+      version: MESSAGE_PROTOCOL_VERSION,
+      clientMessageId: item.clientMessageId,
+      recipientUserId: item.recipientUserId,
+      messages: item.envelopes.map((env) => ({
+        recipientDeviceId: env.recipientDeviceId,
+        ciphertext: env.ciphertext,
+        type: env.type,
+        attachmentId: env.attachmentId,
+        x3dhHeader: env.x3dhHeader,
+        oneTimePreKeyReservationToken: env.oneTimePreKeyReservationToken,
+      })),
+    };
+  }
+
+  async function markDirectQueuedMessageStatus(
+    recipientUserId: string,
+    clientMessageId: string,
+    status: Message["status"]
+  ): Promise<void> {
+    let nextConversations: Record<string, Conversation> | null = null;
+    set((state) => {
+      const conversation = state.conversations[recipientUserId];
+      if (!conversation) return {};
+      const nextConversation = {
+        ...conversation,
+        messages: conversation.messages.map((message) =>
+          message.id === clientMessageId ? { ...message, status } : message
+        ),
+      };
+      nextConversations = {
+        ...state.conversations,
+        [recipientUserId]: nextConversation,
+      };
+      return { conversations: nextConversations };
+    });
+    if (nextConversations) {
+      await persistConversations(nextConversations);
+    }
+  }
+
+  async function quarantineDirectOutboundItem(clientMessageId: string): Promise<void> {
+    set((state) => ({
+      quarantinedMessageIds: new Set([
+        ...state.quarantinedMessageIds,
+        clientMessageId,
+      ]),
+    }));
+    await removeOutboundQueueItem(clientMessageId);
+  }
+
+  async function retryDirectMessage(
+    recipientUserId: string,
+    messageId: string
+  ): Promise<void> {
+    const conversation = get().conversations[recipientUserId];
+    const bubble = conversation?.messages.find((message) => message.id === messageId);
+    if (!bubble || !bubble.isOwn || bubble.status !== "error") return;
+
+    const item = await loadOutboundQueueItem(messageId);
+    if (!item || item.recipientUserId !== recipientUserId) return;
+    if (item.messageType === "sender_key_distribution") return;
+
+    const retryCount = await incrementOutboundRetryCount(item.clientMessageId);
+    if (retryCount > MAX_OUTBOUND_RETRIES) {
+      await quarantineDirectOutboundItem(item.clientMessageId);
+      return;
+    }
+
+    await markDirectQueuedMessageStatus(
+      item.recipientUserId,
+      item.clientMessageId,
+      "sending"
+    );
+
+    try {
+      await api.post("/messages", buildQueuedDirectPayload(item));
+      await markDirectQueuedMessageStatus(
+        item.recipientUserId,
+        item.clientMessageId,
+        "sent"
+      );
+      await removeOutboundQueueItem(item.clientMessageId);
+    } catch {
+      await markDirectQueuedMessageStatus(
+        item.recipientUserId,
+        item.clientMessageId,
+        "error"
+      );
+    }
+  }
 
   // DM-01/DM-03: retry pending envelopes using stored ciphertext (no re-encrypt).
   // Called on WS reconnect. Enforces MAX_OUTBOUND_RETRIES budget (DM-03).
@@ -985,53 +1081,19 @@ export function createMessagesOutboundRuntime({
       // DM-03: enforce retry budget before attempting POST.
       const newCount = await incrementOutboundRetryCount(item.clientMessageId);
       if (newCount > MAX_OUTBOUND_RETRIES) {
-        set((s) => ({
-          quarantinedMessageIds: new Set([
-            ...s.quarantinedMessageIds,
-            item.clientMessageId,
-          ]),
-        }));
-        await removeOutboundQueueItem(item.clientMessageId);
+        await quarantineDirectOutboundItem(item.clientMessageId);
         continue;
       }
 
       try {
-        await api.post("/messages", {
-          version: MESSAGE_PROTOCOL_VERSION,
-          clientMessageId: item.clientMessageId,
-          recipientUserId: item.recipientUserId,
-          messages: item.envelopes.map((env) => ({
-            recipientDeviceId: env.recipientDeviceId,
-            ciphertext: env.ciphertext,
-            type: env.type,
-            attachmentId: env.attachmentId,
-            x3dhHeader: env.x3dhHeader,
-            oneTimePreKeyReservationToken: env.oneTimePreKeyReservationToken,
-          })),
-        });
+        await api.post("/messages", buildQueuedDirectPayload(item));
 
         if (requiresVisibleBubble) {
-          let sentConversations: Record<string, Conversation> | null = null;
-          set((s) => {
-            const c = s.conversations[item.recipientUserId];
-            if (!c) return {};
-            const nextConversations = {
-              ...s.conversations,
-              [item.recipientUserId]: {
-                ...c,
-                messages: c.messages.map((m) =>
-                  m.id === item.clientMessageId
-                    ? { ...m, status: "sent" as const }
-                    : m
-                ),
-              },
-            };
-            sentConversations = nextConversations;
-            return { conversations: nextConversations };
-          });
-          if (sentConversations) {
-            await persistConversations(sentConversations);
-          }
+          await markDirectQueuedMessageStatus(
+            item.recipientUserId,
+            item.clientMessageId,
+            "sent"
+          );
         }
         await removeOutboundQueueItem(item.clientMessageId);
       } catch {

@@ -279,6 +279,7 @@ interface UploadGroupAttachmentOptions extends GroupAttachmentSendOptions {
   mimeType: string;
   fileName: string;
   kind: "file" | "voice_note" | "video_note";
+  caption?: string;
   durationMs?: number;
   mediaGroupId?: string;
 }
@@ -453,6 +454,7 @@ export function createGroupsOutboundRuntime({
     mimeType,
     fileName,
     kind,
+    caption,
     durationMs,
     mediaGroupId,
     replaceMessageId,
@@ -487,11 +489,12 @@ export function createGroupsOutboundRuntime({
       ? clientMessageIdForOptimisticId(replaceMessageId)
       : localMessageIds.clientMessageId;
     const effectiveTimestamp = optimisticTimestamp ?? Date.now();
+    const trimmedCaption = caption?.trim() || undefined;
     const optimisticMessage: GroupChatMessage = {
       id: optimisticId,
       senderDeviceId: myDeviceId,
       senderLabel: formatSenderLabel(myDeviceId, true),
-      content: fileName,
+      content: trimmedCaption ?? fileName,
       type: "attachment",
       attachment: {
         attachmentId: uploadInit.attachmentId,
@@ -500,6 +503,7 @@ export function createGroupsOutboundRuntime({
         mimeType,
         fileName,
         size: blob.size,
+        caption: trimmedCaption,
         kind,
         durationMs: durationMs && durationMs > 0 && durationMs <= 120000 ? Math.round(durationMs) : undefined,
         mediaGroupId,
@@ -561,6 +565,7 @@ export function createGroupsOutboundRuntime({
       mimeType,
       fileName,
       size: blob.size,
+      caption: trimmedCaption,
       kind,
       durationMs: optimisticMessage.attachment?.durationMs,
       mediaGroupId,
@@ -793,6 +798,7 @@ export function createGroupsOutboundRuntime({
             mimeType: message.attachment.mimeType || localSource.type || "application/octet-stream",
             fileName: message.attachment.fileName || message.content || `attachment-${Date.now()}`,
             kind: message.attachment.kind ?? "file",
+            caption: message.attachment.caption,
             durationMs: message.attachment.durationMs,
             mediaGroupId: message.attachment.mediaGroupId,
             replaceMessageId: message.id,
@@ -807,13 +813,19 @@ export function createGroupsOutboundRuntime({
       if (message.rawType !== "text" || message.type === "attachment") return;
     },
 
-    sendGroupFileAttachment: async (groupId: string, file: File, mediaGroupId?: string) => {
+    sendGroupFileAttachment: async (
+      groupId: string,
+      file: File,
+      mediaGroupId?: string,
+      caption?: string
+    ) => {
       await uploadAndEncryptGroupAttachment({
         groupId,
         blob: file,
         mimeType: file.type || "application/octet-stream",
         fileName: file.name || `attachment-${Date.now()}`,
         kind: "file",
+        caption,
         mediaGroupId,
       });
     },

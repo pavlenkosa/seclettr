@@ -70,6 +70,7 @@ function createState(overrides: Partial<MessagesState> = {}): MessagesState {
     sendTypingSignal: () => {},
     markConversationRead: async () => {},
     sendMessage: async () => {},
+    retryDirectMessage: async () => {},
     sendAttachment: async () => {},
     sendVoiceNote: async () => {},
     sendVideoNote: async () => {},

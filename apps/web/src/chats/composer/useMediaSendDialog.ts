@@ -35,6 +35,8 @@ export interface UseMediaSendDialogResult {
   hasCompressible: boolean;
   /** Preflight validation error — set when openDialog rejects the batch. */
   validationError: MediaSendValidationError | null;
+  /** True when the current file/quality selection is ready to send. */
+  canConfirmSend: boolean;
   openDialog: (files: File[]) => void;
   removeFile: (id: string) => void;
   setCaption: (caption: string) => void;
@@ -206,8 +208,30 @@ export function useMediaSendDialog({ onSendFiles }: Options): UseMediaSendDialog
     });
   }, []);
 
+  const totalOriginalSize = pendingFiles.reduce((s, f) => s + f.size, 0);
+
+  const allCompressionsReady = pendingFiles
+    .filter((f) => f.canCompress)
+    .every((f) => f.compressed !== null);
+
+  const totalCompressedSize = allCompressionsReady
+    ? pendingFiles.reduce((s, f) => {
+        if (f.canCompress && f.compressed) return s + f.compressed.size;
+        return s + f.size;
+      }, 0)
+    : null;
+
+  const hasCompressible = pendingFiles.some((f) => f.canCompress);
+  const compressionPendingForSelectedQuality =
+    quality === "compressed" &&
+    pendingFiles.some((f) => f.canCompress && f.compressed === null);
+  const canConfirmSend =
+    pendingFiles.length > 0 &&
+    !isSending &&
+    !compressionPendingForSelectedQuality;
+
   const confirmSend = useCallback(async () => {
-    if (!pendingFiles.length || isSending) return;
+    if (!canConfirmSend) return;
     const resolvedFiles = pendingFiles.map((pf) => {
       if (quality === "compressed" && pf.canCompress && pf.compressed) {
         return pf.compressed;
@@ -231,7 +255,7 @@ export function useMediaSendDialog({ onSendFiles }: Options): UseMediaSendDialog
       setIsOpen(true);
       setIsSending(false);
     }
-  }, [pendingFiles, isSending, quality, caption, onSendFiles, closeDialog]);
+  }, [canConfirmSend, pendingFiles, quality, caption, onSendFiles, closeDialog]);
 
   // Cleanup object URLs when the component unmounts.
   useEffect(() => {
@@ -241,22 +265,6 @@ export function useMediaSendDialog({ onSendFiles }: Options): UseMediaSendDialog
       revokeAllUrls(pendingFilesRef.current);
     };
   }, [revokeAllUrls]);
-
-  // Derived values
-  const totalOriginalSize = pendingFiles.reduce((s, f) => s + f.size, 0);
-
-  const allCompressionsReady = pendingFiles
-    .filter((f) => f.canCompress)
-    .every((f) => f.compressed !== null);
-
-  const totalCompressedSize = allCompressionsReady
-    ? pendingFiles.reduce((s, f) => {
-        if (f.canCompress && f.compressed) return s + f.compressed.size;
-        return s + f.size;
-      }, 0)
-    : null;
-
-  const hasCompressible = pendingFiles.some((f) => f.canCompress);
 
   return {
     isOpen,
@@ -268,6 +276,7 @@ export function useMediaSendDialog({ onSendFiles }: Options): UseMediaSendDialog
     totalOriginalSize,
     totalCompressedSize,
     hasCompressible,
+    canConfirmSend,
     openDialog,
     removeFile,
     setCaption,

@@ -130,7 +130,7 @@ export function ChatPage() {
     handleBack,
     handleCloseGroupCallPanel,
     handleJoinActiveGroupCall,
-    handleRetryGroupMessage,
+    handleRetryMessage,
     handleSelectThread,
     handleStartGroupCall,
     missedCall,
@@ -344,7 +344,7 @@ export function ChatPage() {
       searchBarPresence={searchBarPresence}
       mediaPanelPresence={mediaPanelPresence}
       threadPaneState={threadPaneState}
-      handleRetryGroupMessage={handleRetryGroupMessage}
+      handleRetryMessage={handleRetryMessage}
       directTrustBlocked={directTrustBlocked}
       handleDropFiles={handleDropFiles}
     />

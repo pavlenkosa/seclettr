@@ -18,6 +18,7 @@ const {
     handleTypingState: vi.fn(),
     stopTyping: vi.fn(),
     cleanupTypingSignal: vi.fn(),
+    mediaDialogCaption: undefined as string | undefined,
   },
 }));
 
@@ -56,7 +57,10 @@ vi.mock("../../composer/useMediaSendDialog", () => ({
     totalOriginalSize: 0,
     totalCompressedSize: null,
     hasCompressible: false,
-    openDialog: (files: File[]) => { onSendFiles(files); },
+    canConfirmSend: false,
+    openDialog: (files: File[]) => {
+      onSendFiles(files, composerRuntimeState.mediaDialogCaption);
+    },
     removeFile: vi.fn(),
     setCaption: vi.fn(),
     setQuality: vi.fn(),
@@ -184,6 +188,7 @@ describe("MessageComposer emoji picker", () => {
     composerRuntimeState.handleTypingState.mockReset();
     composerRuntimeState.stopTyping.mockReset();
     composerRuntimeState.cleanupTypingSignal.mockReset();
+    composerRuntimeState.mediaDialogCaption = undefined;
   });
 
   afterEach(() => {
@@ -338,7 +343,11 @@ describe("MessageComposer emoji picker", () => {
       await Promise.resolve();
     });
 
-    expect(composerRuntimeState.sendFileAttachment).toHaveBeenCalledWith(file, undefined);
+    expect(composerRuntimeState.sendFileAttachment).toHaveBeenCalledWith(
+      file,
+      undefined,
+      undefined
+    );
   });
 
   it("resets the draft when the composer is remounted for another thread key", async () => {
@@ -404,14 +413,44 @@ describe("MessageComposer emoji picker", () => {
     expect(composerRuntimeState.sendFileAttachment).toHaveBeenCalledTimes(2);
     const [[firstFile, firstGroupId], [secondFile, secondGroupId]] =
       composerRuntimeState.sendFileAttachment.mock.calls as [
-        [File, string | undefined],
-        [File, string | undefined],
+        [File, string | undefined, string | undefined],
+        [File, string | undefined, string | undefined],
       ];
 
     expect(firstFile).toBe(imageA);
     expect(secondFile).toBe(imageB);
     expect(firstGroupId).toEqual(expect.any(String));
     expect(secondGroupId).toBe(firstGroupId);
+  });
+
+  it("keeps media captions inside the first attachment payload", async () => {
+    composerRuntimeState.sendFileAttachment.mockResolvedValue(undefined);
+    composerRuntimeState.mediaDialogCaption = "  album caption  ";
+
+    const composerRef = createRef<MessageComposerHandle>();
+
+    act(() => {
+      root.render(<ComposerHarness composerRef={composerRef} />);
+    });
+
+    const imageA = new File(["a"], "image-a.png", { type: "image/png" });
+    const imageB = new File(["b"], "image-b.png", { type: "image/png" });
+
+    await act(async () => {
+      await composerRef.current!.handleDroppedFiles([imageA, imageB]);
+    });
+
+    expect(composerRuntimeState.sendFileAttachment).toHaveBeenCalledTimes(2);
+    const [[, firstGroupId, firstCaption], [, secondGroupId, secondCaption]] =
+      composerRuntimeState.sendFileAttachment.mock.calls as [
+        [File, string | undefined, string | undefined],
+        [File, string | undefined, string | undefined],
+      ];
+
+    expect(firstCaption).toBe("album caption");
+    expect(secondCaption).toBeUndefined();
+    expect(secondGroupId).toBe(firstGroupId);
+    expect(composerRuntimeState.sendTextMessage).not.toHaveBeenCalled();
   });
 
   it("starts grouped file uploads as one batch instead of awaiting each file serially", async () => {

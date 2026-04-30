@@ -221,4 +221,32 @@ describe("MessageListRow", () => {
     });
     expect(container.querySelector('[data-testid="file:file-1"]')).not.toBeNull();
   });
+
+  it("renders attachment captions from encrypted attachment metadata", () => {
+    const message: Message = {
+      id: "file-caption-1",
+      senderId: "peer",
+      senderDeviceId: "device-1",
+      content: "[attachment]",
+      type: "attachment",
+      attachment: {
+        attachmentId: "att-1",
+        key: "key",
+        digest: "digest",
+        mimeType: "application/pdf",
+        size: 1,
+        kind: "file",
+        caption: "signed document",
+      },
+      timestamp: 1,
+      status: "sent",
+      isOwn: false,
+    };
+
+    act(() => {
+      root.render(renderRow(message));
+    });
+
+    expect(container.textContent).toContain("signed document");
+  });
 });

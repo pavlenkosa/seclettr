@@ -245,6 +245,14 @@
   white-space: pre-wrap;
 }
 
+.attachmentCaption {
+  margin-top: 0.44rem;
+  font-size: 0.925rem;
+  line-height: 1.42;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
 .senderLabel {
   font-size: 0.68rem;
   font-weight: 700;
@@ -1495,6 +1503,12 @@ button.quotedBubble {
 
 .mediaBubble .inlineMediaMeta {
   border-radius: 0;
+}
+
+.mediaBubble .attachmentCaption {
+  margin-top: 0;
+  padding: 0.48rem 0.64rem 0.56rem;
+  max-width: min(320px, 80vw);
 }
 
 .messageAnchor {

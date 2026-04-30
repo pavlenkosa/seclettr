@@ -186,6 +186,7 @@ interface MediaSendDialogProps
     | "totalOriginalSize"
     | "totalCompressedSize"
     | "hasCompressible"
+    | "canConfirmSend"
     | "removeFile"
     | "setCaption"
     | "setQuality"
@@ -203,6 +204,7 @@ export function MediaSendDialog({
   totalOriginalSize,
   totalCompressedSize,
   hasCompressible,
+  canConfirmSend,
   removeFile,
   setCaption,
   setQuality,
@@ -382,7 +384,7 @@ export function MediaSendDialog({
               appearance="strong"
               size="md"
               onClick={() => { confirmSend(); }}
-              disabled={isSending || pendingFiles.length === 0}
+              disabled={!canConfirmSend}
             >
               {isSending ? t("mediaSend.sending") : t("mediaSend.send")}
             </PillButton>

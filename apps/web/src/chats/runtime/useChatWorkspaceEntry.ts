@@ -97,6 +97,7 @@ export function useChatWorkspaceEntry(options: UseChatWorkspaceEntryOptions) {
     acceptPeerIdentityChange,
     ensureConversation,
     upsertConversation,
+    retryDirectMessage,
   } = useMessagesStore(useShallow((state) => ({
     activeConversationId: state.activeConversationId,
     conversations: state.conversations,
@@ -106,6 +107,7 @@ export function useChatWorkspaceEntry(options: UseChatWorkspaceEntryOptions) {
     acceptPeerIdentityChange: state.acceptPeerIdentityChange,
     ensureConversation: state.ensureConversation,
     upsertConversation: state.upsertConversation,
+    retryDirectMessage: state.retryDirectMessage,
   })));
   const {
     groups,
@@ -251,13 +253,23 @@ export function useChatWorkspaceEntry(options: UseChatWorkspaceEntryOptions) {
     return () => clearInterval(refreshTimer);
   }, [activeConversationUserId, fetchUserPresence, markConversationRead]);
 
-  const handleRetryGroupMessage = useCallback(
+  const handleRetryMessage = useCallback(
     (messageId: string) => {
-      if (activeGroupId) {
+      if (activeThreadKind === "direct" && activeConversationUserId) {
+        retryDirectMessage(activeConversationUserId, messageId);
+        return;
+      }
+      if (activeThreadKind === "group" && activeGroupId) {
         retryGroupMessage(activeGroupId, messageId);
       }
     },
-    [activeGroupId, retryGroupMessage]
+    [
+      activeConversationUserId,
+      activeGroupId,
+      activeThreadKind,
+      retryDirectMessage,
+      retryGroupMessage,
+    ]
   );
 
   const activeGroupListId = activeGroup ? `group:${activeGroup.groupId}` : null;
@@ -315,7 +327,7 @@ export function useChatWorkspaceEntry(options: UseChatWorkspaceEntryOptions) {
     handleBack,
     handleCloseGroupCallPanel,
     handleJoinActiveGroupCall,
-    handleRetryGroupMessage,
+    handleRetryMessage,
     handleSelectThread,
     handleStartGroupCall,
     missedCall,

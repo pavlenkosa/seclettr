@@ -26,7 +26,7 @@ export const ChatThreadView = memo(function ChatThreadView({
   searchBarPresence,
   mediaPanelPresence,
   threadPaneState,
-  handleRetryGroupMessage,
+  handleRetryMessage,
   directTrustBlocked,
   handleDropFiles,
 }: {
@@ -40,7 +40,7 @@ export const ChatThreadView = memo(function ChatThreadView({
   searchBarPresence: ChatPresence;
   mediaPanelPresence: ChatPresence;
   threadPaneState: ThreadPaneState;
-  handleRetryGroupMessage: WorkspaceEntryState["handleRetryGroupMessage"];
+  handleRetryMessage: WorkspaceEntryState["handleRetryMessage"];
   directTrustBlocked: WorkspaceEntryState["directTrustBlocked"];
   handleDropFiles: (files: File[]) => Promise<void>;
 }) {
@@ -86,7 +86,7 @@ export const ChatThreadView = memo(function ChatThreadView({
           </div>
         ) : undefined}
         highlightMessageId={threadPaneState.highlightMessageId}
-        onRetry={activeThreadKind === "group" ? handleRetryGroupMessage : undefined}
+        onRetry={activeThreadKind !== null ? handleRetryMessage : undefined}
         onReply={threadPaneState.handleReply}
         onScrollToMessage={threadPaneState.handleScrollToMessage}
         onDropFiles={

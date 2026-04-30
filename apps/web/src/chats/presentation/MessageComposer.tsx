@@ -463,6 +463,7 @@ function MountedMediaSendDialog({
       totalOriginalSize={mediaSend.totalOriginalSize}
       totalCompressedSize={mediaSend.totalCompressedSize}
       hasCompressible={mediaSend.hasCompressible}
+      canConfirmSend={mediaSend.canConfirmSend}
       removeFile={mediaSend.removeFile}
       setCaption={mediaSend.setCaption}
       setQuality={mediaSend.setQuality}

@@ -30,6 +30,10 @@ export interface MessagesState {
     text: string,
     reply?: { id: string; snippet: string }
   ) => Promise<void>;
+  retryDirectMessage: (
+    recipientUserId: string,
+    messageId: string
+  ) => Promise<void>;
   sendAttachment: (
     recipientUserId: string,
     file: File,
@@ -104,4 +108,3 @@ export interface MessagesSendEncryptedAttachmentParams {
   fallbackUploadFileName: string;
   mediaGroupId?: string;
 }
-

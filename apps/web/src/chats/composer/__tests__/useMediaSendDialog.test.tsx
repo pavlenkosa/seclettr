@@ -106,6 +106,7 @@ describe("useMediaSendDialog", () => {
     expect(api!.totalOriginalSize).toBe(0);
     expect(api!.totalCompressedSize).toBe(0);
     expect(api!.hasCompressible).toBe(false);
+    expect(api!.canConfirmSend).toBe(false);
   });
 
   it("openDialog opens with provided files", () => {
@@ -119,6 +120,7 @@ describe("useMediaSendDialog", () => {
 
     expect(api!.isOpen).toBe(true);
     expect(api!.pendingFiles).toHaveLength(1);
+    expect(api!.canConfirmSend).toBe(true);
     expect(firstPendingFile(api!).file).toBe(file);
     expect(firstPendingFile(api!).isImage).toBe(true);
     expect(firstPendingFile(api!).isVideo).toBe(false);
@@ -405,7 +407,7 @@ describe("useMediaSendDialog", () => {
     expect(api!.totalOriginalSize).toBe(800);
   });
 
-  it("totalCompressedSize is null while compression is pending", () => {
+  it("totalCompressedSize is null while compression is pending", async () => {
     let resolveFn!: (f: File) => void;
     compressImageFileMock.mockImplementation(
       () => new Promise<File>((res) => { resolveFn = res; })
@@ -420,9 +422,36 @@ describe("useMediaSendDialog", () => {
 
     expect(api!.totalCompressedSize).toBeNull();
     expect(api!.hasCompressible).toBe(true);
+    expect(api!.canConfirmSend).toBe(false);
 
-    // Resolve to avoid leaking the promise
-    resolveFn(makeFile("photo.jpg", "image/jpeg"));
+    await act(async () => {
+      resolveFn(makeFile("photo.jpg", "image/jpeg"));
+    });
+  });
+
+  it("confirmSend does nothing while compressed quality is waiting for compression", async () => {
+    let resolveFn!: (f: File) => void;
+    compressImageFileMock.mockImplementation(
+      () => new Promise<File>((res) => { resolveFn = res; })
+    );
+    isCompressibleImageMock.mockReturnValue(true);
+
+    render();
+    act(() => {
+      api!.openDialog([makeFile("photo.jpg", "image/jpeg")]);
+    });
+    rerender();
+
+    await act(async () => {
+      await api!.confirmSend();
+    });
+
+    expect(api!.canConfirmSend).toBe(false);
+    expect(onSendFiles).not.toHaveBeenCalled();
+
+    await act(async () => {
+      resolveFn(makeFile("photo.jpg", "image/jpeg"));
+    });
   });
 
   it("totalCompressedSize is non-null after all compressions complete", async () => {
@@ -474,6 +503,40 @@ describe("useMediaSendDialog", () => {
     });
 
     expect(onSendFiles).toHaveBeenCalledWith([originalFile], undefined);
+    vi.useRealTimers();
+  });
+
+  it("confirmSend can send original quality while compression is still pending", async () => {
+    vi.useFakeTimers();
+    let resolveFn!: (f: File) => void;
+    const originalFile = makeFile("photo.jpg", "image/jpeg", 1024);
+    compressImageFileMock.mockImplementation(
+      () => new Promise<File>((res) => { resolveFn = res; })
+    );
+    isCompressibleImageMock.mockReturnValue(true);
+
+    render();
+    act(() => {
+      api!.openDialog([originalFile]);
+    });
+    rerender();
+    act(() => {
+      api!.setQuality("original");
+    });
+    rerender();
+
+    expect(api!.canConfirmSend).toBe(true);
+
+    await act(async () => {
+      const sendPromise = api!.confirmSend();
+      await vi.runAllTimersAsync();
+      await sendPromise;
+    });
+
+    expect(onSendFiles).toHaveBeenCalledWith([originalFile], undefined);
+    await act(async () => {
+      resolveFn(makeFile("photo.jpg", "image/jpeg", 512));
+    });
     vi.useRealTimers();
   });
 

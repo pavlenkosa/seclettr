@@ -9,6 +9,7 @@ const {
   ratchetEncryptMock,
   persistOutboundQueueItemMock,
   removeOutboundQueueItemMock,
+  loadOutboundQueueItemMock,
   loadAllPendingOutboundItemsMock,
   incrementOutboundRetryCountMock,
 } = vi.hoisted(() => ({
@@ -17,6 +18,7 @@ const {
   ratchetEncryptMock: vi.fn(),
   persistOutboundQueueItemMock: vi.fn(),
   removeOutboundQueueItemMock: vi.fn(),
+  loadOutboundQueueItemMock: vi.fn(),
   loadAllPendingOutboundItemsMock: vi.fn(),
   incrementOutboundRetryCountMock: vi.fn(),
 }));
@@ -49,6 +51,7 @@ vi.mock("@/stores/messages/conversation-persistence", () => ({
 vi.mock("@/stores/messages/outbound-queue", () => ({
   persistOutboundQueueItem: persistOutboundQueueItemMock,
   removeOutboundQueueItem: removeOutboundQueueItemMock,
+  loadOutboundQueueItem: loadOutboundQueueItemMock,
   loadAllPendingOutboundItems: loadAllPendingOutboundItemsMock,
   incrementOutboundRetryCount: incrementOutboundRetryCountMock,
 }));
@@ -76,6 +79,7 @@ function createState(overrides: Partial<MessagesState> = {}): MessagesState {
     sendTypingSignal: () => {},
     markConversationRead: async () => {},
     sendMessage: async () => {},
+    retryDirectMessage: async () => {},
     sendAttachment: async () => {},
     sendVoiceNote: async () => {},
     sendVideoNote: async () => {},
@@ -105,6 +109,7 @@ describe("createMessagesOutboundRuntime", () => {
     });
     persistOutboundQueueItemMock.mockReset().mockResolvedValue(undefined);
     removeOutboundQueueItemMock.mockReset().mockResolvedValue(undefined);
+    loadOutboundQueueItemMock.mockReset().mockResolvedValue(null);
     loadAllPendingOutboundItemsMock.mockReset().mockResolvedValue([]);
     incrementOutboundRetryCountMock.mockReset().mockResolvedValue(1);
   });
@@ -549,6 +554,148 @@ describe("createMessagesOutboundRuntime", () => {
     );
     expect(state.conversations["user-peer"]?.messages[0]?.status).toBe("sent");
     expect(removeOutboundQueueItemMock).toHaveBeenCalledWith(clientMessageId);
+  });
+
+  it("manual direct retry uses the stored outbound envelope without re-encrypting", async () => {
+    const clientMessageId = "msg-manual-retry";
+    let state = createState({
+      conversations: {
+        "user-peer": {
+          userId: "user-peer",
+          username: "peer",
+          messages: [
+            {
+              id: clientMessageId,
+              senderId: "user-self",
+              senderDeviceId: "device-self",
+              content: "hello",
+              type: "text",
+              timestamp: Date.now(),
+              status: "error",
+              isOwn: true,
+            },
+          ],
+          lastMessageAt: Date.now(),
+          unreadCount: 0,
+        },
+      },
+    });
+    const setState = (
+      partial:
+        | Partial<MessagesState>
+        | ((current: MessagesState) => Partial<MessagesState>)
+    ) => {
+      const update = typeof partial === "function" ? partial(state) : partial;
+      state = { ...state, ...update };
+    };
+
+    loadOutboundQueueItemMock.mockResolvedValue({
+      clientMessageId,
+      recipientUserId: "user-peer",
+      messageType: "text",
+      envelopes: [
+        {
+          recipientDeviceId: "device-peer",
+          ciphertext: "stored-ciphertext",
+          type: "text",
+        },
+      ],
+      createdAt: Date.now() - 1000,
+      retryCount: 1,
+    });
+    incrementOutboundRetryCountMock.mockResolvedValue(2);
+    apiPostMock.mockResolvedValue({});
+
+    const runtime = createMessagesOutboundRuntime({
+      set: setState,
+      get: () => state,
+      shared: {
+        recipientDeviceDirectory: { ensureDirectRelationship: vi.fn(), getDeliverableRecipientDevices: vi.fn(), invalidateRecipientDeviceCache: vi.fn() },
+        messageSessionRuntime: { getOrCreateOutboundSession: vi.fn(), saveSession: vi.fn(), clearSession: vi.fn(), loadSession: vi.fn() },
+        peerIdentityRuntime: { cachePeerIdentity: vi.fn(), getConversationIdentityAlert: vi.fn(), acceptPeerIdentityChange: vi.fn() },
+        getMyUserId: () => "user-self",
+        getMyDeviceId: () => "device-self",
+        assertPeerIdentityContinuity: vi.fn(),
+        withSessionLock: async (_: string, fn: () => Promise<unknown>) => fn(),
+        commitConversationIdentityUpdate: vi.fn(),
+        warmPeerTrustStore: vi.fn(),
+      } as unknown as MessagesRuntimeShared,
+      schedulePendingMessageSync: vi.fn(),
+    });
+
+    await runtime.retryDirectMessage("user-peer", clientMessageId);
+
+    expect(ratchetEncryptMock).not.toHaveBeenCalled();
+    expect(apiPostMock).toHaveBeenCalledWith(
+      "/messages",
+      expect.objectContaining({
+        clientMessageId,
+        recipientUserId: "user-peer",
+        messages: [expect.objectContaining({ ciphertext: "stored-ciphertext" })],
+      })
+    );
+    expect(state.conversations["user-peer"]?.messages[0]?.status).toBe("sent");
+    expect(removeOutboundQueueItemMock).toHaveBeenCalledWith(clientMessageId);
+  });
+
+  it("manual direct retry does nothing when the stored envelope is missing", async () => {
+    const clientMessageId = "msg-missing-queue";
+    let state = createState({
+      conversations: {
+        "user-peer": {
+          userId: "user-peer",
+          username: "peer",
+          messages: [
+            {
+              id: clientMessageId,
+              senderId: "user-self",
+              senderDeviceId: "device-self",
+              content: "hello",
+              type: "text",
+              timestamp: Date.now(),
+              status: "error",
+              isOwn: true,
+            },
+          ],
+          lastMessageAt: Date.now(),
+          unreadCount: 0,
+        },
+      },
+    });
+    const setState = (
+      partial:
+        | Partial<MessagesState>
+        | ((current: MessagesState) => Partial<MessagesState>)
+    ) => {
+      const update = typeof partial === "function" ? partial(state) : partial;
+      state = { ...state, ...update };
+    };
+
+    loadOutboundQueueItemMock.mockResolvedValue(null);
+
+    const runtime = createMessagesOutboundRuntime({
+      set: setState,
+      get: () => state,
+      shared: {
+        recipientDeviceDirectory: { ensureDirectRelationship: vi.fn(), getDeliverableRecipientDevices: vi.fn(), invalidateRecipientDeviceCache: vi.fn() },
+        messageSessionRuntime: { getOrCreateOutboundSession: vi.fn(), saveSession: vi.fn(), clearSession: vi.fn(), loadSession: vi.fn() },
+        peerIdentityRuntime: { cachePeerIdentity: vi.fn(), getConversationIdentityAlert: vi.fn(), acceptPeerIdentityChange: vi.fn() },
+        getMyUserId: () => "user-self",
+        getMyDeviceId: () => "device-self",
+        assertPeerIdentityContinuity: vi.fn(),
+        withSessionLock: async (_: string, fn: () => Promise<unknown>) => fn(),
+        commitConversationIdentityUpdate: vi.fn(),
+        warmPeerTrustStore: vi.fn(),
+      } as unknown as MessagesRuntimeShared,
+      schedulePendingMessageSync: vi.fn(),
+    });
+
+    await runtime.retryDirectMessage("user-peer", clientMessageId);
+
+    expect(ratchetEncryptMock).not.toHaveBeenCalled();
+    expect(apiPostMock).not.toHaveBeenCalled();
+    expect(state.conversations["user-peer"]?.messages[0]?.status).toBe("error");
+    expect(removeOutboundQueueItemMock).not.toHaveBeenCalled();
   });
 
   it("resumePendingOutboundMessages retries sender-key distribution without a UI bubble", async () => {

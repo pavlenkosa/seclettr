@@ -35,14 +35,14 @@ export function useChatComposerMessageActions({
   );
 
   const sendFileAttachment = useCallback(
-    async (file: File, mediaGroupId?: string) => {
+    async (file: File, mediaGroupId?: string, caption?: string) => {
       if (file.size <= 0) return;
       if (isGroupComposer && groupId) {
-        await sendGroupFileAttachment(groupId, file, mediaGroupId);
+        await sendGroupFileAttachment(groupId, file, mediaGroupId, caption);
         return;
       }
       if (!recipientUserId) return;
-      await sendAttachment(recipientUserId, file, undefined, mediaGroupId);
+      await sendAttachment(recipientUserId, file, caption, mediaGroupId);
     },
     [groupId, isGroupComposer, recipientUserId, sendAttachment, sendGroupFileAttachment]
   );

@@ -25,6 +25,7 @@ import {
   decryptGroupTextEnvelopeForHistory,
   encryptGroupTextEnvelope,
   ensureLocalSenderKeyRecord,
+  ensureLocalSenderKeyRecordForMemberDevices,
   flushGroupHistoryReplayContext,
   importSenderKeyDistribution,
   markSenderKeyDistributedToDevices,
@@ -53,6 +54,22 @@ describe("group-sender-key", () => {
     const decrypted = await decryptGroupTextEnvelope(storageKey, encrypted);
 
     expect(decrypted?.text).toBe("hello group");
+  });
+
+  it("keeps own local sender-key decryptable for sent group history", async () => {
+    const storageKey = {} as CryptoKey;
+    const groupId = crypto.randomUUID();
+    const senderDeviceId = crypto.randomUUID();
+
+    const encrypted = await encryptGroupTextEnvelope(
+      storageKey,
+      groupId,
+      senderDeviceId,
+      "self history"
+    );
+    const decrypted = await decryptGroupTextEnvelope(storageKey, encrypted);
+
+    expect(decrypted?.text).toBe("self history");
   });
 
   it("replays group history from initial sender-key state after live decrypt advanced the chain", async () => {
@@ -115,6 +132,94 @@ describe("group-sender-key", () => {
     const expectedIds = [targetA, targetB];
     expectedIds.sort((left, right) => left.localeCompare(right));
     expect(distributedIds).toEqual(expectedIds);
+  });
+
+  it("rotates local sender-key when the active recipient device set changes", async () => {
+    const storageKey = {} as CryptoKey;
+    const groupId = crypto.randomUUID();
+    const senderDeviceId = crypto.randomUUID();
+    const targetA = crypto.randomUUID();
+    const targetB = crypto.randomUUID();
+
+    const initial = await ensureLocalSenderKeyRecord(
+      storageKey,
+      groupId,
+      senderDeviceId
+    );
+    await markSenderKeyDistributedToDevices(
+      storageKey,
+      groupId,
+      senderDeviceId,
+      initial.distributionId,
+      [targetA, targetB]
+    );
+
+    const adopted = await ensureLocalSenderKeyRecordForMemberDevices(
+      storageKey,
+      groupId,
+      senderDeviceId,
+      [targetB, targetA]
+    );
+    const stable = await ensureLocalSenderKeyRecordForMemberDevices(
+      storageKey,
+      groupId,
+      senderDeviceId,
+      [targetA, targetB, targetA]
+    );
+    const rotated = await ensureLocalSenderKeyRecordForMemberDevices(
+      storageKey,
+      groupId,
+      senderDeviceId,
+      [targetB]
+    );
+
+    expect(adopted.distributionId).toBe(initial.distributionId);
+    expect(stable.distributionId).toBe(initial.distributionId);
+    expect(rotated.distributionId).not.toBe(initial.distributionId);
+    expect(rotated.distributedToDeviceIds).toEqual([]);
+    expect(rotated.memberDeviceFingerprint).toBe(targetB);
+  });
+
+  it("encrypts with the rotated distribution after recipient devices change", async () => {
+    const storageKey = {} as CryptoKey;
+    const groupId = crypto.randomUUID();
+    const senderDeviceId = crypto.randomUUID();
+    const targetA = crypto.randomUUID();
+    const targetB = crypto.randomUUID();
+
+    await ensureLocalSenderKeyRecordForMemberDevices(
+      storageKey,
+      groupId,
+      senderDeviceId,
+      [targetA]
+    );
+    const first = await encryptGroupTextEnvelope(
+      storageKey,
+      groupId,
+      senderDeviceId,
+      "before membership change"
+    );
+
+    await ensureLocalSenderKeyRecordForMemberDevices(
+      storageKey,
+      groupId,
+      senderDeviceId,
+      [targetA, targetB]
+    );
+    const second = await encryptGroupTextEnvelope(
+      storageKey,
+      groupId,
+      senderDeviceId,
+      "after membership change"
+    );
+
+    expect(second.distributionId).not.toBe(first.distributionId);
+    expect((await decryptGroupTextEnvelope(storageKey, first))?.text).toBe(
+      "before membership change"
+    );
+    expect((await decryptGroupTextEnvelope(storageKey, second))?.text).toBe(
+      "after membership change"
+    );
   });
 
   it("serializes concurrent local sender-key encryptions to keep message ids unique", async () => {

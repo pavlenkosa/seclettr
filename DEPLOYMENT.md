@@ -147,11 +147,53 @@ docker compose -p seclettr --env-file .env -f docker-compose.yml down
 
 ## 11. Update to a New Version
 
-1. Download new snapshot bundle.
-2. Verify checksum.
-3. Unpack to a new directory.
-4. Copy `.env` values from previous deployment.
-5. Run `./install.sh` again.
+The release bundle has a built-in update mode. It keeps Docker volumes in place,
+copies your runtime configuration from the previous bundle, loads the new images,
+runs migrations, and restarts only the services required by the selected mode.
+
+### Easiest update path
+
+Upload the new release archive into the current unpacked release directory and run:
+
+```bash
+cd /path/to/current/seclettr-release-main-<old-timestamp>
+./install.sh --update ./seclettr-release-main-<new-timestamp>.tar.gz
+```
+
+The current installer will:
+
+- unpack the new archive next to the current release directory
+- hand off to the new archive's `install.sh`
+- copy `.env` and TLS certificates from the current release
+- create a backup
+- load new Docker images
+- run database migrations
+- restart containers without deleting Docker volumes
+
+### Manual update path
+
+```bash
+# 1. Download and verify the new bundle
+sha256sum -c seclettr-release-main-<new-timestamp>.tar.gz.sha256
+
+# 2. Unpack the new bundle
+tar -xzf seclettr-release-main-<new-timestamp>.tar.gz
+cd seclettr-release-main-<new-timestamp>
+
+# 3. Run update, pointing to the previous unpacked release directory
+./install.sh update --from /path/to/previous/seclettr-release-main-<old-timestamp>
+```
+
+During update the installer creates `backups/update-<timestamp>/` with:
+
+- `.env`
+- TLS certificates, if present
+- `runtime-config.js`, if present
+- `postgres.sql.gz`, if the previous Postgres container is running
+
+Do not run `uninstall.sh` for an update unless you intentionally want to remove
+the deployment. The update flow does not remove Docker volumes, so Postgres and
+MinIO data remain in place.
 
 ## 12. Security Notes
 

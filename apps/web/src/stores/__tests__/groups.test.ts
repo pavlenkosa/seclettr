@@ -48,6 +48,7 @@ vi.mock("@/lib/group-sender-key", () => ({
   decryptGroupTextEnvelopeForHistory: vi.fn(),
   encryptGroupTextEnvelope: vi.fn(),
   ensureLocalSenderKeyRecord: vi.fn(),
+  ensureLocalSenderKeyRecordForMemberDevices: vi.fn(),
   flushGroupHistoryReplayContext: vi.fn(),
   markSenderKeyDistributedToDevices: vi.fn(),
 }));

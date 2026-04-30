@@ -10,6 +10,7 @@ import {
   decryptGroupTextEnvelope,
   decryptGroupTextEnvelopeForHistory,
   ensureLocalSenderKeyRecord,
+  ensureLocalSenderKeyRecordForMemberDevices,
   markSenderKeyDistributedToDevices,
   type GroupHistoryReplayContext,
   type LocalSenderKeyRecord,
@@ -350,25 +351,31 @@ export async function ensureSenderKeyDistributedToGroupMembers(
   groupId: string,
   myUserId: string,
   myDeviceId: string,
-  members: GroupMember[],
+  _members: GroupMember[],
   sendSenderKeyDistribution: SendGroupSenderKeyDistribution
 ): Promise<LocalSenderKeyRecord> {
-  let record = await ensureLocalSenderKeyRecord(
+  const batchMemberDevices = await fetchGroupMemberDeviceMap(groupId);
+  const recipientEntries = Object.entries(batchMemberDevices)
+    .filter(([memberUserId]) => memberUserId !== myUserId)
+    .map(([memberUserId, devices]) => [
+      memberUserId,
+      devices.filter((device) => device.deviceId !== myDeviceId),
+    ] as const)
+    .filter(([, devices]) => devices.length > 0);
+  const activeRecipientDeviceIds = recipientEntries.flatMap(([, devices]) =>
+    devices.map((device) => device.deviceId)
+  );
+
+  let record = await ensureLocalSenderKeyRecordForMemberDevices(
     storageKey,
     groupId,
-    myDeviceId
+    myDeviceId,
+    activeRecipientDeviceIds
   );
   let payload = buildSenderKeyDistributionPayload(record, groupId, myDeviceId);
   const forceRedistributeCurrentKey = record.formatVersion < 2;
-  const batchMemberDevices = await fetchGroupMemberDeviceMap(groupId);
 
-  for (const member of members) {
-    if (member.userId === myUserId) continue;
-
-    const memberDevices = (batchMemberDevices[member.userId] ?? []).filter(
-      (device) => device.deviceId !== myDeviceId
-    );
-    if (memberDevices.length === 0) continue;
+  for (const [memberUserId, memberDevices] of recipientEntries) {
     const memberDeviceIds = memberDevices.map((device) => device.deviceId);
     const missingDeviceIds = forceRedistributeCurrentKey
       ? memberDeviceIds
@@ -378,7 +385,7 @@ export async function ensureSenderKeyDistributedToGroupMembers(
     if (missingDeviceIds.length === 0) continue;
 
     const deliveredDeviceIds = await sendSenderKeyDistribution(
-      member.userId,
+      memberUserId,
       payload,
       {
         prefetchedDevices: memberDevices,
@@ -389,7 +396,7 @@ export async function ensureSenderKeyDistributedToGroupMembers(
     );
     if (deliveredMissing.length === 0) {
       throw new Error(
-        `Sender-key distribution failed for member ${member.userId}`
+        `Sender-key distribution failed for member ${memberUserId}`
       );
     }
 

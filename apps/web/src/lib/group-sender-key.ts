@@ -32,6 +32,7 @@ interface BrowserLockManager {
 interface StoredLocalSenderKey {
   distributionId: string;
   formatVersion?: number;
+  memberDeviceFingerprint?: string;
   state: {
     chainKey: string;
     chainId: number;
@@ -49,6 +50,7 @@ interface StoredRemoteSenderKey {
 export interface LocalSenderKeyRecord {
   distributionId: string;
   formatVersion: number;
+  memberDeviceFingerprint?: string;
   state: SenderKeyState;
   distributedToDeviceIds: string[];
 }
@@ -135,6 +137,7 @@ function serializeLocalRecord(record: LocalSenderKeyRecord): StoredLocalSenderKe
   return {
     distributionId: record.distributionId,
     formatVersion: record.formatVersion,
+    memberDeviceFingerprint: record.memberDeviceFingerprint,
     state: {
       chainKey: toBase64Url(record.state.chainKey),
       chainId: record.state.chainId,
@@ -149,6 +152,7 @@ function deserializeLocalRecord(stored: StoredLocalSenderKey): LocalSenderKeyRec
   return {
     distributionId: stored.distributionId,
     formatVersion: stored.formatVersion ?? 1,
+    memberDeviceFingerprint: stored.memberDeviceFingerprint,
     state: {
       chainKey: fromBase64Url(stored.state.chainKey),
       chainId: stored.state.chainId,
@@ -218,6 +222,51 @@ async function saveRemoteSenderKeyState(
   );
 }
 
+async function ensureSelfRemoteSenderKeyState(
+  storageKey: CryptoKey,
+  groupId: string,
+  senderDeviceId: string,
+  record: LocalSenderKeyRecord
+): Promise<void> {
+  const key = remoteSenderKeyStorageKey(
+    groupId,
+    senderDeviceId,
+    record.distributionId
+  );
+  const existing = await loadDecrypted<StoredRemoteSenderKey>(storageKey, key);
+  if (existing) return;
+
+  const state = serializeRemoteState(record.state);
+  await storeEncrypted(storageKey, key, {
+    state,
+    initialState: state,
+  } satisfies StoredRemoteSenderKey);
+}
+
+function memberDeviceFingerprint(deviceIds: string[]): string {
+  return [...new Set(deviceIds)]
+    .filter((deviceId) => deviceId.length > 0)
+    .sort((left, right) => left.localeCompare(right))
+    .join("\n");
+}
+
+async function createLocalSenderKeyRecord(
+  memberDeviceFingerprintValue?: string
+): Promise<LocalSenderKeyRecord> {
+  const state = await generateSenderKey();
+  if (!state.signingPrivateKey) {
+    throw new Error("Generated sender key has no signing private key");
+  }
+
+  return {
+    distributionId: crypto.randomUUID(),
+    formatVersion: CURRENT_LOCAL_SENDER_KEY_RECORD_VERSION,
+    memberDeviceFingerprint: memberDeviceFingerprintValue,
+    state,
+    distributedToDeviceIds: [],
+  };
+}
+
 async function loadOrCreateLocalSenderKeyRecord(
   storageKey: CryptoKey,
   groupId: string,
@@ -228,21 +277,19 @@ async function loadOrCreateLocalSenderKeyRecord(
     localSenderKeyStorageKey(groupId, senderDeviceId)
   );
   if (existing) {
-    return deserializeLocalRecord(existing);
+    const record = deserializeLocalRecord(existing);
+    await ensureSelfRemoteSenderKeyState(
+      storageKey,
+      groupId,
+      senderDeviceId,
+      record
+    );
+    return record;
   }
 
-  const state = await generateSenderKey();
-  if (!state.signingPrivateKey) {
-    throw new Error("Generated sender key has no signing private key");
-  }
-
-  const record: LocalSenderKeyRecord = {
-    distributionId: crypto.randomUUID(),
-    formatVersion: CURRENT_LOCAL_SENDER_KEY_RECORD_VERSION,
-    state,
-    distributedToDeviceIds: [],
-  };
+  const record = await createLocalSenderKeyRecord();
   await saveLocalSenderKeyRecord(storageKey, groupId, senderDeviceId, record);
+  await ensureSelfRemoteSenderKeyState(storageKey, groupId, senderDeviceId, record);
   return record;
 }
 
@@ -254,6 +301,55 @@ export async function ensureLocalSenderKeyRecord(
   return withLocalSenderKeyLock(groupId, senderDeviceId, () =>
     loadOrCreateLocalSenderKeyRecord(storageKey, groupId, senderDeviceId)
   );
+}
+
+export async function ensureLocalSenderKeyRecordForMemberDevices(
+  storageKey: CryptoKey,
+  groupId: string,
+  senderDeviceId: string,
+  activeRecipientDeviceIds: string[]
+): Promise<LocalSenderKeyRecord> {
+  const nextFingerprint = memberDeviceFingerprint(activeRecipientDeviceIds);
+  return withLocalSenderKeyLock(groupId, senderDeviceId, async () => {
+    const record = await loadOrCreateLocalSenderKeyRecord(
+      storageKey,
+      groupId,
+      senderDeviceId
+    );
+
+    if (record.memberDeviceFingerprint === nextFingerprint) {
+      return record;
+    }
+
+    if (record.memberDeviceFingerprint === undefined) {
+      const nextRecord = {
+        ...record,
+        memberDeviceFingerprint: nextFingerprint,
+      };
+      await saveLocalSenderKeyRecord(
+        storageKey,
+        groupId,
+        senderDeviceId,
+        nextRecord
+      );
+      return nextRecord;
+    }
+
+    const rotatedRecord = await createLocalSenderKeyRecord(nextFingerprint);
+    await saveLocalSenderKeyRecord(
+      storageKey,
+      groupId,
+      senderDeviceId,
+      rotatedRecord
+    );
+    await ensureSelfRemoteSenderKeyState(
+      storageKey,
+      groupId,
+      senderDeviceId,
+      rotatedRecord
+    );
+    return rotatedRecord;
+  });
 }
 
 export async function markSenderKeyDistributedToDevices(

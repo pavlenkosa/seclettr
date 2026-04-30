@@ -12,6 +12,12 @@ RUNTIME_CONFIG_FILE="$BUNDLE_DIR/nginx/runtime-config.js"
 PROJECT_NAME="seclettr"
 SKIP_LOAD=false
 SKIP_MIGRATE=false
+SKIP_BACKUP=false
+ACTION="install"
+CLI_UPDATE_FROM=""
+CLI_UPDATE_ARCHIVE=""
+PREVIOUS_BUNDLE_DIR=""
+BACKUP_DIR=""
 
 CLI_DEPLOY_MODE=""
 CLI_NETWORK_MODE=""
@@ -97,9 +103,11 @@ fi
 
 usage() {
   cat <<'USAGE'
-Usage: ./install.sh [options]
+Usage: ./install.sh [install|update] [options]
 
 Loads a Seclettr release bundle and starts one of the supported deployment modes.
+Use `./install.sh --update ./new-release.tar.gz` from the current release directory
+for the simplest upgrade flow.
 
 Deployment modes:
   full      Web + backend + infra services
@@ -123,8 +131,11 @@ Options:
   --compose-file <path>               Path to compose file (default: ./docker-compose.yml)
   --image-archive <path>              Path to image archive (default: ./prebuilt-images.tar.gz)
   --project-name <name>               Docker Compose project name (default: seclettr)
+  --update [archive.tar.gz]           Update. With an archive, unpack it and hand off to the new installer
+  --from <path>                       Previous release bundle directory for update mode
   --skip-load                         Skip `docker load`
   --skip-migrate                      Skip migration step
+  --skip-backup                       Skip update backup step
   -h, --help                          Show this help
 USAGE
 }
@@ -636,11 +647,94 @@ docker_compose() {
   "${DOCKER_CMD[@]}" compose "${compose_args[@]}" "$@"
 }
 
+create_update_backup() {
+  if [[ "$ACTION" != "update" || "$SKIP_BACKUP" == "true" ]]; then
+    return
+  fi
+
+  BACKUP_DIR="$BUNDLE_DIR/backups/update-$(date +%Y%m%d-%H%M%S)"
+  mkdir -p "$BACKUP_DIR"
+
+  cp "$ENV_FILE" "$BACKUP_DIR/.env"
+  if [[ -d "$BUNDLE_DIR/nginx/certs" ]]; then
+    mkdir -p "$BACKUP_DIR/nginx"
+    cp -a "$BUNDLE_DIR/nginx/certs" "$BACKUP_DIR/nginx/certs" 2>/dev/null || true
+  fi
+  if [[ -f "$RUNTIME_CONFIG_FILE" ]]; then
+    mkdir -p "$BACKUP_DIR/nginx"
+    cp "$RUNTIME_CONFIG_FILE" "$BACKUP_DIR/nginx/runtime-config.js"
+  fi
+
+  if is_mode_with_backend; then
+    local postgres_running=""
+    postgres_running="$(docker_compose ps postgres --status running --format '{{.Name}}' 2>/dev/null || true)"
+    if [[ -n "$postgres_running" ]]; then
+      if docker_compose exec -T postgres pg_dump -U seclettr seclettr >"$BACKUP_DIR/postgres.sql" 2>"$BACKUP_DIR/postgres.dump.log"; then
+        gzip -f "$BACKUP_DIR/postgres.sql"
+        rm -f "$BACKUP_DIR/postgres.dump.log"
+        log_ok "Database backup saved to $BACKUP_DIR/postgres.sql.gz"
+      else
+        log_warn "Database backup failed; see $BACKUP_DIR/postgres.dump.log"
+        rm -f "$BACKUP_DIR/postgres.sql"
+      fi
+    else
+      log_warn "Postgres container is not running; skipping database dump"
+    fi
+  fi
+
+  cat >"$BACKUP_DIR/README.txt" <<EOF_BACKUP
+Seclettr update backup
+Created: $(date -u +"%Y-%m-%dT%H:%M:%SZ")
+
+Contains:
+- .env runtime secrets/settings
+- nginx/certs if present
+- nginx/runtime-config.js if present
+- postgres.sql.gz if Postgres was running and pg_dump succeeded
+
+This backup is for rollback assistance. Docker named volumes are kept in place
+by the update process unless you explicitly remove them.
+EOF_BACKUP
+
+  log_ok "Update backup directory: $BACKUP_DIR"
+}
+
 trim_string() {
   local value="$1"
   value="${value#"${value%%[![:space:]]*}"}"
   value="${value%"${value##*[![:space:]]}"}"
   printf '%s' "$value"
+}
+
+set_env_value() {
+  local key="$1"
+  local value="$2"
+  if grep -q "^${key}=" "$ENV_FILE"; then
+    sed -i "s|^${key}=.*|${key}=${value}|" "$ENV_FILE"
+  else
+    printf '\n%s=%s\n' "$key" "$value" >>"$ENV_FILE"
+  fi
+  export "${key}=${value}"
+}
+
+absolute_path() {
+  local path="$1"
+  if [[ "$path" == /* ]]; then
+    printf '%s' "$path"
+    return
+  fi
+
+  if [[ -e "$path" ]]; then
+    printf '%s/%s' "$(pwd)" "$path"
+    return
+  fi
+
+  if [[ -e "$BUNDLE_DIR/$path" ]]; then
+    printf '%s/%s' "$BUNDLE_DIR" "$path"
+    return
+  fi
+
+  printf '%s/%s' "$(pwd)" "$path"
 }
 
 normalize_runtime_url() {
@@ -943,6 +1037,39 @@ prompt_domain_setup() {
   printf '%s' "$(trim_string "$domain")"
 }
 
+prompt_update_source_interactive() {
+  local previous_dir=""
+
+  if [[ "$UI_BACKEND" == "whiptail" ]]; then
+    previous_dir="$({
+      whiptail --title "Seclettr Update" --inputbox \
+        "Path to the previous Seclettr release directory.\nExample: /opt/seclettr/seclettr-release-main-20260429-120000\n\nThe installer will copy .env and TLS certificates from that directory." 13 88 "" \
+        3>&1 1>&2 2>&3
+    } )" || die "Update cancelled"
+    printf '%s' "$(trim_string "$previous_dir")"
+    return
+  fi
+
+  if [[ "$UI_BACKEND" == "dialog" ]]; then
+    local tmp
+    tmp="$(mktemp)"
+    dialog --stdout --title "Seclettr Update" --inputbox \
+      "Path to the previous Seclettr release directory.\nThe installer will copy .env and TLS certificates from that directory." 12 88 "" >"$tmp" \
+      || { rm -f "$tmp"; die "Update cancelled"; }
+    previous_dir="$(cat "$tmp")"
+    rm -f "$tmp"
+    printf '%s' "$(trim_string "$previous_dir")"
+    return
+  fi
+
+  echo ""
+  echo "Update mode needs the previous release directory."
+  echo "The installer will copy .env and TLS certificates from it."
+  echo "Example: /opt/seclettr/seclettr-release-main-20260429-120000"
+  read -r -p "Previous release directory: " previous_dir
+  printf '%s' "$(trim_string "$previous_dir")"
+}
+
 configure_interactive_inputs() {
   if ! is_interactive_enabled; then
     return
@@ -963,6 +1090,110 @@ configure_interactive_inputs() {
   if [[ "$DEPLOY_MODE" == "web" ]]; then
     prompt_web_runtime_urls_interactive
   fi
+}
+
+prepare_update_from_previous() {
+  if [[ "$ACTION" != "update" ]]; then
+    return
+  fi
+
+  if [[ -z "$CLI_UPDATE_FROM" && -f "$ENV_FILE" ]]; then
+    log_ok "Update mode: using existing $ENV_FILE from this directory"
+    return
+  fi
+
+  if [[ -z "$CLI_UPDATE_FROM" ]]; then
+    if ! is_interactive_enabled; then
+      die "Update mode needs --from <previous-release-directory> when $ENV_FILE is not present"
+    fi
+    detect_ui_backend
+    if [[ "${_WELCOME_SHOWN:-false}" != "true" ]]; then
+      show_welcome_banner
+      _WELCOME_SHOWN=true
+    fi
+    CLI_UPDATE_FROM="$(prompt_update_source_interactive)"
+  fi
+
+  [[ -n "$CLI_UPDATE_FROM" ]] || die "Previous release directory is required for update mode"
+  [[ -d "$CLI_UPDATE_FROM" ]] || die "Previous release directory not found: $CLI_UPDATE_FROM"
+
+  PREVIOUS_BUNDLE_DIR="$(cd "$CLI_UPDATE_FROM" && pwd)"
+  [[ "$PREVIOUS_BUNDLE_DIR" != "$BUNDLE_DIR" ]] || die "Previous release directory points to the current bundle"
+  [[ -f "$PREVIOUS_BUNDLE_DIR/.env" ]] || die "Previous release has no .env: $PREVIOUS_BUNDLE_DIR/.env"
+
+  if [[ ! -f "$ENV_FILE" ]]; then
+    cp "$PREVIOUS_BUNDLE_DIR/.env" "$ENV_FILE"
+    log_ok "Copied runtime settings from previous release: $PREVIOUS_BUNDLE_DIR/.env"
+  else
+    log_warn "$ENV_FILE already exists — keeping it instead of copying previous .env"
+  fi
+
+  if [[ -d "$PREVIOUS_BUNDLE_DIR/nginx/certs" ]]; then
+    mkdir -p "$BUNDLE_DIR/nginx/certs"
+    cp -a "$PREVIOUS_BUNDLE_DIR/nginx/certs/." "$BUNDLE_DIR/nginx/certs/" 2>/dev/null || true
+    log_ok "Copied TLS certificates from previous release"
+  fi
+
+  if [[ -f "$PREVIOUS_BUNDLE_DIR/nginx/runtime-config.js" && ! -f "$RUNTIME_CONFIG_FILE" ]]; then
+    mkdir -p "$(dirname "$RUNTIME_CONFIG_FILE")"
+    cp "$PREVIOUS_BUNDLE_DIR/nginx/runtime-config.js" "$RUNTIME_CONFIG_FILE"
+  fi
+}
+
+env_has_placeholders() {
+  grep -q "CHANGE_ME" "$ENV_FILE" 2>/dev/null
+}
+
+handoff_update_archive() {
+  local archive_abs
+  archive_abs="$(absolute_path "$CLI_UPDATE_ARCHIVE")"
+  [[ -f "$archive_abs" ]] || die "Update archive not found: $CLI_UPDATE_ARCHIVE"
+  require_command tar
+
+  local parent_dir
+  parent_dir="$(cd "$BUNDLE_DIR/.." && pwd)"
+
+  local top_level
+  top_level="$(tar -tzf "$archive_abs" 2>/dev/null | awk -F/ 'NF && $1 != "." { print $1; exit }')" \
+    || die "Could not inspect archive: $archive_abs"
+  [[ -n "$top_level" ]] || die "Archive has no top-level directory: $archive_abs"
+  [[ "$top_level" != *".."* && "$top_level" != /* ]] || die "Unsafe top-level directory in archive: $top_level"
+
+  local new_bundle_dir="$parent_dir/$top_level"
+  if [[ -e "$new_bundle_dir" ]]; then
+    [[ -d "$new_bundle_dir" && -f "$new_bundle_dir/install.sh" ]] \
+      || die "Target update directory already exists but is not a Seclettr bundle: $new_bundle_dir"
+    log_warn "Update bundle already unpacked — using $new_bundle_dir"
+  else
+    log_step "Unpacking update archive"
+    tar -xzf "$archive_abs" -C "$parent_dir"
+    log_ok "Unpacked update bundle to $new_bundle_dir"
+  fi
+
+  [[ -f "$new_bundle_dir/install.sh" ]] || die "New bundle has no install.sh: $new_bundle_dir"
+  chmod +x "$new_bundle_dir/install.sh" 2>/dev/null || true
+
+  local handoff_args=(update --from "$BUNDLE_DIR")
+  [[ "$INTERACTIVE_MODE" == "true" ]] && handoff_args+=(--interactive)
+  [[ "$INTERACTIVE_MODE" == "false" ]] && handoff_args+=(--non-interactive)
+  [[ -n "$CLI_DEPLOY_MODE" ]] && handoff_args+=(--mode "$CLI_DEPLOY_MODE")
+  [[ -n "$CLI_NETWORK_MODE" ]] && handoff_args+=(--network "$CLI_NETWORK_MODE")
+  [[ -n "$CLI_WEB_RUNTIME_API_URL" ]] && handoff_args+=(--web-api-url "$CLI_WEB_RUNTIME_API_URL")
+  [[ -n "$CLI_WEB_RUNTIME_SFU_URL" ]] && handoff_args+=(--web-sfu-url "$CLI_WEB_RUNTIME_SFU_URL")
+  [[ -n "$CLI_CERT_MODE" ]] && handoff_args+=(--cert-mode "$CLI_CERT_MODE")
+  [[ -n "$CLI_LETSENCRYPT_EMAIL" ]] && handoff_args+=(--letsencrypt-email "$CLI_LETSENCRYPT_EMAIL")
+  [[ "$PROJECT_NAME" != "seclettr" ]] && handoff_args+=(--project-name "$PROJECT_NAME")
+  [[ "$SKIP_LOAD" == "true" ]] && handoff_args+=(--skip-load)
+  [[ "$SKIP_MIGRATE" == "true" ]] && handoff_args+=(--skip-migrate)
+  [[ "$SKIP_BACKUP" == "true" ]] && handoff_args+=(--skip-backup)
+
+  echo ""
+  echo -e "${CYN}${BLD}Handing off update to:${RST} $new_bundle_dir/install.sh"
+  echo -e "${DIM}Old bundle remains available for rollback/reference: $BUNDLE_DIR${RST}"
+  echo ""
+
+  cd "$new_bundle_dir"
+  exec bash ./install.sh "${handoff_args[@]}"
 }
 
 set_selected_services() {
@@ -1066,7 +1297,14 @@ configure_network_mode() {
   fi
 
   if [[ "$NETWORK_MODE" == "http" && "$DEPLOY_MODE" == "full" && "${COOKIE_SECURE:-true}" != "false" ]]; then
-    die "Set COOKIE_SECURE=false when using full mode over HTTP, otherwise auth cookies will not work over plain HTTP"
+    log_warn "HTTP full-stack mode selected — setting COOKIE_SECURE=false so login works without HTTPS."
+    set_env_value COOKIE_SECURE false
+  fi
+
+  if [[ "$NETWORK_MODE" == "http" ]] && is_mode_with_backend && [[ "${CORS_ORIGIN:-}" == https://* && "${CORS_ORIGIN:-}" != *,* ]]; then
+    local http_origin="http://${CORS_ORIGIN#https://}"
+    log_warn "HTTP mode selected — changing CORS_ORIGIN to ${http_origin}."
+    set_env_value CORS_ORIGIN "$http_origin"
   fi
 
   if [[ "$NETWORK_MODE" == "http" && "$DEPLOY_MODE" == "web" ]]; then
@@ -1134,6 +1372,32 @@ EOF_CONFIG
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
+    install)
+      ACTION="install"
+      shift
+      ;;
+    update|upgrade)
+      ACTION="update"
+      if [[ $# -ge 2 && "${2:-}" != -* ]]; then
+        CLI_UPDATE_ARCHIVE="$2"
+        shift 2
+      else
+        shift
+      fi
+      ;;
+    --update)
+      ACTION="update"
+      if [[ $# -ge 2 && "${2:-}" != -* ]]; then
+        CLI_UPDATE_ARCHIVE="$2"
+        shift 2
+      else
+        shift
+      fi
+      ;;
+    --from)
+      CLI_UPDATE_FROM="$2"
+      shift 2
+      ;;
     --mode)
       CLI_DEPLOY_MODE="$2"
       shift 2
@@ -1190,6 +1454,10 @@ while [[ $# -gt 0 ]]; do
       SKIP_MIGRATE=true
       shift
       ;;
+    --skip-backup)
+      SKIP_BACKUP=true
+      shift
+      ;;
     -h|--help)
       usage
       exit 0
@@ -1200,6 +1468,15 @@ while [[ $# -gt 0 ]]; do
   esac
 done
 
+case "$ACTION" in
+  install|update) ;;
+  *) die "Invalid action '$ACTION'. Use install or update" ;;
+esac
+
+if [[ -n "$CLI_UPDATE_ARCHIVE" ]]; then
+  handoff_update_archive
+fi
+
 ensure_system_deps
 require_command grep
 require_command awk
@@ -1207,6 +1484,8 @@ require_command openssl
 resolve_docker_cmd
 
 [[ -f "$COMPOSE_FILE" ]] || die "Compose file not found: $COMPOSE_FILE"
+
+prepare_update_from_previous
 
 GENERATED_ENV=false
 if [[ ! -f "$ENV_FILE" ]]; then
@@ -1220,8 +1499,17 @@ set -a
 source "$ENV_FILE"
 set +a
 
-if [[ "$GENERATED_ENV" == "true" ]]; then
-  log_step "No .env found — auto-generating secrets"
+ENV_NEEDS_GENERATION=false
+if env_has_placeholders; then
+  ENV_NEEDS_GENERATION=true
+fi
+
+if [[ "$GENERATED_ENV" == "true" || "$ENV_NEEDS_GENERATION" == "true" ]]; then
+  if [[ "$GENERATED_ENV" == "true" ]]; then
+    log_step "No .env found — auto-generating settings and secrets"
+  else
+    log_step "Found placeholder values in .env — auto-generating missing secrets"
+  fi
 
   DETECTED_IP=""
   if command -v curl >/dev/null 2>&1; then
@@ -1252,7 +1540,7 @@ if [[ "$GENERATED_ENV" == "true" ]]; then
   set +a
 
   log_ok "Secrets written to $ENV_FILE"
-  log_warn "Review $ENV_FILE before production use, especially CORS_ORIGIN and TURN_DOMAIN"
+  log_warn "Review $ENV_FILE before production use, especially CORS_ORIGIN, TURN_DOMAIN, and COOKIE_SECURE"
 fi
 
 DEPLOY_MODE="${CLI_DEPLOY_MODE:-${DEPLOY_MODE:-full}}"
@@ -1314,6 +1602,7 @@ fi
 # Adjust total step count for skipped optional phases before any output.
 [[ "$SKIP_LOAD" == "true" ]]    && _TOTAL_STEPS=$(( _TOTAL_STEPS - 1 ))
 [[ "$SKIP_MIGRATE" == "true" ]] && _TOTAL_STEPS=$(( _TOTAL_STEPS - 1 ))
+[[ "$ACTION" == "update" && "$SKIP_BACKUP" == "false" ]] && _TOTAL_STEPS=$(( _TOTAL_STEPS + 1 ))
 
 step "Preparing configuration"
 configure_network_mode
@@ -1333,6 +1622,11 @@ echo -e "       ${GRN}✓${RST} Runtime config written"
 
 step "Validating Compose file"
 run_quiet "Checking docker-compose.yml" docker_compose config
+
+if [[ "$ACTION" == "update" && "$SKIP_BACKUP" == "false" ]]; then
+  step "Creating update backup"
+  create_update_backup
+fi
 
 if [[ "$SKIP_LOAD" == "false" ]]; then
   step "Loading Docker images"
@@ -1381,6 +1675,10 @@ if is_mode_with_backend; then
   echo -e "  ${BLD}API health:${RST}       http://127.0.0.1:${API_HOST_PORT:-3001}/health"
 fi
 
+if [[ "$ACTION" == "update" && -n "$BACKUP_DIR" ]]; then
+  echo -e "  ${BLD}Update backup:${RST}    ${BACKUP_DIR}"
+fi
+
 if [[ "$NETWORK_MODE" == "tls" ]]; then
   _cert_type="trusted"
   if command -v openssl >/dev/null 2>&1 && [[ -f "$BUNDLE_DIR/nginx/certs/cert.pem" ]]; then
@@ -1405,4 +1703,5 @@ _DC_PREFIX="docker compose -p ${PROJECT_NAME} --env-file \"${ENV_FILE}\" -f \"${
 echo -e "    ${DIM}Logs:${RST}    ${_DC_PREFIX} logs -f"
 echo -e "    ${DIM}Stop:${RST}    ${_DC_PREFIX} down"
 echo -e "    ${DIM}Restart:${RST} ${_DC_PREFIX} restart"
+echo -e "    ${DIM}Update:${RST}  unpack a new bundle, then run: ./install.sh update --from \"${BUNDLE_DIR}\""
 echo ""

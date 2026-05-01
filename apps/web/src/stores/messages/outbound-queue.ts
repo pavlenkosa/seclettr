@@ -1,4 +1,5 @@
 import { loadDecrypted, storeEncrypted } from "@seclettr/crypto";
+import type { SerializedRatchetState } from "@seclettr/crypto";
 import { useAuthStore } from "@/stores/auth";
 
 const OUTBOUND_QUEUE_PREFIX = "outbound-queue:v1:";
@@ -17,11 +18,17 @@ export interface OutboundQueueDeviceEnvelope {
   oneTimePreKeyReservationToken?: string;
 }
 
+export interface OutboundQueueSessionCommit {
+  recipientDeviceId: string;
+  state: SerializedRatchetState;
+}
+
 export interface OutboundQueueItem {
   clientMessageId: string;
   recipientUserId: string;
   messageType: "text" | "attachment" | "sender_key_distribution";
   envelopes: OutboundQueueDeviceEnvelope[];
+  sessionCommits?: OutboundQueueSessionCommit[];
   createdAt: number;
   retryCount: number;
 }
@@ -50,7 +57,10 @@ function getStoreKey(deviceId: string): string {
 
 /**
  * Persist an encrypted outbound envelope set before the HTTP delivery attempt.
- * Must be called after all per-device ratchet operations complete and before POST.
+ * Must be called after all per-device ratchet operations complete and before
+ * the advanced ratchet sessions are saved or POSTed. The optional session
+ * commits make a crash between queue persistence and session persistence
+ * recoverable without re-encrypting plaintext.
  */
 export async function persistOutboundQueueItem(
   item: OutboundQueueItem

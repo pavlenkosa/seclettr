@@ -18,6 +18,7 @@ import {
   removeOutboundQueueItem,
   type OutboundQueueItem,
   type OutboundQueueDeviceEnvelope,
+  type OutboundQueueSessionCommit,
 } from "./outbound-queue";
 import {
   MESSAGE_PROTOCOL_VERSION,
@@ -26,9 +27,12 @@ import {
   type PlaintextSenderKeyDistributionMessage,
 } from "@seclettr/protocol";
 import {
+  deserializeRatchetState,
   encryptAttachment,
   ratchetEncrypt,
+  serializeRatchetState,
   toBase64Url,
+  type RatchetState,
 } from "@seclettr/crypto";
 import type { RecipientDeviceInfo } from "./recipient-directory";
 import type {
@@ -41,6 +45,12 @@ import type {
 import type { MessagesRuntimeShared } from "./messages-runtime-shared";
 
 const MAX_OUTBOUND_RETRIES = 5;
+
+interface DirectDeviceSessionCommit {
+  recipientDeviceId: string;
+  state: RatchetState;
+  serializedState: OutboundQueueSessionCommit["state"];
+}
 
 export function buildDirectMessageADv1(params: {
   senderUserId: string;
@@ -82,6 +92,29 @@ function toSafeBlobChunk(data: Uint8Array): ArrayBuffer {
 
 function isUploadAbortError(error: unknown): boolean {
   return error instanceof DOMException && error.name === "AbortError";
+}
+
+function toOutboundQueueSessionCommits(
+  sessionCommits: DirectDeviceSessionCommit[]
+): OutboundQueueSessionCommit[] {
+  return sessionCommits.map((commit) => ({
+    recipientDeviceId: commit.recipientDeviceId,
+    state: commit.serializedState,
+  }));
+}
+
+function shouldApplyQueuedSessionCommit(
+  currentState: RatchetState | null,
+  queuedState: OutboundQueueSessionCommit["state"]
+): boolean {
+  if (!currentState) return true;
+
+  const current = serializeRatchetState(currentState);
+  const sameSendingChain =
+    current.DHs_pub === queuedState.DHs_pub &&
+    current.DHr === queuedState.DHr;
+
+  return sameSendingChain && current.Ns < queuedState.Ns;
 }
 
 interface AttachmentUploadInitResponse {
@@ -241,6 +274,70 @@ export function createMessagesOutboundRuntime({
   shared,
   schedulePendingMessageSync,
 }: CreateMessagesOutboundRuntimeOptions) {
+  async function withDeviceSessionLocks<T>(
+    deviceIds: string[],
+    fn: () => Promise<T>
+  ): Promise<T> {
+    const uniqueDeviceIds = [...new Set(deviceIds)].sort((left, right) =>
+      left.localeCompare(right)
+    );
+
+    const run = (index: number): Promise<T> => {
+      const deviceId = uniqueDeviceIds[index];
+      if (!deviceId) return fn();
+      return shared.withSessionLock(deviceId, () => run(index + 1));
+    };
+
+    return run(0);
+  }
+
+  async function saveGeneratedSessionCommits(
+    sessionCommits: DirectDeviceSessionCommit[]
+  ): Promise<void> {
+    for (const commit of sessionCommits) {
+      await shared.messageSessionRuntime.saveSession(
+        commit.recipientDeviceId,
+        commit.state
+      );
+    }
+  }
+
+  async function applyQueuedSessionCommits(
+    item: OutboundQueueItem
+  ): Promise<void> {
+    const sessionCommits = item.sessionCommits ?? [];
+    if (sessionCommits.length === 0) return;
+
+    await withDeviceSessionLocks(
+      sessionCommits.map((commit) => commit.recipientDeviceId),
+      async () => {
+        for (const commit of sessionCommits) {
+          const currentState = await shared.messageSessionRuntime.loadSession(
+            commit.recipientDeviceId
+          );
+          if (!shouldApplyQueuedSessionCommit(currentState, commit.state)) {
+            continue;
+          }
+          const queuedState = await deserializeRatchetState(commit.state);
+          await shared.messageSessionRuntime.saveSession(
+            commit.recipientDeviceId,
+            queuedState
+          );
+        }
+      }
+    );
+  }
+
+  async function applyPendingSessionCommitsForRecipient(
+    recipientUserId: string
+  ): Promise<void> {
+    const pendingItems = await loadAllPendingOutboundItems();
+    for (const item of pendingItems) {
+      if (item.recipientUserId !== recipientUserId) continue;
+      await applyQueuedSessionCommits(item);
+    }
+  }
+
   async function sendEncryptedAttachmentMessage(
     params: MessagesSendEncryptedAttachmentParams
   ): Promise<void> {
@@ -402,6 +499,9 @@ export function createMessagesOutboundRuntime({
       x3dhHeader?: object;
       oneTimePreKeyReservationToken?: string;
     }> = [];
+    const sessionCommits: DirectDeviceSessionCommit[] = [];
+
+    await applyPendingSessionCommitsForRecipient(params.recipientUserId);
 
     for (const device of recipientDevices) {
       await shared.assertPeerIdentityContinuity(set, get, {
@@ -409,44 +509,73 @@ export function createMessagesOutboundRuntime({
         deviceId: device.deviceId,
         observedIdentityKey: device.identityKeyPublic,
       });
-
-      await shared.withSessionLock(device.deviceId, async () => {
-        const {
-          state,
-          x3dhHeader,
-          oneTimePreKeyReservationToken,
-          peerIdentityKeyB64,
-        } = await shared.messageSessionRuntime.getOrCreateOutboundSession(
-          params.recipientUserId,
-          device.deviceId
-        );
-        shared.peerIdentityRuntime.cachePeerIdentity(
-          device.deviceId,
-          peerIdentityKeyB64 ?? device.identityKeyPublic
-        );
-        const ad = buildDirectMessageADv1({
-          senderUserId: myUserId,
-          senderDeviceId: myDeviceId,
-          recipientUserId: params.recipientUserId,
-          recipientDeviceId: device.deviceId,
-          messageType: "attachment",
-        });
-        const encrypted = await ratchetEncrypt(state, plaintext, ad);
-        await shared.messageSessionRuntime.saveSession(device.deviceId, state);
-
-        messages.push({
-          recipientDeviceId: device.deviceId,
-          ciphertext: encodeDirectEnvelope(
-            encrypted.header,
-            encrypted.ciphertext
-          ),
-          type: "attachment",
-          attachmentId: uploadInit.attachmentId,
-          x3dhHeader,
-          oneTimePreKeyReservationToken,
-        });
-      });
     }
+
+    await withDeviceSessionLocks(
+      recipientDevices.map((device) => device.deviceId),
+      async () => {
+        for (const device of recipientDevices) {
+          const {
+            state,
+            x3dhHeader,
+            oneTimePreKeyReservationToken,
+            peerIdentityKeyB64,
+          } = await shared.messageSessionRuntime.getOrCreateOutboundSession(
+            params.recipientUserId,
+            device.deviceId
+          );
+          shared.peerIdentityRuntime.cachePeerIdentity(
+            device.deviceId,
+            peerIdentityKeyB64 ?? device.identityKeyPublic
+          );
+          const ad = buildDirectMessageADv1({
+            senderUserId: myUserId,
+            senderDeviceId: myDeviceId,
+            recipientUserId: params.recipientUserId,
+            recipientDeviceId: device.deviceId,
+            messageType: "attachment",
+          });
+          const encrypted = await ratchetEncrypt(state, plaintext, ad);
+          sessionCommits.push({
+            recipientDeviceId: device.deviceId,
+            state,
+            serializedState: serializeRatchetState(state),
+          });
+
+          messages.push({
+            recipientDeviceId: device.deviceId,
+            ciphertext: encodeDirectEnvelope(
+              encrypted.header,
+              encrypted.ciphertext
+            ),
+            type: "attachment",
+            attachmentId: uploadInit.attachmentId,
+            x3dhHeader,
+            oneTimePreKeyReservationToken,
+          });
+        }
+
+        // DM-01: durable queue - persist encrypted envelopes before saving the
+        // advanced ratchet sessions or attempting HTTP delivery.
+        await persistOutboundQueueItem({
+          clientMessageId,
+          recipientUserId: params.recipientUserId,
+          messageType: "attachment",
+          envelopes: messages.map((m) => ({
+            recipientDeviceId: m.recipientDeviceId,
+            ciphertext: m.ciphertext,
+            type: m.type,
+            attachmentId: m.attachmentId,
+            x3dhHeader: m.x3dhHeader as OutboundQueueDeviceEnvelope["x3dhHeader"],
+            oneTimePreKeyReservationToken: m.oneTimePreKeyReservationToken,
+          })),
+          sessionCommits: toOutboundQueueSessionCommits(sessionCommits),
+          createdAt: Date.now(),
+          retryCount: 0,
+        });
+        await saveGeneratedSessionCommits(sessionCommits);
+      }
+    );
 
     let optimisticConversations: Record<string, Conversation> | null = null;
     // Persist the optimistic state now that we have peerIdentity info.
@@ -457,23 +586,6 @@ export function createMessagesOutboundRuntime({
     if (optimisticConversations) {
       await persistConversations(optimisticConversations);
     }
-
-    // DM-01: durable queue — persist encrypted envelopes before the HTTP call.
-    await persistOutboundQueueItem({
-      clientMessageId,
-      recipientUserId: params.recipientUserId,
-      messageType: "attachment",
-      envelopes: messages.map((m) => ({
-        recipientDeviceId: m.recipientDeviceId,
-        ciphertext: m.ciphertext,
-        type: m.type,
-        attachmentId: m.attachmentId,
-        x3dhHeader: m.x3dhHeader as OutboundQueueDeviceEnvelope["x3dhHeader"],
-        oneTimePreKeyReservationToken: m.oneTimePreKeyReservationToken,
-      })),
-      createdAt: Date.now(),
-      retryCount: 0,
-    });
 
     try {
       await api.post("/messages", {
@@ -586,6 +698,9 @@ export function createMessagesOutboundRuntime({
       x3dhHeader?: object;
       oneTimePreKeyReservationToken?: string;
     }> = [];
+    const sessionCommits: DirectDeviceSessionCommit[] = [];
+
+    await applyPendingSessionCommitsForRecipient(recipientUserId);
 
     for (const device of recipientDevices) {
       await shared.assertPeerIdentityContinuity(set, get, {
@@ -593,59 +708,71 @@ export function createMessagesOutboundRuntime({
         deviceId: device.deviceId,
         observedIdentityKey: device.identityKeyPublic,
       });
-
-      await shared.withSessionLock(device.deviceId, async () => {
-        const {
-          state,
-          x3dhHeader,
-          oneTimePreKeyReservationToken,
-          peerIdentityKeyB64,
-        } = await shared.messageSessionRuntime.getOrCreateOutboundSession(
-          recipientUserId,
-          device.deviceId
-        );
-        shared.peerIdentityRuntime.cachePeerIdentity(
-          device.deviceId,
-          peerIdentityKeyB64 ?? device.identityKeyPublic
-        );
-        const ad = buildDirectMessageADv1({
-          senderUserId: myUserId,
-          senderDeviceId: myDeviceId,
-          recipientUserId: recipientUserId,
-          recipientDeviceId: device.deviceId,
-          messageType: "sender_key_distribution",
-        });
-        const encrypted = await ratchetEncrypt(state, plaintext, ad);
-        await shared.messageSessionRuntime.saveSession(device.deviceId, state);
-
-        messages.push({
-          recipientDeviceId: device.deviceId,
-          ciphertext: encodeDirectEnvelope(
-            encrypted.header,
-            encrypted.ciphertext
-          ),
-          type: "sender_key_distribution",
-          x3dhHeader,
-          oneTimePreKeyReservationToken,
-        });
-      });
     }
 
     const clientMessageId = crypto.randomUUID();
-    await persistOutboundQueueItem({
-      clientMessageId,
-      recipientUserId,
-      messageType: "sender_key_distribution",
-      envelopes: messages.map((message) => ({
-        recipientDeviceId: message.recipientDeviceId,
-        ciphertext: message.ciphertext,
-        type: message.type,
-        x3dhHeader: message.x3dhHeader as OutboundQueueDeviceEnvelope["x3dhHeader"],
-        oneTimePreKeyReservationToken: message.oneTimePreKeyReservationToken,
-      })),
-      createdAt: Date.now(),
-      retryCount: 0,
-    });
+    await withDeviceSessionLocks(
+      recipientDevices.map((device) => device.deviceId),
+      async () => {
+        for (const device of recipientDevices) {
+          const {
+            state,
+            x3dhHeader,
+            oneTimePreKeyReservationToken,
+            peerIdentityKeyB64,
+          } = await shared.messageSessionRuntime.getOrCreateOutboundSession(
+            recipientUserId,
+            device.deviceId
+          );
+          shared.peerIdentityRuntime.cachePeerIdentity(
+            device.deviceId,
+            peerIdentityKeyB64 ?? device.identityKeyPublic
+          );
+          const ad = buildDirectMessageADv1({
+            senderUserId: myUserId,
+            senderDeviceId: myDeviceId,
+            recipientUserId: recipientUserId,
+            recipientDeviceId: device.deviceId,
+            messageType: "sender_key_distribution",
+          });
+          const encrypted = await ratchetEncrypt(state, plaintext, ad);
+          sessionCommits.push({
+            recipientDeviceId: device.deviceId,
+            state,
+            serializedState: serializeRatchetState(state),
+          });
+
+          messages.push({
+            recipientDeviceId: device.deviceId,
+            ciphertext: encodeDirectEnvelope(
+              encrypted.header,
+              encrypted.ciphertext
+            ),
+            type: "sender_key_distribution",
+            x3dhHeader,
+            oneTimePreKeyReservationToken,
+          });
+        }
+
+        await persistOutboundQueueItem({
+          clientMessageId,
+          recipientUserId,
+          messageType: "sender_key_distribution",
+          envelopes: messages.map((message) => ({
+            recipientDeviceId: message.recipientDeviceId,
+            ciphertext: message.ciphertext,
+            type: message.type,
+            x3dhHeader:
+              message.x3dhHeader as OutboundQueueDeviceEnvelope["x3dhHeader"],
+            oneTimePreKeyReservationToken: message.oneTimePreKeyReservationToken,
+          })),
+          sessionCommits: toOutboundQueueSessionCommits(sessionCommits),
+          createdAt: Date.now(),
+          retryCount: 0,
+        });
+        await saveGeneratedSessionCommits(sessionCommits);
+      }
+    );
 
     try {
       await api.post("/messages", {
@@ -784,6 +911,7 @@ export function createMessagesOutboundRuntime({
         x3dhHeader?: object;
         oneTimePreKeyReservationToken?: string;
       }> = [];
+      const sessionCommits: DirectDeviceSessionCommit[] = [];
 
       const plaintext = new TextEncoder().encode(
         JSON.stringify({
@@ -795,119 +923,139 @@ export function createMessagesOutboundRuntime({
       const singleRecipientDevice =
         recipientDevices.length === 1 ? recipientDevices[0] : null;
 
+      await applyPendingSessionCommitsForRecipient(recipientUserId);
+
       for (const device of recipientDevices) {
         await shared.assertPeerIdentityContinuity(set, get, {
           recipientUserId,
           deviceId: device.deviceId,
           observedIdentityKey: device.identityKeyPublic,
         });
+      }
 
-        await shared.withSessionLock(device.deviceId, async () => {
-          const {
-            state,
-            x3dhHeader,
-            oneTimePreKeyReservationToken,
-            peerIdentityKeyB64,
-          } = await shared.messageSessionRuntime.getOrCreateOutboundSession(
-            recipientUserId,
-            device.deviceId
-          );
-          shared.peerIdentityRuntime.cachePeerIdentity(
-            device.deviceId,
-            peerIdentityKeyB64 ?? device.identityKeyPublic
-          );
-          const ad = buildDirectMessageADv1({
-            senderUserId: myUserId,
+      await withDeviceSessionLocks(
+        recipientDevices.map((device) => device.deviceId),
+        async () => {
+          for (const device of recipientDevices) {
+            const {
+              state,
+              x3dhHeader,
+              oneTimePreKeyReservationToken,
+              peerIdentityKeyB64,
+            } = await shared.messageSessionRuntime.getOrCreateOutboundSession(
+              recipientUserId,
+              device.deviceId
+            );
+            shared.peerIdentityRuntime.cachePeerIdentity(
+              device.deviceId,
+              peerIdentityKeyB64 ?? device.identityKeyPublic
+            );
+            const ad = buildDirectMessageADv1({
+              senderUserId: myUserId,
+              senderDeviceId: myDeviceId,
+              recipientUserId: recipientUserId,
+              recipientDeviceId: device.deviceId,
+              messageType: "text",
+            });
+            const encrypted = await ratchetEncrypt(state, plaintext, ad);
+            sessionCommits.push({
+              recipientDeviceId: device.deviceId,
+              state,
+              serializedState: serializeRatchetState(state),
+            });
+
+            messages.push({
+              recipientDeviceId: device.deviceId,
+              ciphertext: encodeDirectEnvelope(
+                encrypted.header,
+                encrypted.ciphertext
+              ),
+              type: "text",
+              x3dhHeader,
+              oneTimePreKeyReservationToken,
+            });
+          }
+
+          const optimisticMsg: Message = {
+            id: clientMessageId,
+            senderId: myUserId,
             senderDeviceId: myDeviceId,
-            recipientUserId: recipientUserId,
-            recipientDeviceId: device.deviceId,
-            messageType: "text",
-          });
-          const encrypted = await ratchetEncrypt(state, plaintext, ad);
-          await shared.messageSessionRuntime.saveSession(device.deviceId, state);
-
-          messages.push({
-            recipientDeviceId: device.deviceId,
-            ciphertext: encodeDirectEnvelope(
-              encrypted.header,
-              encrypted.ciphertext
-            ),
+            content: text,
             type: "text",
-            x3dhHeader,
-            oneTimePreKeyReservationToken,
+            replyTo: reply
+              ? { id: reply.id, content: reply.snippet }
+              : undefined,
+            timestamp: Date.now(),
+            status: "sending",
+            isOwn: true,
+          };
+
+          let optimisticConversations: Record<string, Conversation> | null =
+            null;
+          set((state) => {
+            const existing = state.conversations[recipientUserId];
+            const optimisticUsername =
+              existing?.username &&
+              !shouldHydrateUserLabel(existing.username, recipientUserId)
+                ? existing.username
+                : getCachedUserLabel(recipientUserId) ?? recipientUserId;
+            const mergedPeerIdentityByDevice = {
+              ...existing?.peerIdentityByDevice,
+              ...Object.fromEntries(
+                recipientDevices.map(
+                  (device) =>
+                    [device.deviceId, device.identityKeyPublic] as const
+                )
+              ),
+            };
+            const nextConversations = {
+              ...state.conversations,
+              [recipientUserId]: {
+                userId: recipientUserId,
+                username: optimisticUsername,
+                messages: [...(existing?.messages ?? []), optimisticMsg],
+                lastMessageAt: Date.now(),
+                unreadCount: 0,
+                peerIdentityKey:
+                  existing?.peerIdentityKey ??
+                  singleRecipientDevice?.identityKeyPublic,
+                peerIdentityDeviceId:
+                  existing?.peerIdentityDeviceId ??
+                  singleRecipientDevice?.deviceId,
+                peerIdentityByDevice:
+                  Object.keys(mergedPeerIdentityByDevice).length > 0
+                    ? mergedPeerIdentityByDevice
+                    : existing?.peerIdentityByDevice,
+              },
+            };
+            optimisticConversations = nextConversations;
+            return { conversations: nextConversations };
           });
-        });
-      }
+          if (optimisticConversations) {
+            await persistConversations(optimisticConversations);
+          }
 
-      const optimisticMsg: Message = {
-        id: clientMessageId,
-        senderId: myUserId,
-        senderDeviceId: myDeviceId,
-        content: text,
-        type: "text",
-        replyTo: reply ? { id: reply.id, content: reply.snippet } : undefined,
-        timestamp: Date.now(),
-        status: "sending",
-        isOwn: true,
-      };
-
-      let optimisticConversations: Record<string, Conversation> | null = null;
-      set((state) => {
-        const existing = state.conversations[recipientUserId];
-        const optimisticUsername =
-          existing?.username &&
-          !shouldHydrateUserLabel(existing.username, recipientUserId)
-            ? existing.username
-            : getCachedUserLabel(recipientUserId) ?? recipientUserId;
-        const mergedPeerIdentityByDevice = {
-          ...existing?.peerIdentityByDevice,
-          ...Object.fromEntries(
-            recipientDevices.map(
-              (device) => [device.deviceId, device.identityKeyPublic] as const
-            )
-          ),
-        };
-        const nextConversations = {
-          ...state.conversations,
-          [recipientUserId]: {
-            userId: recipientUserId,
-            username: optimisticUsername,
-            messages: [...(existing?.messages ?? []), optimisticMsg],
-            lastMessageAt: Date.now(),
-            unreadCount: 0,
-            peerIdentityKey:
-              existing?.peerIdentityKey ??
-              singleRecipientDevice?.identityKeyPublic,
-            peerIdentityDeviceId:
-              existing?.peerIdentityDeviceId ?? singleRecipientDevice?.deviceId,
-            peerIdentityByDevice:
-              Object.keys(mergedPeerIdentityByDevice).length > 0
-                ? mergedPeerIdentityByDevice
-                : existing?.peerIdentityByDevice,
-          },
-        };
-        optimisticConversations = nextConversations;
-        return { conversations: nextConversations };
-      });
-      if (optimisticConversations) {
-        await persistConversations(optimisticConversations);
-      }
-
-      // DM-01: durable queue — persist encrypted envelopes before the HTTP call.
-      await persistOutboundQueueItem({
-        clientMessageId,
-        recipientUserId,
-        messageType: "text",
-        envelopes: messages.map((m) => ({
-          recipientDeviceId: m.recipientDeviceId,
-          ciphertext: m.ciphertext,
-          type: m.type,
-          x3dhHeader: m.x3dhHeader as OutboundQueueDeviceEnvelope["x3dhHeader"],
-          oneTimePreKeyReservationToken: m.oneTimePreKeyReservationToken,
-        })),
-        createdAt: Date.now(),
-        retryCount: 0,
-      });
+          // DM-01: durable queue - persist encrypted envelopes before saving the
+          // advanced ratchet sessions or attempting HTTP delivery.
+          await persistOutboundQueueItem({
+            clientMessageId,
+            recipientUserId,
+            messageType: "text",
+            envelopes: messages.map((m) => ({
+              recipientDeviceId: m.recipientDeviceId,
+              ciphertext: m.ciphertext,
+              type: m.type,
+              x3dhHeader:
+                m.x3dhHeader as OutboundQueueDeviceEnvelope["x3dhHeader"],
+              oneTimePreKeyReservationToken: m.oneTimePreKeyReservationToken,
+            })),
+            sessionCommits: toOutboundQueueSessionCommits(sessionCommits),
+            createdAt: Date.now(),
+            retryCount: 0,
+          });
+          await saveGeneratedSessionCommits(sessionCommits);
+        }
+      );
 
       try {
         await api.post("/messages", {
@@ -1047,6 +1195,7 @@ export function createMessagesOutboundRuntime({
     );
 
     try {
+      await applyQueuedSessionCommits(item);
       await api.post("/messages", buildQueuedDirectPayload(item));
       await markDirectQueuedMessageStatus(
         item.recipientUserId,
@@ -1101,6 +1250,7 @@ export function createMessagesOutboundRuntime({
       }
 
       try {
+        await applyQueuedSessionCommits(item);
         await api.post("/messages", buildQueuedDirectPayload(item));
 
         if (requiresVisibleBubble) {

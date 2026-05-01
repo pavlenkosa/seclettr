@@ -12,6 +12,8 @@ const {
   loadOutboundQueueItemMock,
   loadAllPendingOutboundItemsMock,
   incrementOutboundRetryCountMock,
+  deserializeRatchetStateMock,
+  serializeRatchetStateMock,
 } = vi.hoisted(() => ({
   apiPostMock: vi.fn(),
   persistConversationsMock: vi.fn(),
@@ -21,6 +23,8 @@ const {
   loadOutboundQueueItemMock: vi.fn(),
   loadAllPendingOutboundItemsMock: vi.fn(),
   incrementOutboundRetryCountMock: vi.fn(),
+  deserializeRatchetStateMock: vi.fn(),
+  serializeRatchetStateMock: vi.fn(),
 }));
 
 vi.mock("@/lib/api", () => ({
@@ -57,8 +61,10 @@ vi.mock("@/stores/messages/outbound-queue", () => ({
 }));
 
 vi.mock("@seclettr/crypto", () => ({
+  deserializeRatchetState: deserializeRatchetStateMock,
   encryptAttachment: vi.fn(),
   ratchetEncrypt: ratchetEncryptMock,
+  serializeRatchetState: serializeRatchetStateMock,
   toBase64Url: (value: Uint8Array) => Buffer.from(value).toString("base64url"),
 }));
 
@@ -112,6 +118,21 @@ describe("createMessagesOutboundRuntime", () => {
     loadOutboundQueueItemMock.mockReset().mockResolvedValue(null);
     loadAllPendingOutboundItemsMock.mockReset().mockResolvedValue([]);
     incrementOutboundRetryCountMock.mockReset().mockResolvedValue(1);
+    deserializeRatchetStateMock
+      .mockReset()
+      .mockImplementation(async (state) => ({ ...state, restored: true }));
+    serializeRatchetStateMock.mockReset().mockImplementation((state) => ({
+      DHs_pub: state.DHs_pub ?? state.label ?? "dh-public",
+      DHs_priv: state.DHs_priv ?? "dh-private",
+      DHr: state.DHr ?? null,
+      RK: state.RK ?? "root-key",
+      CKs: state.CKs ?? null,
+      CKr: state.CKr ?? null,
+      Ns: state.Ns ?? 1,
+      Nr: state.Nr ?? 0,
+      PN: state.PN ?? 0,
+      MKSKIPPED: state.MKSKIPPED ?? [],
+    }));
   });
 
   it("sends a direct text message with optimistic insert and sent transition", async () => {
@@ -266,9 +287,16 @@ describe("createMessagesOutboundRuntime", () => {
     };
 
     let persistCalledBeforePost = false;
+    let persistCalledBeforeSave = false;
+    let postCalledBeforeSave = false;
     apiPostMock.mockImplementation(async () => {
       persistCalledBeforePost = persistOutboundQueueItemMock.mock.calls.length > 0;
       return {};
+    });
+    const saveSessionMock = vi.fn(async () => {
+      persistCalledBeforeSave =
+        persistOutboundQueueItemMock.mock.calls.length > 0;
+      postCalledBeforeSave = apiPostMock.mock.calls.length > 0;
     });
 
     const shared = {
@@ -286,7 +314,7 @@ describe("createMessagesOutboundRuntime", () => {
           oneTimePreKeyReservationToken: "token",
           peerIdentityKeyB64: "identity-peer",
         })),
-        saveSession: vi.fn(async () => {}),
+        saveSession: saveSessionMock,
         clearSession: vi.fn(async () => {}),
       },
       peerIdentityRuntime: {
@@ -312,10 +340,21 @@ describe("createMessagesOutboundRuntime", () => {
     await runtime.sendMessage("user-peer", "queue test");
 
     expect(persistCalledBeforePost).toBe(true);
+    expect(persistCalledBeforeSave).toBe(true);
+    expect(postCalledBeforeSave).toBe(false);
     expect(persistOutboundQueueItemMock).toHaveBeenCalledWith(
       expect.objectContaining({
         recipientUserId: "user-peer",
         messageType: "text",
+        sessionCommits: [
+          expect.objectContaining({
+            recipientDeviceId: "device-peer",
+            state: expect.objectContaining({
+              DHs_pub: "session",
+              Ns: 1,
+            }),
+          }),
+        ],
         retryCount: 0,
       })
     );
@@ -503,6 +542,18 @@ describe("createMessagesOutboundRuntime", () => {
       state = { ...state, ...update };
     };
 
+    const queuedSessionState = {
+      DHs_pub: "queued-dh",
+      DHs_priv: "queued-priv",
+      DHr: null,
+      RK: "queued-rk",
+      CKs: null,
+      CKr: null,
+      Ns: 2,
+      Nr: 0,
+      PN: 0,
+      MKSKIPPED: [],
+    };
     loadAllPendingOutboundItemsMock.mockResolvedValue([
       {
         clientMessageId,
@@ -515,19 +566,38 @@ describe("createMessagesOutboundRuntime", () => {
             type: "text",
           },
         ],
+        sessionCommits: [
+          {
+            recipientDeviceId: "device-peer",
+            state: queuedSessionState,
+          },
+        ],
         createdAt: Date.now() - 1000,
         retryCount: 1,
       },
     ]);
     incrementOutboundRetryCountMock.mockResolvedValue(2);
     apiPostMock.mockResolvedValue({});
+    let sessionSavedBeforePost = false;
+    const saveSessionMock = vi.fn(async () => {
+      sessionSavedBeforePost = apiPostMock.mock.calls.length === 0;
+    });
 
     const runtime = createMessagesOutboundRuntime({
       set: setState,
       get: () => state,
       shared: {
         recipientDeviceDirectory: { ensureDirectRelationship: vi.fn(), getDeliverableRecipientDevices: vi.fn(), invalidateRecipientDeviceCache: vi.fn() },
-        messageSessionRuntime: { getOrCreateOutboundSession: vi.fn(), saveSession: vi.fn(), clearSession: vi.fn(), loadSession: vi.fn() },
+        messageSessionRuntime: {
+          getOrCreateOutboundSession: vi.fn(),
+          saveSession: saveSessionMock,
+          clearSession: vi.fn(),
+          loadSession: vi.fn(async () => ({
+            DHs_pub: "queued-dh",
+            DHr: null,
+            Ns: 1,
+          })),
+        },
         peerIdentityRuntime: { cachePeerIdentity: vi.fn(), getConversationIdentityAlert: vi.fn(), acceptPeerIdentityChange: vi.fn() },
         getMyUserId: () => "user-self",
         getMyDeviceId: () => "device-self",
@@ -543,6 +613,14 @@ describe("createMessagesOutboundRuntime", () => {
 
     // Must NOT re-encrypt — ratchetEncrypt should not be called.
     expect(ratchetEncryptMock).not.toHaveBeenCalled();
+    expect(saveSessionMock).toHaveBeenCalledWith(
+      "device-peer",
+      expect.objectContaining({
+        restored: true,
+        Ns: 2,
+      })
+    );
+    expect(sessionSavedBeforePost).toBe(true);
     // Must POST the stored ciphertext.
     expect(apiPostMock).toHaveBeenCalledWith(
       "/messages",
@@ -589,6 +667,20 @@ describe("createMessagesOutboundRuntime", () => {
       state = { ...state, ...update };
     };
 
+    incrementOutboundRetryCountMock.mockResolvedValue(2);
+    apiPostMock.mockResolvedValue({});
+    const queuedSessionState = {
+      DHs_pub: "queued-dh",
+      DHs_priv: "queued-priv",
+      DHr: null,
+      RK: "queued-rk",
+      CKs: null,
+      CKr: null,
+      Ns: 2,
+      Nr: 0,
+      PN: 0,
+      MKSKIPPED: [],
+    };
     loadOutboundQueueItemMock.mockResolvedValue({
       clientMessageId,
       recipientUserId: "user-peer",
@@ -600,18 +692,35 @@ describe("createMessagesOutboundRuntime", () => {
           type: "text",
         },
       ],
+      sessionCommits: [
+        {
+          recipientDeviceId: "device-peer",
+          state: queuedSessionState,
+        },
+      ],
       createdAt: Date.now() - 1000,
       retryCount: 1,
     });
-    incrementOutboundRetryCountMock.mockResolvedValue(2);
-    apiPostMock.mockResolvedValue({});
+    let sessionSavedBeforePost = false;
+    const saveSessionMock = vi.fn(async () => {
+      sessionSavedBeforePost = apiPostMock.mock.calls.length === 0;
+    });
 
     const runtime = createMessagesOutboundRuntime({
       set: setState,
       get: () => state,
       shared: {
         recipientDeviceDirectory: { ensureDirectRelationship: vi.fn(), getDeliverableRecipientDevices: vi.fn(), invalidateRecipientDeviceCache: vi.fn() },
-        messageSessionRuntime: { getOrCreateOutboundSession: vi.fn(), saveSession: vi.fn(), clearSession: vi.fn(), loadSession: vi.fn() },
+        messageSessionRuntime: {
+          getOrCreateOutboundSession: vi.fn(),
+          saveSession: saveSessionMock,
+          clearSession: vi.fn(),
+          loadSession: vi.fn(async () => ({
+            DHs_pub: "queued-dh",
+            DHr: null,
+            Ns: 1,
+          })),
+        },
         peerIdentityRuntime: { cachePeerIdentity: vi.fn(), getConversationIdentityAlert: vi.fn(), acceptPeerIdentityChange: vi.fn() },
         getMyUserId: () => "user-self",
         getMyDeviceId: () => "device-self",
@@ -626,6 +735,14 @@ describe("createMessagesOutboundRuntime", () => {
     await runtime.retryDirectMessage("user-peer", clientMessageId);
 
     expect(ratchetEncryptMock).not.toHaveBeenCalled();
+    expect(saveSessionMock).toHaveBeenCalledWith(
+      "device-peer",
+      expect.objectContaining({
+        restored: true,
+        Ns: 2,
+      })
+    );
+    expect(sessionSavedBeforePost).toBe(true);
     expect(apiPostMock).toHaveBeenCalledWith(
       "/messages",
       expect.objectContaining({
@@ -636,6 +753,114 @@ describe("createMessagesOutboundRuntime", () => {
     );
     expect(state.conversations["user-peer"]?.messages[0]?.status).toBe("sent");
     expect(removeOutboundQueueItemMock).toHaveBeenCalledWith(clientMessageId);
+  });
+
+  it("manual direct retry does not roll back an already-applied session commit", async () => {
+    const clientMessageId = "msg-manual-retry-applied-session";
+    let state = createState({
+      conversations: {
+        "user-peer": {
+          userId: "user-peer",
+          username: "peer",
+          messages: [
+            {
+              id: clientMessageId,
+              senderId: "user-self",
+              senderDeviceId: "device-self",
+              content: "hello",
+              type: "text",
+              timestamp: Date.now(),
+              status: "error",
+              isOwn: true,
+            },
+          ],
+          lastMessageAt: Date.now(),
+          unreadCount: 0,
+        },
+      },
+    });
+    const setState = (
+      partial:
+        | Partial<MessagesState>
+        | ((current: MessagesState) => Partial<MessagesState>)
+    ) => {
+      const update = typeof partial === "function" ? partial(state) : partial;
+      state = { ...state, ...update };
+    };
+    const queuedSessionState = {
+      DHs_pub: "queued-dh",
+      DHs_priv: "queued-priv",
+      DHr: null,
+      RK: "queued-rk",
+      CKs: null,
+      CKr: null,
+      Ns: 2,
+      Nr: 0,
+      PN: 0,
+      MKSKIPPED: [],
+    };
+
+    loadOutboundQueueItemMock.mockResolvedValue({
+      clientMessageId,
+      recipientUserId: "user-peer",
+      messageType: "text",
+      envelopes: [
+        {
+          recipientDeviceId: "device-peer",
+          ciphertext: "stored-ciphertext",
+          type: "text",
+        },
+      ],
+      sessionCommits: [
+        {
+          recipientDeviceId: "device-peer",
+          state: queuedSessionState,
+        },
+      ],
+      createdAt: Date.now() - 1000,
+      retryCount: 1,
+    });
+    incrementOutboundRetryCountMock.mockResolvedValue(2);
+    apiPostMock.mockResolvedValue({});
+    const saveSessionMock = vi.fn();
+
+    const runtime = createMessagesOutboundRuntime({
+      set: setState,
+      get: () => state,
+      shared: {
+        recipientDeviceDirectory: { ensureDirectRelationship: vi.fn(), getDeliverableRecipientDevices: vi.fn(), invalidateRecipientDeviceCache: vi.fn() },
+        messageSessionRuntime: {
+          getOrCreateOutboundSession: vi.fn(),
+          saveSession: saveSessionMock,
+          clearSession: vi.fn(),
+          loadSession: vi.fn(async () => ({
+            DHs_pub: "queued-dh",
+            DHr: null,
+            Ns: 2,
+          })),
+        },
+        peerIdentityRuntime: { cachePeerIdentity: vi.fn(), getConversationIdentityAlert: vi.fn(), acceptPeerIdentityChange: vi.fn() },
+        getMyUserId: () => "user-self",
+        getMyDeviceId: () => "device-self",
+        assertPeerIdentityContinuity: vi.fn(),
+        withSessionLock: async (_: string, fn: () => Promise<unknown>) => fn(),
+        commitConversationIdentityUpdate: vi.fn(),
+        warmPeerTrustStore: vi.fn(),
+      } as unknown as MessagesRuntimeShared,
+      schedulePendingMessageSync: vi.fn(),
+    });
+
+    await runtime.retryDirectMessage("user-peer", clientMessageId);
+
+    expect(ratchetEncryptMock).not.toHaveBeenCalled();
+    expect(saveSessionMock).not.toHaveBeenCalled();
+    expect(apiPostMock).toHaveBeenCalledWith(
+      "/messages",
+      expect.objectContaining({
+        clientMessageId,
+        messages: [expect.objectContaining({ ciphertext: "stored-ciphertext" })],
+      })
+    );
   });
 
   it("manual direct retry does nothing when the stored envelope is missing", async () => {

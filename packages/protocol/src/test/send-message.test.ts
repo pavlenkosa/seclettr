@@ -4,6 +4,7 @@ import {
   PlaintextSenderKeyDistributionMessageSchema,
   SendGroupMessageRequestSchema,
   SendMessageRequestSchema,
+  SendMessageResponseSchema,
 } from "../messages.js";
 
 const uuidA = "11111111-1111-4111-8111-111111111111";
@@ -204,6 +205,48 @@ describe("SendGroupMessageRequestSchema", () => {
         type: "text",
       })
     );
+    expect(parsed.success).toBe(false);
+  });
+});
+
+describe("SendMessageResponseSchema", () => {
+  it("accepts per-device delivery details", () => {
+    const parsed = SendMessageResponseSchema.safeParse(
+      withMessageVersion({
+        messageId: uuidA,
+        timestamp: new Date().toISOString(),
+        deliveries: [
+          {
+            recipientDeviceId: uuidB,
+            messageId: uuidA,
+            status: "created",
+          },
+          {
+            recipientDeviceId: uuidC,
+            messageId: uuidC,
+            status: "duplicate",
+          },
+        ],
+      })
+    );
+
+    expect(parsed.success).toBe(true);
+  });
+
+  it("rejects response deliveries without per-device status", () => {
+    const parsed = SendMessageResponseSchema.safeParse(
+      withMessageVersion({
+        messageId: uuidA,
+        timestamp: new Date().toISOString(),
+        deliveries: [
+          {
+            recipientDeviceId: uuidB,
+            messageId: uuidA,
+          },
+        ],
+      })
+    );
+
     expect(parsed.success).toBe(false);
   });
 });

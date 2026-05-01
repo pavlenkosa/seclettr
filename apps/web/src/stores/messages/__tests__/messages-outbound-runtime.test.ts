@@ -146,7 +146,15 @@ describe("createMessagesOutboundRuntime", () => {
       state = { ...state, ...update };
     };
 
-    apiPostMock.mockResolvedValue({});
+    apiPostMock.mockResolvedValue({
+      deliveries: [
+        {
+          recipientDeviceId: "device-peer",
+          messageId: "server-message-peer",
+          status: "created",
+        },
+      ],
+    });
 
     const invalidateRecipientDeviceCache = vi.fn();
     const shared = {
@@ -206,8 +214,102 @@ describe("createMessagesOutboundRuntime", () => {
     );
     expect(state.conversations["user-peer"]?.messages).toHaveLength(1);
     expect(state.conversations["user-peer"]?.messages[0]?.status).toBe("sent");
+    expect(state.conversations["user-peer"]?.messages[0]?.directDeliveries).toEqual([
+      {
+        recipientDeviceId: "device-peer",
+        messageId: "server-message-peer",
+        status: "created",
+      },
+    ]);
     expect(invalidateRecipientDeviceCache).not.toHaveBeenCalled();
     expect(persistConversationsMock).toHaveBeenCalled();
+  });
+
+  it("keeps only undelivered device envelopes in the queue after a partial direct send", async () => {
+    let state = createState();
+    const setState = (
+      partial:
+        | Partial<MessagesState>
+        | ((current: MessagesState) => Partial<MessagesState>)
+    ) => {
+      const update = typeof partial === "function" ? partial(state) : partial;
+      state = { ...state, ...update };
+    };
+
+    apiPostMock.mockResolvedValue({
+      deliveries: [
+        {
+          recipientDeviceId: "device-a",
+          messageId: "server-message-a",
+          status: "created",
+        },
+      ],
+    });
+
+    const shared = {
+      recipientDeviceDirectory: {
+        ensureDirectRelationship: vi.fn(async () => {}),
+        getDeliverableRecipientDevices: vi.fn(async () => [
+          { deviceId: "device-a", identityKeyPublic: "identity-a" },
+          { deviceId: "device-b", identityKeyPublic: "identity-b" },
+        ]),
+        invalidateRecipientDeviceCache: vi.fn(),
+      },
+      messageSessionRuntime: {
+        getOrCreateOutboundSession: vi.fn(async (_userId, deviceId) => ({
+          state: { label: deviceId },
+          x3dhHeader: null,
+          oneTimePreKeyReservationToken: null,
+          peerIdentityKeyB64: `identity-${deviceId}`,
+        })),
+        saveSession: vi.fn(async () => {}),
+        clearSession: vi.fn(async () => {}),
+      },
+      peerIdentityRuntime: {
+        cachePeerIdentity: vi.fn(),
+        getConversationIdentityAlert: vi.fn(),
+        acceptPeerIdentityChange: vi.fn(),
+      },
+      getMyUserId: () => "user-self",
+      getMyDeviceId: () => "device-self",
+      assertPeerIdentityContinuity: vi.fn(async () => {}),
+      withSessionLock: async (_deviceId: string, fn: () => Promise<unknown>) => fn(),
+      commitConversationIdentityUpdate: vi.fn(async () => {}),
+      warmPeerTrustStore: vi.fn(async () => {}),
+    } as unknown as MessagesRuntimeShared;
+
+    const runtime = createMessagesOutboundRuntime({
+      set: setState,
+      get: () => state,
+      shared,
+      schedulePendingMessageSync: vi.fn(),
+    });
+
+    await runtime.sendMessage("user-peer", "partial delivery");
+
+    expect(state.conversations["user-peer"]?.messages[0]?.status).toBe("error");
+    expect(state.conversations["user-peer"]?.messages[0]?.directDeliveries).toEqual([
+      {
+        recipientDeviceId: "device-a",
+        messageId: "server-message-a",
+        status: "created",
+      },
+    ]);
+    expect(removeOutboundQueueItemMock).not.toHaveBeenCalled();
+    expect(persistOutboundQueueItemMock).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        envelopes: [
+          expect.objectContaining({
+            recipientDeviceId: "device-b",
+          }),
+        ],
+        sessionCommits: [
+          expect.objectContaining({
+            recipientDeviceId: "device-b",
+          }),
+        ],
+      })
+    );
   });
 
   it("marks the optimistic message as error and invalidates cache on 404 send failure", async () => {

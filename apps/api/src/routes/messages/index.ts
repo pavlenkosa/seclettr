@@ -42,6 +42,7 @@ import {
   SendMessageResponseSchema,
   SendGroupMessageRequestSchema,
   type SendGroupMessageRequest,
+  type DirectMessageDelivery,
   type SendMessageRequest,
 } from "@seclettr/protocol";
 
@@ -72,7 +73,7 @@ interface ExistingDirectMessageRow {
 }
 
 interface DirectMessagePersistResult {
-  result: { messageId: string; recipientDeviceId: string };
+  result: DirectMessageDelivery;
   realtimeEvent?: DirectRealtimeEvent;
 }
 
@@ -356,6 +357,7 @@ async function resolveIdempotentDirectMessage(
     result: {
       messageId: existing.id,
       recipientDeviceId: message.recipientDeviceId,
+      status: "duplicate",
     },
   };
 }
@@ -388,6 +390,7 @@ async function persistDirectMessage(
     result: {
       messageId: inserted.id,
       recipientDeviceId: message.recipientDeviceId,
+      status: "created",
     },
     realtimeEvent: toDirectRealtimeEvent(inserted, message, senderUserId, senderDeviceId),
   };
@@ -431,8 +434,7 @@ export async function messageRoutes(fastify: FastifyInstance): Promise<void> {
         return reply.code(404).send({ error: "Recipient not found" });
       }
 
-      const results: Array<{ messageId: string; recipientDeviceId: string }> =
-        [];
+      const results: DirectMessageDelivery[] = [];
       const realtimeDirectEvents: DirectRealtimeEvent[] = [];
 
       try {
@@ -536,6 +538,7 @@ export async function messageRoutes(fastify: FastifyInstance): Promise<void> {
           version: MESSAGE_PROTOCOL_VERSION,
           messageId: results[0]!.messageId,
           timestamp: new Date().toISOString(),
+          deliveries: results,
         })
       );
     }

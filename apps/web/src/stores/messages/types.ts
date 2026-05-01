@@ -27,6 +27,12 @@ export interface MessageReplyMeta {
   senderName?: string;
 }
 
+export interface DirectMessageDeliveryMeta {
+  recipientDeviceId: string;
+  messageId: string;
+  status: "created" | "duplicate";
+}
+
 export interface Message {
   id: string;
   senderId: string;
@@ -38,6 +44,7 @@ export interface Message {
   replyTo?: MessageReplyMeta;
   timestamp: number;
   status: "sending" | "sent" | "delivered" | "read" | "error";
+  directDeliveries?: DirectMessageDeliveryMeta[];
   errorKind?:
     | "decrypt_failed"
     | "session_missing"

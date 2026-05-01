@@ -20,6 +20,8 @@ const {
   loadOutboundQueueItemMock,
   loadAllPendingOutboundItemsMock,
   incrementOutboundRetryCountMock,
+  deserializeRatchetStateMock,
+  serializeRatchetStateMock,
 } = vi.hoisted(() => ({
   apiPostMock: vi.fn(),
   apiUploadMock: vi.fn(),
@@ -37,6 +39,8 @@ const {
   loadOutboundQueueItemMock: vi.fn(),
   loadAllPendingOutboundItemsMock: vi.fn(),
   incrementOutboundRetryCountMock: vi.fn(),
+  deserializeRatchetStateMock: vi.fn(),
+  serializeRatchetStateMock: vi.fn(),
 }));
 
 vi.mock("@/lib/api", () => ({
@@ -83,8 +87,10 @@ vi.mock("@/lib/upload-progress", () => ({
 }));
 
 vi.mock("@seclettr/crypto", () => ({
+  deserializeRatchetState: deserializeRatchetStateMock,
   encryptAttachment: encryptAttachmentMock,
   ratchetEncrypt: ratchetEncryptMock,
+  serializeRatchetState: serializeRatchetStateMock,
   toBase64Url: (value: Uint8Array) => Buffer.from(value).toString("base64url"),
 }));
 
@@ -146,6 +152,7 @@ function createShared(): MessagesRuntimeShared {
       })),
       saveSession: vi.fn(async () => {}),
       clearSession: vi.fn(async () => {}),
+      loadSession: vi.fn(async () => null),
     },
     peerIdentityRuntime: {
       cachePeerIdentity: vi.fn(),
@@ -186,6 +193,21 @@ describe("createMessagesOutboundRuntime attachment flow", () => {
     loadOutboundQueueItemMock.mockReset().mockResolvedValue(null);
     loadAllPendingOutboundItemsMock.mockReset().mockResolvedValue([]);
     incrementOutboundRetryCountMock.mockReset().mockResolvedValue(1);
+    deserializeRatchetStateMock
+      .mockReset()
+      .mockImplementation(async (state) => ({ ...state, restored: true }));
+    serializeRatchetStateMock.mockReset().mockImplementation((state) => ({
+      DHs_pub: state.DHs_pub ?? state.label ?? "dh-public",
+      DHs_priv: state.DHs_priv ?? "dh-private",
+      DHr: state.DHr ?? null,
+      RK: state.RK ?? "root-key",
+      CKs: state.CKs ?? null,
+      CKr: state.CKr ?? null,
+      Ns: state.Ns ?? 1,
+      Nr: state.Nr ?? 0,
+      PN: state.PN ?? 0,
+      MKSKIPPED: state.MKSKIPPED ?? [],
+    }));
   });
 
   it("removes the optimistic attachment when upload is cancelled", async () => {

@@ -3,7 +3,12 @@ import type {
   WsServerMessage,
 } from "@seclettr/protocol";
 import type { Conversation, Message } from "./types";
-export type { AttachmentMessageMeta, Conversation, Message } from "./types";
+export type {
+  AttachmentMessageMeta,
+  Conversation,
+  DirectMessageDeliveryMeta,
+  Message,
+} from "./types";
 
 export interface MessagesState {
   conversations: Record<string, Conversation>;

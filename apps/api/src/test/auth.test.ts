@@ -4084,6 +4084,7 @@ describe("Messaging contracts", () => {
   let senderToken = "";
   let senderUserId = "";
   let recipientToken = "";
+  let recipientUsername = "";
   let recipientUserId = "";
   let recipientDeviceId = "";
   const oversizedCiphertext = "A".repeat(13 * 1024 * 1024);
@@ -4094,7 +4095,10 @@ describe("Messaging contracts", () => {
     senderToken = (sender.body as { accessToken: string }).accessToken;
     senderUserId = (sender.body as { userId: string }).userId;
 
-    const recipient = await registerUser(`msg_recipient_${Date.now()}`);
+    recipientUsername = `msg_recipient_${Date.now()}`;
+    const recipient = await registerUser(recipientUsername, {
+      registrationId: 7001,
+    });
     expect(recipient.status).toBe(201);
     recipientToken = (recipient.body as { accessToken: string }).accessToken;
     recipientUserId = (recipient.body as { userId: string }).userId;
@@ -4251,6 +4255,97 @@ describe("Messaging contracts", () => {
 
     expect((secondSend.body as { messageId?: string }).messageId).toBe(
       (firstSend.body as { messageId?: string }).messageId
+    );
+  });
+
+  it("returns per-device delivery details for direct sends", async () => {
+    const siblingKey = "BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB";
+    const fakeSig =
+      "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA";
+    const siblingLogin = await apiRequest("/auth/login", {
+      method: "POST",
+      body: JSON.stringify({
+        version: AUTH_PROTOCOL_VERSION,
+        username: recipientUsername,
+        password: "TestPassword123!",
+        device: {
+          name: "Recipient Sibling",
+          identityKeyPublic: siblingKey,
+          signingKeyPublic: siblingKey,
+          registrationId: 8123,
+          signedPreKey: { id: 11, publicKey: siblingKey, signature: fakeSig },
+          oneTimePreKeys: [{ id: 21, publicKey: siblingKey }],
+        },
+      }),
+    });
+    expect(siblingLogin.status).toBe(200);
+    const siblingDeviceId = (siblingLogin.body as { deviceId: string })
+      .deviceId;
+
+    const payload = {
+      clientMessageId: crypto.randomUUID(),
+      recipientUserId,
+      messages: [
+        {
+          recipientDeviceId,
+          ciphertext: "AAAA",
+          type: "text" as const,
+        },
+        {
+          recipientDeviceId: siblingDeviceId,
+          ciphertext: "BBBB",
+          type: "text" as const,
+        },
+      ],
+    };
+
+    const firstSend = await apiRequest(
+      "/messages",
+      {
+        method: "POST",
+        body: JSON.stringify(payload),
+      },
+      senderToken
+    );
+    expect(firstSend.status).toBe(202);
+    const firstBody = firstSend.body as {
+      messageId: string;
+      deliveries: Array<{
+        recipientDeviceId: string;
+        messageId: string;
+        status: string;
+      }>;
+    };
+    expect(firstBody.deliveries).toHaveLength(2);
+    expect(firstBody.messageId).toBe(firstBody.deliveries[0]?.messageId);
+    expect(firstBody.deliveries).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          recipientDeviceId,
+          status: "created",
+        }),
+        expect.objectContaining({
+          recipientDeviceId: siblingDeviceId,
+          status: "created",
+        }),
+      ])
+    );
+
+    const duplicateSend = await apiRequest(
+      "/messages",
+      {
+        method: "POST",
+        body: JSON.stringify(payload),
+      },
+      senderToken
+    );
+    expect(duplicateSend.status).toBe(202);
+    const duplicateBody = duplicateSend.body as typeof firstBody;
+    expect(duplicateBody.deliveries).toEqual(
+      firstBody.deliveries.map((delivery) => ({
+        ...delivery,
+        status: "duplicate",
+      }))
     );
   });
 });

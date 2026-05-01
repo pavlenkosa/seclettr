@@ -90,11 +90,20 @@ export const SendMessageRequestSchema = versionedWireObject(
 export type SendMessageRequestWire = z.infer<typeof SendMessageRequestSchema>;
 export type SendMessageRequest = StripVersion<SendMessageRequestWire>;
 
+const DirectMessageDeliverySchema = wireObject({
+  recipientDeviceId: z.string().uuid(),
+  messageId: z.string().uuid(),
+  status: z.enum(["created", "duplicate"]),
+});
+export type DirectMessageDelivery = z.infer<typeof DirectMessageDeliverySchema>;
+
 export const SendMessageResponseSchema = versionedWireObject(
   MESSAGE_PROTOCOL_VERSION,
   {
+    // Legacy first-delivery id retained for old clients.
     messageId: z.string().uuid(),
     timestamp: z.string().datetime(),
+    deliveries: z.array(DirectMessageDeliverySchema).min(1).max(50),
   }
 );
 export type SendMessageResponseWire = z.infer<typeof SendMessageResponseSchema>;

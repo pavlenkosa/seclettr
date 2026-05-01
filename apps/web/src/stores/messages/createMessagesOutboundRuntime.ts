@@ -24,6 +24,7 @@ import {
   MESSAGE_PROTOCOL_VERSION,
   PlaintextAttachmentMessageSchema,
   PlaintextSenderKeyDistributionMessageSchema,
+  type DirectMessageDelivery,
   type PlaintextSenderKeyDistributionMessage,
 } from "@seclettr/protocol";
 import {
@@ -37,6 +38,7 @@ import {
 import type { RecipientDeviceInfo } from "./recipient-directory";
 import type {
   Conversation,
+  DirectMessageDeliveryMeta,
   GetMessagesState,
   Message,
   MessagesSendEncryptedAttachmentParams,
@@ -115,6 +117,48 @@ function shouldApplyQueuedSessionCommit(
     current.DHr === queuedState.DHr;
 
   return sameSendingChain && current.Ns < queuedState.Ns;
+}
+
+function parseDirectDeliveries(response: unknown):
+  | DirectMessageDeliveryMeta[]
+  | undefined {
+  const deliveries = (response as { deliveries?: unknown } | null)?.deliveries;
+  if (!Array.isArray(deliveries)) return undefined;
+
+  const parsed = deliveries.flatMap((delivery): DirectMessageDeliveryMeta[] => {
+    const candidate = delivery as Partial<DirectMessageDelivery>;
+    if (
+      typeof candidate.recipientDeviceId !== "string" ||
+      typeof candidate.messageId !== "string" ||
+      (candidate.status !== "created" && candidate.status !== "duplicate")
+    ) {
+      return [];
+    }
+    return [
+      {
+        recipientDeviceId: candidate.recipientDeviceId,
+        messageId: candidate.messageId,
+        status: candidate.status,
+      },
+    ];
+  });
+
+  return parsed.length > 0 ? parsed : undefined;
+}
+
+function mergeDirectDeliveries(
+  existing: DirectMessageDeliveryMeta[] | undefined,
+  incoming: DirectMessageDeliveryMeta[] | undefined
+): DirectMessageDeliveryMeta[] | undefined {
+  if (!incoming || incoming.length === 0) return existing;
+  const merged = new Map<string, DirectMessageDeliveryMeta>();
+  for (const delivery of existing ?? []) {
+    merged.set(delivery.recipientDeviceId, delivery);
+  }
+  for (const delivery of incoming) {
+    merged.set(delivery.recipientDeviceId, delivery);
+  }
+  return [...merged.values()];
 }
 
 interface AttachmentUploadInitResponse {
@@ -338,6 +382,39 @@ export function createMessagesOutboundRuntime({
     }
   }
 
+  async function settleAcceptedDirectQueueItem(
+    item: OutboundQueueItem,
+    deliveries: DirectMessageDeliveryMeta[] | undefined
+  ): Promise<boolean> {
+    if (!deliveries) {
+      await removeOutboundQueueItem(item.clientMessageId);
+      return true;
+    }
+
+    const acceptedDeviceIds = new Set(
+      deliveries.map((delivery) => delivery.recipientDeviceId)
+    );
+    const remainingEnvelopes = item.envelopes.filter(
+      (envelope) => !acceptedDeviceIds.has(envelope.recipientDeviceId)
+    );
+
+    if (remainingEnvelopes.length === 0) {
+      await removeOutboundQueueItem(item.clientMessageId);
+      return true;
+    }
+
+    await persistOutboundQueueItem({
+      ...item,
+      envelopes: remainingEnvelopes,
+      sessionCommits: item.sessionCommits?.filter((commit) =>
+        remainingEnvelopes.some(
+          (envelope) => envelope.recipientDeviceId === commit.recipientDeviceId
+        )
+      ),
+    });
+    return false;
+  }
+
   async function sendEncryptedAttachmentMessage(
     params: MessagesSendEncryptedAttachmentParams
   ): Promise<void> {
@@ -500,6 +577,7 @@ export function createMessagesOutboundRuntime({
       oneTimePreKeyReservationToken?: string;
     }> = [];
     const sessionCommits: DirectDeviceSessionCommit[] = [];
+    let queuedItem: OutboundQueueItem | null = null;
 
     await applyPendingSessionCommitsForRecipient(params.recipientUserId);
 
@@ -557,7 +635,7 @@ export function createMessagesOutboundRuntime({
 
         // DM-01: durable queue - persist encrypted envelopes before saving the
         // advanced ratchet sessions or attempting HTTP delivery.
-        await persistOutboundQueueItem({
+        queuedItem = {
           clientMessageId,
           recipientUserId: params.recipientUserId,
           messageType: "attachment",
@@ -572,7 +650,8 @@ export function createMessagesOutboundRuntime({
           sessionCommits: toOutboundQueueSessionCommits(sessionCommits),
           createdAt: Date.now(),
           retryCount: 0,
-        });
+        };
+        await persistOutboundQueueItem(queuedItem);
         await saveGeneratedSessionCommits(sessionCommits);
       }
     );
@@ -588,34 +667,25 @@ export function createMessagesOutboundRuntime({
     }
 
     try {
-      await api.post("/messages", {
+      if (!queuedItem) throw new Error("Outbound queue item was not created");
+      const response = await api.post<unknown>("/messages", {
         version: MESSAGE_PROTOCOL_VERSION,
         clientMessageId,
         recipientUserId: params.recipientUserId,
         messages,
       });
+      const directDeliveries = parseDirectDeliveries(response);
+      const fullyAccepted = await settleAcceptedDirectQueueItem(
+        queuedItem,
+        directDeliveries
+      );
 
-      let sentConversations: Record<string, Conversation> | null = null;
-      set((state) => {
-        const nextConversations = {
-          ...state.conversations,
-          [params.recipientUserId]: {
-            ...state.conversations[params.recipientUserId]!,
-            messages: state.conversations[params.recipientUserId]!.messages.map(
-              (message) =>
-                message.id === clientMessageId
-                  ? { ...message, status: "sent" as const }
-                  : message
-            ),
-          },
-        };
-        sentConversations = nextConversations;
-        return { conversations: nextConversations };
-      });
-      if (sentConversations) {
-        await persistConversations(sentConversations);
-      }
-      removeOutboundQueueItem(clientMessageId).catch(() => null);
+      await markDirectQueuedMessageStatus(
+        params.recipientUserId,
+        clientMessageId,
+        fullyAccepted ? "sent" : "error",
+        directDeliveries
+      );
     } catch (error) {
       if (error instanceof ApiError && error.status === 404) {
         shared.recipientDeviceDirectory.invalidateRecipientDeviceCache(
@@ -699,6 +769,7 @@ export function createMessagesOutboundRuntime({
       oneTimePreKeyReservationToken?: string;
     }> = [];
     const sessionCommits: DirectDeviceSessionCommit[] = [];
+    let queuedItem: OutboundQueueItem | null = null;
 
     await applyPendingSessionCommitsForRecipient(recipientUserId);
 
@@ -754,7 +825,7 @@ export function createMessagesOutboundRuntime({
           });
         }
 
-        await persistOutboundQueueItem({
+        queuedItem = {
           clientMessageId,
           recipientUserId,
           messageType: "sender_key_distribution",
@@ -769,19 +840,24 @@ export function createMessagesOutboundRuntime({
           sessionCommits: toOutboundQueueSessionCommits(sessionCommits),
           createdAt: Date.now(),
           retryCount: 0,
-        });
+        };
+        await persistOutboundQueueItem(queuedItem);
         await saveGeneratedSessionCommits(sessionCommits);
       }
     );
 
     try {
-      await api.post("/messages", {
+      if (!queuedItem) throw new Error("Outbound queue item was not created");
+      const response = await api.post<unknown>("/messages", {
         version: MESSAGE_PROTOCOL_VERSION,
         clientMessageId,
         recipientUserId,
         messages,
       });
-      removeOutboundQueueItem(clientMessageId).catch(() => null);
+      await settleAcceptedDirectQueueItem(
+        queuedItem,
+        parseDirectDeliveries(response)
+      );
     } catch (error) {
       if (error instanceof ApiError && error.status === 404) {
         shared.recipientDeviceDirectory.invalidateRecipientDeviceCache(
@@ -912,6 +988,7 @@ export function createMessagesOutboundRuntime({
         oneTimePreKeyReservationToken?: string;
       }> = [];
       const sessionCommits: DirectDeviceSessionCommit[] = [];
+      let queuedItem: OutboundQueueItem | null = null;
 
       const plaintext = new TextEncoder().encode(
         JSON.stringify({
@@ -1037,7 +1114,7 @@ export function createMessagesOutboundRuntime({
 
           // DM-01: durable queue - persist encrypted envelopes before saving the
           // advanced ratchet sessions or attempting HTTP delivery.
-          await persistOutboundQueueItem({
+          queuedItem = {
             clientMessageId,
             recipientUserId,
             messageType: "text",
@@ -1052,39 +1129,32 @@ export function createMessagesOutboundRuntime({
             sessionCommits: toOutboundQueueSessionCommits(sessionCommits),
             createdAt: Date.now(),
             retryCount: 0,
-          });
+          };
+          await persistOutboundQueueItem(queuedItem);
           await saveGeneratedSessionCommits(sessionCommits);
         }
       );
 
       try {
-        await api.post("/messages", {
+        if (!queuedItem) throw new Error("Outbound queue item was not created");
+        const response = await api.post<unknown>("/messages", {
           version: MESSAGE_PROTOCOL_VERSION,
           clientMessageId,
           recipientUserId,
           messages,
         });
+        const directDeliveries = parseDirectDeliveries(response);
+        const fullyAccepted = await settleAcceptedDirectQueueItem(
+          queuedItem,
+          directDeliveries
+        );
 
-        let sentConversations: Record<string, Conversation> | null = null;
-        set((state) => {
-          const nextConversations = {
-            ...state.conversations,
-            [recipientUserId]: {
-              ...state.conversations[recipientUserId]!,
-              messages: state.conversations[recipientUserId]!.messages.map((message) =>
-                message.id === clientMessageId
-                  ? { ...message, status: "sent" as const }
-                  : message
-              ),
-            },
-          };
-          sentConversations = nextConversations;
-          return { conversations: nextConversations };
-        });
-        if (sentConversations) {
-          await persistConversations(sentConversations);
-        }
-        removeOutboundQueueItem(clientMessageId).catch(() => null);
+        await markDirectQueuedMessageStatus(
+          recipientUserId,
+          clientMessageId,
+          fullyAccepted ? "sent" : "error",
+          directDeliveries
+        );
       } catch (error) {
         if (error instanceof ApiError && error.status === 404) {
           shared.recipientDeviceDirectory.invalidateRecipientDeviceCache(
@@ -1137,7 +1207,8 @@ export function createMessagesOutboundRuntime({
   async function markDirectQueuedMessageStatus(
     recipientUserId: string,
     clientMessageId: string,
-    status: Message["status"]
+    status: Message["status"],
+    directDeliveries?: DirectMessageDeliveryMeta[]
   ): Promise<void> {
     let nextConversations: Record<string, Conversation> | null = null;
     set((state) => {
@@ -1146,7 +1217,16 @@ export function createMessagesOutboundRuntime({
       const nextConversation = {
         ...conversation,
         messages: conversation.messages.map((message) =>
-          message.id === clientMessageId ? { ...message, status } : message
+          message.id === clientMessageId
+            ? {
+                ...message,
+                status,
+                directDeliveries: mergeDirectDeliveries(
+                  message.directDeliveries,
+                  directDeliveries
+                ),
+              }
+            : message
         ),
       };
       nextConversations = {
@@ -1196,13 +1276,21 @@ export function createMessagesOutboundRuntime({
 
     try {
       await applyQueuedSessionCommits(item);
-      await api.post("/messages", buildQueuedDirectPayload(item));
+      const response = await api.post<unknown>(
+        "/messages",
+        buildQueuedDirectPayload(item)
+      );
+      const directDeliveries = parseDirectDeliveries(response);
+      const fullyAccepted = await settleAcceptedDirectQueueItem(
+        item,
+        directDeliveries
+      );
       await markDirectQueuedMessageStatus(
         item.recipientUserId,
         item.clientMessageId,
-        "sent"
+        fullyAccepted ? "sent" : "error",
+        directDeliveries
       );
-      await removeOutboundQueueItem(item.clientMessageId);
     } catch {
       await markDirectQueuedMessageStatus(
         item.recipientUserId,
@@ -1251,16 +1339,24 @@ export function createMessagesOutboundRuntime({
 
       try {
         await applyQueuedSessionCommits(item);
-        await api.post("/messages", buildQueuedDirectPayload(item));
+        const response = await api.post<unknown>(
+          "/messages",
+          buildQueuedDirectPayload(item)
+        );
+        const directDeliveries = parseDirectDeliveries(response);
+        const fullyAccepted = await settleAcceptedDirectQueueItem(
+          item,
+          directDeliveries
+        );
 
         if (requiresVisibleBubble) {
           await markDirectQueuedMessageStatus(
             item.recipientUserId,
             item.clientMessageId,
-            "sent"
+            fullyAccepted ? "sent" : "error",
+            directDeliveries
           );
         }
-        await removeOutboundQueueItem(item.clientMessageId);
       } catch {
         // Keep in queue; will retry on next reconnect.
       }

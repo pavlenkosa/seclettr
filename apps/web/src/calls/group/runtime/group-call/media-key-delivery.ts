@@ -31,6 +31,12 @@ function buildQueueKey(callId: string, targetDeviceId: string, keyId: string): s
   return `group.call.media-key:${callId}:${targetDeviceId}:${keyId}`;
 }
 
+export interface GroupCallMediaKeyDeliveryStore {
+  load: () => Set<string>;
+  add: (deliveryKey: string) => void;
+  clear: () => void;
+}
+
 export function createGroupCallMediaKeyDeliveryTracker(params: {
   callId: string;
   localDeviceId: string;
@@ -38,11 +44,13 @@ export function createGroupCallMediaKeyDeliveryTracker(params: {
   retryDelaysMs?: readonly number[];
   queueTtlMs?: number;
   onDeliveryExhausted?: (payload: MediaKeyShareMessage) => void;
+  deliveredStore?: GroupCallMediaKeyDeliveryStore;
 }): GroupCallMediaKeyDeliveryTracker {
   const retryDelaysMs = params.retryDelaysMs ?? DEFAULT_RETRY_DELAYS_MS;
   const queueTtlMs = params.queueTtlMs ?? DEFAULT_QUEUE_TTL_MS;
+  const store = params.deliveredStore;
   const pending = new Map<string, PendingDelivery>();
-  const delivered = new Set<string>();
+  const delivered: Set<string> = store ? store.load() : new Set<string>();
 
   const sendAndScheduleRetry = (deliveryKey: string): WsSendResult["status"] => {
     const current = pending.get(deliveryKey);
@@ -121,6 +129,7 @@ export function createGroupCallMediaKeyDeliveryTracker(params: {
       }
       pending.delete(deliveryKey);
       delivered.add(deliveryKey);
+      store?.add(deliveryKey);
       return signal.senderDeviceId;
     },
 
@@ -136,6 +145,7 @@ export function createGroupCallMediaKeyDeliveryTracker(params: {
       }
       pending.clear();
       delivered.clear();
+      store?.clear();
     },
   };
 }

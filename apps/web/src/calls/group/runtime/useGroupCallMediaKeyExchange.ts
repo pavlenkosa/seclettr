@@ -6,6 +6,7 @@ import {
   type LocalGroupCallMediaKey,
 } from "@/calls/group/runtime/group-call/media-key";
 import type { GroupCallMediaKeyDeliveryTracker } from "@/calls/group/runtime/group-call/media-key-delivery";
+import { computeMediaKeyAckProof, verifyMediaKeyAckProof } from "@/calls/group/runtime/group-call/media-key-ack-proof";
 import { logGroupCallInfo, logGroupCallWarn } from "@/calls/group/runtime/group-call/logger";
 import { api } from "@/lib/api";
 import { wsClient } from "@/lib/websocket";
@@ -301,20 +302,42 @@ export function useGroupCallMediaKeyExchange({
             keyId: decrypted.keyId,
           });
 
-          wsClient.send(
-            {
-              type: "group.call.media-key.ack",
-              callId,
-              targetDeviceId: decrypted.senderDeviceId,
-              epoch: decrypted.epoch,
-              keyId: decrypted.keyId,
-            },
-            {
-              queueIfDisconnected: true,
-              queueKey: `group.call.media-key.ack:${callId}:${decrypted.senderDeviceId}:${decrypted.keyId}`,
-              ttlMs: 15_000,
-            }
-          );
+          computeMediaKeyAckProof(decrypted.keyBytes, decrypted.keyId)
+            .then((keyProof) => {
+              if (cancelled) return;
+              wsClient.send(
+                {
+                  type: "group.call.media-key.ack",
+                  callId,
+                  targetDeviceId: decrypted.senderDeviceId,
+                  epoch: decrypted.epoch,
+                  keyId: decrypted.keyId,
+                  keyProof,
+                },
+                {
+                  queueIfDisconnected: true,
+                  queueKey: `group.call.media-key.ack:${callId}:${decrypted.senderDeviceId}:${decrypted.keyId}`,
+                  ttlMs: 15_000,
+                }
+              );
+            })
+            .catch(() => {
+              if (cancelled) return;
+              wsClient.send(
+                {
+                  type: "group.call.media-key.ack",
+                  callId,
+                  targetDeviceId: decrypted.senderDeviceId,
+                  epoch: decrypted.epoch,
+                  keyId: decrypted.keyId,
+                },
+                {
+                  queueIfDisconnected: true,
+                  queueKey: `group.call.media-key.ack:${callId}:${decrypted.senderDeviceId}:${decrypted.keyId}`,
+                  ttlMs: 15_000,
+                }
+              );
+            });
         })
         .catch((decryptError) => {
           if (cancelled) return;
@@ -351,19 +374,37 @@ export function useGroupCallMediaKeyExchange({
       const tracker = mediaKeyDeliveryTrackerRef.current;
       if (!tracker) return;
 
-      const acknowledgedDeviceId = tracker.acknowledge(msg);
-      if (!acknowledgedDeviceId) return;
-      if (sharedMediaKeyTargetsRef.current.has(acknowledgedDeviceId)) return;
+      const localKey = localMediaKeyRef.current;
+      const rawKey = localKey?.keyId === msg.keyId ? localKey.keyBytes : null;
 
-      sharedMediaKeyTargetsRef.current.add(acknowledgedDeviceId);
-      setSharedMediaKeyDeviceCount(sharedMediaKeyTargetsRef.current.size);
+      verifyMediaKeyAckProof(rawKey ?? new Uint8Array(32), msg.keyId, msg.keyProof)
+        .then((valid) => {
+          if (!active) return;
+          if (!valid) {
+            logGroupCallWarn("[gc] media-key.ack proof invalid, ignoring", {
+              callId,
+              senderDeviceId: msg.senderDeviceId,
+              keyId: msg.keyId,
+            });
+            return;
+          }
+          const acknowledgedDeviceId = tracker.acknowledge(msg);
+          if (!acknowledgedDeviceId) return;
+          if (sharedMediaKeyTargetsRef.current.has(acknowledgedDeviceId)) return;
+
+          sharedMediaKeyTargetsRef.current.add(acknowledgedDeviceId);
+          setSharedMediaKeyDeviceCount(sharedMediaKeyTargetsRef.current.size);
+        })
+        .catch(() => {
+          // Crypto failure treated as invalid proof — ignore ACK.
+        });
     });
 
     return () => {
       active = false;
       unsubscribe();
     };
-  }, [callId, deviceId, effectiveFrameEncryptionEnabled, mediaKeyDeliveryTrackerRef, setSharedMediaKeyDeviceCount, sharedMediaKeyTargetsRef]);
+  }, [callId, deviceId, effectiveFrameEncryptionEnabled, localMediaKeyRef, mediaKeyDeliveryTrackerRef, setSharedMediaKeyDeviceCount, sharedMediaKeyTargetsRef]);
 
   useEffect(() => {
     if (!effectiveFrameEncryptionEnabled || !session || !callId || !localMediaKey || !wsConnected || activeParticipantUserIds.length === 0) {

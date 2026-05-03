@@ -63,5 +63,8 @@ export const GroupCallMediaKeyAckBodySchema = z.object({
   targetDeviceId: z.string().uuid(),
   epoch: z.number().int().min(1).max(1_000_000),
   keyId: z.string().min(1).max(128),
+  /** HMAC-SHA-256 of the raw AES key, keyed by the keyId (UTF-8), base64url-encoded.
+   *  Optional for backward compatibility with older clients. */
+  keyProof: z.string().min(1).max(64).optional(),
 });
 export type GroupCallMediaKeyAckBody = z.infer<typeof GroupCallMediaKeyAckBodySchema>;

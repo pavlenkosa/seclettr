@@ -19,7 +19,8 @@ infra/.env
 infra/.env.dev
 infra/.env.test
 
-# Logs
+# Logs and docs
+docs/
 logs/
 *.log
 npm-debug.log*

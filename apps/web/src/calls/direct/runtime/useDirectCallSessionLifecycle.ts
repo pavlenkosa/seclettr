@@ -219,7 +219,7 @@ export function useDirectCallSessionLifecycle(options: UseDirectCallSessionLifec
     setIsMinimized(false);
     resetMinimizedDockState();
     outgoingIceBatchReset();
-    pendingIceCandidatesRef.current = [];
+    pendingIceCandidatesRef.current.clear();
     incomingIceCandidatesRef.current.clear();
     outboundMediaEncryptionOfferRef.current = null;
     clearDirectCallNegotiationState({

@@ -288,8 +288,13 @@ const resolveInboundFrameCryptoMode = async (params: {
 };
 
 const takePendingIceCandidates = (
+  callId: string,
   pendingIceCandidatesRef: DirectCallSetupRuntimeOptions["pendingIceCandidatesRef"]
-) => pendingIceCandidatesRef.current.splice(0, pendingIceCandidatesRef.current.length);
+): RTCIceCandidateInit[] => {
+  const pending = pendingIceCandidatesRef.current.get(callId) ?? [];
+  pendingIceCandidatesRef.current.delete(callId);
+  return pending;
+};
 
 export function useDirectCallSetupControlRuntime(options: DirectCallSetupRuntimeOptions) {
   const {
@@ -767,7 +772,7 @@ export function useDirectCallSetupControlRuntime(options: DirectCallSetupRuntime
         queuedIncomingIce,
         "[CALL] failed to add pre-answer ICE candidate"
       );
-      const pending = takePendingIceCandidates(pendingIceCandidatesRef);
+      const pending = takePendingIceCandidates(callId, pendingIceCandidatesRef);
       await addIceCandidatesSafely(
         pc,
         pending,

@@ -52,7 +52,7 @@ interface UseDirectCallNegotiationRuntimeOptions {
   lastRenegotiationAttemptRef: MutableRefObject<Record<string, unknown> | null>;
   lastSignalingErrorRef: MutableRefObject<Record<string, unknown> | null>;
   outboundMediaEncryptionOfferRef: MutableRefObject<DirectCallMediaEncryptionOffer | null>;
-  pendingIceCandidatesRef: MutableRefObject<RTCIceCandidateInit[]>;
+  pendingIceCandidatesRef: MutableRefObject<Map<string, RTCIceCandidateInit[]>>;
   setActive: Dispatch<SetStateAction<ActiveCall | null>>;
   callSecurityMode: CallSecurityMode;
   debugCallMedia: (event: string, payload: Record<string, unknown>) => void;
@@ -159,11 +159,13 @@ function isPeerConnectionConnected(pc: RTCPeerConnection): boolean {
 
 async function addQueuedInitialAnswerIceCandidates(
   pc: RTCPeerConnection,
-  pendingIceCandidatesRef: MutableRefObject<RTCIceCandidateInit[]>
+  callId: string,
+  pendingIceCandidatesRef: MutableRefObject<Map<string, RTCIceCandidateInit[]>>
 ): Promise<void> {
-  if (pendingIceCandidatesRef.current.length === 0) return;
+  const pending = pendingIceCandidatesRef.current.get(callId);
+  if (!pending || pending.length === 0) return;
 
-  const pending = pendingIceCandidatesRef.current.splice(0, pendingIceCandidatesRef.current.length);
+  pendingIceCandidatesRef.current.delete(callId);
   for (const candidate of pending) {
     try {
       await pc.addIceCandidate(new RTCIceCandidate(candidate));
@@ -263,7 +265,7 @@ async function applyInitialRemoteDescription({
     kind: "initial-answer",
     supportsRenegotiationV1: supportsPeerRenegotiationV1Ref.current,
   });
-  await addQueuedInitialAnswerIceCandidates(pc, pendingIceCandidatesRef);
+  await addQueuedInitialAnswerIceCandidates(pc, callId, pendingIceCandidatesRef);
   return true;
 }
 

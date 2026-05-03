@@ -12,6 +12,11 @@ import {
   type GroupSfuClient,
 } from "@/calls/group/runtime/sfu";
 import { buildParticipantDeviceIndex, isMediaCaptureError, resolveErrorMessage } from "@/calls/group/runtime/runtime-utils";
+import {
+  GROUP_CALL_SETUP_TIMEOUTS,
+  GroupCallSetupTimeoutError,
+} from "@/calls/group/model/group-call-setup-timeouts";
+import { withSetupStageTimeout } from "@/calls/direct/model/direct-call-setup-timeouts";
 import type { GroupCallRuntimeMediaEncryptionMode } from "@/calls/group/runtime/group-call/media-encryption-negotiation";
 import type {
   LocalGroupCallMediaKey,
@@ -40,6 +45,9 @@ function readApiErrorStatus(error: unknown): number | null {
 }
 
 function isRecoverableGroupCallBootstrapError(error: unknown): boolean {
+  if (error instanceof GroupCallSetupTimeoutError) {
+    return true;
+  }
   const status = readApiErrorStatus(error);
   if (status === 401 || status === 403 || status === 404 || status === 409) {
     return true;
@@ -260,7 +268,11 @@ export function useGroupCallSessionLifecycle({
       let lastError: unknown = null;
       for (let attempt = 1; attempt <= INITIAL_SFU_START_ATTEMPTS; attempt += 1) {
         try {
-          return await createSfuClient(roomId, stream, onTransportFailed);
+          return await withSetupStageTimeout(
+            createSfuClient(roomId, stream, onTransportFailed),
+            GROUP_CALL_SETUP_TIMEOUTS.sfuConnectMs,
+            "sfu-connect"
+          );
         } catch (caughtError) {
           lastError = caughtError;
           if (attempt >= INITIAL_SFU_START_ATTEMPTS) {
@@ -302,7 +314,11 @@ export function useGroupCallSessionLifecycle({
     ): Promise<string | null> => {
       try {
         const [participants, participantDevices] = await Promise.all([
-          api.joinGroupCall(fallbackCallId),
+          withSetupStageTimeout(
+            api.joinGroupCall(fallbackCallId),
+            GROUP_CALL_SETUP_TIMEOUTS.apiCallMs,
+            "join-call"
+          ),
           api.getGroupCallParticipantDevices(fallbackCallId).catch(() => []),
         ]);
         await abortIfStaleSessionRun();
@@ -319,14 +335,22 @@ export function useGroupCallSessionLifecycle({
         }
       }
 
-      const nextActiveCall = await api.getActiveGroupCall(session.groupId);
+      const nextActiveCall = await withSetupStageTimeout(
+        api.getActiveGroupCall(session.groupId),
+        GROUP_CALL_SETUP_TIMEOUTS.checkActiveCallMs,
+        "check-active-call"
+      );
       await abortIfStaleSessionRun();
       if (!nextActiveCall) {
         return null;
       }
 
       const [participants, participantDevices] = await Promise.all([
-        api.joinGroupCall(nextActiveCall.callId),
+        withSetupStageTimeout(
+          api.joinGroupCall(nextActiveCall.callId),
+          GROUP_CALL_SETUP_TIMEOUTS.apiCallMs,
+          "join-call"
+        ),
         api.getGroupCallParticipantDevices(nextActiveCall.callId).catch(() => []),
       ]);
       await abortIfStaleSessionRun();
@@ -481,25 +505,34 @@ export function useGroupCallSessionLifecycle({
         bootstrapAttempt += 1
       ) {
         try {
-          const existing = await api.getActiveGroupCall(session.groupId);
+          const existing = await withSetupStageTimeout(
+            api.getActiveGroupCall(session.groupId),
+            GROUP_CALL_SETUP_TIMEOUTS.checkActiveCallMs,
+            "check-active-call"
+          );
           await abortIfStaleSessionRun();
           let nextHostUserId = existing?.callerUserId ?? session.hostUserId ?? userId;
           let resolvedCallId = existing?.callId ?? null;
           let serverCreatedCall = existing === null;
           if (!resolvedCallId) {
-            const created = await api.post<CreateGroupCallResponse>(
-              "/calls",
-              {
+            const created = await withSetupStageTimeout(
+              api.post<CreateGroupCallResponse>("/calls", {
                 groupId: session.groupId,
                 callType: session.callType,
-              }
+              }),
+              GROUP_CALL_SETUP_TIMEOUTS.apiCallMs,
+              "api-create-call"
             );
             resolvedCallId = created.callId;
             serverCreatedCall = created.created ?? true;
             if (created.callerUserId) {
               nextHostUserId = created.callerUserId;
             } else if (!serverCreatedCall) {
-              const activeCall = await api.getActiveGroupCall(session.groupId);
+              const activeCall = await withSetupStageTimeout(
+                api.getActiveGroupCall(session.groupId),
+                GROUP_CALL_SETUP_TIMEOUTS.checkActiveCallMs,
+                "check-active-call"
+              );
               await abortIfStaleSessionRun();
               if (activeCall?.callId === resolvedCallId) {
                 nextHostUserId = activeCall.callerUserId;
@@ -516,14 +549,22 @@ export function useGroupCallSessionLifecycle({
           setCallId(resolvedCallId);
           callIdRef.current = resolvedCallId;
 
-          const stream = await ensureLocalStream();
+          const stream = await withSetupStageTimeout(
+            ensureLocalStream(),
+            GROUP_CALL_SETUP_TIMEOUTS.localMediaMs,
+            "local-media"
+          );
           await abortIfStaleSessionRun(async () => {
             stopLocalStream(stream);
             await endCreatedCall();
           });
 
           const [participants, participantDevices] = await Promise.all([
-            api.joinGroupCall(resolvedCallId),
+            withSetupStageTimeout(
+              api.joinGroupCall(resolvedCallId),
+              GROUP_CALL_SETUP_TIMEOUTS.apiCallMs,
+              "join-call"
+            ),
             api.getGroupCallParticipantDevices(resolvedCallId).catch(() => []),
           ]);
           joinedHere = true;

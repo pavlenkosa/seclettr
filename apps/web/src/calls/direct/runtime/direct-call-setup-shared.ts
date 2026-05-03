@@ -81,7 +81,7 @@ export interface DirectCallSetupNegotiationContext {
 /** Refs and ICE state for WebRTC transport. */
 export interface DirectCallSetupTransportContext {
   peerConnectionRef: MutableRefObject<RTCPeerConnection | null>;
-  pendingIceCandidatesRef: MutableRefObject<RTCIceCandidateInit[]>;
+  pendingIceCandidatesRef: MutableRefObject<Map<string, RTCIceCandidateInit[]>>;
   incomingIceCandidatesRef: MutableRefObject<Map<string, RTCIceCandidateInit[]>>;
 }
 

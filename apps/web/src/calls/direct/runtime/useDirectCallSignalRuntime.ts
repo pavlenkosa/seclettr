@@ -71,7 +71,7 @@ interface UseDirectCallSignalRuntimeOptions {
   acceptingIncomingCallRef: MutableRefObject<IncomingCall | null>;
   peerConnectionRef: MutableRefObject<RTCPeerConnection | null>;
   incomingIceCandidatesRef: MutableRefObject<Map<string, RTCIceCandidateInit[]>>;
-  pendingIceCandidatesRef: MutableRefObject<RTCIceCandidateInit[]>;
+  pendingIceCandidatesRef: MutableRefObject<Map<string, RTCIceCandidateInit[]>>;
   ignoreOfferRef: MutableRefObject<boolean>;
   supportsPeerRenegotiationV1Ref: MutableRefObject<boolean>;
   renegotiationUnsupportedRef: MutableRefObject<boolean>;
@@ -240,7 +240,9 @@ export function useDirectCallSignalRuntime({
     const pc = peerConnectionRef.current;
     if (!pc) return;
     if (!pc.remoteDescription) {
-      pendingIceCandidatesRef.current.push(candidate);
+      const queued = pendingIceCandidatesRef.current.get(callId) ?? [];
+      queued.push(candidate);
+      pendingIceCandidatesRef.current.set(callId, queued);
       return;
     }
 

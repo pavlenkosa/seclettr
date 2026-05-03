@@ -50,7 +50,7 @@ function HookHarness(props: {
   acceptingIncomingCallRef: MutableRefObject<IncomingCall | null>;
   peerConnectionRef?: MutableRefObject<RTCPeerConnection | null>;
   incomingIceCandidatesRef: MutableRefObject<Map<string, RTCIceCandidateInit[]>>;
-  pendingIceCandidatesRef: MutableRefObject<RTCIceCandidateInit[]>;
+  pendingIceCandidatesRef: MutableRefObject<Map<string, RTCIceCandidateInit[]>>;
   lastSignalingErrorRef?: MutableRefObject<Record<string, unknown> | null>;
   rejectIncomingCall?: (callId: string) => void;
   resetCallState?: (opts?: { sendHangup?: boolean; notice?: CallNotice }) => void;
@@ -132,7 +132,7 @@ describe("useDirectCallSignalRuntime", () => {
           incomingRef={{ current: null }}
           acceptingIncomingCallRef={{ current: createIncomingCall() }}
           incomingIceCandidatesRef={incomingIceCandidatesRef}
-          pendingIceCandidatesRef={{ current: [] }}
+          pendingIceCandidatesRef={{ current: new Map() }}
         />
       );
     });
@@ -163,7 +163,7 @@ describe("useDirectCallSignalRuntime", () => {
           incomingRef={{ current: null }}
           acceptingIncomingCallRef={{ current: createIncomingCall() }}
           incomingIceCandidatesRef={{ current: new Map() }}
-          pendingIceCandidatesRef={{ current: [] }}
+          pendingIceCandidatesRef={{ current: new Map() }}
           rejectIncomingCall={rejectIncomingCall}
         />
       );
@@ -223,7 +223,7 @@ describe("useDirectCallSignalRuntime", () => {
           incomingRef={{ current: null }}
           acceptingIncomingCallRef={{ current: null }}
           incomingIceCandidatesRef={{ current: new Map() }}
-          pendingIceCandidatesRef={{ current: [] }}
+          pendingIceCandidatesRef={{ current: new Map() }}
           lastSignalingErrorRef={lastSignalingErrorRef}
           resetCallState={vi.fn()}
           finishCallSession={finishCallSession}
@@ -304,7 +304,7 @@ describe("useDirectCallSignalRuntime", () => {
           incomingRef={{ current: null }}
           acceptingIncomingCallRef={{ current: null }}
           incomingIceCandidatesRef={{ current: new Map() }}
-          pendingIceCandidatesRef={{ current: [] }}
+          pendingIceCandidatesRef={{ current: new Map() }}
           lastSignalingErrorRef={lastSignalingErrorRef}
           resetCallState={resetCallState}
           handleIncomingRenegotiationOffer={vi.fn(() => new Promise<void>((_, reject) => {
@@ -360,8 +360,8 @@ describe("useDirectCallSignalRuntime", () => {
       },
     } as MutableRefObject<ActiveCall | null>;
     const pendingIceCandidatesRef = {
-      current: [] as RTCIceCandidateInit[],
-    } as MutableRefObject<RTCIceCandidateInit[]>;
+      current: new Map<string, RTCIceCandidateInit[]>(),
+    } as MutableRefObject<Map<string, RTCIceCandidateInit[]>>;
     const finishCallSession = vi.fn((opts: DirectCallFinishSessionOptions) => {
       opts.onBeforeReset?.();
     });
@@ -441,7 +441,7 @@ describe("useDirectCallSignalRuntime", () => {
       callId: "call-2",
       sdp: "answer-current",
     }));
-    expect(pendingIceCandidatesRef.current).toEqual([
+    expect(pendingIceCandidatesRef.current.get("call-2")).toEqual([
       { candidate: "candidate:current", sdpMid: "1" },
     ]);
   });

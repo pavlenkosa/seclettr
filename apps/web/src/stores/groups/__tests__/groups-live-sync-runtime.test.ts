@@ -6,12 +6,25 @@ import type {
 } from "@/stores/groups/groups-store-runtime-types";
 import type { GroupsRuntimeShared } from "@/stores/groups/groups-runtime-shared";
 
-const { listeners, fetchGroupDetailsMock, scheduleGroupLabelRefreshMock, toGroupChatMock, toGroupMessageMock, toProcessedMessageKeyMock } =
+const {
+  listeners,
+  senderKeyListeners,
+  fetchGroupDetailsMock,
+  scheduleGroupLabelRefreshMock,
+  toGroupChatMock,
+  toGroupMessageMock,
+  toGroupMessageResultMock,
+  toProcessedMessageKeyMock,
+  loadAllPendingGroupDecryptItemsMock,
+  persistPendingGroupDecryptItemMock,
+  removePendingGroupDecryptItemMock,
+} =
   vi.hoisted(() => ({
     listeners: {
       message: null as ((message: unknown) => void) | null,
       connection: null as ((connected: boolean) => void) | null,
     },
+    senderKeyListeners: new Set<(distribution: unknown) => void>(),
     fetchGroupDetailsMock: vi.fn(),
     scheduleGroupLabelRefreshMock: vi.fn(),
     toGroupChatMock: vi.fn((detail: GroupChat, existing?: GroupChat) => ({
@@ -25,9 +38,13 @@ const { listeners, fetchGroupDetailsMock, scheduleGroupLabelRefreshMock, toGroup
       historyLoaded: existing?.historyLoaded ?? true,
     })),
     toGroupMessageMock: vi.fn(),
+    toGroupMessageResultMock: vi.fn(),
     toProcessedMessageKeyMock: vi.fn(
       (groupId: string, envelope: { id: string }) => `${groupId}:${envelope.id}`
     ),
+    loadAllPendingGroupDecryptItemsMock: vi.fn(),
+    persistPendingGroupDecryptItemMock: vi.fn(),
+    removePendingGroupDecryptItemMock: vi.fn(),
   }));
 
 vi.mock("@/lib/websocket", () => ({
@@ -53,8 +70,28 @@ vi.mock("@/stores/groups/group-helpers", () => ({
   scheduleGroupLabelRefresh: scheduleGroupLabelRefreshMock,
   toGroupChat: toGroupChatMock,
   toGroupMessage: toGroupMessageMock,
+  toGroupMessageResult: toGroupMessageResultMock,
   toProcessedMessageKey: toProcessedMessageKeyMock,
   GROUP_UNKNOWN_SENDER_LABEL: "Participant",
+}));
+
+vi.mock("@/stores/groups/group-pending-decrypt-queue", () => ({
+  isPendingGroupDecryptItemForDistribution: (item: any, distribution: any) =>
+    item.groupId === distribution.groupId &&
+    item.envelope.senderDeviceId === distribution.senderDeviceId &&
+    item.envelope.distributionId === distribution.distributionId,
+  loadAllPendingGroupDecryptItems: loadAllPendingGroupDecryptItemsMock,
+  persistPendingGroupDecryptItem: persistPendingGroupDecryptItemMock,
+  removePendingGroupDecryptItem: removePendingGroupDecryptItemMock,
+}));
+
+vi.mock("@/lib/group-sender-key-events", () => ({
+  onSenderKeyDistributionImported: (listener: (distribution: unknown) => void) => {
+    senderKeyListeners.add(listener);
+    return () => {
+      senderKeyListeners.delete(listener);
+    };
+  },
 }));
 
 function createState(overrides: Partial<GroupsState> = {}): GroupsState {
@@ -95,7 +132,15 @@ describe("createGroupsLiveSyncRuntime", () => {
     scheduleGroupLabelRefreshMock.mockReset();
     toGroupChatMock.mockClear();
     toGroupMessageMock.mockReset();
+    toGroupMessageResultMock.mockReset().mockImplementation(async (...args: unknown[]) => {
+      const message = await toGroupMessageMock(...args);
+      return message ? { kind: "message", message } : null;
+    });
     toProcessedMessageKeyMock.mockClear();
+    loadAllPendingGroupDecryptItemsMock.mockReset().mockResolvedValue([]);
+    persistPendingGroupDecryptItemMock.mockReset().mockResolvedValue(undefined);
+    removePendingGroupDecryptItemMock.mockReset().mockResolvedValue(undefined);
+    senderKeyListeners.clear();
   });
 
   it("ignores duplicate inbound messages based on processed keys", async () => {
@@ -146,6 +191,7 @@ describe("createGroupsLiveSyncRuntime", () => {
           groupId: "group-1",
           name: "Team room",
           createdAt: "0",
+          cryptoEpoch: 1,
           members: [],
           memberDeviceLabels: {},
           messages: [],
@@ -224,6 +270,238 @@ describe("createGroupsLiveSyncRuntime", () => {
     expect(fetchGroupDetailsMock).toHaveBeenCalledWith("group-1");
     expect(state.groups["group-1"]?.messages).toHaveLength(1);
     expect(state.groups["group-1"]?.members).toHaveLength(1);
+  });
+
+  it("persists inbound messages that are waiting for a sender-key distribution", async () => {
+    let state = createState();
+    const setState = (
+      partial:
+        | Partial<GroupsState>
+        | ((current: GroupsState) => Partial<GroupsState>)
+    ) => {
+      const update = typeof partial === "function" ? partial(state) : partial;
+      state = { ...state, ...update };
+    };
+
+    toGroupMessageResultMock.mockResolvedValue({
+      kind: "pending",
+      reason: "missing_sender_key",
+      fallbackMessage: {
+        id: "msg-1",
+        senderDeviceId: "device-peer",
+        senderLabel: "@alice",
+        content: "[encrypted message]",
+        timestamp: 10,
+        status: "error",
+        isOwn: false,
+        rawType: "text",
+      },
+    });
+
+    const runtime = createGroupsLiveSyncRuntime({
+      set: setState,
+      get: () => state,
+      shared: {
+        getMyDeviceId: () => "device-me",
+        getStorageKey: () => ({} as CryptoKey),
+        createUnknownGroupChat: vi.fn(),
+        trimProcessedGroupMessageKeys: (keys: Set<string>) => keys,
+      } as unknown as GroupsRuntimeShared,
+    });
+
+    await runtime.handleIncomingGroupMessage({
+      type: "group_message.new",
+      groupId: "group-1",
+      senderDeviceId: "device-peer",
+      distributionId: "distribution",
+      chainId: 1,
+      messageId: "message",
+      messageType: "text",
+      ciphertext: "ciphertext",
+      signature: "signature",
+      createdAt: "10",
+      aeadVersion: 0,
+    } as never);
+
+    expect(persistPendingGroupDecryptItemMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        groupId: "group-1",
+        messageKey: "group-1:group-1:device-peer:distribution:message:10",
+        lastReason: "missing_sender_key",
+      })
+    );
+    expect(state.processedGroupMessageKeys.size).toBe(0);
+    expect(state.groups["group-1"]).toBeUndefined();
+  });
+
+  it("refreshes group state before processing a future-epoch message", async () => {
+    let state = createState({
+      groups: {
+        "group-1": {
+          groupId: "group-1",
+          name: "Team room",
+          createdAt: "0",
+          cryptoEpoch: 1,
+          members: [],
+          memberDeviceLabels: {},
+          messages: [],
+          lastMessageAt: 0,
+          unreadCount: 0,
+          historyLoaded: true,
+        },
+      },
+    });
+    const setState = (
+      partial:
+        | Partial<GroupsState>
+        | ((current: GroupsState) => Partial<GroupsState>)
+    ) => {
+      const update = typeof partial === "function" ? partial(state) : partial;
+      state = { ...state, ...update };
+    };
+    const refreshGroup = vi.fn(async () => {
+      state = {
+        ...state,
+        groups: {
+          ...state.groups,
+          "group-1": {
+            ...state.groups["group-1"]!,
+            cryptoEpoch: 2,
+          },
+        },
+      };
+    });
+    state = { ...state, refreshGroup };
+    toGroupMessageMock.mockResolvedValue({
+      id: "msg-epoch-2",
+      senderDeviceId: "device-peer",
+      senderLabel: "@alice",
+      content: "epoch two",
+      timestamp: 10,
+      status: "delivered",
+      isOwn: false,
+      rawType: "text",
+    });
+
+    const runtime = createGroupsLiveSyncRuntime({
+      set: setState,
+      get: () => state,
+      shared: {
+        getMyDeviceId: () => "device-me",
+        getStorageKey: () => null,
+        createUnknownGroupChat: vi.fn(),
+        trimProcessedGroupMessageKeys: (keys: Set<string>) => keys,
+      } as unknown as GroupsRuntimeShared,
+    });
+
+    await runtime.handleIncomingGroupMessage({
+      type: "group_message.new",
+      groupId: "group-1",
+      senderDeviceId: "device-peer",
+      distributionId: "distribution",
+      cryptoEpoch: 2,
+      chainId: 1,
+      messageId: "message",
+      messageType: "text",
+      ciphertext: "ciphertext",
+      signature: "signature",
+      createdAt: "10",
+      aeadVersion: 0,
+    } as never);
+
+    expect(refreshGroup).toHaveBeenCalledWith("group-1");
+    expect(state.groups["group-1"]?.messages[0]?.content).toBe("epoch two");
+  });
+
+  it("retries pending group decrypt items after the matching sender-key arrives", async () => {
+    let state = createState({
+      groups: {
+        "group-1": {
+          groupId: "group-1",
+          name: "Team room",
+          createdAt: "0",
+          cryptoEpoch: 1,
+          members: [{ userId: "alice", username: "alice", joinedAt: "0" }],
+          memberDeviceLabels: { "device-peer": "alice" },
+          messages: [],
+          lastMessageAt: 0,
+          unreadCount: 0,
+          historyLoaded: true,
+        },
+      },
+    });
+    const setState = (
+      partial:
+        | Partial<GroupsState>
+        | ((current: GroupsState) => Partial<GroupsState>)
+    ) => {
+      const update = typeof partial === "function" ? partial(state) : partial;
+      state = { ...state, ...update };
+    };
+    const envelope = {
+      id: "history-1",
+      senderDeviceId: "device-peer",
+      distributionId: "distribution",
+      chainId: 1,
+      messageId: "message",
+      messageType: "text",
+      ciphertext: "ciphertext",
+      signature: "signature",
+      createdAt: "10",
+      aeadVersion: 0,
+    };
+
+    const runtime = createGroupsLiveSyncRuntime({
+      set: setState,
+      get: () => state,
+      shared: {
+        getMyDeviceId: () => "device-me",
+        getStorageKey: () => ({} as CryptoKey),
+        createUnknownGroupChat: vi.fn(),
+        trimProcessedGroupMessageKeys: (keys: Set<string>) => keys,
+      } as unknown as GroupsRuntimeShared,
+    });
+
+    const stopListening = runtime.startListening();
+    loadAllPendingGroupDecryptItemsMock.mockResolvedValue([
+      {
+        messageKey: "group-1:history-1",
+        groupId: "group-1",
+        envelope,
+        createdAt: 10,
+        lastReason: "missing_sender_key",
+      },
+    ]);
+    toGroupMessageResultMock.mockResolvedValue({
+      kind: "message",
+      message: {
+        id: "history-1",
+        senderDeviceId: "device-peer",
+        senderLabel: "@alice",
+        content: "recovered",
+        timestamp: 10,
+        status: "delivered",
+        isOwn: false,
+        rawType: "text",
+      },
+    });
+
+    for (const listener of senderKeyListeners) {
+      listener({
+        groupId: "group-1",
+        senderDeviceId: "device-peer",
+        distributionId: "distribution",
+      });
+    }
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    expect(state.groups["group-1"]?.messages).toHaveLength(1);
+    expect(state.groups["group-1"]?.messages[0]?.content).toBe("recovered");
+    expect(state.processedGroupMessageKeys.has("group-1:history-1")).toBe(true);
+    expect(removePendingGroupDecryptItemMock).toHaveBeenCalledWith(
+      "group-1:history-1"
+    );
+    stopListening();
   });
 
   it("routes websocket group_message.new events into inbound handling", async () => {

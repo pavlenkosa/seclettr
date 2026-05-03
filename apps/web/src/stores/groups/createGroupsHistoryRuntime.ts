@@ -4,10 +4,11 @@ import {
   formatUnknownGroupName,
   parseTimestamp,
   scheduleGroupLabelRefresh,
-  toGroupMessage,
+  toGroupMessageResult,
   toProcessedMessageKey,
   GROUP_UNKNOWN_SENDER_LABEL,
 } from "./group-helpers";
+import { persistPendingGroupDecryptItem } from "./group-pending-decrypt-queue";
 import {
   createGroupHistoryReplayContext,
   flushGroupHistoryReplayContext,
@@ -60,8 +61,16 @@ export function createGroupsHistoryRuntime({
           ? createGroupHistoryReplayContext()
           : undefined;
         const mapped: GroupChatMessage[] = [];
+        const processedMessageKeys: string[] = [];
         for (const envelope of normalized) {
-          const message = await toGroupMessage(
+          const knownCryptoEpoch = get().groups[groupId]?.cryptoEpoch ?? 1;
+          if (envelope.cryptoEpoch > knownCryptoEpoch) {
+            await get().refreshGroup(groupId, { refreshDeviceLabels: false });
+            const refreshedCryptoEpoch = get().groups[groupId]?.cryptoEpoch ?? 1;
+            if (envelope.cryptoEpoch > refreshedCryptoEpoch) continue;
+          }
+          const messageKey = toProcessedMessageKey(groupId, envelope);
+          const result = await toGroupMessageResult(
             groupId,
             envelope,
             myDeviceId,
@@ -69,9 +78,19 @@ export function createGroupsHistoryRuntime({
             memberDeviceLabels,
             historyReplay
           );
-          if (message) {
-            mapped.push(message);
+          if (!result) continue;
+          if (result.kind === "pending") {
+            await persistPendingGroupDecryptItem({
+              messageKey,
+              groupId,
+              envelope,
+              createdAt: result.fallbackMessage.timestamp,
+              lastReason: "missing_sender_key",
+            });
+            continue;
           }
+          mapped.push(result.message);
+          processedMessageKeys.push(messageKey);
         }
         if (storageKey && historyReplay) {
           await flushGroupHistoryReplayContext(storageKey, historyReplay);
@@ -92,8 +111,8 @@ export function createGroupsHistoryRuntime({
             (left, right) => left.timestamp - right.timestamp
           );
           const processedKeys = new Set(state.processedGroupMessageKeys);
-          for (const envelope of normalized) {
-            processedKeys.add(toProcessedMessageKey(groupId, envelope));
+          for (const messageKey of processedMessageKeys) {
+            processedKeys.add(messageKey);
           }
           return {
             groups: {

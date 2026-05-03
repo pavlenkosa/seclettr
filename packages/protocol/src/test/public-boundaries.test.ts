@@ -171,6 +171,7 @@ describe("group wire contracts", () => {
       groupId: uuidA,
       name: "Launch",
       createdAt: "2026-03-20T00:00:00.000Z",
+      cryptoEpoch: 1,
       members: [
         {
           userId: uuidA,

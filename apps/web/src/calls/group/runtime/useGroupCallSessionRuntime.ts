@@ -9,6 +9,9 @@ import {
 import {
   useGroupCallSessionSubscriptions,
 } from "./useGroupCallSessionSubscriptions";
+import {
+  useGroupCallPresenceHeartbeat,
+} from "./useGroupCallPresenceHeartbeat";
 import type {
   UseGroupCallSessionRuntimeOptions,
   UseGroupCallSessionRuntimeResult,
@@ -258,6 +261,8 @@ export function useGroupCallSessionRuntime({
     performUnloadCleanup,
     onClose,
   });
+
+  useGroupCallPresenceHeartbeat(callId);
 
   return {
     handleLeave,

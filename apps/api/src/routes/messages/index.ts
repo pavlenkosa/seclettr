@@ -98,6 +98,7 @@ interface GroupMessageRow {
   message_type: string;
   ciphertext: string;
   signature: string;
+  crypto_epoch: number;
   aead_version: number;
   created_at: string;
 }
@@ -115,6 +116,11 @@ interface GroupMemberDeviceRow {
 
 interface GroupMemberUserRow {
   user_id: string;
+}
+
+interface GroupSendMetadata {
+  name: string | null;
+  cryptoEpoch: number;
 }
 
 function routeError(statusCode: number, error: string): RouteError {
@@ -673,21 +679,29 @@ export async function messageRoutes(fastify: FastifyInstance): Promise<void> {
   );
 }
 
-async function fetchGroupNameForMember(
+async function fetchGroupSendMetadataForMember(
   groupId: string,
   userId: string
-): Promise<string | null> {
-  const membership = await query<{ group_id: string; group_name: string }>(
-    `SELECT gm.group_id, g.name AS group_name
+): Promise<GroupSendMetadata> {
+  const membership = await query<{
+    group_id: string;
+    group_name: string;
+    crypto_epoch: number;
+  }>(
+    `SELECT gm.group_id, g.name AS group_name, g.crypto_epoch
      FROM group_members gm
      INNER JOIN groups g ON g.id = gm.group_id
-     WHERE group_id = $1 AND user_id = $2 AND removed_at IS NULL`,
+      WHERE gm.group_id = $1 AND gm.user_id = $2 AND gm.removed_at IS NULL`,
     [groupId, userId]
   );
   if (membership.length === 0) {
     throw routeError(403, "Not a group member");
   }
-  return membership[0]?.group_name ?? null;
+  const row = membership[0]!;
+  return {
+    name: row.group_name ?? null,
+    cryptoEpoch: row.crypto_epoch,
+  };
 }
 
 async function validateGroupMessageAttachment(
@@ -723,16 +737,17 @@ async function validateGroupMessageAttachment(
 async function insertGroupMessage(
   groupId: string,
   senderDeviceId: string,
-  body: GroupMessageRequest
+  body: GroupMessageRequest,
+  cryptoEpoch: number
 ): Promise<GroupMessageRow | undefined> {
   const inserted = await query<GroupMessageRow>(
     `INSERT INTO group_messages
        (group_id, sender_device_id, distribution_id, chain_id, message_id,
-        message_type, ciphertext, signature, aead_version)
-     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+        message_type, ciphertext, signature, crypto_epoch, aead_version)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
      ON CONFLICT DO NOTHING
      RETURNING id, group_id, sender_device_id, message_type,
-               ciphertext, signature, aead_version, created_at`,
+               ciphertext, signature, crypto_epoch, aead_version, created_at`,
     [
       groupId,
       senderDeviceId,
@@ -742,6 +757,7 @@ async function insertGroupMessage(
       body.type,
       body.ciphertext,
       body.signature,
+      cryptoEpoch,
       body.aeadVersion ?? 1,
     ]
   );
@@ -753,7 +769,7 @@ async function fetchExistingGroupMessage(
 ): Promise<GroupMessageRow | undefined> {
   const existing = await query<GroupMessageRow>(
     `SELECT id, group_id, sender_device_id, message_type,
-            ciphertext, signature, aead_version, created_at
+            ciphertext, signature, crypto_epoch, aead_version, created_at
      FROM group_messages
      WHERE distribution_id = $1 AND chain_id = $2 AND message_id = $3
      LIMIT 1`,
@@ -773,6 +789,7 @@ function hasSameGroupMessagePayload(
     message.message_type === body.type &&
     message.ciphertext === body.ciphertext &&
     message.signature === body.signature &&
+    message.crypto_epoch === body.cryptoEpoch &&
     message.aead_version === (body.aeadVersion ?? 1);
 }
 
@@ -781,7 +798,12 @@ async function persistGroupMessage(
   senderDeviceId: string,
   body: GroupMessageRequest
 ): Promise<GroupMessagePersistResult | null> {
-  const inserted = await insertGroupMessage(groupId, senderDeviceId, body);
+  const inserted = await insertGroupMessage(
+    groupId,
+    senderDeviceId,
+    body,
+    body.cryptoEpoch
+  );
   const message = inserted ?? await fetchExistingGroupMessage(body);
   if (!message) {
     return null;
@@ -837,9 +859,10 @@ async function publishGroupMessageToMembers(
     senderDeviceId: string;
     body: GroupMessageRequest;
     createdAt: string;
+    cryptoEpoch: number;
   }
 ): Promise<void> {
-  const { groupId, senderDeviceId, body, createdAt } = params;
+  const { groupId, senderDeviceId, body, createdAt, cryptoEpoch } = params;
   await Promise.all(
     members.map(async (member) =>
       publishMessage({
@@ -848,6 +871,7 @@ async function publishGroupMessageToMembers(
         groupId,
         senderDeviceId,
         distributionId: body.distributionId,
+        cryptoEpoch,
         chainId: body.chainId,
         messageId: body.messageId,
         ciphertext: body.ciphertext,
@@ -941,7 +965,13 @@ export async function groupMessageRoutes(
 
       try {
         const senderUsername = await fetchUsername(userId);
-        const groupName = await fetchGroupNameForMember(groupId, userId);
+        const groupMetadata = await fetchGroupSendMetadataForMember(
+          groupId,
+          userId
+        );
+        if (body.cryptoEpoch !== groupMetadata.cryptoEpoch) {
+          throw routeError(409, "Group crypto epoch mismatch");
+        }
         const attachmentId = await validateGroupMessageAttachment(body, userId);
         const persisted = await persistGroupMessage(groupId, deviceId, body);
 
@@ -951,6 +981,7 @@ export async function groupMessageRoutes(
               groupId,
               senderDeviceId: deviceId,
               distributionId: body.distributionId,
+              cryptoEpoch: body.cryptoEpoch,
               chainId: body.chainId,
               messageId: body.messageId,
             },
@@ -971,6 +1002,7 @@ export async function groupMessageRoutes(
             senderDeviceId: deviceId,
             body,
             createdAt,
+            cryptoEpoch: persistedGroupMessage.crypto_epoch,
           });
 
           const memberUsers = await fetchGroupMemberUsers(groupId, userId);
@@ -978,7 +1010,7 @@ export async function groupMessageRoutes(
             senderUserId: userId,
             senderUsername,
             groupId,
-            groupName,
+            groupName: groupMetadata.name,
             logWarning: (err, memberUserId) => {
               request.log.warn(
                 { err, userId: memberUserId },
@@ -994,6 +1026,7 @@ export async function groupMessageRoutes(
             ok: true,
             serverMessageId: persistedGroupMessage.id,
             createdAt: new Date(persistedGroupMessage.created_at).toISOString(),
+            cryptoEpoch: persistedGroupMessage.crypto_epoch,
           })
         );
       } catch (err) {
@@ -1048,15 +1081,18 @@ export async function groupMessageRoutes(
         signature: string;
         created_at: string;
         aead_version: number;
+        crypto_epoch: number;
       }>(
         before
           ? `SELECT id, sender_device_id, distribution_id, chain_id, message_id,
-                    message_type, ciphertext, signature, created_at, aead_version
+                    message_type, ciphertext, signature, created_at, aead_version,
+                    crypto_epoch
              FROM group_messages
              WHERE group_id = $1 AND created_at < $2
              ORDER BY created_at DESC LIMIT $3`
           : `SELECT id, sender_device_id, distribution_id, chain_id, message_id,
-                    message_type, ciphertext, signature, created_at, aead_version
+                    message_type, ciphertext, signature, created_at, aead_version,
+                    crypto_epoch
              FROM group_messages
              WHERE group_id = $1
              ORDER BY created_at DESC LIMIT $2`,
@@ -1069,6 +1105,7 @@ export async function groupMessageRoutes(
           id: message.id,
           senderDeviceId: message.sender_device_id,
           distributionId: message.distribution_id,
+          cryptoEpoch: message.crypto_epoch,
           chainId: message.chain_id,
           messageId: message.message_id,
           messageType: message.message_type,

@@ -111,6 +111,7 @@ CREATE TABLE groups (
   id         UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   name       TEXT NOT NULL,
   creator_id UUID NOT NULL REFERENCES users(id) ON DELETE SET NULL,
+  crypto_epoch INTEGER NOT NULL DEFAULT 1,
   created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
@@ -136,11 +137,13 @@ CREATE TABLE group_messages (
   message_type      TEXT NOT NULL,
   ciphertext        TEXT NOT NULL,
   signature         TEXT NOT NULL,
+  crypto_epoch      INTEGER NOT NULL DEFAULT 1,
   created_at        TIMESTAMPTZ NOT NULL DEFAULT now(),
   CONSTRAINT gm_dist_chain_msg UNIQUE (distribution_id, chain_id, message_id)
 );
 
 CREATE INDEX gm_group ON group_messages (group_id, created_at);
+CREATE INDEX gm_group_epoch_created ON group_messages (group_id, crypto_epoch, created_at);
 
 -- ─── Attachments (encrypted blobs) ───────────────────────────────────────────
 

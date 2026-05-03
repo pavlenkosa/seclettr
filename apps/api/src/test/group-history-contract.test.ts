@@ -135,6 +135,7 @@ describe("group history contract", () => {
     const first = parsed.data!.messages[0]!;
     expect(typeof first.senderDeviceId).toBe("string");
     expect(typeof first.distributionId).toBe("string");
+    expect(first.cryptoEpoch).toBe(1);
     expect(first.messageType).toBe("text");
     expect(
       (history.body as { messages: Array<Record<string, unknown>> }).messages[0]?.[

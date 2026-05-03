@@ -1,6 +1,6 @@
 {
   "name": "seclettr-messenger",
-  "version": "1.0.0-beta",
+  "version": "1.1.0-beta",
   "private": true,
   "description": "E2EE web messenger",
   "license": "Apache-2.0",

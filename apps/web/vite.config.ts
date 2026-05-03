@@ -40,7 +40,7 @@ const JS_CHUNK_BUDGETS = {
   index: 40 * 1024,
   ChatPage: 360 * 1024,
   "feature-direct-calls": 200 * 1024,
-  "feature-group-calls": 370 * 1024,
+  "feature-group-calls": 380 * 1024,
   "vendor-react": 160 * 1024,
   "vendor-router": 8 * 1024,
   "vendor-state": 8 * 1024,

@@ -3,7 +3,8 @@ import { redis } from "./redis.js";
 const GROUP_CALL_PARTICIPANTS_PREFIX = "ws:groupCallParticipants:";
 const GROUP_CALL_PARTICIPANT_DEVICES_PREFIX = "ws:groupCallParticipantDevices:";
 const GROUP_CALL_PARTICIPANT_DEVICE_USERS_PREFIX = "ws:groupCallParticipantDeviceUsers:";
-const GROUP_CALL_PARTICIPANTS_TTL_SECONDS = 60 * 60;
+/** How long a device presence entry survives without a heartbeat refresh. */
+export const GROUP_CALL_PARTICIPANTS_TTL_SECONDS = 60;
 
 function getParticipantsKey(callId: string): string {
   return `${GROUP_CALL_PARTICIPANTS_PREFIX}${callId}`;
@@ -162,6 +163,22 @@ export async function listGroupCallParticipantDeviceUsers(
   }
 
   return entries;
+}
+
+/**
+ * Heartbeat: confirm the device is still active and refresh the presence TTL.
+ * Returns false if the device is no longer in the roster (stale heartbeat).
+ */
+export async function refreshGroupCallParticipant(
+  callId: string,
+  deviceId: string
+): Promise<boolean> {
+  const isMember = await redis.sismember(getParticipantDevicesKey(callId), deviceId);
+  if (isMember !== 1) {
+    return false;
+  }
+  await touchParticipantKeys(callId);
+  return true;
 }
 
 export async function clearGroupCallParticipants(callId: string): Promise<void> {

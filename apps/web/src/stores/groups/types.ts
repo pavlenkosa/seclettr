@@ -5,6 +5,7 @@ export interface GroupSummaryDto {
   groupId: string;
   name: string;
   createdAt: string;
+  cryptoEpoch?: number;
 }
 
 export interface GroupDetailsDto extends GroupSummaryDto {
@@ -12,8 +13,9 @@ export interface GroupDetailsDto extends GroupSummaryDto {
   memberDeviceLabels?: Record<string, string>;
 }
 
-export interface GroupHistoryMessageEnvelope extends Omit<GroupHistoryMessage, "aeadVersion"> {
+export interface GroupHistoryMessageEnvelope extends Omit<GroupHistoryMessage, "aeadVersion" | "cryptoEpoch"> {
   aeadVersion: 0 | 1;
+  cryptoEpoch: number;
 }
 
 export interface GroupMember {
@@ -47,6 +49,7 @@ export interface GroupChat {
   groupId: string;
   name: string;
   createdAt: string;
+  cryptoEpoch: number;
   members: GroupMember[];
   memberDeviceLabels: Record<string, string>;
   messages: GroupChatMessage[];

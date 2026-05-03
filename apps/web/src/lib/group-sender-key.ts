@@ -65,6 +65,19 @@ export interface GroupHistoryReplayContext {
   stateByStorageKey: Map<string, SenderKeyState>;
 }
 
+export type GroupDecryptFailureReason =
+  | "missing_sender_key"
+  | "decrypt_failed"
+  | "invalid_payload";
+
+export type GroupAttachmentDecryptResult =
+  | { ok: true; attachment: PlaintextAttachmentMessage }
+  | { ok: false; reason: GroupDecryptFailureReason };
+
+export type GroupTextDecryptResult =
+  | { ok: true; content: GroupTextContent }
+  | { ok: false; reason: GroupDecryptFailureReason };
+
 function localSenderKeyStorageKey(groupId: string, senderDeviceId: string): string {
   return `${LOCAL_SENDER_KEY_PREFIX}${groupId}:${senderDeviceId}`;
 }
@@ -535,17 +548,17 @@ function parseGroupAttachmentPayload(plaintext: Uint8Array): PlaintextAttachment
   }
 }
 
-export async function decryptGroupAttachmentEnvelope(
+export async function decryptGroupAttachmentEnvelopeResult(
   storageKey: CryptoKey,
   envelope: GroupCipherEnvelope
-): Promise<PlaintextAttachmentMessage | null> {
+): Promise<GroupAttachmentDecryptResult> {
   const key = remoteSenderKeyStorageKey(
     envelope.groupId,
     envelope.senderDeviceId,
     envelope.distributionId
   );
   const stored = await loadDecrypted<StoredRemoteSenderKey>(storageKey, key);
-  if (!stored) return null;
+  if (!stored) return { ok: false, reason: "missing_sender_key" };
 
   try {
     const state = deserializeRemoteState(stored);
@@ -564,10 +577,21 @@ export async function decryptGroupAttachmentEnvelope(
       envelope.distributionId,
       newState
     );
-    return parseGroupAttachmentPayload(plaintext);
+    const attachment = parseGroupAttachmentPayload(plaintext);
+    return attachment
+      ? { ok: true, attachment }
+      : { ok: false, reason: "invalid_payload" };
   } catch {
-    return null;
+    return { ok: false, reason: "decrypt_failed" };
   }
+}
+
+export async function decryptGroupAttachmentEnvelope(
+  storageKey: CryptoKey,
+  envelope: GroupCipherEnvelope
+): Promise<PlaintextAttachmentMessage | null> {
+  const result = await decryptGroupAttachmentEnvelopeResult(storageKey, envelope);
+  return result.ok ? result.attachment : null;
 }
 
 function parseGroupTextPayload(plaintext: Uint8Array): GroupTextContent | null {
@@ -593,17 +617,17 @@ function parseGroupTextPayload(plaintext: Uint8Array): GroupTextContent | null {
   }
 }
 
-export async function decryptGroupTextEnvelope(
+export async function decryptGroupTextEnvelopeResult(
   storageKey: CryptoKey,
   envelope: GroupCipherEnvelope
-): Promise<GroupTextContent | null> {
+): Promise<GroupTextDecryptResult> {
   const key = remoteSenderKeyStorageKey(
     envelope.groupId,
     envelope.senderDeviceId,
     envelope.distributionId
   );
   const stored = await loadDecrypted<StoredRemoteSenderKey>(storageKey, key);
-  if (!stored) return null;
+  if (!stored) return { ok: false, reason: "missing_sender_key" };
 
   try {
     const state = deserializeRemoteState(stored);
@@ -622,10 +646,21 @@ export async function decryptGroupTextEnvelope(
       envelope.distributionId,
       newState
     );
-    return parseGroupTextPayload(plaintext);
+    const content = parseGroupTextPayload(plaintext);
+    return content
+      ? { ok: true, content }
+      : { ok: false, reason: "invalid_payload" };
   } catch {
-    return null;
+    return { ok: false, reason: "decrypt_failed" };
   }
+}
+
+export async function decryptGroupTextEnvelope(
+  storageKey: CryptoKey,
+  envelope: GroupCipherEnvelope
+): Promise<GroupTextContent | null> {
+  const result = await decryptGroupTextEnvelopeResult(storageKey, envelope);
+  return result.ok ? result.content : null;
 }
 
 async function decryptGroupTextWithState(
@@ -658,6 +693,19 @@ export async function decryptGroupTextEnvelopeForHistory(
   envelope: GroupCipherEnvelope,
   replay: GroupHistoryReplayContext
 ): Promise<GroupTextContent | null> {
+  const result = await decryptGroupTextEnvelopeForHistoryResult(
+    storageKey,
+    envelope,
+    replay
+  );
+  return result.ok ? result.content : null;
+}
+
+export async function decryptGroupTextEnvelopeForHistoryResult(
+  storageKey: CryptoKey,
+  envelope: GroupCipherEnvelope,
+  replay: GroupHistoryReplayContext
+): Promise<GroupTextDecryptResult> {
   const key = remoteSenderKeyStorageKey(
     envelope.groupId,
     envelope.senderDeviceId,
@@ -667,7 +715,7 @@ export async function decryptGroupTextEnvelopeForHistory(
   let state = cachedState;
   if (!state) {
     const stored = await loadDecrypted<StoredRemoteSenderKey>(storageKey, key);
-    if (!stored) return null;
+    if (!stored) return { ok: false, reason: "missing_sender_key" };
     state = stored.initialState
       ? deserializeStoredRemoteState(stored.initialState)
       : deserializeRemoteState(stored);
@@ -677,7 +725,11 @@ export async function decryptGroupTextEnvelopeForHistory(
   if (newState) {
     replay.stateByStorageKey.set(key, newState);
   }
-  return content;
+  if (content) return { ok: true, content };
+  return {
+    ok: false,
+    reason: newState ? "invalid_payload" : "decrypt_failed",
+  };
 }
 
 export async function flushGroupHistoryReplayContext(

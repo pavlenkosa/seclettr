@@ -6,9 +6,9 @@ import {
 } from "@/lib/group-message-codec";
 import {
   buildSenderKeyDistributionPayload,
-  decryptGroupAttachmentEnvelope,
-  decryptGroupTextEnvelope,
-  decryptGroupTextEnvelopeForHistory,
+  decryptGroupAttachmentEnvelopeResult,
+  decryptGroupTextEnvelopeForHistoryResult,
+  decryptGroupTextEnvelopeResult,
   ensureLocalSenderKeyRecord,
   ensureLocalSenderKeyRecordForMemberDevices,
   markSenderKeyDistributedToDevices,
@@ -24,6 +24,7 @@ import {
   GroupResponseSchema,
   safeParseVersionedWire,
   type GroupHistoryMessage,
+  type PlaintextAttachmentMessage,
 } from "@seclettr/protocol";
 import type {
   GroupMember,
@@ -48,6 +49,19 @@ type SendGroupSenderKeyDistribution = (
 
 export const GROUP_UNKNOWN_SENDER_LABEL = "Participant";
 const GROUP_LABEL_REFRESH_IN_FLIGHT = new Set<string>();
+
+export type GroupMessageMappingResult =
+  | { kind: "message"; message: GroupChatMessage }
+  | {
+      kind: "pending";
+      reason: "missing_sender_key";
+      fallbackMessage: GroupChatMessage;
+    };
+
+type GroupTextDecodeResult =
+  | { kind: "decoded"; content: GroupTextContent }
+  | { kind: "pending"; reason: "missing_sender_key" }
+  | { kind: "failed" };
 
 export function formatUnknownGroupName(groupId: string): string {
   return `Group ${groupId.slice(0, 8)}`;
@@ -93,6 +107,7 @@ export function canonicalizeGroupHistoryEnvelope(
   return {
     ...row,
     aeadVersion: row.aeadVersion === 1 ? 1 : 0,
+    cryptoEpoch: row.cryptoEpoch ?? 1,
   };
 }
 
@@ -101,7 +116,7 @@ async function decodeGroupTextContent(
   groupId: string,
   envelope: GroupHistoryMessageEnvelope,
   historyReplay?: GroupHistoryReplayContext
-): Promise<GroupTextContent | null> {
+): Promise<GroupTextDecodeResult> {
   if (storageKey) {
     const cipherEnvelope = {
       groupId,
@@ -114,16 +129,24 @@ async function decodeGroupTextContent(
       aeadVersion: envelope.aeadVersion,
     };
     const decrypted = historyReplay
-      ? await decryptGroupTextEnvelopeForHistory(
+      ? await decryptGroupTextEnvelopeForHistoryResult(
           storageKey,
           cipherEnvelope,
           historyReplay
         )
-      : await decryptGroupTextEnvelope(storageKey, cipherEnvelope);
-    if (decrypted !== null) return decrypted;
+      : await decryptGroupTextEnvelopeResult(storageKey, cipherEnvelope);
+    if (decrypted.ok) return { kind: "decoded", content: decrypted.content };
+
+    const legacy = decodeGroupTextCiphertext(envelope.ciphertext);
+    if (legacy) return { kind: "decoded", content: legacy };
+    if (decrypted.reason === "missing_sender_key") {
+      return { kind: "pending", reason: "missing_sender_key" };
+    }
+    return { kind: "failed" };
   }
 
-  return decodeGroupTextCiphertext(envelope.ciphertext);
+  const legacy = decodeGroupTextCiphertext(envelope.ciphertext);
+  return legacy ? { kind: "decoded", content: legacy } : { kind: "failed" };
 }
 
 function toCipherEnvelope(
@@ -185,7 +208,7 @@ function unreadableGroupMessage(
 function attachmentGroupMessage(
   envelope: GroupHistoryMessageEnvelope,
   context: GroupMessageContext,
-  attachmentPayload: NonNullable<Awaited<ReturnType<typeof decryptGroupAttachmentEnvelope>>>
+  attachmentPayload: PlaintextAttachmentMessage
 ): GroupChatMessage {
   return {
     id: envelope.id,
@@ -217,20 +240,28 @@ async function toGroupAttachmentMessage(
   envelope: GroupHistoryMessageEnvelope,
   context: GroupMessageContext,
   storageKey: CryptoKey | null
-): Promise<GroupChatMessage> {
+): Promise<GroupMessageMappingResult> {
   if (!storageKey) {
-    // No storageKey — key unavailable, message is unreadable but not a crypto failure.
-    return unreadableGroupMessage(envelope, context);
+    // No storageKey - key unavailable, message is unreadable but not a crypto failure.
+    return { kind: "message", message: unreadableGroupMessage(envelope, context) };
   }
 
-  const attachmentPayload = await decryptGroupAttachmentEnvelope(
+  const decrypted = await decryptGroupAttachmentEnvelopeResult(
     storageKey,
     toCipherEnvelope(groupId, envelope)
   );
 
-  return attachmentPayload
-    ? attachmentGroupMessage(envelope, context, attachmentPayload)
-    : unreadableGroupMessage(envelope, context, "error");
+  if (decrypted.ok) {
+    return {
+      kind: "message",
+      message: attachmentGroupMessage(envelope, context, decrypted.attachment),
+    };
+  }
+
+  const fallbackMessage = unreadableGroupMessage(envelope, context, "error");
+  return decrypted.reason === "missing_sender_key"
+    ? { kind: "pending", reason: "missing_sender_key", fallbackMessage }
+    : { kind: "message", message: fallbackMessage };
 }
 
 async function toGroupTextMessage(
@@ -239,37 +270,49 @@ async function toGroupTextMessage(
   context: GroupMessageContext,
   storageKey: CryptoKey | null,
   historyReplay?: GroupHistoryReplayContext
-): Promise<GroupChatMessage> {
+): Promise<GroupMessageMappingResult> {
   const decoded = await decodeGroupTextContent(
     storageKey,
     groupId,
     envelope,
     historyReplay
   );
-  const decryptFailed = decoded === null;
-  return {
+  if (decoded.kind === "pending") {
+    return {
+      kind: "pending",
+      reason: decoded.reason,
+      fallbackMessage: unreadableGroupMessage(envelope, context, "error"),
+    };
+  }
+  const decryptFailed = decoded.kind === "failed";
+  const message: GroupChatMessage = {
     id: envelope.id,
     senderDeviceId: envelope.senderDeviceId,
     senderLabel: context.senderLabel,
-    content: decoded?.text ?? GROUP_MESSAGE_UNREADABLE,
-    replyTo: decoded?.replyToId
-      ? { id: decoded.replyToId, content: decoded.replySnippet ?? "" }
+    content:
+      decoded.kind === "decoded" ? decoded.content.text : GROUP_MESSAGE_UNREADABLE,
+    replyTo: decoded.kind === "decoded" && decoded.content.replyToId
+      ? {
+          id: decoded.content.replyToId,
+          content: decoded.content.replySnippet ?? "",
+        }
       : undefined,
     timestamp: context.timestamp,
     status: decryptFailed ? "error" : deliveredGroupMessageStatus(context.isOwn),
     isOwn: context.isOwn,
     rawType: envelope.messageType,
   };
+  return { kind: "message", message };
 }
 
-export async function toGroupMessage(
+export async function toGroupMessageResult(
   groupId: string,
   envelope: GroupHistoryMessageEnvelope,
   myDeviceId: string | null,
   storageKey: CryptoKey | null,
   memberDeviceLabels?: Record<string, string>,
   historyReplay?: GroupHistoryReplayContext
-): Promise<GroupChatMessage | null> {
+): Promise<GroupMessageMappingResult | null> {
   const context = buildGroupMessageContext(envelope, myDeviceId, memberDeviceLabels);
 
   if (envelope.messageType === "attachment") {
@@ -277,7 +320,7 @@ export async function toGroupMessage(
   }
 
   if (envelope.messageType !== "text") {
-    return unreadableGroupMessage(envelope, context);
+    return { kind: "message", message: unreadableGroupMessage(envelope, context) };
   }
 
   return toGroupTextMessage(groupId, envelope, context, storageKey, historyReplay);
@@ -440,6 +483,7 @@ export function toGroupChat(
       formatUnknownGroupName(detail.groupId)
     ),
     createdAt: detail.createdAt,
+    cryptoEpoch: detail.cryptoEpoch ?? existing?.cryptoEpoch ?? 1,
     members: safeMembers,
     memberDeviceLabels,
     messages,

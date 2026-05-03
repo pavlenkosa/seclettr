@@ -147,6 +147,7 @@ export async function groupRoutes(fastify: FastifyInstance): Promise<void> {
           groupId,
           name: body.name,
           createdAt: new Date().toISOString(),
+          cryptoEpoch: 1,
           members: memberDetails.rows.map((member) => ({
             userId: member.user_id,
             username: member.username,
@@ -193,8 +194,13 @@ export async function groupRoutes(fastify: FastifyInstance): Promise<void> {
         }
       }
 
-      const groups = await query<{ id: string; name: string; created_at: string }>(
-        `SELECT g.id, g.name, g.created_at
+      const groups = await query<{
+        id: string;
+        name: string;
+        created_at: string;
+        crypto_epoch: number;
+      }>(
+        `SELECT g.id, g.name, g.created_at, g.crypto_epoch
          FROM groups g
          INNER JOIN group_members gm ON gm.group_id = g.id
          WHERE gm.user_id = $1
@@ -213,7 +219,12 @@ export async function groupRoutes(fastify: FastifyInstance): Promise<void> {
 
       return GroupListResponseSchema.parse({
         version: GROUPS_PROTOCOL_VERSION,
-        groups: page.map(g => ({ groupId: g.id, name: g.name, createdAt: new Date(g.created_at).toISOString() })),
+        groups: page.map(g => ({
+          groupId: g.id,
+          name: g.name,
+          createdAt: new Date(g.created_at).toISOString(),
+          cryptoEpoch: g.crypto_epoch,
+        })),
         nextCursor,
       });
     }
@@ -231,8 +242,13 @@ export async function groupRoutes(fastify: FastifyInstance): Promise<void> {
         return reply.code(403).send({ error: "Not a group member" });
       }
 
-      const groups = await query<{ id: string; name: string; created_at: string }>(
-        "SELECT id, name, created_at FROM groups WHERE id = $1",
+      const groups = await query<{
+        id: string;
+        name: string;
+        created_at: string;
+        crypto_epoch: number;
+      }>(
+        "SELECT id, name, created_at, crypto_epoch FROM groups WHERE id = $1",
         [groupId]
       );
       if (groups.length === 0) return reply.code(404).send({ error: "Group not found" });
@@ -251,6 +267,7 @@ export async function groupRoutes(fastify: FastifyInstance): Promise<void> {
         groupId: group.id,
         name: group.name,
         createdAt: new Date(group.created_at).toISOString(),
+        cryptoEpoch: group.crypto_epoch,
         members: members.map(m => ({
           userId: m.user_id,
           username: m.username,
@@ -452,21 +469,32 @@ export async function groupRoutes(fastify: FastifyInstance): Promise<void> {
         );
       }
 
+      let cryptoEpoch: number | undefined;
       if (trulyNewUserIds.length > 0) {
+        const epochRows = await query<{ crypto_epoch: number }>(
+          `UPDATE groups
+           SET crypto_epoch = crypto_epoch + 1
+           WHERE id = $1
+           RETURNING crypto_epoch`,
+          [groupId]
+        );
+        cryptoEpoch = epochRows[0]?.crypto_epoch;
         const addedAt = new Date().toISOString();
-        const newMemberDevices = await query<{ id: string }>(
+        const activeMemberDevices = await query<{ id: string }>(
           `SELECT d.id
            FROM devices d
-           WHERE d.user_id = ANY($1::uuid[])`,
-          [trulyNewUserIds]
+           INNER JOIN group_members gm ON gm.user_id = d.user_id
+           WHERE gm.group_id = $1 AND gm.removed_at IS NULL`,
+          [groupId]
         );
         await Promise.all(
-          newMemberDevices.map((device) =>
+          activeMemberDevices.map((device) =>
             publishMessage({
               type: "group.member_added",
               groupId,
               addedByUserId: userId,
               addedAt,
+              cryptoEpoch,
               recipientDeviceId: device.id,
             })
           )
@@ -484,6 +512,7 @@ export async function groupRoutes(fastify: FastifyInstance): Promise<void> {
       return GroupMutationResponseSchema.parse({
         version: GROUPS_PROTOCOL_VERSION,
         ok: true,
+        cryptoEpoch,
       });
     }
   );
@@ -532,11 +561,55 @@ export async function groupRoutes(fastify: FastifyInstance): Promise<void> {
         }
       }
 
-      await query(
-        `UPDATE group_members
-         SET removed_at = now()
-         WHERE group_id = $1 AND user_id = $2 AND removed_at IS NULL`,
-        [groupId, memberUserId]
+      const removedAt = new Date().toISOString();
+      const removal = await transaction(async (client) => {
+        await client.query(
+          `UPDATE group_members
+           SET removed_at = now()
+           WHERE group_id = $1 AND user_id = $2 AND removed_at IS NULL`,
+          [groupId, memberUserId]
+        );
+        const epochRows = await client.query<{ crypto_epoch: number }>(
+          `UPDATE groups
+           SET crypto_epoch = crypto_epoch + 1
+           WHERE id = $1
+           RETURNING crypto_epoch`,
+          [groupId]
+        );
+        const remainingDevices = await client.query<{ id: string }>(
+          `SELECT d.id
+           FROM devices d
+           INNER JOIN group_members gm ON gm.user_id = d.user_id
+           WHERE gm.group_id = $1 AND gm.removed_at IS NULL`,
+          [groupId]
+        );
+        const removedDevices = await client.query<{ id: string }>(
+          `SELECT id FROM devices WHERE user_id = $1`,
+          [memberUserId]
+        );
+        return {
+          cryptoEpoch: epochRows.rows[0]!.crypto_epoch,
+          recipientDeviceIds: [
+            ...new Set([
+              ...remainingDevices.rows.map((device) => device.id),
+              ...removedDevices.rows.map((device) => device.id),
+            ]),
+          ],
+        };
+      });
+
+      await Promise.all(
+        removal.recipientDeviceIds.map((recipientDeviceId) =>
+          publishMessage({
+            type: "group.member_removed",
+            groupId,
+            removedUserId: memberUserId,
+            removedByUserId: userId,
+            removedAt,
+            cryptoEpoch: removal.cryptoEpoch,
+            recipientDeviceId,
+          })
+        )
       );
 
       void appendAuditEvent({
@@ -551,6 +624,7 @@ export async function groupRoutes(fastify: FastifyInstance): Promise<void> {
       return GroupMutationResponseSchema.parse({
         version: GROUPS_PROTOCOL_VERSION,
         ok: true,
+        cryptoEpoch: removal.cryptoEpoch,
       });
     }
   );

@@ -31,6 +31,7 @@ import {
   listGroupCallParticipantDevices,
   listGroupCallParticipantDeviceUsers,
   listGroupCallParticipants,
+  refreshGroupCallParticipant,
   removeGroupCallParticipant,
 } from "../../services/group-call-presence.js";
 
@@ -1162,6 +1163,35 @@ export async function callRoutes(fastify: FastifyInstance): Promise<void> {
       }
 
       await endGroupCallIfRosterEmpty(call, userId);
+
+      return { ok: true };
+    }
+  );
+
+  fastify.put<{ Params: { callId: string } }>(
+    "/:callId/participants/me",
+    { preHandler: callPreHandlers },
+    async (request, reply) => {
+      const { callId } = request.params;
+      const { sub: userId, deviceId } = request.auth;
+
+      const call = await getActiveCallSession(callId);
+      if (!call) {
+        return reply.code(404).send({ error: "Call not found" });
+      }
+      if (!call.group_id) {
+        return reply.code(400).send({
+          error: "Participant roster is only available for group calls",
+        });
+      }
+      if (!(await hasActiveGroupMembership(call.group_id, userId))) {
+        return reply.code(403).send({ error: "Forbidden" });
+      }
+
+      const refreshed = await refreshGroupCallParticipant(callId, deviceId);
+      if (!refreshed) {
+        return reply.code(404).send({ error: "Participant not found" });
+      }
 
       return { ok: true };
     }

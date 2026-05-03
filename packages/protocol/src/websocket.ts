@@ -187,6 +187,7 @@ export const WsServerMessageSchema = z.discriminatedUnion("type", [
     groupId: z.string().uuid(),
     senderDeviceId: z.string().uuid(),
     distributionId: z.string().uuid(),
+    cryptoEpoch: z.number().int().min(1).max(1_000_000),
     chainId: z.number().int(),
     messageId: z.number().int(),
     ciphertext: z.string(),
@@ -373,6 +374,15 @@ export const WsServerMessageSchema = z.discriminatedUnion("type", [
     groupId: z.string().uuid(),
     addedByUserId: z.string().uuid(),
     addedAt: z.string().datetime(),
+    cryptoEpoch: z.number().int().min(1).max(1_000_000).optional(),
+  }),
+  wsEnvelope({
+    type: z.literal("group.member_removed"),
+    groupId: z.string().uuid(),
+    removedUserId: z.string().uuid(),
+    removedByUserId: z.string().uuid(),
+    removedAt: z.string().datetime(),
+    cryptoEpoch: z.number().int().min(1).max(1_000_000),
   }),
   wsEnvelope({
     type: z.literal("message.delivered"),

@@ -228,7 +228,7 @@ function createLifecycleContext() {
       },
     },
     pendingIceCandidatesRef: {
-      current: [{ candidate: "candidate:active", sdpMid: "0" }],
+      current: new Map([["call-1", [{ candidate: "candidate:active", sdpMid: "0" }]]]),
     },
     incomingIceCandidatesRef: {
       current: new Map([["call-1", [{ candidate: "candidate:incoming", sdpMid: "1" }]]]),
@@ -340,7 +340,7 @@ describe("useDirectCallSessionLifecycle", () => {
     expect(context.acceptingState.current).toBeNull();
     expect(context.minimizedState.current).toBe(false);
     expect(context.options.peerConnectionRef.current).toBeNull();
-    expect(context.options.pendingIceCandidatesRef.current).toEqual([]);
+    expect(context.options.pendingIceCandidatesRef.current.size).toBe(0);
     expect(context.options.incomingIceCandidatesRef.current.size).toBe(0);
     expect(context.options.outboundMediaEncryptionOfferRef.current).toBeNull();
     expect(context.options.negotiationReadyRef.current).toBe(false);
@@ -368,7 +368,7 @@ describe("useDirectCallSessionLifecycle", () => {
     const secondIncoming = createIncomingCall();
     context.incomingState.current = secondIncoming;
     context.options.incomingRef.current = secondIncoming;
-    context.options.pendingIceCandidatesRef.current = [{ candidate: "candidate:second", sdpMid: "2" }];
+    context.options.pendingIceCandidatesRef.current = new Map([["call-2", [{ candidate: "candidate:second", sdpMid: "2" }]]]);
     context.options.incomingIceCandidatesRef.current.set("call-2", [{ candidate: "candidate:second-incoming", sdpMid: "3" }]);
 
     await act(async () => {
@@ -383,7 +383,7 @@ describe("useDirectCallSessionLifecycle", () => {
     expect(sessionLifecycleMocks.directRejectCall).toHaveBeenCalledWith("call-2");
     expect(context.incomingState.current).toBeNull();
     expect(context.options.incomingRef.current).toBeNull();
-    expect(context.options.pendingIceCandidatesRef.current).toEqual([]);
+    expect(context.options.pendingIceCandidatesRef.current.size).toBe(0);
     expect(context.options.incomingIceCandidatesRef.current.size).toBe(0);
     expect(context.options.directCallLifecycleTokenRef.current).toBe(5);
     expect(context.pushNotice).toHaveBeenNthCalledWith(2, {

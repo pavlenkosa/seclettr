@@ -83,7 +83,7 @@ export interface UseDirectCallSessionLifecycleOptions {
   pushNotice: PushNotice;
   t: Translate;
   outboundMediaEncryptionOfferRef: MutableRefObject<DirectCallMediaEncryptionOffer | null>;
-  pendingIceCandidatesRef: MutableRefObject<RTCIceCandidateInit[]>;
+  pendingIceCandidatesRef: MutableRefObject<Map<string, RTCIceCandidateInit[]>>;
   incomingIceCandidatesRef: MutableRefObject<Map<string, RTCIceCandidateInit[]>>;
   frameModeRecoveryTimerRef: MutableRefObject<number | null>;
   frameModeRecoveryAttemptedCallIdRef: MutableRefObject<string | null>;

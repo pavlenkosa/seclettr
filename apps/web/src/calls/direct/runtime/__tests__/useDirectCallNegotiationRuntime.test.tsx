@@ -134,7 +134,7 @@ function HookHarness(props: {
     preferredMode: "transport" | "frame-v1";
     supportedModes: ("transport" | "frame-v1")[];
   } | null>;
-  pendingIceCandidatesRef: MutableRefObject<RTCIceCandidateInit[]>;
+  pendingIceCandidatesRef: MutableRefObject<Map<string, RTCIceCandidateInit[]>>;
   setActive: (next: ActiveCall | null | ((prev: ActiveCall | null) => ActiveCall | null)) => void;
   callSecurityMode: "compatibility" | "balanced" | "strict";
   debugCallMedia: (event: string, payload: Record<string, unknown>) => void;
@@ -283,7 +283,7 @@ describe("useDirectCallNegotiationRuntime handleRemoteAnswer", () => {
               supportedModes: ["frame-v1", "transport"],
             },
           }}
-          pendingIceCandidatesRef={{ current: [] }}
+          pendingIceCandidatesRef={{ current: new Map() }}
           setActive={vi.fn()}
           callSecurityMode="balanced"
           debugCallMedia={debugCallMedia}
@@ -375,7 +375,7 @@ describe("useDirectCallNegotiationRuntime handleRemoteAnswer", () => {
               supportedModes: ["frame-v1", "transport"],
             },
           }}
-          pendingIceCandidatesRef={{ current: [] }}
+          pendingIceCandidatesRef={{ current: new Map() }}
           setActive={vi.fn()}
           callSecurityMode="balanced"
           debugCallMedia={vi.fn()}
@@ -479,7 +479,7 @@ describe("useDirectCallNegotiationRuntime handleRemoteAnswer", () => {
             supportedModes: ["frame-v1", "transport"],
           },
           }}
-          pendingIceCandidatesRef={{ current: [] }}
+          pendingIceCandidatesRef={{ current: new Map() }}
           setActive={setActive}
           callSecurityMode="balanced"
           debugCallMedia={vi.fn()}
@@ -584,7 +584,7 @@ describe("useDirectCallNegotiationRuntime handleRemoteAnswer", () => {
               supportedModes: ["frame-v1", "transport"],
             },
           }}
-          pendingIceCandidatesRef={{ current: [] }}
+          pendingIceCandidatesRef={{ current: new Map() }}
           setActive={setActive}
           callSecurityMode="strict"
           debugCallMedia={vi.fn()}
@@ -680,7 +680,7 @@ describe("useDirectCallNegotiationRuntime handleRemoteAnswer", () => {
               supportedModes: ["frame-v1", "transport"],
             },
           }}
-          pendingIceCandidatesRef={{ current: [] }}
+          pendingIceCandidatesRef={{ current: new Map() }}
           setActive={vi.fn()}
           callSecurityMode="balanced"
           debugCallMedia={vi.fn()}
@@ -774,7 +774,7 @@ describe("useDirectCallNegotiationRuntime handleRemoteAnswer", () => {
               supportedModes: ["frame-v1", "transport"],
             },
           }}
-          pendingIceCandidatesRef={{ current: [] }}
+          pendingIceCandidatesRef={{ current: new Map() }}
           setActive={vi.fn()}
           callSecurityMode="balanced"
           debugCallMedia={debugCallMedia}
@@ -887,7 +887,7 @@ describe("useDirectCallNegotiationRuntime handleRemoteAnswer", () => {
               supportedModes: ["frame-v1", "transport"],
             },
           }}
-          pendingIceCandidatesRef={{ current: [] }}
+          pendingIceCandidatesRef={{ current: new Map() }}
           setActive={vi.fn()}
           callSecurityMode="balanced"
           debugCallMedia={vi.fn()}

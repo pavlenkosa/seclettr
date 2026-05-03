@@ -103,7 +103,7 @@ export function useDirectCallControllerState() {
   const acceptingIncomingCallRef = useRef<IncomingCall | null>(null);
   const activeRef = useRef<ActiveCall | null>(null);
   const outboundMediaEncryptionOfferRef = useRef<import("@/calls/direct/model/call-media-encryption-negotiation").DirectCallMediaEncryptionOffer | null>(null);
-  const pendingIceCandidatesRef = useRef<RTCIceCandidateInit[]>([]);
+  const pendingIceCandidatesRef = useRef<Map<string, RTCIceCandidateInit[]>>(new Map());
   const incomingIceCandidatesRef = useRef<Map<string, RTCIceCandidateInit[]>>(new Map());
   const outgoingIceBatchRef = useRef<DirectCallOutgoingIceBatchState>({
     callId: null,

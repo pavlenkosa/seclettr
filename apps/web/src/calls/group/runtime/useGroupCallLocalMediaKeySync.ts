@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import {
   createGroupCallMediaKeyDeliveryTracker,
 } from "@/calls/group/runtime/group-call/media-key-delivery";
+import { createSessionStorageDeliveryStore } from "@/calls/group/runtime/group-call/media-key-delivery-store";
 import { GROUP_CALL_MEDIA_KEY_ROTATION_INTERVAL_MS } from "@/calls/group/runtime/group-call/media-key-rotation";
 import {
   shouldArmLocalGroupCallFrameEncryption,
@@ -226,6 +227,7 @@ export function useGroupCallLocalMediaKeySync({
       onDeliveryExhausted: (payload) => {
         markMediaKeyDeliveryExhausted(payload.targetDeviceId, payload.keyId);
       },
+      deliveredStore: createSessionStorageDeliveryStore(callId, deviceId),
     });
 
     mediaKeyDeliveryTrackerRef.current = tracker;

@@ -167,6 +167,9 @@ describe("useMessagesStore.sendVoiceNote", () => {
           fields: { key: "value" },
         };
       }
+      if (path === "/attachments/11111111-1111-4111-8111-111111111111/complete") {
+        return {};
+      }
       if (path === "/users/user-peer/direct-relationship") {
         return {};
       }
@@ -196,9 +199,13 @@ describe("useMessagesStore.sendVoiceNote", () => {
     expect(directUploadFetchMock).toHaveBeenCalledTimes(1);
     expect(apiUploadMock).not.toHaveBeenCalled();
 
-    expect(apiPostMock).toHaveBeenCalledTimes(2);
+    expect(apiPostMock).toHaveBeenCalledTimes(3);
     expect(apiPostMock).toHaveBeenNthCalledWith(
       2,
+      "/attachments/11111111-1111-4111-8111-111111111111/complete"
+    );
+    expect(apiPostMock).toHaveBeenNthCalledWith(
+      3,
       "/messages",
       expect.objectContaining({
         recipientUserId: "user-peer",
@@ -239,9 +246,13 @@ describe("useMessagesStore.sendVoiceNote", () => {
     expect(directUploadFetchMock).toHaveBeenCalledTimes(1);
     expect(apiUploadMock).not.toHaveBeenCalled();
 
-    expect(apiPostMock).toHaveBeenCalledTimes(2);
+    expect(apiPostMock).toHaveBeenCalledTimes(3);
     expect(apiPostMock).toHaveBeenNthCalledWith(
       2,
+      "/attachments/11111111-1111-4111-8111-111111111111/complete"
+    );
+    expect(apiPostMock).toHaveBeenNthCalledWith(
+      3,
       "/messages",
       expect.objectContaining({
         recipientUserId: "user-peer",

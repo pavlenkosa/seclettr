@@ -115,6 +115,7 @@ function createGroup(): GroupChat {
     groupId: "group-1",
     name: "Team room",
     createdAt: "0",
+    cryptoEpoch: 1,
     members: [
       {
         userId: "me",

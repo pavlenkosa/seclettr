@@ -15,8 +15,8 @@ export type GroupMemberRole = z.infer<typeof GroupMemberRoleSchema>;
 export const CreateGroupRequestSchema = versionedWireObject(
   GROUPS_PROTOCOL_VERSION,
   {
-  name: z.string().min(1).max(128),
-  memberUserIds: z.array(z.string().uuid()).min(1).max(255),
+    name: z.string().min(1).max(128),
+    memberUserIds: z.array(z.string().uuid()).min(1).max(255),
   }
 );
 export type CreateGroupRequestWire = z.infer<typeof CreateGroupRequestSchema>;
@@ -26,6 +26,7 @@ export const GroupSchema = wireObject({
   groupId: z.string().uuid(),
   name: z.string(),
   createdAt: z.string().datetime(),
+  cryptoEpoch: z.number().int().min(1).max(1_000_000),
   members: z.array(
     wireObject({
       userId: z.string().uuid(),
@@ -71,6 +72,7 @@ export const GroupListResponseSchema = versionedWireObject(
         groupId: z.string().uuid(),
         name: z.string(),
         createdAt: z.string().datetime(),
+        cryptoEpoch: z.number().int().min(1).max(1_000_000),
       })
     ),
     /** Opaque cursor for the next page; absent when there are no more results. */
@@ -84,6 +86,7 @@ export const GroupResponseSchema = versionedWireObject(GROUPS_PROTOCOL_VERSION, 
   groupId: z.string().uuid(),
   name: z.string(),
   createdAt: z.string().datetime(),
+  cryptoEpoch: z.number().int().min(1).max(1_000_000),
   members: z.array(
     wireObject({
       userId: z.string().uuid(),
@@ -207,6 +210,7 @@ export const GroupHistoryMessageSchema = wireObject({
   id: z.string().uuid(),
   senderDeviceId: z.string().uuid(),
   distributionId: z.string().uuid(),
+  cryptoEpoch: z.number().int().min(1).max(1_000_000).optional().default(1),
   chainId: z.number().int().min(0),
   messageId: z.number().int().min(0),
   messageType: MessageTypeSchema,
@@ -231,6 +235,7 @@ export const GroupMutationResponseSchema = versionedWireObject(
   GROUPS_PROTOCOL_VERSION,
   {
     ok: z.literal(true),
+    cryptoEpoch: z.number().int().min(1).max(1_000_000).optional(),
   }
 );
 export type GroupMutationResponseWire = z.infer<

@@ -180,6 +180,7 @@ describe("createGroupsAdminRuntime", () => {
           groupId: "group-1",
           name: "Team room",
           createdAt: "2026-03-10T10:00:00.000Z",
+          cryptoEpoch: 1,
           members: [],
           memberDeviceLabels: {},
           messages: [],

@@ -108,6 +108,7 @@ function buildGroupMessagePayload(
   encryptedEnvelope: GroupCipherEnvelope,
   clientMessageId: string,
   type: "text" | "attachment",
+  cryptoEpoch: number,
   attachmentId?: string
 ): SendGroupMessageRequestWire {
   const payload: SendGroupMessageRequestWire = {
@@ -115,6 +116,7 @@ function buildGroupMessagePayload(
     clientMessageId,
     groupId: encryptedEnvelope.groupId,
     distributionId: encryptedEnvelope.distributionId,
+    cryptoEpoch,
     chainId: encryptedEnvelope.chainId,
     messageId: encryptedEnvelope.messageId,
     ciphertext: encryptedEnvelope.ciphertext,
@@ -341,7 +343,12 @@ export function createGroupsOutboundRuntime({
       content,
       reply
     );
-    return buildGroupMessagePayload(encryptedEnvelope, clientMessageId, "text");
+    return buildGroupMessagePayload(
+      encryptedEnvelope,
+      clientMessageId,
+      "text",
+      get().groups[groupId]?.cryptoEpoch ?? 1
+    );
   }
 
   function markLocalGroupMessageStatus(
@@ -597,6 +604,7 @@ export function createGroupsOutboundRuntime({
         encryptedEnvelope,
         clientMessageId,
         "attachment",
+        get().groups[groupId]?.cryptoEpoch ?? 1,
         uploadInit.attachmentId
       );
       const queueItem: GroupOutboundQueueItem = {

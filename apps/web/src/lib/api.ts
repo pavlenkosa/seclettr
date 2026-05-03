@@ -426,6 +426,12 @@ export const api = {
     });
   },
 
+  groupCallHeartbeat: (callId: string): Promise<void> => {
+    return request<unknown>(`/calls/${encodeURIComponent(callId)}/participants/me`, {
+      method: "PUT",
+    }).then(() => {});
+  },
+
   leaveGroupCallKeepalive: (callId: string): void => {
     sendBestEffortKeepalive(
       `/calls/${encodeURIComponent(callId)}/participants/me`,

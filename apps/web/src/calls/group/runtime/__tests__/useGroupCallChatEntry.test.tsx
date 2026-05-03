@@ -38,6 +38,7 @@ function createGroup(overrides?: Partial<GroupChat>): GroupChat {
     unreadCount: 0,
     historyLoaded: true,
     ...overrides,
+    cryptoEpoch: overrides?.cryptoEpoch ?? 1,
   };
 }
 

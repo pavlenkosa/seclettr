@@ -7,6 +7,7 @@ import { ratchetDecrypt, type RatchetState, type EncryptedMessage } from "@secle
 import { buildDirectMessageADv1 } from "./createMessagesOutboundRuntime";
 import { decodeDirectEnvelope } from "@/lib/direct-envelope";
 import { importSenderKeyDistribution } from "@/lib/group-sender-key";
+import { notifySenderKeyDistributionImported } from "@/lib/group-sender-key-events";
 import {
   getCachedUserLabel,
   primeUserLabelCache,
@@ -760,6 +761,11 @@ async function handleSenderKeyDistributionMessage(
 
   try {
     await importSenderKeyDistribution(storageKey, parsedDistribution.data);
+    notifySenderKeyDistributionImported({
+      groupId: parsedDistribution.data.groupId,
+      senderDeviceId: parsedDistribution.data.senderDeviceId,
+      distributionId: parsedDistribution.data.distributionId,
+    });
   } catch (distributionError) {
     await handleInboundFailure(
       {

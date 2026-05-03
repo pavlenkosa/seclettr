@@ -3861,6 +3861,7 @@ describe("Group chat contracts", () => {
   let ownerUserId = "";
   let memberUserId = "";
   let newMemberUserId = "";
+  let newMemberDeviceId = "";
   let lateJoinUserId = "";
   let groupId = "";
 
@@ -3879,6 +3880,7 @@ describe("Group chat contracts", () => {
     expect(newMember.status).toBe(201);
     newMemberToken = (newMember.body as { accessToken: string }).accessToken;
     newMemberUserId = (newMember.body as { userId: string }).userId;
+    newMemberDeviceId = (newMember.body as { deviceId: string }).deviceId;
 
     const lateJoin = await registerUser(`group_late_join_${Date.now()}`);
     expect(lateJoin.status).toBe(201);
@@ -3905,10 +3907,12 @@ describe("Group chat contracts", () => {
     expect(created.status).toBe(201);
     const createdBody = created.body as {
       groupId: string;
+      cryptoEpoch: number;
       members: Array<{ userId: string }>;
     };
     groupId = createdBody.groupId;
     expect(typeof groupId).toBe("string");
+    expect(createdBody.cryptoEpoch).toBe(1);
     expect(
       createdBody.members.some((member) => member.userId === ownerUserId)
     ).toBe(true);
@@ -3974,7 +3978,9 @@ describe("Group chat contracts", () => {
       ownerToken
     );
     expect(validAdd.status).toBe(200);
-    expect((validAdd.body as { ok?: boolean }).ok).toBe(true);
+    const validAddBody = validAdd.body as { ok?: boolean; cryptoEpoch?: number };
+    expect(validAddBody.ok).toBe(true);
+    expect(validAddBody.cryptoEpoch).toBeGreaterThan(1);
 
     const groupAfterAdd = await apiRequest(
       `/groups/${groupId}`,
@@ -3982,6 +3988,9 @@ describe("Group chat contracts", () => {
       ownerToken
     );
     expect(groupAfterAdd.status).toBe(200);
+    expect(
+      (groupAfterAdd.body as { cryptoEpoch?: number }).cryptoEpoch
+    ).toBe(validAddBody.cryptoEpoch);
     expect(
       (
         groupAfterAdd.body as { members: Array<{ userId: string }> }
@@ -4066,7 +4075,66 @@ describe("Group chat contracts", () => {
       memberToken
     );
     expect(removeByAdmin.status).toBe(200);
-    expect((removeByAdmin.body as { ok?: boolean }).ok).toBe(true);
+    const removeByAdminBody = removeByAdmin.body as {
+      ok?: boolean;
+      cryptoEpoch?: number;
+    };
+    expect(removeByAdminBody.ok).toBe(true);
+    expect(removeByAdminBody.cryptoEpoch).toBeGreaterThan(1);
+
+    const groupAfterRemove = await apiRequest(
+      `/groups/${groupId}`,
+      {},
+      ownerToken
+    );
+    expect(groupAfterRemove.status).toBe(200);
+    expect(
+      (groupAfterRemove.body as { cryptoEpoch?: number }).cryptoEpoch
+    ).toBe(removeByAdminBody.cryptoEpoch);
+
+    const memberDevicesAfterRemove = await apiRequest(
+      `/groups/${groupId}/member-devices`,
+      {},
+      ownerToken
+    );
+    expect(memberDevicesAfterRemove.status).toBe(200);
+    expect(
+      (
+        memberDevicesAfterRemove.body as {
+          members: Array<{
+            userId: string;
+            devices: Array<{ deviceId: string }>;
+          }>;
+        }
+      ).members.some(
+        (member) =>
+          member.userId === newMemberUserId ||
+          member.devices.some((device) => device.deviceId === newMemberDeviceId)
+      )
+    ).toBe(false);
+
+    const removedMemberSend = await apiRequest(
+      `/groups/${groupId}/messages`,
+      {
+        method: "POST",
+        body: JSON.stringify({
+          clientMessageId: crypto.randomUUID(),
+          groupId,
+          distributionId: crypto.randomUUID(),
+          cryptoEpoch: 1,
+          chainId: 0,
+          messageId: 1,
+          ciphertext: "AAAA",
+          signature: "BBBB",
+          type: "text",
+        }),
+      },
+      newMemberToken
+    );
+    expect(removedMemberSend.status).toBe(403);
+    expect((removedMemberSend.body as { error?: string }).error).toBe(
+      "Not a group member"
+    );
 
     const removedMemberView = await apiRequest(
       `/groups/${groupId}`,
@@ -4553,6 +4621,7 @@ describe("Group history contract", () => {
     const first = parsed.data!.messages[0]!;
     expect(typeof first.senderDeviceId).toBe("string");
     expect(typeof first.distributionId).toBe("string");
+    expect(first.cryptoEpoch).toBe(1);
     expect(first.messageType).toBe("text");
     expect(
       (history.body as { messages: Array<Record<string, unknown>> })
@@ -4562,6 +4631,32 @@ describe("Group history contract", () => {
       (history.body as { messages: Array<Record<string, unknown>> })
         .messages[0]?.["created_at"]
     ).toBeUndefined();
+  });
+
+  it("rejects group messages encrypted for a future crypto epoch", async () => {
+    const send = await apiRequest(
+      `/groups/${groupId}/messages`,
+      {
+        method: "POST",
+        body: JSON.stringify({
+          clientMessageId: crypto.randomUUID(),
+          groupId,
+          distributionId: crypto.randomUUID(),
+          cryptoEpoch: 2,
+          chainId: 0,
+          messageId: 1,
+          ciphertext: "AAAA",
+          signature: "BBBB",
+          type: "text",
+        }),
+      },
+      ownerToken
+    );
+
+    expect(send.status).toBe(409);
+    expect((send.body as { error?: string }).error).toBe(
+      "Group crypto epoch mismatch"
+    );
   });
 
   it("does not duplicate group realtime fan-out on idempotent resend", async () => {

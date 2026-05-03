@@ -8,6 +8,7 @@ const decodeDirectEnvelopeMock = vi.fn();
 const ratchetDecryptMock = vi.fn();
 const loadDecryptedMock = vi.fn();
 const importSenderKeyDistributionMock = vi.fn();
+const notifySenderKeyDistributionImportedMock = vi.fn();
 const postMessageAckMock = vi.fn();
 
 const mockAuthState = {
@@ -58,6 +59,10 @@ vi.mock("@/lib/user-labels", () => ({
 
 vi.mock("@/lib/group-sender-key", () => ({
   importSenderKeyDistribution: importSenderKeyDistributionMock,
+}));
+
+vi.mock("@/lib/group-sender-key-events", () => ({
+  notifySenderKeyDistributionImported: notifySenderKeyDistributionImportedMock,
 }));
 
 vi.mock("@/lib/direct-envelope", () => ({
@@ -146,6 +151,7 @@ describe("message decrypt error surfacing", () => {
     ratchetDecryptMock.mockReset();
     loadDecryptedMock.mockReset();
     importSenderKeyDistributionMock.mockReset();
+    notifySenderKeyDistributionImportedMock.mockReset();
     postMessageAckMock.mockReset();
 
     apiPostMock.mockResolvedValue({});
@@ -416,6 +422,59 @@ describe("message decrypt error surfacing", () => {
     expect(useMessagesStore.getState().quarantinedMessageIds.has("msg-sk-policy")).toBe(true);
     expect(useMessagesStore.getState().processedMessageIds.has("msg-sk-policy")).toBe(true);
     expect(postMessageAckMock).toHaveBeenCalledWith("msg-sk-policy");
+  });
+
+  it("notifies group pending decrypt retry after importing sender-key distribution", async () => {
+    const senderDeviceId = "22222222-2222-4222-8222-222222222222";
+    const distribution = {
+      schemaVersion: 1,
+      type: "sender_key_distribution",
+      groupId: "11111111-1111-4111-8111-111111111111",
+      senderDeviceId,
+      distributionId: "33333333-3333-4333-8333-333333333333",
+      chainId: 1,
+      chainKey: "chain-key",
+      signingKey: "signing-key",
+    };
+    decodeDirectEnvelopeMock.mockReturnValue({
+      header: { dh: new Uint8Array(32).fill(6), pn: 0, n: 0 },
+      ciphertext: new Uint8Array([6, 6, 6]),
+    });
+    loadDecryptedMock.mockImplementation(async <T,>(_: CryptoKey, key: string): Promise<T | null> => {
+      if (key === `session:${senderDeviceId}`) {
+        return serializedSession as T;
+      }
+      return null;
+    });
+    ratchetDecryptMock.mockResolvedValue(
+      new TextEncoder().encode(JSON.stringify(distribution))
+    );
+    importSenderKeyDistributionMock.mockResolvedValue(distribution);
+
+    await useMessagesStore.getState().handleIncomingMessage({
+      type: "message.new",
+      message: {
+        id: "msg-sk-success",
+        senderUserId: "user-peer",
+        senderDeviceId,
+        recipientDeviceId: mockAuthState.deviceId,
+        type: "sender_key_distribution",
+        ciphertext: "valid-envelope",
+        createdAt: new Date().toISOString(),
+      },
+    } as never);
+
+    expect(importSenderKeyDistributionMock).toHaveBeenCalledWith(
+      mockAuthState.storageKey,
+      expect.objectContaining(distribution)
+    );
+    expect(notifySenderKeyDistributionImportedMock).toHaveBeenCalledWith({
+      groupId: distribution.groupId,
+      senderDeviceId,
+      distributionId: distribution.distributionId,
+    });
+    expect(useMessagesStore.getState().processedMessageIds.has("msg-sk-success")).toBe(true);
+    expect(postMessageAckMock).toHaveBeenCalledWith("msg-sk-success");
   });
 
   it("keeps sender-key distribution pending when storage key is unavailable", async () => {

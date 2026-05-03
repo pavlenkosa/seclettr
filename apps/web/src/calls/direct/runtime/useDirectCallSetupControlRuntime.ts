@@ -5,6 +5,12 @@ import {
   createSignedCallAnswerAuth,
   verifyIncomingCallOffer,
 } from "@/calls/direct/runtime/crypto/call-auth-actions";
+import { resolveInboundOfferPolicy } from "@/calls/direct/model/call-inbound-offer-policy";
+import {
+  DIRECT_CALL_SETUP_TIMEOUTS,
+  DirectCallSetupTimeoutError,
+  withSetupStageTimeout,
+} from "@/calls/direct/model/direct-call-setup-timeouts";
 import { wsClient } from "@/lib/websocket";
 import {
   buildDirectCallMediaEncryptionOffer,
@@ -58,6 +64,9 @@ const abortIfStaleLifecycle = (
 
 const isDirectCallLifecycleAbortError = (error: unknown): error is DirectCallLifecycleAbortError =>
   error instanceof DirectCallLifecycleAbortError;
+
+const isDirectCallSetupTimeoutError = (error: unknown): error is DirectCallSetupTimeoutError =>
+  error instanceof DirectCallSetupTimeoutError;
 
 const createLifecycleGuard = (params: {
   lifecycleToken: number;
@@ -210,19 +219,22 @@ const applyInboundOfferVerificationPolicy = (params: {
   pushNotice: DirectCallSetupRuntimeOptions["pushNotice"];
   t: DirectCallSetupRuntimeOptions["t"];
 }) => {
-  if (params.offerVerification.state !== "invalid") {
-    return true;
-  }
-  if (params.callSecurityMode === "strict") {
+  const decision = resolveInboundOfferPolicy(
+    params.offerVerification.state,
+    params.callSecurityMode
+  );
+  if (!decision.allow) {
     params.rejectInboundSetup({
       finishCallSession: params.finishCallSession,
       callId: params.callId,
       t: params.t,
-      reasonKey: "call.error.unableVerifyCode",
+      reasonKey: decision.reasonKey,
     });
     return false;
   }
-  params.pushNotice({ kind: "error", message: params.t("call.error.unableVerifyCode") });
+  if (decision.degraded) {
+    params.pushNotice({ kind: "error", message: params.t("call.error.unableVerifyCode") });
+  }
   return true;
 };
 
@@ -348,10 +360,11 @@ export function useDirectCallSetupControlRuntime(options: DirectCallSetupRuntime
 
     try {
       clearNotice();
-      const created = await api.post<{ callId: string }>("/calls", {
-        calleeUserId: peerUserId,
-        callType,
-      });
+      const created = await withSetupStageTimeout(
+        api.post<{ callId: string }>("/calls", { calleeUserId: peerUserId, callType }),
+        DIRECT_CALL_SETUP_TIMEOUTS.apiCreateCallMs,
+        "api-create-call"
+      );
       ensureCurrentLifecycle();
       callId = created.callId;
       resetNegotiationSessionState("outbound", false, {
@@ -372,7 +385,11 @@ export function useDirectCallSetupControlRuntime(options: DirectCallSetupRuntime
       peerConnectionRef.current = pc;
       ensureVideoSenders(pc);
 
-      const stream = await requestLocalStream({ withVideo: callType === "video" });
+      const stream = await withSetupStageTimeout(
+        requestLocalStream({ withVideo: callType === "video" }),
+        DIRECT_CALL_SETUP_TIMEOUTS.localMediaMs,
+        "local-media"
+      );
       ensureCurrentLifecycle(() => {
         stopMediaStream(stream);
         pc.close();
@@ -688,7 +705,11 @@ export function useDirectCallSetupControlRuntime(options: DirectCallSetupRuntime
         supportsRenegotiationV1: currentIncoming.supportsRenegotiationV1,
       });
 
-      const stream = await requestLocalStream({ withVideo: callType === "video" });
+      const stream = await withSetupStageTimeout(
+        requestLocalStream({ withVideo: callType === "video" }),
+        DIRECT_CALL_SETUP_TIMEOUTS.localMediaMs,
+        "local-media"
+      );
       ensureCurrentLifecycle(() => {
         stopMediaStream(stream);
         pc.close();

@@ -40,6 +40,7 @@ function createUnknownGroupChat(
     groupId,
     name: formatUnknownGroupName(groupId),
     createdAt: new Date().toISOString(),
+    cryptoEpoch: 1,
     members: [],
     memberDeviceLabels: {},
     messages: defaultMessages,

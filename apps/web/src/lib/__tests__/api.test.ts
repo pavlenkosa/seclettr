@@ -384,6 +384,7 @@ describe("api", () => {
         signature: "BBBB",
         createdAt: "2026-03-26T00:00:00.000Z",
         aeadVersion: 1,
+        cryptoEpoch: 1,
       },
     ]);
     expect(fetchMock.mock.calls[0]?.[0]).toBe("/api/groups/group-1/messages?limit=10");

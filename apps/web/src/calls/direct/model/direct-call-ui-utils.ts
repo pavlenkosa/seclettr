@@ -1,5 +1,6 @@
 import type { DirectCallRuntimeState } from "./direct-call-runtime-state";
 import { formatCallDuration } from "@/calls/shared/model/call-duration";
+import { DirectCallSetupTimeoutError } from "./direct-call-setup-timeouts";
 
 export type DirectCallTranslator = (key: string, params?: Record<string, string | number | undefined>) => string;
 
@@ -27,6 +28,14 @@ export function toMediaErrorMessage(
   callType: "audio" | "video",
   t: DirectCallTranslator
 ): string {
+  if (error instanceof DirectCallSetupTimeoutError) {
+    if (error.stage === "local-media") {
+      return callType === "video"
+        ? t("call.error.cameraMicTimeout")
+        : t("call.error.micTimeout");
+    }
+    return t("call.error.setupTimeout");
+  }
   if (error instanceof DOMException) {
     if (error.name === "NotAllowedError") {
       return callType === "video"

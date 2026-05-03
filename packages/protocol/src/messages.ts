@@ -135,6 +135,7 @@ export const SendGroupMessageRequestSchema = versionedWireObject(
     clientMessageId: z.string().uuid(),
     groupId: z.string().uuid(),
     distributionId: z.string().uuid(),
+    cryptoEpoch: z.number().int().min(1).max(1_000_000).optional().default(1),
     chainId: z.number().int().min(0),
     messageId: z.number().int().min(0),
     ciphertext: z.string().min(1).max(MAX_ENVELOPE_BASE64_LENGTH),
@@ -157,6 +158,7 @@ export const SendGroupMessageResponseSchema = versionedWireObject(
     ok: z.literal(true),
     serverMessageId: z.string().uuid(),
     createdAt: z.string().datetime(),
+    cryptoEpoch: z.number().int().min(1).max(1_000_000).optional(),
   }
 );
 export type SendGroupMessageResponseWire = z.infer<

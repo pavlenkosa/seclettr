@@ -62,6 +62,8 @@ services:
       WATCHPACK_POLLING: "true"
     command: >
       sh -c "pnpm install --frozen-lockfile --filter @seclettr/crypto... --filter @seclettr/protocol... --filter @seclettr/web... &&
+      pnpm --filter @seclettr/crypto build &&
+      pnpm --filter @seclettr/protocol build &&
       pnpm --filter @seclettr/web exec vite --host 0.0.0.0 --port 5173"
     volumes:
       - ../package.json:/app/package.json:ro

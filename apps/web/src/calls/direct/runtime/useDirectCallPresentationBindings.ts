@@ -12,6 +12,7 @@ import type {
   CallNotice,
   IncomingCall,
 } from "@/calls/direct/model/direct-call-types";
+import type { VideoResolution } from "@/calls/shared/presentation/CallDevicePicker";
 
 type Translate = (key: string, params?: Record<string, string | number | undefined>) => string;
 
@@ -83,6 +84,8 @@ interface UseDirectCallPresentationBindingsOptions {
   isSwitchingCamera: boolean;
   onSwitchCamera: () => void | Promise<void>;
   onToggleScreenShare: () => void | Promise<void>;
+  selectedScreenResolution: VideoResolution;
+  onSelectScreenResolution: (res: VideoResolution) => void;
   localStream: MediaStream | null;
   cameraSenderRef: RefObject<RTCRtpSender | null>;
 }
@@ -155,6 +158,8 @@ export function useDirectCallPresentationBindings({
   onSwitchCamera,
   onToggleVideo,
   onToggleScreenShare,
+  selectedScreenResolution,
+  onSelectScreenResolution,
   localStream,
   cameraSenderRef,
 }: UseDirectCallPresentationBindingsOptions) {
@@ -341,6 +346,8 @@ export function useDirectCallPresentationBindings({
     onSwitchCamera,
     onToggleVideo,
     onToggleScreenShare,
+    selectedScreenResolution,
+    onSelectScreenResolution,
     localStream,
     cameraSenderRef,
   };

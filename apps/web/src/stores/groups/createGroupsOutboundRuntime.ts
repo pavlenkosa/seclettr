@@ -676,6 +676,52 @@ export function createGroupsOutboundRuntime({
     }
   }
 
+  async function retryFromQueueItem(
+    groupId: string,
+    messageId: string,
+    localMessageId: string,
+    queueItem: GroupOutboundQueueItem
+  ): Promise<void> {
+    pendingGroupOutboundEnvelopes.set(localMessageId, queueItem);
+    markLocalGroupMessageStatus(groupId, messageId, "sending");
+    try {
+      const sentMessage = await deliverQueuedGroupOutboundItem(queueItem);
+      markQueuedMessageSent(queueItem, sentMessage);
+      pendingGroupOutboundEnvelopes.delete(localMessageId);
+      await removeGroupOutboundQueueItem(localMessageId).catch(() => null);
+      if (queueItem.messageType === "attachment") {
+        clearUploadLocalSource(localMessageId);
+      }
+    } catch {
+      markLocalGroupMessageStatus(groupId, messageId, "error");
+    }
+  }
+
+  async function retryAttachmentUpload(
+    groupId: string,
+    message: NonNullable<ReturnType<GetGroupsState>["groups"][string]>["messages"][number]
+  ): Promise<void> {
+    if (message.type !== "attachment" || !message.attachment) return;
+    const localSource = getUploadLocalSource(message.id);
+    if (!localSource) return;
+    try {
+      await uploadAndEncryptGroupAttachment({
+        groupId,
+        blob: localSource,
+        mimeType: message.attachment.mimeType || localSource.type || "application/octet-stream",
+        fileName: message.attachment.fileName || message.content || `attachment-${Date.now()}`,
+        kind: message.attachment.kind ?? "file",
+        caption: message.attachment.caption,
+        durationMs: message.attachment.durationMs,
+        mediaGroupId: message.attachment.mediaGroupId,
+        replaceMessageId: message.id,
+        optimisticTimestamp: message.timestamp,
+      });
+    } catch {
+      // uploadAndEncryptGroupAttachment already restores the message to error.
+    }
+  }
+
   return {
     resumePendingGroupOutboundMessages,
 
@@ -780,56 +826,20 @@ export function createGroupsOutboundRuntime({
       if (message?.status !== "error") return;
       // Only retry locally-created pending messages — not server history that failed to decrypt
       if (!message.id.startsWith("local-")) return;
-
-      if (!shared.getMyDeviceId() || !shared.getMyUserId() || !shared.getStorageKey()) {
-        return;
-      }
+      if (!shared.getMyDeviceId() || !shared.getMyUserId() || !shared.getStorageKey()) return;
 
       const cachedQueueItem =
         pendingGroupOutboundEnvelopes.get(message.id) ??
         (await loadGroupOutboundQueueItem(message.id));
-      if (cachedQueueItem?.groupId === groupId) {
-        pendingGroupOutboundEnvelopes.set(message.id, cachedQueueItem);
-        markLocalGroupMessageStatus(groupId, messageId, "sending");
 
-        try {
-          const sentMessage = await deliverQueuedGroupOutboundItem(cachedQueueItem);
-          markQueuedMessageSent(cachedQueueItem, sentMessage);
-          pendingGroupOutboundEnvelopes.delete(message.id);
-          await removeGroupOutboundQueueItem(message.id).catch(() => null);
-          if (cachedQueueItem.messageType === "attachment") {
-            clearUploadLocalSource(message.id);
-          }
-        } catch {
-          markLocalGroupMessageStatus(groupId, messageId, "error");
-        }
+      if (cachedQueueItem?.groupId === groupId) {
+        await retryFromQueueItem(groupId, messageId, message.id, cachedQueueItem);
         return;
       }
 
       if (message.rawType === "attachment" && message.type === "attachment") {
-        const localSource = getUploadLocalSource(message.id);
-        if (!localSource || !message.attachment) return;
-
-        try {
-          await uploadAndEncryptGroupAttachment({
-            groupId,
-            blob: localSource,
-            mimeType: message.attachment.mimeType || localSource.type || "application/octet-stream",
-            fileName: message.attachment.fileName || message.content || `attachment-${Date.now()}`,
-            kind: message.attachment.kind ?? "file",
-            caption: message.attachment.caption,
-            durationMs: message.attachment.durationMs,
-            mediaGroupId: message.attachment.mediaGroupId,
-            replaceMessageId: message.id,
-            optimisticTimestamp: message.timestamp,
-          });
-        } catch {
-          // uploadAndEncryptGroupAttachment already restores the message to error.
-        }
-        return;
+        await retryAttachmentUpload(groupId, message);
       }
-
-      if (message.rawType !== "text" || message.type === "attachment") return;
     },
 
     sendGroupFileAttachment: async (

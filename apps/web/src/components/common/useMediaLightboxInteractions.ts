@@ -67,12 +67,12 @@ export function useMediaLightboxInteractions({
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === "ArrowLeft" && hasPrev) {
         event.preventDefault();
-        onNavigate?.(-1);
+        void onNavigate?.(-1);
         return;
       }
       if (event.key === "ArrowRight" && hasNext) {
         event.preventDefault();
-        onNavigate?.(1);
+        void onNavigate?.(1);
       }
     };
 
@@ -178,11 +178,11 @@ export function useMediaLightboxInteractions({
     resetSwipeGesture();
 
     if (shouldNavigatePrev) {
-      onNavigate?.(-1);
+      void onNavigate?.(-1);
       return;
     }
     if (shouldNavigateNext) {
-      onNavigate?.(1);
+      void onNavigate?.(1);
     }
   }, [hasNext, hasPrev, onNavigate, resetSwipeGesture, scheduleContentClickReset]);
 

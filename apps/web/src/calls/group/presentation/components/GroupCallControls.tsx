@@ -126,7 +126,7 @@ export function GroupCallControls({
         active={!isLocalVideoEnabled}
       >
         <CallControlButton
-          onClick={() => { onToggleVideo(); }}
+          onClick={() => { void onToggleVideo(); }}
           layout={layout}
           className={styles.controlBtn}
           active={!isLocalVideoEnabled}
@@ -150,7 +150,7 @@ export function GroupCallControls({
           active={isLocalScreenSharing}
         >
           <CallControlButton
-            onClick={() => { onToggleScreenShare(); }}
+            onClick={() => { void onToggleScreenShare(); }}
             layout={layout}
             className={styles.controlBtn}
             active={isLocalScreenSharing}

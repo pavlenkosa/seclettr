@@ -557,13 +557,13 @@ const MessageComposerView = forwardRef<MessageComposerHandle, Props>(function Me
 
     if (primaryAction.kind === "send") {
       emojiState.closeEmojiPicker();
-      draft.handleSend();
+      void draft.handleSend();
       return;
     }
 
     draft.clearComposerError();
     emojiState.closeEmojiPicker();
-    startRecording(primaryAction.mode);
+    void startRecording(primaryAction.mode);
   }, [
     draft,
     emojiState,

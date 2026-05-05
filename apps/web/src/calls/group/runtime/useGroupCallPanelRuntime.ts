@@ -42,6 +42,7 @@ import {
 import { useGroupCallLocalMedia } from "./useGroupCallLocalMedia";
 import { useGroupCallMediaKeyRuntime } from "./useGroupCallMediaKeyRuntime";
 import { useGroupCallSessionRuntime } from "./useGroupCallSessionRuntime";
+import type { VideoResolution } from "@/calls/shared/presentation/CallDevicePicker";
 
 interface UseGroupCallPanelRuntimeOptions {
   session: GroupCallPanelSession | null;
@@ -90,15 +91,15 @@ export interface UseGroupCallPanelRuntimeResult {
   isVideoSwitching: boolean;
   isScreenSwitching: boolean;
   isLocalScreenSharing: boolean;
-  selectedVideoResolution: import("@/calls/shared/presentation/CallDevicePicker").VideoResolution;
-  selectedScreenResolution: import("@/calls/shared/presentation/CallDevicePicker").VideoResolution;
+  selectedVideoResolution: VideoResolution;
+  selectedScreenResolution: VideoResolution;
   handleToggleMute: () => void;
   handleToggleVideo: () => Promise<void>;
   handleToggleScreenShare: () => Promise<void>;
   handleSwitchMic: (deviceId: string) => Promise<void>;
   handleSwitchCamera: (deviceId: string) => Promise<void>;
-  handleSelectVideoResolution: (resolution: import("@/calls/shared/presentation/CallDevicePicker").VideoResolution) => Promise<void>;
-  handleSelectScreenResolution: (resolution: import("@/calls/shared/presentation/CallDevicePicker").VideoResolution) => void;
+  handleSelectVideoResolution: (resolution: VideoResolution) => Promise<void>;
+  handleSelectScreenResolution: (resolution: VideoResolution) => void;
   handleLeave: () => Promise<void>;
   handleEndForEveryone: () => Promise<void>;
 }

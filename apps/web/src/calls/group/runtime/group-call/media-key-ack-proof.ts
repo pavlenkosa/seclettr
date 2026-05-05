@@ -1,16 +1,16 @@
 const PROOF_LABEL = new TextEncoder().encode("seclettr-mk-ack-v1");
 
 function b64url(bytes: ArrayBuffer): string {
-  return btoa(String.fromCharCode(...new Uint8Array(bytes)))
-    .replace(/\+/g, "-")
-    .replace(/\//g, "_")
+  return btoa(String.fromCodePoint(...new Uint8Array(bytes)))
+    .replaceAll("+", "-")
+    .replaceAll("/", "_")
     .replace(/=+$/, "");
 }
 
 function fromB64url(s: string): Uint8Array {
-  const padded = s.replace(/-/g, "+").replace(/_/g, "/");
+  const padded = s.replaceAll("-", "+").replaceAll("_", "/");
   const bin = atob(padded);
-  return Uint8Array.from(bin, (c) => c.charCodeAt(0));
+  return Uint8Array.from(bin, (c) => c.codePointAt(0) ?? 0);
 }
 
 async function importHmacKey(rawKey: Uint8Array): Promise<CryptoKey> {

@@ -86,7 +86,7 @@ export const ChatThreadView = memo(function ChatThreadView({
           </div>
         ) : undefined}
         highlightMessageId={threadPaneState.highlightMessageId}
-        onRetry={activeThreadKind !== null ? handleRetryMessage : undefined}
+        onRetry={activeThreadKind === null ? undefined : handleRetryMessage}
         onReply={threadPaneState.handleReply}
         onScrollToMessage={threadPaneState.handleScrollToMessage}
         onDropFiles={

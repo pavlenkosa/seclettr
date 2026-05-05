@@ -4,6 +4,7 @@ import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { I18nProvider } from "@/i18n";
+import type * as LibHooks from "@/lib/hooks";
 
 const { mockSearchUsers } = vi.hoisted(() => ({
   mockSearchUsers: vi.fn<[string], Promise<Array<{ userId: string; username: string }>>>(),
@@ -15,7 +16,7 @@ vi.mock("@/lib/user-search", () => ({
 }));
 
 vi.mock("@/lib/hooks", async (importOriginal) => {
-  const original = await importOriginal<typeof import("@/lib/hooks")>();
+  const original = await importOriginal<typeof LibHooks>();
   return {
     ...original,
     useAnimatedClose: (onClose: () => void) => ({

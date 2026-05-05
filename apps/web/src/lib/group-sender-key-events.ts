@@ -23,7 +23,7 @@ export function onSenderKeyDistributionImported(
 export function notifySenderKeyDistributionImported(
   distribution: ImportedGroupSenderKeyDistribution
 ): void {
-  for (const listener of [...senderKeyDistributionListeners]) {
+  for (const listener of senderKeyDistributionListeners) {
     listener(distribution);
   }
 }

@@ -238,7 +238,7 @@ export function MediaSendDialog({
   function onCaptionKeyDown(e: KeyboardEvent<HTMLTextAreaElement>) {
     if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) {
       e.preventDefault();
-      confirmSend();
+      void confirmSend();
     }
   }
 
@@ -381,7 +381,7 @@ export function MediaSendDialog({
               tone="accent"
               appearance="strong"
               size="md"
-              onClick={() => { confirmSend(); }}
+              onClick={() => { void confirmSend(); }}
               disabled={!canConfirmSend}
             >
               {isSending ? t("mediaSend.sending") : t("mediaSend.send")}

@@ -62,7 +62,7 @@ export const ChatModals = memo(function ChatModals({
   const handleVerifyGroupMember = useCallback(
     (member: Parameters<SecurityWorkspaceState["handleVerifyGroupMember"]>[0]) => {
       workspaceUiState.closeGroupMembers();
-      security.handleVerifyGroupMember(member);
+      void security.handleVerifyGroupMember(member);
     },
     [security, workspaceUiState]
   );
@@ -70,7 +70,7 @@ export const ChatModals = memo(function ChatModals({
   const handleAcceptDirectIdentityChange = useCallback(
     (peerDeviceId: string) => {
       if (activeConversation) {
-        acceptPeerIdentityChange(activeConversation.userId, peerDeviceId);
+        void acceptPeerIdentityChange(activeConversation.userId, peerDeviceId);
       }
     },
     [acceptPeerIdentityChange, activeConversation]

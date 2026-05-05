@@ -190,7 +190,7 @@ export function useDirectCallPeerConnectionRuntime({
             reason: "disconnect-recovery",
             signalingState: pc.signalingState,
           });
-          sendRenegotiationOfferRef.current?.(callId, "disconnect-recovery");
+          void sendRenegotiationOfferRef.current?.(callId, "disconnect-recovery");
         } catch (error) {
           logger.warn("[CALL] failed to request ICE restart for disconnect recovery", error);
         }
@@ -224,7 +224,7 @@ export function useDirectCallPeerConnectionRuntime({
         return;
       }
       if (pc.signalingState === "stable") {
-        flushPendingRenegotiationOfferRef.current?.(callId, "signaling-stable");
+        void flushPendingRenegotiationOfferRef.current?.(callId, "signaling-stable");
       }
     };
 
@@ -248,7 +248,7 @@ export function useDirectCallPeerConnectionRuntime({
       if (!negotiationReadyRef.current || renegotiationUnsupportedRef.current) {
         return;
       }
-      sendRenegotiationOfferRef.current?.(callId, "negotiationneeded");
+      void sendRenegotiationOfferRef.current?.(callId, "negotiationneeded");
     };
 
     return pc;

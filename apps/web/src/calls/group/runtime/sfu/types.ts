@@ -1,4 +1,4 @@
-import { Device, type types as MediasoupTypes } from "mediasoup-client";
+import { type Device, type types as MediasoupTypes } from "mediasoup-client";
 import type { SfuProducerSource } from "@seclettr/protocol";
 
 export type MediaKind = "audio" | "video";

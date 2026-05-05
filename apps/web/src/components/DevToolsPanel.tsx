@@ -77,7 +77,7 @@ export function DevToolsPanel() {
       timestamp: new Date().toISOString(),
       userAgent: navigator.userAgent,
     };
-    navigator.clipboard.writeText(JSON.stringify(info, null, 2)).then(() => {
+    void navigator.clipboard.writeText(JSON.stringify(info, null, 2)).then(() => {
       alert(t("dev.debugCopied"));
     });
   }

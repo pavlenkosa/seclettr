@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import type * as UserSearch from "@/lib/user-search";
 
 const apiGetMock = vi.fn();
 
@@ -8,8 +9,8 @@ vi.mock("@/lib/api", () => ({
   },
 }));
 
-let searchUsers: typeof import("@/lib/user-search").searchUsers;
-let getUserContactGrantHeaders: typeof import("@/lib/user-search").getUserContactGrantHeaders;
+let searchUsers: typeof UserSearch.searchUsers;
+let getUserContactGrantHeaders: typeof UserSearch.getUserContactGrantHeaders;
 
 describe("user-search contact grant cache", () => {
   beforeEach(async () => {

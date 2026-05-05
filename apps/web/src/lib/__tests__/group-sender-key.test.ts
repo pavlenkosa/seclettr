@@ -1,11 +1,12 @@
 // @vitest-environment jsdom
 
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import type * as SeclettrCrypto from "@seclettr/crypto";
 
 const memoryStore = new Map<string, unknown>();
 
 vi.mock("@seclettr/crypto", async () => {
-  const actual = await vi.importActual<typeof import("@seclettr/crypto")>("@seclettr/crypto");
+  const actual = await vi.importActual<typeof SeclettrCrypto>("@seclettr/crypto");
   return {
     ...actual,
     storeEncrypted: async (_storageKey: CryptoKey, key: string, value: unknown) => {

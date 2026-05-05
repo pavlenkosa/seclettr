@@ -94,7 +94,7 @@ function AudioOutputField({
         value={selectedPreference}
         options={options}
         onChange={(val) => {
-          setSelectedPreference(val as AudioOutputPreference);
+          void setSelectedPreference(val as AudioOutputPreference);
         }}
         disabled={isLoading}
         wrapperClassName={styles.selectShell}
@@ -140,7 +140,7 @@ function AudioOutputPromptButton({
       className={styles.promptButton}
       disabled={isLoading || isPromptingDeviceSelection}
       onClick={() => {
-        requestDeviceSelection();
+        void requestDeviceSelection();
       }}
     >
       {isPromptingDeviceSelection

@@ -77,7 +77,7 @@ function scheduleFlush(): void {
   if (flushTimer !== null) return;
   flushTimer = globalThis.window.setTimeout(() => {
     flushTimer = null;
-    flush();
+    void flush();
   }, 2000);
 }
 

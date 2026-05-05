@@ -79,11 +79,11 @@ async function fetchAttachmentCiphertextViaDownloadUrl(
   const CHUNK = 8192;
   let binary = "";
   for (let offset = 0; offset < bytes.length; offset += CHUNK) {
-    binary += String.fromCharCode(...bytes.subarray(offset, offset + CHUNK));
+    binary += String.fromCodePoint(...bytes.subarray(offset, offset + CHUNK));
   }
   const ciphertext = btoa(binary)
-    .replace(/\+/g, "-")
-    .replace(/\//g, "_")
+    .replaceAll("+", "-")
+    .replaceAll("/", "_")
     .replace(/=+$/, "");
   return { ciphertext, encryptedDigest: meta.encryptedDigest };
 }

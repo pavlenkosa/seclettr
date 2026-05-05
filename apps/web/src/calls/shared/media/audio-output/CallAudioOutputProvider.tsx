@@ -206,7 +206,7 @@ export function CallAudioOutputProvider({ children }: { readonly children: React
   }, [applyPreferenceToElement]);
 
   useEffect(() => {
-    refreshOptions();
+    void refreshOptions();
   }, [refreshOptions]);
 
   useEffect(() => {
@@ -223,7 +223,7 @@ export function CallAudioOutputProvider({ children }: { readonly children: React
     }
 
     const handleDeviceChange = () => {
-      refreshOptions();
+      void refreshOptions();
     };
 
     mediaDevices.addEventListener("devicechange", handleDeviceChange);
@@ -319,7 +319,7 @@ export function CallAudioOutputProvider({ children }: { readonly children: React
         options: nextOptions,
       }));
       await handleSelectPreference(nextPreference);
-      refreshOptions();
+      void refreshOptions();
     } catch (caughtError) {
       if (
         caughtError instanceof DOMException &&

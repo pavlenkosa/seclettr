@@ -20,6 +20,7 @@ import {
 import { readCallMediaDebugEnabled } from "@/calls/shared/media/call-media-debug";
 import { useDirectCallSurfaceDragging } from "./useDirectCallSurfaceDragging";
 import type { DirectCallNegotiationRole } from "@/calls/direct/model/direct-call-lifecycle";
+import type { DirectCallMediaEncryptionOffer } from "@/calls/direct/model/call-media-encryption-negotiation";
 import type {
   ActiveCall,
   CallNotice,
@@ -102,7 +103,7 @@ export function useDirectCallControllerState() {
   const incomingRef = useRef<IncomingCall | null>(null);
   const acceptingIncomingCallRef = useRef<IncomingCall | null>(null);
   const activeRef = useRef<ActiveCall | null>(null);
-  const outboundMediaEncryptionOfferRef = useRef<import("@/calls/direct/model/call-media-encryption-negotiation").DirectCallMediaEncryptionOffer | null>(null);
+  const outboundMediaEncryptionOfferRef = useRef<DirectCallMediaEncryptionOffer | null>(null);
   const pendingIceCandidatesRef = useRef<Map<string, RTCIceCandidateInit[]>>(new Map());
   const incomingIceCandidatesRef = useRef<Map<string, RTCIceCandidateInit[]>>(new Map());
   const outgoingIceBatchRef = useRef<DirectCallOutgoingIceBatchState>({

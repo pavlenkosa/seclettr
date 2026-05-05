@@ -127,11 +127,16 @@ export async function openConversationFromSidebar(
   page: Page,
   username: string
 ): Promise<void> {
-  const conversationEntry = getChatSidebar(page).getByRole("option").filter({
-    hasText: username,
-  });
-  await expect(conversationEntry.first()).toBeVisible({ timeout: 20_000 });
-  await conversationEntry.first().click();
+  const sidebar = getChatSidebar(page);
+  await expect(sidebar).toBeVisible({ timeout: 20_000 });
+
+  const conversationEntry = sidebar
+    .locator('[data-testid^="conversation-entry:direct:"], [role="option"]')
+    .filter({ hasText: username })
+    .first();
+
+  await expect(conversationEntry).toBeVisible({ timeout: 20_000 });
+  await conversationEntry.click();
 }
 
 export async function sendDirectMessage(page: Page, content: string): Promise<void> {

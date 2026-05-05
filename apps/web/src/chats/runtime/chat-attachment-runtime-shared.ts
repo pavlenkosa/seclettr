@@ -88,42 +88,41 @@ async function fetchAttachmentCiphertextViaDownloadUrl(
   return { ciphertext, encryptedDigest: meta.encryptedDigest };
 }
 
-async function fetchAttachmentCiphertext(
-  attachmentId: string
-): Promise<{
-  ciphertext: string;
-  encryptedDigest: string;
-}> {
-  let lastError: unknown;
+type CiphertextResult = { ciphertext: string; encryptedDigest: string };
 
+async function handleCiphertextFetchError(
+  attachmentId: string,
+  error: unknown,
+  attempt: number
+): Promise<CiphertextResult | "retry"> {
+  if (error instanceof ApiError && error.status === 413) {
+    return fetchAttachmentCiphertextViaDownloadUrl(attachmentId);
+  }
+  if (!isTransientAttachmentStorageError(error)) {
+    throw error;
+  }
+  if (attempt === ATTACHMENT_STORAGE_RETRY_DELAYS_MS.length) {
+    throw createChatAttachmentRuntimeError(
+      "storagePending",
+      error instanceof Error ? error.message : "ATTACHMENT_STORAGE_PENDING"
+    );
+  }
+  await wait(ATTACHMENT_STORAGE_RETRY_DELAYS_MS[attempt]!);
+  return "retry";
+}
+
+async function fetchAttachmentCiphertext(attachmentId: string): Promise<CiphertextResult> {
   for (let attempt = 0; attempt <= ATTACHMENT_STORAGE_RETRY_DELAYS_MS.length; attempt += 1) {
     try {
-      return await api.get<{
-        ciphertext: string;
-        encryptedDigest: string;
-      }>(`/attachments/${encodeURIComponent(attachmentId)}/ciphertext`);
+      return await api.get<CiphertextResult>(
+        `/attachments/${encodeURIComponent(attachmentId)}/ciphertext`
+      );
     } catch (error) {
-      if (error instanceof ApiError && error.status === 413) {
-        // Attachment is too large for inline transfer — fetch via presigned URL.
-        return fetchAttachmentCiphertextViaDownloadUrl(attachmentId);
-      }
-      if (!isTransientAttachmentStorageError(error)) {
-        throw error;
-      }
-      lastError = error;
-      if (attempt === ATTACHMENT_STORAGE_RETRY_DELAYS_MS.length) {
-        throw createChatAttachmentRuntimeError(
-          "storagePending",
-          error instanceof Error ? error.message : "ATTACHMENT_STORAGE_PENDING"
-        );
-      }
-      await wait(ATTACHMENT_STORAGE_RETRY_DELAYS_MS[attempt]!);
+      const outcome = await handleCiphertextFetchError(attachmentId, error, attempt);
+      if (outcome !== "retry") return outcome;
     }
   }
-
-  throw lastError instanceof Error
-    ? lastError
-    : createChatAttachmentRuntimeError("storagePending", "ATTACHMENT_STORAGE_PENDING");
+  throw createChatAttachmentRuntimeError("storagePending", "ATTACHMENT_STORAGE_PENDING");
 }
 
 function createChatAttachmentRuntimeError(

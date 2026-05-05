@@ -581,14 +581,28 @@ async function ratchetDecryptWithAdFallback(
   }
 }
 
+type SessionRuntime = LockedIncomingMessageContext["shared"]["messageSessionRuntime"];
+type BootstrapResult = Awaited<ReturnType<SessionRuntime["bootstrapInboundSession"]>>;
+
+async function bootstrapX3dhInboundSession(
+  runtime: SessionRuntime,
+  params: Parameters<SessionRuntime["bootstrapInboundSession"]>[0],
+  adFallback: Uint8Array
+): Promise<BootstrapResult> {
+  try {
+    return await runtime.bootstrapInboundSession(params);
+  } catch (err) {
+    if (!(err instanceof Error) || err.name !== "OperationError") throw err;
+    return runtime.bootstrapInboundSession({ ...params, associatedData: adFallback });
+  }
+}
+
 async function decryptIncomingPlaintext(
   context: LockedIncomingMessageContext
 ): Promise<Uint8Array | null> {
   const { message, myUserId, myDeviceId, shared, handleInboundFailure } = context;
   const decodedEnvelope = await decodeIncomingEnvelope(message, handleInboundFailure);
-  if (!decodedEnvelope) {
-    return null;
-  }
+  if (!decodedEnvelope) return null;
 
   const { dh, pn, n } = decodedEnvelope.header;
   const ciphertext = decodedEnvelope.ciphertext;
@@ -602,66 +616,37 @@ async function decryptIncomingPlaintext(
     messageType: message.type as "text" | "attachment" | "sender_key_distribution",
   });
   const adV0 = buildInboundAdV0(message.senderDeviceId, myDeviceId);
+  const ratchetMsg = { header: { dh, pn, n }, ciphertext };
 
-  let session = await shared.messageSessionRuntime.loadSession(
-    message.senderDeviceId
-  );
-  logger.debug(
-    "[MSG] existing session:",
-    !!session,
-    "for sender",
-    message.senderDeviceId
-  );
+  let session = await shared.messageSessionRuntime.loadSession(message.senderDeviceId);
+  logger.debug("[MSG] existing session:", !!session, "for sender", message.senderDeviceId);
 
   let plaintext: Uint8Array | null = null;
   let bootstrapCommit: (() => Promise<void>) | null = null;
+
   if (session) {
     try {
-      plaintext = await ratchetDecryptWithAdFallback(
-        session,
-        { header: { dh, pn, n }, ciphertext },
-        adV1,
-        adV0
-      );
+      plaintext = await ratchetDecryptWithAdFallback(session, ratchetMsg, adV1, adV0);
     } catch (error) {
-      if (!message.x3dhHeader) {
-        throw error;
-      }
-      logger.debug(
-        "[MSG] existing session decrypt failed, re-init X3DH for",
-        message.id
-      );
+      if (!message.x3dhHeader) throw error;
+      logger.debug("[MSG] existing session decrypt failed, re-init X3DH for", message.id);
       session = null;
     }
   }
 
   if (message.x3dhHeader && !session) {
-    logger.debug(
-      "[MSG] X3DH receive for",
-      message.id,
-      "otkId:",
-      message.x3dhHeader.oneTimePreKeyId
-    );
-    // Try v1 AD first for X3DH bootstrap, fall back to v0.
-    let bootstrap: Awaited<ReturnType<typeof shared.messageSessionRuntime.bootstrapInboundSession>> | null = null;
-    try {
-      bootstrap = await shared.messageSessionRuntime.bootstrapInboundSession({
+    logger.debug("[MSG] X3DH receive for", message.id, "otkId:", message.x3dhHeader.oneTimePreKeyId);
+    const bootstrap = await bootstrapX3dhInboundSession(
+      shared.messageSessionRuntime,
+      {
         localDeviceId: myDeviceId,
         senderDeviceId: message.senderDeviceId,
         x3dhHeader: message.x3dhHeader,
-        initialMessage: { header: { dh, pn, n }, ciphertext },
+        initialMessage: ratchetMsg,
         associatedData: adV1,
-      });
-    } catch (err) {
-      if (!(err instanceof Error) || err.name !== "OperationError") throw err;
-      bootstrap = await shared.messageSessionRuntime.bootstrapInboundSession({
-        localDeviceId: myDeviceId,
-        senderDeviceId: message.senderDeviceId,
-        x3dhHeader: message.x3dhHeader,
-        initialMessage: { header: { dh, pn, n }, ciphertext },
-        associatedData: adV0,
-      });
-    }
+      },
+      adV0
+    );
     session = bootstrap.session;
     plaintext = bootstrap.plaintext;
     bootstrapCommit = bootstrap.commit;
@@ -679,19 +664,11 @@ async function decryptIncomingPlaintext(
     return null;
   }
 
-  plaintext ??= await ratchetDecryptWithAdFallback(
-    session,
-    { header: { dh, pn, n }, ciphertext },
-    adV1,
-    adV0
-  );
+  plaintext ??= await ratchetDecryptWithAdFallback(session, ratchetMsg, adV1, adV0);
   if (bootstrapCommit) {
     await bootstrapCommit();
   } else {
-    await shared.messageSessionRuntime.saveSession(
-      message.senderDeviceId,
-      session
-    );
+    await shared.messageSessionRuntime.saveSession(message.senderDeviceId, session);
   }
   return plaintext;
 }

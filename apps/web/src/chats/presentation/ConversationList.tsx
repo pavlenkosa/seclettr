@@ -180,14 +180,13 @@ const ConversationListItem = memo(function ConversationListItem({
   } as CSSProperties;
 
   return (
-    <div role="presentation">
+    <li>
       <button
         className={`${styles.item} ${isActive ? styles.active : ""} ${entry.unreadCount > 0 ? styles.itemUnread : ""}`}
         style={itemStyle}
         onClick={() => onSelect({ kind: entry.kind, id: entry.id })}
         data-testid={`conversation-entry:${entry.kind}:${entry.id}`}
-        role="option"
-        aria-selected={isActive}
+        aria-current={isActive ? "true" : undefined}
       >
         <Avatar label={entry.name} size={50} fontSize="0.9rem" ariaHidden />
 
@@ -217,7 +216,7 @@ const ConversationListItem = memo(function ConversationListItem({
           )}
         </div>
       </button>
-    </div>
+    </li>
   );
 }, (prev, next) => {
   return areConversationEntriesEqual(prev.entry, next.entry)
@@ -372,7 +371,7 @@ export function ConversationList({
   }
 
   return (
-    <div className={styles.list} role="listbox" aria-label={t("conversation.listLabel")} data-testid="chat-thread-list">
+    <ul className={styles.list} aria-label={t("conversation.listLabel")} data-testid="chat-thread-list">
       {sorted.map((entry, index) => (
         <ConversationListItem
           key={entry.key}
@@ -385,6 +384,6 @@ export function ConversationList({
           enterDelayMs={Math.min(index, 10) * 16}
         />
       ))}
-    </div>
+    </ul>
   );
 }

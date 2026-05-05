@@ -163,7 +163,9 @@ compose_dev "$PROJECT_NAME" "$ENV_FILE" "${up_args[@]}"
 
 wait_for_http "http://127.0.0.1:${DEV_API_PORT}/health" "API health endpoint"
 wait_for_http "http://127.0.0.1:${DEV_SFU_PORT}/health" "SFU health endpoint"
-wait_for_http "https://127.0.0.1:${DEV_WEB_PORT}" "Web dev server" true
+# web-dev builds @seclettr/crypto and @seclettr/protocol before starting Vite,
+# which takes ~2-3 min on a cold container — allow up to 5 min.
+wait_for_http "https://127.0.0.1:${DEV_WEB_PORT}" "Web dev server" true 300
 
 for attempt in $(seq 1 30); do
   if compose_dev "$PROJECT_NAME" "$ENV_FILE" exec -T sfu node -e 'const base = process.env.API_INTERNAL_URL; if (!base) process.exit(2); fetch(base.replace(/\/+$/, "") + "/health").then(async (response) => { if (!response.ok) process.exit(1); process.stdout.write(await response.text()); }).catch(() => process.exit(1));' >/dev/null 2>&1; then

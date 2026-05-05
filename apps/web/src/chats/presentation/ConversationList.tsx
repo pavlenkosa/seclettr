@@ -180,7 +180,7 @@ const ConversationListItem = memo(function ConversationListItem({
   } as CSSProperties;
 
   return (
-    <li role="none">
+    <div role="presentation">
       <button
         className={`${styles.item} ${isActive ? styles.active : ""} ${entry.unreadCount > 0 ? styles.itemUnread : ""}`}
         style={itemStyle}
@@ -217,7 +217,7 @@ const ConversationListItem = memo(function ConversationListItem({
           )}
         </div>
       </button>
-    </li>
+    </div>
   );
 }, (prev, next) => {
   return areConversationEntriesEqual(prev.entry, next.entry)

@@ -26,6 +26,13 @@ module.exports = {
     ],
     "react-hooks/rules-of-hooks": "error",
     "react-hooks/exhaustive-deps": "warn",
+    // a11y: interactive semantics
     "jsx-a11y/no-noninteractive-element-to-interactive-role": "error",
+    "jsx-a11y/interactive-supports-focus": "error",
+    "jsx-a11y/click-events-have-key-events": "error",
+    "jsx-a11y/no-static-element-interactions": "error",
+    "jsx-a11y/aria-role": "error",
+    "jsx-a11y/role-has-required-aria-props": "error",
+    "jsx-a11y/aria-props": "error",
   },
 };

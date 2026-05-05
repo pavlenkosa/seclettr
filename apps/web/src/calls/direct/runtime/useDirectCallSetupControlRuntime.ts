@@ -8,7 +8,6 @@ import {
 import { resolveInboundOfferPolicy } from "@/calls/direct/model/call-inbound-offer-policy";
 import {
   DIRECT_CALL_SETUP_TIMEOUTS,
-  DirectCallSetupTimeoutError,
   withSetupStageTimeout,
 } from "@/calls/direct/model/direct-call-setup-timeouts";
 import { wsClient } from "@/lib/websocket";
@@ -64,9 +63,6 @@ const abortIfStaleLifecycle = (
 
 const isDirectCallLifecycleAbortError = (error: unknown): error is DirectCallLifecycleAbortError =>
   error instanceof DirectCallLifecycleAbortError;
-
-const isDirectCallSetupTimeoutError = (error: unknown): error is DirectCallSetupTimeoutError =>
-  error instanceof DirectCallSetupTimeoutError;
 
 const createLifecycleGuard = (params: {
   lifecycleToken: number;

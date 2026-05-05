@@ -83,6 +83,8 @@ interface UseDirectCallPresentationBindingsOptions {
   isSwitchingCamera: boolean;
   onSwitchCamera: () => void | Promise<void>;
   onToggleScreenShare: () => void | Promise<void>;
+  localStream: MediaStream | null;
+  cameraSenderRef: RefObject<RTCRtpSender | null>;
 }
 
 export function useDirectCallPresentationBindings({
@@ -153,6 +155,8 @@ export function useDirectCallPresentationBindings({
   onSwitchCamera,
   onToggleVideo,
   onToggleScreenShare,
+  localStream,
+  cameraSenderRef,
 }: UseDirectCallPresentationBindingsOptions) {
   const stageScene = useDirectCallStagePresentation({
     hasRenderableRemoteCamera,
@@ -337,6 +341,8 @@ export function useDirectCallPresentationBindings({
     onSwitchCamera,
     onToggleVideo,
     onToggleScreenShare,
+    localStream,
+    cameraSenderRef,
   };
 
   return {

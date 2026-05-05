@@ -1,6 +1,5 @@
 import { lazy, Suspense } from "react";
 import type { GroupCallStageTile } from "@/calls/group/model/group-call-types";
-import { CameraIcon, ScreenShareIcon } from "@/calls/shared/presentation/CallIcons";
 
 const LazyCallStageViewerDialog = lazy(() =>
   import("@/calls/shared/presentation/CallStageViewerDialog").then(({ CallStageViewerDialog }) => ({
@@ -12,9 +11,9 @@ export interface GroupCallStageViewerDialogProps {
   readonly isOpen: boolean;
   readonly stageTile: GroupCallStageTile | null;
   readonly stageEyebrowLabel: string;
-  readonly fullscreenToggleLabel: string;
-  readonly enterFullscreenLabel?: string;
-  readonly exitFullscreenLabel?: string;
+  readonly enterFullscreenLabel: string;
+  readonly exitFullscreenLabel: string;
+  readonly closeViewerLabel: string;
   readonly canStopWatchingStageTile: boolean;
   readonly stopWatchingStageLabel?: string;
   readonly onClose: () => void;
@@ -25,9 +24,9 @@ export function GroupCallStageViewerDialog({
   isOpen,
   stageTile,
   stageEyebrowLabel,
-  fullscreenToggleLabel,
-  enterFullscreenLabel = fullscreenToggleLabel,
-  exitFullscreenLabel = fullscreenToggleLabel,
+  enterFullscreenLabel,
+  exitFullscreenLabel,
+  closeViewerLabel,
   canStopWatchingStageTile,
   stopWatchingStageLabel,
   onClose,
@@ -36,7 +35,6 @@ export function GroupCallStageViewerDialog({
   if (!isOpen || !stageTile?.hasVideo) {
     return null;
   }
-  const stopWatchingIcon = stageTile.videoSource === "screen" ? <ScreenShareIcon /> : <CameraIcon />;
 
   return (
     <Suspense fallback={null}>
@@ -49,9 +47,8 @@ export function GroupCallStageViewerDialog({
         dialogAriaLabel={stageTile.label}
         enterFullscreenLabel={enterFullscreenLabel}
         exitFullscreenLabel={exitFullscreenLabel}
-        closeLabel={fullscreenToggleLabel}
+        closeLabel={closeViewerLabel}
         stopWatchingLabel={canStopWatchingStageTile ? stopWatchingStageLabel : undefined}
-        stopWatchingIcon={stopWatchingIcon}
         onClose={onClose}
         onStopWatching={
           canStopWatchingStageTile

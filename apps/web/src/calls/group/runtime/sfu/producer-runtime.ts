@@ -37,6 +37,7 @@ interface CreateSfuProducerRuntimeOptions {
 export interface GroupSfuProducerRuntime {
   initializeLocalProducers: () => Promise<void>;
   setVideoTrack: (track: MediaStreamTrack | null, source?: SfuProducerSource) => Promise<void>;
+  setAudioTrack: (track: MediaStreamTrack) => Promise<void>;
   setLocalMediaKey: (mediaKey: LocalGroupCallMediaKey | null) => void;
   getLocalProducerIds: () => Set<string>;
   getDebugSnapshot: () => Record<string, unknown>;
@@ -182,6 +183,11 @@ export function createSfuProducerRuntime(
     options.announceProducerState(producerHandle.id, "video", "added", source);
   };
 
+  const setAudioTrack = async (track: MediaStreamTrack): Promise<void> => {
+    if (!localAudioProducer || closed) return;
+    await localAudioProducer.replaceTrack({ track });
+  };
+
   return {
     initializeLocalProducers: async () => {
       await initializeLocalAudioProducer();
@@ -191,6 +197,7 @@ export function createSfuProducerRuntime(
       }
     },
     setVideoTrack,
+    setAudioTrack,
     setLocalMediaKey: (mediaKey) => {
       if (!frameCryptoEnabled) {
         return;

@@ -56,6 +56,7 @@ export interface GroupSfuClient {
   syncRemoteProducers: () => Promise<void>;
   removeParticipantMedia: (userId: string) => void;
   setVideoTrack: (track: MediaStreamTrack | null, source?: import("@seclettr/protocol").SfuProducerSource) => Promise<void>;
+  setAudioTrack: (track: MediaStreamTrack) => Promise<void>;
   setLocalMediaKey: (mediaKey: LocalGroupCallMediaKey | null) => void;
   setRemoteMediaKey: (senderDeviceId: string, mediaKey: ReceivedGroupCallMediaKey | null) => void;
   getDebugSnapshot: () => Record<string, unknown>;
@@ -205,6 +206,7 @@ export async function startGroupSfuClient(options: GroupSfuClientOptions): Promi
     syncRemoteProducers: consumerRuntime.syncRemoteProducers,
     removeParticipantMedia: consumerRuntime.removeParticipantMedia,
     setVideoTrack: producerRuntime.setVideoTrack,
+    setAudioTrack: producerRuntime.setAudioTrack,
     setLocalMediaKey: producerRuntime.setLocalMediaKey,
     setRemoteMediaKey: consumerRuntime.setRemoteMediaKey,
     getDebugSnapshot: () => ({

@@ -5,6 +5,7 @@ import {
   CallMediaSurface,
 } from "@/calls/shared/presentation/CallMediaSurface";
 import {
+  CloseIcon,
   ExpandIcon,
   ScreenShareIcon,
 } from "@/calls/shared/presentation/CallIcons";
@@ -137,9 +138,7 @@ function StageActionRail({
           aria-label={stopWatchingScreenLabel}
           title={stopWatchingScreenLabel}
         >
-          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-            <path d="M3 3l10 10M13 3 3 13" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" />
-          </svg>
+          <CloseIcon />
         </IconButton>
       ) : null}
       {scene.canOpenScreenViewer ? (

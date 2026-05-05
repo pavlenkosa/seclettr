@@ -77,7 +77,7 @@ export function useGlobalGroupCallAlerts(
       setActiveCalls([]);
       return;
     }
-    api.getActiveGroupCalls().then(setActiveCalls);
+    void api.getActiveGroupCalls().then(setActiveCalls);
   }, [userId]);
 
   // Live updates via WS — events arrive regardless of which group is open.

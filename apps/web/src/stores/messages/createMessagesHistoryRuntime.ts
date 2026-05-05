@@ -248,7 +248,7 @@ function restoreProcessedIdsFromConversations(
 function primeRestoredConversationLabels(conversations: Record<string, Conversation>, get: GetMessagesState): void {
   for (const conversation of Object.values(conversations)) {
     if (shouldHydrateUserLabel(conversation.username, conversation.userId)) {
-      get().ensureConversationUsername(conversation.userId);
+      void get().ensureConversationUsername(conversation.userId);
     } else {
       primeUserLabelCache(conversation.userId, conversation.username);
     }

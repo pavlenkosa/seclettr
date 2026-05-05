@@ -82,7 +82,6 @@ interface DirectCallSurfaceRendererProps {
   readonly stageScene: DirectCallStageSceneState;
   readonly incomingPeerInitials: string;
   readonly incomingPeerDisplayName: string;
-  readonly incomingPromptText: string;
   readonly incomingMinimizedMetaText: string;
   readonly peerDisplayInitials: string;
   readonly peerDisplayName: string;

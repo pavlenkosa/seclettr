@@ -245,10 +245,10 @@ export function useChatWorkspaceEntry(options: UseChatWorkspaceEntryOptions) {
 
   useEffect(() => {
     if (!activeConversationUserId) return;
-    fetchUserPresence(activeConversationUserId);
-    markConversationRead(activeConversationUserId);
+    void fetchUserPresence(activeConversationUserId);
+    void markConversationRead(activeConversationUserId);
     const refreshTimer = setInterval(() => {
-      fetchUserPresence(activeConversationUserId);
+      void fetchUserPresence(activeConversationUserId);
     }, 30_000);
     return () => clearInterval(refreshTimer);
   }, [activeConversationUserId, fetchUserPresence, markConversationRead]);
@@ -256,11 +256,11 @@ export function useChatWorkspaceEntry(options: UseChatWorkspaceEntryOptions) {
   const handleRetryMessage = useCallback(
     (messageId: string) => {
       if (activeThreadKind === "direct" && activeConversationUserId) {
-        retryDirectMessage(activeConversationUserId, messageId);
+        void retryDirectMessage(activeConversationUserId, messageId);
         return;
       }
       if (activeThreadKind === "group" && activeGroupId) {
-        retryGroupMessage(activeGroupId, messageId);
+        void retryGroupMessage(activeGroupId, messageId);
       }
     },
     [

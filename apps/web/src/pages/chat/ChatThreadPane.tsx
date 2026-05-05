@@ -114,7 +114,7 @@ export function ChatThreadPane({
       aria-label={t("chat.dropFiles")}
       onDragOver={handleDragOver}
       onDragLeave={handleDragLeave}
-      onDrop={(e) => { handleDrop(e); }}
+      onDrop={(e) => { void handleDrop(e); }}
     >
       {isDragOver ? (
         <div className={styles.dropOverlay} aria-hidden="true">

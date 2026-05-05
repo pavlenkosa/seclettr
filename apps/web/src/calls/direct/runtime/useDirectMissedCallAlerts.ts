@@ -29,7 +29,7 @@ export function useDirectMissedCallAlerts(userId: string | null): {
     }
 
     let cancelled = false;
-    api.getMissedDirectCalls().then((calls) => {
+    void api.getMissedDirectCalls().then((calls) => {
       if (cancelled) return;
       setMissedDirectCalls(
         calls.filter((c) => !dismissedRef.current.has(c.callId))

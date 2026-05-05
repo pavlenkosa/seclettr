@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { ensureSodium, toBase64Url } from "@seclettr/crypto";
+import type * as SeclettrCrypto from "@seclettr/crypto";
 
 const callAuthSyncMocks = vi.hoisted(() => ({
   apiSyncCurrentDeviceCryptoMaterial: vi.fn(),
@@ -21,7 +22,7 @@ vi.mock("@/stores/auth", () => ({
 }));
 
 vi.mock("@seclettr/crypto", async () => {
-  const actual = await vi.importActual<typeof import("@seclettr/crypto")>(
+  const actual = await vi.importActual<typeof SeclettrCrypto>(
     "@seclettr/crypto"
   );
   return {

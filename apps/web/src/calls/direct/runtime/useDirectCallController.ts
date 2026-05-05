@@ -747,7 +747,7 @@ export function useDirectCallController() {
     pushNotice,
     recordCallEvent,
     rejectIncomingCall: (callId) => {
-      sendAuthoritativeDirectCallReject(callId);
+      void sendAuthoritativeDirectCallReject(callId);
     },
     finishCallSession,
     debugCallMedia,

@@ -80,7 +80,7 @@ export function NotificationsSettingsSection({
           <SegmentedControl
             value={browserPushValue}
             onChange={(nextValue) => {
-              onBrowserPushToggle(nextValue);
+              void onBrowserPushToggle(nextValue);
             }}
             ariaLabel={t("settings.push.browser")}
             grouped
@@ -101,7 +101,7 @@ export function NotificationsSettingsSection({
           <SegmentedControl
             value={pushPreferences.directMessagesEnabled ? "on" : "off"}
             onChange={(nextValue) => {
-              onPreferenceToggle("directMessagesEnabled", nextValue);
+              void onPreferenceToggle("directMessagesEnabled", nextValue);
             }}
             ariaLabel={t("settings.push.directMessages")}
             grouped
@@ -116,7 +116,7 @@ export function NotificationsSettingsSection({
           <SegmentedControl
             value={pushPreferences.groupMessagesEnabled ? "on" : "off"}
             onChange={(nextValue) => {
-              onPreferenceToggle("groupMessagesEnabled", nextValue);
+              void onPreferenceToggle("groupMessagesEnabled", nextValue);
             }}
             ariaLabel={t("settings.push.groupMessages")}
             grouped
@@ -131,7 +131,7 @@ export function NotificationsSettingsSection({
           <SegmentedControl
             value={pushPreferences.callInvitesEnabled ? "on" : "off"}
             onChange={(nextValue) => {
-              onPreferenceToggle("callInvitesEnabled", nextValue);
+              void onPreferenceToggle("callInvitesEnabled", nextValue);
             }}
             ariaLabel={t("settings.push.callInvites")}
             grouped
@@ -146,7 +146,7 @@ export function NotificationsSettingsSection({
           <SegmentedControl
             value={pushPreferences.showSender ? "on" : "off"}
             onChange={(nextValue) => {
-              onPreferenceToggle("showSender", nextValue);
+              void onPreferenceToggle("showSender", nextValue);
             }}
             ariaLabel={t("settings.push.showSender")}
             grouped
@@ -201,7 +201,7 @@ export function NotificationsSettingsSection({
                     appearance="soft"
                     size="sm"
                     onClick={() => {
-                      onDeletePushSubscription(subscription.id);
+                      void onDeletePushSubscription(subscription.id);
                     }}
                     disabled={pushBusy}
                   >

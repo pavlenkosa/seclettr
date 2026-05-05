@@ -305,7 +305,7 @@ export function useGroupCallSessionLifecycle({
       dispatchStatus({ type: "RECONNECT_START" });
       const delayMs = Math.pow(2, rejoinAttempts - 1) * 1000;
       setTimeout(() => {
-        runSfuRejoinAttempt();
+        void runSfuRejoinAttempt();
       }, delayMs);
     };
 
@@ -641,7 +641,7 @@ export function useGroupCallSessionLifecycle({
       }
     };
 
-    startGroupCall();
+    void startGroupCall();
 
     return () => {
       cancelled = true;
@@ -650,7 +650,7 @@ export function useGroupCallSessionLifecycle({
       }
       activeStreamRef.current = null;
       cleanupLocalMedia();
-      leaveCurrentCall();
+      void leaveCurrentCall();
     };
   }, [
     attachInitialStream,

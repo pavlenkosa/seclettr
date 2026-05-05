@@ -76,7 +76,7 @@ function GroupCallStageActions({
       ) : null}
       {canToggleStagePresentation ? (
         <IconButton
-          onClick={() => { onToggleStagePresentation(); }}
+          onClick={() => { void onToggleStagePresentation(); }}
           className={styles.stageActionIconBtn}
           size={34}
           variant="glass"
@@ -106,7 +106,7 @@ export function GroupCallStageArea({
   onStopWatchingStageTile,
 }: GroupCallStageAreaProps) {
   const handleSelectCompactStagePreview = isCompactStagePreview && stageTile.hasVideo
-    ? () => { onToggleStagePresentation(); }
+    ? () => { void onToggleStagePresentation(); }
     : undefined;
 
   return (

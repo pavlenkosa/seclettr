@@ -30,6 +30,7 @@ import {
 } from "./rtp-parameters";
 import type { GroupCallRemoteMedia } from "@/calls/group/runtime/group-call/remote-media";
 import type { GroupCallMediaEncryptionMode } from "./types";
+import type { SfuProducerSource } from "@seclettr/protocol";
 
 type CallType = "audio" | "video";
 
@@ -55,7 +56,7 @@ export interface GroupSfuClient {
   readonly rtpCapabilities: MediasoupTypes.RtpCapabilities;
   syncRemoteProducers: () => Promise<void>;
   removeParticipantMedia: (userId: string) => void;
-  setVideoTrack: (track: MediaStreamTrack | null, source?: import("@seclettr/protocol").SfuProducerSource) => Promise<void>;
+  setVideoTrack: (track: MediaStreamTrack | null, source?: SfuProducerSource) => Promise<void>;
   setAudioTrack: (track: MediaStreamTrack) => Promise<void>;
   setLocalMediaKey: (mediaKey: LocalGroupCallMediaKey | null) => void;
   setRemoteMediaKey: (senderDeviceId: string, mediaKey: ReceivedGroupCallMediaKey | null) => void;
@@ -103,7 +104,7 @@ export async function startGroupSfuClient(options: GroupSfuClientOptions): Promi
     producerId: string,
     kind: "audio" | "video",
     state: "added" | "removed",
-    source?: import("@seclettr/protocol").SfuProducerSource
+    source?: SfuProducerSource
   ) => {
     wsClient.send(
       {
@@ -146,7 +147,7 @@ export async function startGroupSfuClient(options: GroupSfuClientOptions): Promi
       transportId: sendTransport.id,
       kind,
       source: kind === "video" && appData && typeof appData === "object" && "source" in appData
-        ? (appData.source as import("@seclettr/protocol").SfuProducerSource | undefined)
+        ? (appData.source as SfuProducerSource | undefined)
         : undefined,
       rtpParameters: normalizeSfuRtpParameters(rtpParameters),
     }).then((producerId) => {

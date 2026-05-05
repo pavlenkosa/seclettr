@@ -89,9 +89,9 @@ export async function resolveRestoredSession(
 
   // Request that the browser never evict this origin's IDB under quota
   // pressure.  Fire-and-forget — result logged inside, never blocks restore.
-  requestPersistentStorage();
+  void requestPersistentStorage();
   // Warn in logs if storage is getting full (>75 % quota used).
-  checkStorageQuota();
+  void checkStorageQuota();
 
   let resolvedStorageKey = providedStorageKey ?? null;
   if (!resolvedStorageKey) {

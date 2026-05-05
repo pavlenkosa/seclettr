@@ -1,4 +1,5 @@
 import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
+import type * as MessagesStore from "@/stores/messages";
 
 const apiGetMock = vi.fn();
 const apiPostMock = vi.fn();
@@ -85,7 +86,7 @@ vi.mock("@seclettr/crypto", () => ({
   serializeRatchetState: serializeRatchetStateMock,
 }));
 
-let useMessagesStore: typeof import("@/stores/messages").useMessagesStore;
+let useMessagesStore: typeof MessagesStore.useMessagesStore;
 
 const serializedSession = {
   DHs_pub: "pub",

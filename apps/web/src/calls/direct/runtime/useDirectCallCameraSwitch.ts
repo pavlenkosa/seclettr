@@ -126,7 +126,7 @@ export function useDirectCallCameraSwitch({
       }
     };
 
-    refreshAvailability();
+    void refreshAvailability();
 
     if (!mediaDevices.addEventListener) {
       return () => {
@@ -135,7 +135,7 @@ export function useDirectCallCameraSwitch({
     }
 
     const handleDeviceChange = () => {
-      refreshAvailability();
+      void refreshAvailability();
     };
 
     mediaDevices.addEventListener("devicechange", handleDeviceChange);

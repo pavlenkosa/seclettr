@@ -4,6 +4,13 @@ import { assertDatabaseReachable, assertRequiredEnv, loadInfraEnvIfPresent } fro
 export default async function globalSetup() {
   loadInfraEnvIfPresent();
 
+  // Ensure JWT_SECRET is available for config.ts which is loaded at module
+  // import time inside buildApp(). Vitest does not forward test.env to the
+  // globalSetup process, so we set a fallback here if the host env is absent.
+  if (!process.env["JWT_SECRET"] || process.env["JWT_SECRET"].length < 32) {
+    process.env["JWT_SECRET"] = "integration-test-jwt-secret-fallback-key-42";
+  }
+
   if (process.env["API_URL"]) {
     return;
   }

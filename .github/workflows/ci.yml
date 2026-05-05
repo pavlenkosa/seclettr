@@ -205,6 +205,8 @@ jobs:
 
       - run: pnpm install --frozen-lockfile
 
+      - run: pnpm --filter @seclettr/crypto build
+
       - run: pnpm --filter @seclettr/protocol build
 
       - run: pnpm --filter @seclettr/api db:migrate

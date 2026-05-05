@@ -1,5 +1,6 @@
 import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import type { Conversation } from "@/stores/messages";
+import type * as MessagesStore from "@/stores/messages";
 
 vi.mock("@/lib/websocket", () => ({
   wsClient: {
@@ -30,7 +31,7 @@ vi.mock("@seclettr/crypto", () => ({
   encryptAttachment: vi.fn(),
 }));
 
-let useMessagesStore: typeof import("@/stores/messages").useMessagesStore;
+let useMessagesStore: typeof MessagesStore.useMessagesStore;
 
 function buildConversation(userId: string, unreadCount: number): Conversation {
   return {

@@ -1,4 +1,5 @@
 import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
+import type * as SessionRuntime from "@/stores/messages/session-runtime";
 
 const bootstrapReceiverSessionMock = vi.fn();
 const deserializeRatchetStateMock = vi.fn();
@@ -24,7 +25,7 @@ vi.mock("@seclettr/crypto", () => ({
   x3dhSend: x3dhSendMock,
 }));
 
-let createMessageSessionRuntime: typeof import("@/stores/messages/session-runtime").createMessageSessionRuntime;
+let createMessageSessionRuntime: typeof SessionRuntime.createMessageSessionRuntime;
 
 const storageKey = {} as CryptoKey;
 const identityKeyPair = {

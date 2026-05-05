@@ -87,11 +87,11 @@ export function useChatWorkspaceInteractions(
   }, [activeGroup, activeThreadKind, closeGroupMembers]);
 
   const handleLogout = useCallback(() => {
-    logout();
+    void logout();
   }, [logout]);
 
   const handleLock = useCallback(() => {
-    lock();
+    void lock();
   }, [lock]);
 
   const handleOpenSettings = useCallback(() => {

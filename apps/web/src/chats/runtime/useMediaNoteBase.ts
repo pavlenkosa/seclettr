@@ -96,7 +96,7 @@ export function useMediaNoteBase<T extends HTMLMediaElement = HTMLMediaElement>(
   useEffect(() => {
     if (!autoDecrypt || autoDecryptFiredRef.current || !attachment) return;
     autoDecryptFiredRef.current = true;
-    loadAndMaybePlay(false);
+    void loadAndMaybePlay(false);
   }, [autoDecrypt, attachment, loadAndMaybePlay]);
 
   const togglePlayback = useCallback(async () => {

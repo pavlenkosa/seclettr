@@ -91,7 +91,7 @@ export function scheduleGroupLabelRefresh(
 ): void {
   if (!groupId || GROUP_LABEL_REFRESH_IN_FLIGHT.has(groupId)) return;
   GROUP_LABEL_REFRESH_IN_FLIGHT.add(groupId);
-  refreshGroup(groupId).finally(() => {
+  void refreshGroup(groupId).finally(() => {
     GROUP_LABEL_REFRESH_IN_FLIGHT.delete(groupId);
   });
 }

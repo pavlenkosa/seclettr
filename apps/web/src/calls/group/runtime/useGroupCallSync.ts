@@ -225,7 +225,7 @@ export function useGroupCallSync(
       }
     };
 
-    syncActiveGroupCall();
+    void syncActiveGroupCall();
 
     return () => {
       cancelled = true;

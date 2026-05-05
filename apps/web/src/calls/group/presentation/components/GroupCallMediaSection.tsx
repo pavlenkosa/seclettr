@@ -77,7 +77,7 @@ export function GroupCallMediaSection({
     ? t("group.call.stage.stopWatchingScreen")
     : t("group.call.stage.stopWatchingCamera");
   const stageViewerToggleHandler = () => {
-    onToggleStageFullscreen();
+    void onToggleStageFullscreen();
   };
 
   return (

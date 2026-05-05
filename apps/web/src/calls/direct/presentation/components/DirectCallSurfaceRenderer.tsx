@@ -5,6 +5,7 @@ import type {
 } from "react";
 import type { DirectCallMediaEncryptionMode } from "@/calls/direct/model/call-media-encryption-negotiation";
 import type { DirectCallStageSceneState } from "@/calls/direct/presentation/useDirectCallStagePresentation";
+import type { VideoResolution } from "@/calls/shared/presentation/CallDevicePicker";
 import { InlineNotice } from "@/components/ui";
 
 import { DirectCallActiveMinimized } from "./DirectCallActiveMinimized";
@@ -81,7 +82,6 @@ interface DirectCallSurfaceRendererProps {
   readonly stageScene: DirectCallStageSceneState;
   readonly incomingPeerInitials: string;
   readonly incomingPeerDisplayName: string;
-  readonly incomingPromptText: string;
   readonly incomingMinimizedMetaText: string;
   readonly peerDisplayInitials: string;
   readonly peerDisplayName: string;
@@ -149,6 +149,8 @@ interface DirectCallSurfaceRendererProps {
   readonly onSwitchCamera: () => void | Promise<void>;
   readonly onToggleVideo: () => void | Promise<void>;
   readonly onToggleScreenShare: () => void | Promise<void>;
+  readonly selectedScreenResolution: VideoResolution;
+  readonly onSelectScreenResolution: (res: VideoResolution) => void;
   readonly localStream?: MediaStream | null;
   readonly cameraSenderRef?: RefObject<RTCRtpSender | null>;
 }
@@ -257,6 +259,8 @@ export function DirectCallSurfaceRenderer({
   onSwitchCamera,
   onToggleVideo,
   onToggleScreenShare,
+  selectedScreenResolution,
+  onSelectScreenResolution,
   localStream,
   cameraSenderRef,
 }: DirectCallSurfaceRendererProps) {
@@ -437,6 +441,8 @@ export function DirectCallSurfaceRenderer({
           onToggleMute={onToggleMute}
           onToggleVideo={onToggleVideo}
           onToggleScreenShare={onToggleScreenShare}
+          selectedScreenResolution={selectedScreenResolution}
+          onSelectScreenResolution={onSelectScreenResolution}
           onHangup={onHangup}
           localStream={localStream ?? null}
           cameraSenderRef={cameraSenderRef ?? { current: null }}

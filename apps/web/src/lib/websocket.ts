@@ -86,7 +86,7 @@ export class SeclettrWebSocket {
     this.token = accessToken;
     this.intentionalClose = false;
     this.bufferedCallOffer = null;
-    this.doConnect();
+    void this.doConnect();
   }
 
   disconnect(): void {
@@ -259,7 +259,7 @@ export class SeclettrWebSocket {
             if (newToken && !this.intentionalClose) {
               this.token = newToken;
               this.reconnectDelay = 1000;
-              this.doConnect();
+              void this.doConnect();
             }
           })
           .catch(() => {
@@ -292,7 +292,7 @@ export class SeclettrWebSocket {
     );
     this.reconnectTimer = globalThis.setTimeout(() => {
       if (!this.intentionalClose) {
-        this.doConnect();
+        void this.doConnect();
       }
     }, delay);
   }

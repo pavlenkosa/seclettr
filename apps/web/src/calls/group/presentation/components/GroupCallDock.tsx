@@ -70,7 +70,7 @@ export function GroupCallDock({
             <ExpandIcon />
           </IconButton>
           <IconButton
-            onClick={() => { onLeave(); }}
+            onClick={() => { void onLeave(); }}
             className={styles.dockBtn}
             size={38}
             tone="danger"

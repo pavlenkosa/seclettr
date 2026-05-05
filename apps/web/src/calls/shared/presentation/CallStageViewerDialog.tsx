@@ -92,19 +92,19 @@ export function CallStageViewerDialog({
     if (!canToggleNativeFullscreen) {
       return;
     }
-    if (document.fullscreenElement != null) {
-      await document.exitFullscreen().catch(() => null);
-    } else {
+    if (document.fullscreenElement == null) {
       await document.documentElement.requestFullscreen().catch(() => null);
+    } else {
+      await document.exitFullscreen().catch(() => null);
     }
   }, [canToggleNativeFullscreen]);
 
   const handleClose = useCallback(() => {
-    exitNativeFullscreen().finally(onClose);
+    void exitNativeFullscreen().finally(onClose);
   }, [exitNativeFullscreen, onClose]);
 
   const handleStopWatching = useCallback(() => {
-    exitNativeFullscreen().finally(() => {
+    void exitNativeFullscreen().finally(() => {
       onStopWatching?.();
       onClose();
     });

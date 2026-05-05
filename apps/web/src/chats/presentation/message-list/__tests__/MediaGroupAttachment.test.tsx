@@ -99,7 +99,7 @@ vi.mock("@/components/common/MediaLightbox", () => ({
         <button
           type="button"
           data-testid="lightbox-next"
-          onClick={() => { onNavigate(1); }}
+          onClick={() => { void onNavigate(1); }}
         >
           next
         </button>

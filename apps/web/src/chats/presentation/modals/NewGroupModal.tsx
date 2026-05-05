@@ -105,7 +105,7 @@ export function NewGroupModal({ onClose, onCreate }: Props) {
         className={styles.form}
         onSubmit={(event) => {
           event.preventDefault();
-          handleCreate();
+          void handleCreate();
         }}
       >
         <FieldSection

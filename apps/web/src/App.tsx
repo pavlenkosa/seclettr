@@ -155,7 +155,7 @@ export function App() {
   );
 
   const handleLock = useCallback(() => {
-    lock();
+    void lock();
   }, [lock]);
 
   useInactivityLock({
@@ -177,7 +177,7 @@ export function App() {
   useEffect(() => {
     if (hasStarted.current) return;
     hasStarted.current = true;
-    tryRestoreSession();
+    void tryRestoreSession();
   }, [tryRestoreSession]);
 
   useEffect(() => {
@@ -212,10 +212,10 @@ export function App() {
         pinWrong={authError === "pin_wrong"}
         onUnlock={(pin) => {
           clearError();
-          unlock(pin);
+          void unlock(pin);
         }}
         onLogout={() => {
-          logout();
+          void logout();
         }}
       />
     );

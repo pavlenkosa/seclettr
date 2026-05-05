@@ -4,6 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { WsServerMessage } from "@seclettr/protocol";
 import type { SfuHttpClient } from "@/calls/group/runtime/sfu/http-client";
 import { createSfuConsumerRuntime } from "@/calls/group/runtime/sfu/consumer-runtime";
+import type { RecvTransport } from "@/calls/group/runtime/sfu/types";
 
 function createFakeTrack(id: string, kind: "audio" | "video"): MediaStreamTrack {
   return {
@@ -80,7 +81,7 @@ describe("createSfuConsumerRuntime", () => {
     const recvTransport = {
       id: "recv-transport-1",
       consume: vi.fn(async () => consumer),
-    } as unknown as import("@/calls/group/runtime/sfu/types").RecvTransport;
+    } as unknown as RecvTransport;
 
     const runtime = createSfuConsumerRuntime({
       roomId: "room-1",
@@ -157,7 +158,7 @@ describe("createSfuConsumerRuntime", () => {
       recvTransport: {
         id: "recv-transport-1",
         consume: vi.fn(async () => consumer),
-      } as unknown as import("@/calls/group/runtime/sfu/types").RecvTransport,
+      } as unknown as RecvTransport,
       rtpCapabilities: {},
       mediaEncryptionMode: "off",
       getLocalProducerIds: () => new Set<string>(),
@@ -208,7 +209,7 @@ describe("createSfuConsumerRuntime", () => {
       recvTransport: {
         id: "recv-transport-1",
         consume: vi.fn(),
-      } as unknown as import("@/calls/group/runtime/sfu/types").RecvTransport,
+      } as unknown as RecvTransport,
       rtpCapabilities: {},
       mediaEncryptionMode: "off",
       getLocalProducerIds: () => new Set<string>(),

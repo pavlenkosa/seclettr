@@ -119,7 +119,7 @@ export function InlineMediaAttachment({ msg, isOwn }: InlineMediaAttachmentProps
       !previewUrl &&
       !loading
     ) {
-      decryptAndPreview();
+      void decryptAndPreview();
     }
   }, [autoDecryptMedia, decryptAndPreview, loading, msg.attachment?.attachmentId, previewUrl, uploadProgress]);
 

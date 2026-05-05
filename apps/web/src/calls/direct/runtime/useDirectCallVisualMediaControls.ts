@@ -153,6 +153,8 @@ export function useDirectCallVisualMediaControls({
   const {
     stopScreenShare,
     toggleScreenShare,
+    selectedScreenResolution,
+    handleSelectScreenResolution,
   } = useDirectCallScreenShareControls({
     activeRef,
     localStreamRef,
@@ -189,5 +191,7 @@ export function useDirectCallVisualMediaControls({
     toggleVideo,
     toggleScreenShare,
     stopScreenShare: (reason?: DirectCallScreenShareStopReason) => stopScreenShare(reason),
+    selectedScreenResolution,
+    handleSelectScreenResolution,
   };
 }

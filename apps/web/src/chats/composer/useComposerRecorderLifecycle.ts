@@ -176,10 +176,10 @@ export function useComposerRecorderLifecycle({
         }
 
         if (kind === "voice") {
-          onSendVoiceBlob(mediaBlob, recordedDurationMs);
+          void onSendVoiceBlob(mediaBlob, recordedDurationMs);
           return;
         }
-        onSendVideoBlob(mediaBlob, recordedDurationMs);
+        void onSendVideoBlob(mediaBlob, recordedDurationMs);
       };
 
       recorder.onerror = (event) => {

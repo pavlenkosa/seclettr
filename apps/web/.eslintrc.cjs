@@ -9,6 +9,7 @@ module.exports = {
   parserOptions: {
     ecmaVersion: "latest",
     sourceType: "module",
+    project: "./tsconfig.json",
     ecmaFeatures: {
       jsx: true,
     },
@@ -23,6 +24,16 @@ module.exports = {
         ignoreRestSiblings: true,
         varsIgnorePattern: "^_",
       },
+    ],
+    // type-aware rules (require project in parserOptions)
+    "@typescript-eslint/no-floating-promises": ["error", { ignoreIIFE: true }],
+    "@typescript-eslint/no-misused-promises": [
+      "error",
+      { checksVoidReturn: { attributes: false } },
+    ],
+    "@typescript-eslint/consistent-type-imports": [
+      "error",
+      { prefer: "type-imports", fixStyle: "inline-type-imports" },
     ],
     "react-hooks/rules-of-hooks": "error",
     "react-hooks/exhaustive-deps": "warn",

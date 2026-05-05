@@ -115,7 +115,7 @@ export const useMessagesStore = create<MessagesState>((set, get) => {
       });
 
       if (nextConversations) {
-        persistConversations(nextConversations);
+        void persistConversations(nextConversations);
       }
     },
 
@@ -325,14 +325,14 @@ export const useMessagesStore = create<MessagesState>((set, get) => {
       });
 
       if (nextConversations) {
-        persistConversations(nextConversations);
+        void persistConversations(nextConversations);
       }
 
       if (
         !normalizedUsername ||
         shouldHydrateUserLabel(normalizedUsername, userId)
       ) {
-        get().ensureConversationUsername(userId);
+        void get().ensureConversationUsername(userId);
       }
     },
 

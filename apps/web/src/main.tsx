@@ -17,10 +17,10 @@ if ("serviceWorker" in navigator) {
   if (import.meta.env.DEV && import.meta.env["VITE_DISABLE_SW_DEV"] === "true") {
     const registrations = await navigator.serviceWorker.getRegistrations();
     for (const registration of registrations) {
-      registration.unregister();
+      void registration.unregister();
     }
   } else {
-    navigator.serviceWorker.register("/push-sw.js");
+    void navigator.serviceWorker.register("/push-sw.js");
   }
 }
 

@@ -71,42 +71,36 @@ describe("ConversationList ARIA semantics", () => {
     });
   }
 
-  it("renders the conversation list with role=listbox", () => {
+  it("renders the conversation list as a ul", () => {
     render();
-    const list = container.querySelector('[role="listbox"]');
+    const list = container.querySelector('ul[data-testid="chat-thread-list"]');
     expect(list).not.toBeNull();
-    expect(list?.tagName.toLowerCase()).toBe("div");
+    expect(list?.getAttribute("role")).toBeNull();
   });
 
-  it("renders each conversation item as role=option", () => {
+  it("renders each conversation item as a li > button", () => {
     render();
-    const options = container.querySelectorAll('[role="option"]');
-    expect(options.length).toBe(2);
+    const items = container.querySelectorAll('li > button');
+    expect(items.length).toBe(2);
   });
 
-  it("sets aria-selected=false on all items when none is active", () => {
+  it("sets no aria-current when no conversation is active", () => {
     render(null);
-    const options = container.querySelectorAll('[role="option"]');
-    for (const option of options) {
-      expect(option.getAttribute("aria-selected")).toBe("false");
+    const buttons = container.querySelectorAll('li > button');
+    for (const button of buttons) {
+      expect(button.getAttribute("aria-current")).toBeNull();
     }
   });
 
-  it("sets aria-selected=true only on the active conversation", () => {
+  it("sets aria-current=true only on the active conversation", () => {
     // List is sorted by lastMessageAt desc — bob (2000) sorts first, alice (1000) second
     render("direct:user-alice");
-    const options = container.querySelectorAll('[role="option"]');
-    expect(options.length).toBe(2);
+    const buttons = container.querySelectorAll('li > button');
+    expect(buttons.length).toBe(2);
     // bob sorts first (lastMessageAt 2000), alice sorts second
-    const [firstOption, secondOption] = options;
-    expect(firstOption?.getAttribute("aria-selected")).toBe("false");
-    expect(secondOption?.getAttribute("aria-selected")).toBe("true");
-  });
-
-  it("wraps each option in a presentation li to neutralize list-item role", () => {
-    render();
-    const presentationItems = container.querySelectorAll('li[role="none"]');
-    expect(presentationItems.length).toBe(2);
+    const [firstButton, secondButton] = buttons;
+    expect(firstButton?.getAttribute("aria-current")).toBeNull();
+    expect(secondButton?.getAttribute("aria-current")).toBe("true");
   });
 
   it("shows empty state when no conversations", () => {
@@ -121,8 +115,7 @@ describe("ConversationList ARIA semantics", () => {
         </I18nProvider>
       );
     });
-    // Empty state does not use a listbox
-    expect(container.querySelector('[role="listbox"]')).toBeNull();
+    expect(container.querySelector('ul[data-testid="chat-thread-list"]')).toBeNull();
   });
 
   it("renders the provided loading placeholder count instead of a hardcoded three rows", () => {

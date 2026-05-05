@@ -171,7 +171,7 @@ export function createMessagesLiveSyncRuntime({
     }
     shared.runtimeState.pendingConversationPersistTimer = globalThis.setTimeout(() => {
       shared.runtimeState.pendingConversationPersistTimer = null;
-      persistConversations(get().conversations);
+      void persistConversations(get().conversations);
     }, 500) as unknown as number;
   }
 

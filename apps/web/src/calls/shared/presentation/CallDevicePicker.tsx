@@ -34,10 +34,10 @@ function CheckIcon() {
 }
 
 interface DeviceSectionProps {
-  label: string;
-  devices: InputDeviceOption[];
-  selectedId: string | null;
-  onSelect: (deviceId: string) => void;
+  readonly label: string;
+  readonly devices: InputDeviceOption[];
+  readonly selectedId: string | null;
+  readonly onSelect: (deviceId: string) => void;
 }
 
 function DeviceSection({ label, devices, selectedId, onSelect }: DeviceSectionProps) {
@@ -67,9 +67,9 @@ function DeviceSection({ label, devices, selectedId, onSelect }: DeviceSectionPr
 }
 
 interface ResolutionSectionProps {
-  selectedResolution: VideoResolution;
-  onSelectResolution: (res: VideoResolution) => void;
-  resolutionLabel: string;
+  readonly selectedResolution: VideoResolution;
+  readonly onSelectResolution: (res: VideoResolution) => void;
+  readonly resolutionLabel: string;
 }
 
 function ResolutionSection({ selectedResolution, onSelectResolution, resolutionLabel }: ResolutionSectionProps) {
@@ -178,7 +178,7 @@ export function CallDevicePicker({
       ref={rootRef}
       className={styles.root}
       data-active={active ? "true" : undefined}
-      data-tone={tone !== "default" ? tone : undefined}
+      data-tone={tone === "default" ? undefined : tone}
     >
       {children}
       <span className={styles.divider} aria-hidden="true" />

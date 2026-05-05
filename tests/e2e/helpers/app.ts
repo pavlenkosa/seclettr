@@ -87,7 +87,7 @@ export async function registerUser(
   password: string
 ): Promise<void> {
   await page.goto(BASE_URL, { waitUntil: "domcontentloaded" });
-  await page.waitForURL(/\/auth/, { timeout: 30_000 });
+  await page.waitForURL(/\/auth/, { timeout: TEST_TIMEOUT_MS });
   await page.getByRole("button", { name: "Create one" }).click();
   await page.locator("#username").fill(username);
   await page.locator("#password").fill(password);

@@ -6,6 +6,7 @@ const baseURL = process.env["BASE_URL"]
 
 export default defineConfig({
   testDir: "./tests/e2e",
+  globalSetup: "./tests/e2e/global-setup.ts",
   timeout: 60_000,
   retries: process.env["CI"] ? 2 : 0,
   workers: 1, // Sequential — tests share state between Alice and Bob contexts

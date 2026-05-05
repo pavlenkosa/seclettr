@@ -1,0 +1,201 @@
+/* ── Wrapper that merges the main button + chevron into one pill ─────────── */
+
+.root {
+  position: relative;
+  display: inline-flex;
+  align-items: stretch;
+  /* match height to the inline control button */
+  height: var(--call-control-inline-height, 56px);
+  /* shared pill shell */
+  border-radius: 999px;
+  border: 1px solid color-mix(in srgb, var(--panel-border-soft) 88%, transparent);
+  background: color-mix(in srgb, var(--panel-header-bg) 80%, var(--bg-secondary));
+  -webkit-backdrop-filter: blur(var(--call-control-inline-blur, 0px));
+  backdrop-filter: blur(var(--call-control-inline-blur, 0px));
+  transition: border-color 0.12s ease, background-color 0.12s ease;
+}
+
+/* The main button inside the picker loses its own shell — root owns it */
+.root :global(button:first-child) {
+  border: none !important;
+  background: transparent !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  border-radius: 999px 0 0 999px !important;
+  /* pill controls the height — button must not overflow it */
+  min-width: 0;
+  height: 100% !important;
+  min-height: 0 !important;
+  box-sizing: border-box;
+}
+
+/* hover: highlight the whole pill */
+.root:hover {
+  background: color-mix(in srgb, var(--panel-header-bg) 60%, var(--icon-btn-hover-bg));
+  border-color: color-mix(in srgb, var(--accent) 36%, var(--panel-border-soft));
+}
+
+/* active/pressed state — set via data attribute from JSX */
+.root[data-active="true"] {
+  background: color-mix(in srgb, var(--accent) 18%, var(--panel-header-bg));
+  border-color: color-mix(in srgb, var(--accent) 42%, var(--panel-border-soft));
+}
+
+/* danger tone */
+.root[data-tone="danger"] {
+  background: linear-gradient(145deg, #d42626, #b91c1c);
+  border-color: rgb(252 165 165 / 0.4);
+  color: #fff;
+}
+
+.root[data-tone="danger"]:hover {
+  background: linear-gradient(145deg, #dc2626, #b91c1c);
+  border-color: rgb(252 165 165 / 0.55);
+}
+
+/* divider between button and chevron */
+.divider {
+  width: 1px;
+  flex-shrink: 0;
+  align-self: stretch;
+  background: color-mix(in srgb, var(--panel-border-soft) 70%, transparent);
+  margin: 6px 0;
+}
+
+/* ── Chevron button ───────────────────────────────────────────────────────── */
+
+.chevronBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  flex-shrink: 0;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: var(--text-secondary);
+  cursor: pointer;
+  border-radius: 0 999px 999px 0;
+  transition: color 0.12s ease, background-color 0.12s ease;
+}
+
+.chevronBtn:hover {
+  color: var(--text-primary);
+}
+
+.chevronBtn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.chevronBtn svg {
+  transition: transform 0.18s ease;
+}
+
+.chevronBtn[aria-expanded="true"] svg {
+  transform: rotate(180deg);
+}
+
+/* ── Dropdown menu ───────────────────────────────────────────────────────── */
+
+.menu {
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 0;
+  z-index: 200;
+  min-width: 220px;
+  max-width: 300px;
+  background: var(--surface-float, #1e1e2e);
+  border: 1px solid color-mix(in srgb, var(--panel-border-soft) 70%, transparent);
+  border-radius: 12px;
+  padding: 6px;
+  box-shadow: 0 8px 32px rgb(0 0 0 / 0.32);
+  animation: fadeInUp 0.14s ease;
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.menuSection {
+  padding: 4px 2px 2px;
+}
+
+.menuSection + .menuSection {
+  border-top: 1px solid color-mix(in srgb, var(--panel-border-soft) 50%, transparent);
+  margin-top: 4px;
+  padding-top: 6px;
+}
+
+.sectionLabel {
+  font-size: 0.66rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-tertiary, var(--text-secondary));
+  padding: 0 6px 4px;
+}
+
+.menuItem {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 7px 8px;
+  border: none;
+  background: transparent;
+  color: var(--text-primary);
+  font-size: 0.8rem;
+  font-weight: 500;
+  border-radius: 8px;
+  cursor: pointer;
+  text-align: left;
+  transition: background-color 0.1s ease;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.menuItem:hover {
+  background: color-mix(in srgb, var(--accent) 12%, var(--icon-btn-hover-bg, rgba(255,255,255,0.07)));
+}
+
+.menuItem.selected {
+  color: var(--accent, #5865f2);
+  font-weight: 650;
+}
+
+.checkmark {
+  flex-shrink: 0;
+  width: 14px;
+  height: 14px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--accent, #5865f2);
+}
+
+.checkmarkPlaceholder {
+  flex-shrink: 0;
+  width: 14px;
+}
+
+.deviceLabel {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
+}
+
+.resolutionSection {
+  padding: 4px 2px 2px;
+  border-top: 1px solid color-mix(in srgb, var(--panel-border-soft) 50%, transparent);
+  margin-top: 4px;
+  padding-top: 6px;
+}

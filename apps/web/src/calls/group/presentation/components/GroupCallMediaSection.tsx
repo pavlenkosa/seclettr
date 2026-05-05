@@ -23,7 +23,9 @@ interface GroupCallMediaSectionProps {
   readonly localVideoStatusLabel: string;
   readonly stageEyebrowLabel: string;
   readonly focusHintLabel: string;
-  readonly fullscreenToggleLabel: string;
+  readonly enterFullscreenLabel: string;
+  readonly exitFullscreenLabel: string;
+  readonly closeViewerLabel: string;
   readonly resetStageFocusLabel: string;
   readonly mediaGridClassName: string;
   readonly mediaEmptyClassName: string;
@@ -50,7 +52,9 @@ export function GroupCallMediaSection({
   localVideoStatusLabel: _localVideoStatusLabel,
   stageEyebrowLabel,
   focusHintLabel,
-  fullscreenToggleLabel,
+  enterFullscreenLabel,
+  exitFullscreenLabel,
+  closeViewerLabel,
   resetStageFocusLabel,
   mediaGridClassName,
   mediaEmptyClassName,
@@ -99,7 +103,7 @@ export function GroupCallMediaSection({
           canToggleStagePresentation={canToggleStageFullscreen}
           isCompactStagePreview={isCompactStagePreview}
           stageEyebrowLabel={stageEyebrowLabel}
-          fullscreenToggleLabel={fullscreenToggleLabel}
+          fullscreenToggleLabel={enterFullscreenLabel}
           resetStageFocusLabel={resetStageFocusLabel}
           canStopWatchingStageTile={canStopWatchingStageTile}
           stopWatchingStageLabel={stopWatchingStageLabel}
@@ -146,7 +150,9 @@ export function GroupCallMediaSection({
         isOpen={isStageViewerOpen}
         stageTile={stageTile}
         stageEyebrowLabel={stageEyebrowLabel}
-        fullscreenToggleLabel={fullscreenToggleLabel}
+        enterFullscreenLabel={enterFullscreenLabel}
+        exitFullscreenLabel={exitFullscreenLabel}
+        closeViewerLabel={closeViewerLabel}
         canStopWatchingStageTile={canStopWatchingStageTile}
         stopWatchingStageLabel={stopWatchingStageLabel}
         onClose={stageViewerToggleHandler}

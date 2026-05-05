@@ -90,9 +90,15 @@ export interface UseGroupCallPanelRuntimeResult {
   isVideoSwitching: boolean;
   isScreenSwitching: boolean;
   isLocalScreenSharing: boolean;
+  selectedVideoResolution: import("@/calls/shared/presentation/CallDevicePicker").VideoResolution;
+  selectedScreenResolution: import("@/calls/shared/presentation/CallDevicePicker").VideoResolution;
   handleToggleMute: () => void;
   handleToggleVideo: () => Promise<void>;
   handleToggleScreenShare: () => Promise<void>;
+  handleSwitchMic: (deviceId: string) => Promise<void>;
+  handleSwitchCamera: (deviceId: string) => Promise<void>;
+  handleSelectVideoResolution: (resolution: import("@/calls/shared/presentation/CallDevicePicker").VideoResolution) => Promise<void>;
+  handleSelectScreenResolution: (resolution: import("@/calls/shared/presentation/CallDevicePicker").VideoResolution) => void;
   handleLeave: () => Promise<void>;
   handleEndForEveryone: () => Promise<void>;
 }
@@ -178,6 +184,8 @@ export function useGroupCallPanelRuntime({
     isVideoSwitching,
     isScreenSwitching,
     isLocalScreenSharing,
+    selectedVideoResolution,
+    selectedScreenResolution,
     localStreamRef,
     localScreenStreamRef,
     attachInitialStream,
@@ -186,6 +194,10 @@ export function useGroupCallPanelRuntime({
     handleToggleMute,
     handleToggleVideo,
     handleToggleScreenShare,
+    handleSwitchMic,
+    handleSwitchCamera,
+    handleSelectVideoResolution,
+    handleSelectScreenResolution,
   } = useGroupCallLocalMedia({
     status,
     sfuClientRef,
@@ -375,9 +387,15 @@ export function useGroupCallPanelRuntime({
     isVideoSwitching,
     isScreenSwitching,
     isLocalScreenSharing,
+    selectedVideoResolution,
+    selectedScreenResolution,
     handleToggleMute,
     handleToggleVideo,
     handleToggleScreenShare,
+    handleSwitchMic,
+    handleSwitchCamera,
+    handleSelectVideoResolution,
+    handleSelectScreenResolution,
     handleLeave,
     handleEndForEveryone,
   };

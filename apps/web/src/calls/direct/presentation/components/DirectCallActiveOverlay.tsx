@@ -8,6 +8,8 @@ import { DirectCallStage } from "./DirectCallStage";
 import { AudioOutputSelector } from "@/calls/shared/media/audio-output/AudioOutputSelector";
 import { useCallAudioOutput } from "@/calls/shared/media/audio-output/CallAudioOutputProvider";
 import { useCallAudioActivity } from "@/calls/shared/media/useCallAudioActivity";
+import { useCallInputDevices } from "@/calls/shared/media/input-devices/useCallInputDevices";
+import type { VideoResolution } from "@/calls/shared/presentation/CallDevicePicker";
 import { CallDurationText } from "@/calls/shared/presentation/CallDurationText";
 import {
   MinimizeIcon,
@@ -102,6 +104,15 @@ interface DirectCallActiveOverlayProps {
   readonly onToggleVideo: () => void;
   readonly onToggleScreenShare: () => void;
   readonly onHangup: () => void;
+  readonly localStream: MediaStream | null;
+  readonly cameraSenderRef: RefObject<RTCRtpSender | null>;
+  readonly micSectionLabel?: string;
+  readonly cameraSectionLabel?: string;
+  readonly videoQualityLabel?: string;
+  readonly screenQualityLabel?: string;
+  readonly micSettingsAriaLabel?: string;
+  readonly cameraSettingsAriaLabel?: string;
+  readonly screenSettingsAriaLabel?: string;
 }
 
 export function DirectCallActiveOverlay({
@@ -188,7 +199,73 @@ export function DirectCallActiveOverlay({
   onToggleVideo,
   onToggleScreenShare,
   onHangup,
+  localStream,
+  cameraSenderRef,
+  micSectionLabel,
+  cameraSectionLabel,
+  videoQualityLabel,
+  screenQualityLabel,
+  micSettingsAriaLabel,
+  cameraSettingsAriaLabel,
+  screenSettingsAriaLabel,
 }: DirectCallActiveOverlayProps) {
+  const [selectedVideoResolution, setSelectedVideoResolution] = useState<VideoResolution>("720p");
+  const [selectedScreenResolution, setSelectedScreenResolution] = useState<VideoResolution>("720p");
+
+  const {
+    micDevices,
+    cameraDevices,
+    selectedMicId,
+    selectedCameraId,
+    selectMic,
+    selectCamera,
+  } = useCallInputDevices(localStream);
+
+  const handleSelectMic = useCallback(async (deviceId: string) => {
+    if (!localStream) return;
+    await selectMic(deviceId, localStream);
+    const pc = (cameraSenderRef.current as RTCRtpSender & { _pc?: RTCPeerConnection })?._pc;
+    if (!pc) return;
+    const newTrack = localStream.getAudioTracks()[0];
+    if (!newTrack) return;
+    const sender = pc.getSenders().find((s) => s.track?.kind === "audio");
+    if (sender) {
+      await sender.replaceTrack(newTrack).catch(() => {});
+    }
+  }, [cameraSenderRef, localStream, selectMic]);
+
+  const handleSelectCamera = useCallback(async (deviceId: string) => {
+    if (!localStream || !cameraSenderRef.current) return;
+    const resolution = { "360p": [640, 360], "480p": [854, 480], "720p": [1280, 720], "1080p": [1920, 1080] }[selectedVideoResolution] ?? [1280, 720];
+    await selectCamera(deviceId, localStream, async (nextTrack) => {
+      if (cameraSenderRef.current) {
+        await cameraSenderRef.current.replaceTrack(nextTrack);
+      }
+      await nextTrack.applyConstraints({
+        width: { ideal: resolution[0] },
+        height: { ideal: resolution[1] },
+        frameRate: { ideal: 30, max: 30 },
+      }).catch(() => {});
+    });
+  }, [cameraSenderRef, localStream, selectCamera, selectedVideoResolution]);
+
+  const handleSelectVideoResolution = useCallback(async (resolution: VideoResolution) => {
+    const constraints = { "360p": [640, 360], "480p": [854, 480], "720p": [1280, 720], "1080p": [1920, 1080] }[resolution] ?? [1280, 720];
+    const track = cameraSenderRef.current?.track ?? localStream?.getVideoTracks()[0] ?? null;
+    if (track) {
+      await track.applyConstraints({
+        width: { ideal: constraints[0] },
+        height: { ideal: constraints[1] },
+        frameRate: { ideal: 30, max: 30 },
+      }).catch(() => {});
+    }
+    setSelectedVideoResolution(resolution);
+  }, [cameraSenderRef, localStream]);
+
+  const handleSelectScreenResolution = useCallback(async (resolution: VideoResolution) => {
+    setSelectedScreenResolution(resolution);
+  }, []);
+
   // Local ref for audio element to track stream changes
   const localAudioRef = useRef<HTMLAudioElement | null>(null);
   const [remoteStream, setRemoteStream] = useState<MediaStream | null>(null);
@@ -392,13 +469,30 @@ export function DirectCallActiveOverlay({
         onHangup={onHangup}
         hangupButtonRef={activeHangupButtonRef}
         muteAriaLabel={muteAriaLabel}
-        muteLabel={muteLabel}
+        muteLabel={muteLabel ?? muteAriaLabel}
         cameraAriaLabel={cameraAriaLabel}
-        cameraLabel={cameraLabel}
+        cameraLabel={cameraLabel ?? cameraAriaLabel}
         screenShareAriaLabel={screenShareAriaLabel}
-        screenShareLabel={screenShareLabel}
+        screenShareLabel={screenShareLabel ?? screenShareAriaLabel}
         endAriaLabel={endAriaLabel}
         endLabel={endLabel}
+        micDevices={micDevices}
+        cameraDevices={cameraDevices}
+        selectedMicId={selectedMicId}
+        selectedCameraId={selectedCameraId}
+        selectedVideoResolution={selectedVideoResolution}
+        selectedScreenResolution={selectedScreenResolution}
+        micSectionLabel={micSectionLabel}
+        cameraSectionLabel={cameraSectionLabel}
+        resolutionSectionLabel={videoQualityLabel}
+        screenResolutionLabel={screenQualityLabel}
+        micSettingsAriaLabel={micSettingsAriaLabel}
+        cameraSettingsAriaLabel={cameraSettingsAriaLabel}
+        screenSettingsAriaLabel={screenSettingsAriaLabel}
+        onSelectMic={handleSelectMic}
+        onSelectCamera={handleSelectCamera}
+        onSelectVideoResolution={handleSelectVideoResolution}
+        onSelectScreenResolution={handleSelectScreenResolution}
       />
     </dialog>
   );

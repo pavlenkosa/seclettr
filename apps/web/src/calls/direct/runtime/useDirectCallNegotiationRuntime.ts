@@ -610,8 +610,8 @@ export function useDirectCallNegotiationRuntime({
     if (!connected) return;
     const currentActive = activeRef.current;
     if (!currentActive?.callId) return;
-    flushPendingRenegotiationAnswer(currentActive.callId, "ws-reconnected");
-    flushPendingRenegotiationOffer(currentActive.callId, "ws-reconnected");
+    void flushPendingRenegotiationAnswer(currentActive.callId, "ws-reconnected");
+    void flushPendingRenegotiationOffer(currentActive.callId, "ws-reconnected");
   }), [
     activeRef,
     flushPendingRenegotiationAnswer,

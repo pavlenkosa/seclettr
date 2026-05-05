@@ -35,6 +35,21 @@ interface CreateGroupsLiveSyncRuntimeOptions {
   resumePendingGroupOutboundMessages?: () => Promise<void>;
 }
 
+async function commitPendingDecryptEnvelope(
+  groupId: string,
+  messageKey: string,
+  envelope: GroupHistoryMessageEnvelope,
+  fallbackMessage: GroupChatMessage
+): Promise<void> {
+  await persistPendingGroupDecryptItem({
+    messageKey,
+    groupId,
+    envelope,
+    createdAt: fallbackMessage.timestamp,
+    lastReason: "missing_sender_key",
+  });
+}
+
 export function createGroupsLiveSyncRuntime({
   set,
   get,
@@ -103,21 +118,6 @@ export function createGroupsLiveSyncRuntime({
         });
       }
     }
-  }
-
-  async function commitPendingDecryptEnvelope(
-    groupId: string,
-    messageKey: string,
-    envelope: GroupHistoryMessageEnvelope,
-    fallbackMessage: GroupChatMessage
-  ): Promise<void> {
-    await persistPendingGroupDecryptItem({
-      messageKey,
-      groupId,
-      envelope,
-      createdAt: fallbackMessage.timestamp,
-      lastReason: "missing_sender_key",
-    });
   }
 
   async function retryPendingGroupDecryptMessages(

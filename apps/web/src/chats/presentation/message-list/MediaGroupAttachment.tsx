@@ -374,7 +374,7 @@ function MediaGroupCell({
       !previewUrl &&
       !loading
     ) {
-      decryptAndPreview();
+      void decryptAndPreview();
     }
   }, [autoDecryptMedia, decryptAndPreview, loading, msg.attachment?.attachmentId, previewUrl, uploadProgress]);
 

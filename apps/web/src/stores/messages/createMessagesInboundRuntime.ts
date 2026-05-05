@@ -208,7 +208,7 @@ async function persistIncomingDecryptError(
   if (
     shouldHydrateUserLabel(get().conversations[senderId]?.username, senderId)
   ) {
-    get().ensureConversationUsername(senderId);
+    void get().ensureConversationUsername(senderId);
   }
 }
 
@@ -847,7 +847,7 @@ function hydrateOrPrimeIncomingSenderLabel(
   senderId: string
 ): void {
   if (shouldHydrateUserLabel(get().conversations[senderId]?.username, senderId)) {
-    get().ensureConversationUsername(senderId);
+    void get().ensureConversationUsername(senderId);
     return;
   }
   primeUserLabelCache(senderId, get().conversations[senderId]?.username);

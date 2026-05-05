@@ -312,6 +312,55 @@ async function completeAttachmentUpload(attachmentId: string): Promise<void> {
   await api.post<void>(`/attachments/${encodeURIComponent(attachmentId)}/complete`);
 }
 
+async function settleAcceptedDirectQueueItem(
+  item: OutboundQueueItem,
+  deliveries: DirectMessageDeliveryMeta[] | undefined
+): Promise<boolean> {
+  if (!deliveries) {
+    await removeOutboundQueueItem(item.clientMessageId);
+    return true;
+  }
+
+  const acceptedDeviceIds = new Set(
+    deliveries.map((delivery) => delivery.recipientDeviceId)
+  );
+  const remainingEnvelopes = item.envelopes.filter(
+    (envelope) => !acceptedDeviceIds.has(envelope.recipientDeviceId)
+  );
+
+  if (remainingEnvelopes.length === 0) {
+    await removeOutboundQueueItem(item.clientMessageId);
+    return true;
+  }
+
+  await persistOutboundQueueItem({
+    ...item,
+    envelopes: remainingEnvelopes,
+    sessionCommits: item.sessionCommits?.filter((commit) =>
+      remainingEnvelopes.some(
+        (envelope) => envelope.recipientDeviceId === commit.recipientDeviceId
+      )
+    ),
+  });
+  return false;
+}
+
+function buildQueuedDirectPayload(item: OutboundQueueItem) {
+  return {
+    version: MESSAGE_PROTOCOL_VERSION,
+    clientMessageId: item.clientMessageId,
+    recipientUserId: item.recipientUserId,
+    messages: item.envelopes.map((env) => ({
+      recipientDeviceId: env.recipientDeviceId,
+      ciphertext: env.ciphertext,
+      type: env.type,
+      attachmentId: env.attachmentId,
+      x3dhHeader: env.x3dhHeader,
+      oneTimePreKeyReservationToken: env.oneTimePreKeyReservationToken,
+    })),
+  };
+}
+
 export function createMessagesOutboundRuntime({
   set,
   get,
@@ -380,39 +429,6 @@ export function createMessagesOutboundRuntime({
       if (item.recipientUserId !== recipientUserId) continue;
       await applyQueuedSessionCommits(item);
     }
-  }
-
-  async function settleAcceptedDirectQueueItem(
-    item: OutboundQueueItem,
-    deliveries: DirectMessageDeliveryMeta[] | undefined
-  ): Promise<boolean> {
-    if (!deliveries) {
-      await removeOutboundQueueItem(item.clientMessageId);
-      return true;
-    }
-
-    const acceptedDeviceIds = new Set(
-      deliveries.map((delivery) => delivery.recipientDeviceId)
-    );
-    const remainingEnvelopes = item.envelopes.filter(
-      (envelope) => !acceptedDeviceIds.has(envelope.recipientDeviceId)
-    );
-
-    if (remainingEnvelopes.length === 0) {
-      await removeOutboundQueueItem(item.clientMessageId);
-      return true;
-    }
-
-    await persistOutboundQueueItem({
-      ...item,
-      envelopes: remainingEnvelopes,
-      sessionCommits: item.sessionCommits?.filter((commit) =>
-        remainingEnvelopes.some(
-          (envelope) => envelope.recipientDeviceId === commit.recipientDeviceId
-        )
-      ),
-    });
-    return false;
   }
 
   async function sendEncryptedAttachmentMessage(
@@ -1188,22 +1204,6 @@ export function createMessagesOutboundRuntime({
     resumePendingOutboundMessages,
   };
 
-  function buildQueuedDirectPayload(item: OutboundQueueItem) {
-    return {
-      version: MESSAGE_PROTOCOL_VERSION,
-      clientMessageId: item.clientMessageId,
-      recipientUserId: item.recipientUserId,
-      messages: item.envelopes.map((env) => ({
-        recipientDeviceId: env.recipientDeviceId,
-        ciphertext: env.ciphertext,
-        type: env.type,
-        attachmentId: env.attachmentId,
-        x3dhHeader: env.x3dhHeader,
-        oneTimePreKeyReservationToken: env.oneTimePreKeyReservationToken,
-      })),
-    };
-  }
-
   async function markDirectQueuedMessageStatus(
     recipientUserId: string,
     clientMessageId: string,
@@ -1259,7 +1259,7 @@ export function createMessagesOutboundRuntime({
     if (!bubble || !bubble.isOwn || bubble.status !== "error") return;
 
     const item = await loadOutboundQueueItem(messageId);
-    if (!item || item.recipientUserId !== recipientUserId) return;
+    if (item?.recipientUserId !== recipientUserId) return;
     if (item.messageType === "sender_key_distribution") return;
 
     const retryCount = await incrementOutboundRetryCount(item.clientMessageId);

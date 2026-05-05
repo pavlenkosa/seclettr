@@ -3,6 +3,8 @@ import {
   getBrowserTrustIntegrityState,
   getStoredSafetyVerificationRecord,
   setStoredSafetyVerificationRecord,
+  type BrowserTrustIntegrityState,
+  type StoredSafetyVerificationRecord,
 } from "@/lib/browser-trust-store";
 
 export interface SafetyCodes {
@@ -24,7 +26,7 @@ export interface PeerDeviceSelectionInput {
 
 export async function getSafetyTrustIntegrityState(
   storageKey?: CryptoKey | null
-): Promise<import("@/lib/browser-trust-store").BrowserTrustIntegrityState> {
+): Promise<BrowserTrustIntegrityState> {
   return getBrowserTrustIntegrityState(storageKey);
 }
 
@@ -33,7 +35,7 @@ export async function getSafetyVerificationRecord(
   myDeviceId: string,
   recipientUserId: string,
   peerDeviceId?: string
-): Promise<import("@/lib/browser-trust-store").StoredSafetyVerificationRecord | null> {
+): Promise<StoredSafetyVerificationRecord | null> {
   return getStoredSafetyVerificationRecord(
     myUserId,
     myDeviceId,
@@ -48,7 +50,7 @@ export async function setSafetyVerificationRecord(
   recipientUserId: string,
   safetyHash: string,
   peerDeviceId?: string
-): Promise<import("@/lib/browser-trust-store").StoredSafetyVerificationRecord> {
+): Promise<StoredSafetyVerificationRecord> {
   return setStoredSafetyVerificationRecord(
     myUserId,
     myDeviceId,

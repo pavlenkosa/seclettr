@@ -56,7 +56,7 @@ interface UseMessageComposerDraftResult {
   handleTextFocus: () => void;
   handleTextBlur: () => void;
   handleDroppedFiles: (files: File[], caption?: string) => Promise<void>;
-  handleAttachmentSelected: (event: ChangeEvent<HTMLInputElement>) => void;
+  handleAttachmentSelected: (event: ChangeEvent<HTMLInputElement>) => Promise<void>;
   handleSend: () => Promise<void>;
   sendVoiceBlob: (voiceBlob: Blob, durationMs: number) => Promise<void>;
   sendVideoBlob: (videoBlob: Blob, durationMs: number) => Promise<void>;
@@ -325,7 +325,7 @@ export function useMessageComposerDraft({
     if (event.nativeEvent.isComposing) return;
     if (event.key === "Enter" && !event.shiftKey) {
       event.preventDefault();
-      handleSend();
+      void handleSend();
     }
   }, [handleSend]);
 

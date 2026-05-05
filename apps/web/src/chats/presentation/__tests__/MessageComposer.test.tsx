@@ -59,7 +59,7 @@ vi.mock("../../composer/useMediaSendDialog", () => ({
     hasCompressible: false,
     canConfirmSend: false,
     openDialog: (files: File[]) => {
-      onSendFiles(files, composerRuntimeState.mediaDialogCaption);
+      void onSendFiles(files, composerRuntimeState.mediaDialogCaption);
     },
     removeFile: vi.fn(),
     setCaption: vi.fn(),

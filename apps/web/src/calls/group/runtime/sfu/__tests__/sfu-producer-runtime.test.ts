@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import { createSfuProducerRuntime } from "@/calls/group/runtime/sfu/producer-runtime";
+import type { SendTransport } from "@/calls/group/runtime/sfu/types";
 
 function createFakeTrack(id: string, kind: "audio" | "video"): MediaStreamTrack {
   return {
@@ -36,7 +37,7 @@ describe("createSfuProducerRuntime", () => {
         .mockResolvedValueOnce(audioProducer)
         .mockResolvedValueOnce(initialCameraProducer)
         .mockResolvedValueOnce(nextCameraProducer),
-    } as unknown as import("@/calls/group/runtime/sfu/types").SendTransport;
+    } as unknown as SendTransport;
     const announceProducerState = vi.fn();
     const closeProducer = vi.fn(async () => undefined);
 

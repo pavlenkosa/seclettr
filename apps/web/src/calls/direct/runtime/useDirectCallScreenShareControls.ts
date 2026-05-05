@@ -1,7 +1,8 @@
-import { useCallback } from "react";
+import { useCallback, useState } from "react";
 import { logger } from "@/lib/logger.js";
 import type { ActiveCall } from "@/calls/direct/model/direct-call-types";
 import { hasRenderableVideoTrack, toScreenShareErrorMessage } from "@/calls/direct/model/direct-call-ui-utils";
+import type { VideoResolution } from "@/calls/shared/presentation/CallDevicePicker";
 import type {
   DirectCallScreenShareStopReason,
   DirectCallVisualMediaControlsOptions,
@@ -418,8 +419,32 @@ export function useDirectCallScreenShareControls({
     t,
   ]);
 
+  const [selectedScreenResolution, setSelectedScreenResolution] = useState<VideoResolution>("720p");
+
+  const handleSelectScreenResolution = useCallback((resolution: VideoResolution) => {
+    const currentScreenTrack = screenShareTrackRef.current;
+    if (currentScreenTrack) {
+      const constraints: Record<VideoResolution, { width: number; height: number }> = {
+        "360p": { width: 640, height: 360 },
+        "480p": { width: 854, height: 480 },
+        "720p": { width: 1280, height: 720 },
+        "1080p": { width: 1920, height: 1080 },
+      };
+      const { width, height } = constraints[resolution];
+      currentScreenTrack.applyConstraints({
+        width: { ideal: width },
+        height: { ideal: height },
+      }).catch((err) => {
+        logger.warn("[CALL] failed to apply screen share resolution constraints", err);
+      });
+    }
+    setSelectedScreenResolution(resolution);
+  }, [screenShareTrackRef]);
+
   return {
     stopScreenShare,
     toggleScreenShare,
+    selectedScreenResolution,
+    handleSelectScreenResolution,
   };
 }

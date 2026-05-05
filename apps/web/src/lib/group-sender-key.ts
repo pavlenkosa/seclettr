@@ -94,7 +94,7 @@ function localSenderKeyBrowserLockName(
 }
 
 function getBrowserLockManager(): BrowserLockManager | null {
-  if (typeof globalThis.navigator === "undefined") return null;
+  if (globalThis.navigator === undefined) return null;
   const locks = (globalThis.navigator as Navigator & {
     locks?: BrowserLockManager;
   }).locks;

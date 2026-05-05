@@ -103,6 +103,8 @@ interface DirectCallActiveOverlayProps {
   readonly onToggleMute: () => void;
   readonly onToggleVideo: () => void;
   readonly onToggleScreenShare: () => void;
+  readonly selectedScreenResolution: VideoResolution;
+  readonly onSelectScreenResolution: (res: VideoResolution) => void;
   readonly onHangup: () => void;
   readonly localStream: MediaStream | null;
   readonly cameraSenderRef: RefObject<RTCRtpSender | null>;
@@ -198,6 +200,8 @@ export function DirectCallActiveOverlay({
   onToggleMute,
   onToggleVideo,
   onToggleScreenShare,
+  selectedScreenResolution,
+  onSelectScreenResolution,
   onHangup,
   localStream,
   cameraSenderRef,
@@ -210,7 +214,6 @@ export function DirectCallActiveOverlay({
   screenSettingsAriaLabel,
 }: DirectCallActiveOverlayProps) {
   const [selectedVideoResolution, setSelectedVideoResolution] = useState<VideoResolution>("720p");
-  const [selectedScreenResolution, setSelectedScreenResolution] = useState<VideoResolution>("720p");
 
   const {
     micDevices,
@@ -261,10 +264,6 @@ export function DirectCallActiveOverlay({
     }
     setSelectedVideoResolution(resolution);
   }, [cameraSenderRef, localStream]);
-
-  const handleSelectScreenResolution = useCallback(async (resolution: VideoResolution) => {
-    setSelectedScreenResolution(resolution);
-  }, []);
 
   // Local ref for audio element to track stream changes
   const localAudioRef = useRef<HTMLAudioElement | null>(null);
@@ -492,7 +491,7 @@ export function DirectCallActiveOverlay({
         onSelectMic={handleSelectMic}
         onSelectCamera={handleSelectCamera}
         onSelectVideoResolution={handleSelectVideoResolution}
-        onSelectScreenResolution={handleSelectScreenResolution}
+        onSelectScreenResolution={onSelectScreenResolution}
       />
     </dialog>
   );

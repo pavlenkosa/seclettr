@@ -128,15 +128,17 @@ function useMediaDialogMountState(isOpen: boolean): DialogState {
     if (isOpen) {
       if (dialogTimerRef.current) clearTimeout(dialogTimerRef.current);
       setDialogState("open");
-    } else if (dialogState === "open") {
-      setDialogState("closing");
-      dialogTimerRef.current = setTimeout(() => setDialogState("closed"), 210);
+    } else {
+      setDialogState((prev) => {
+        if (prev !== "open") return prev;
+        dialogTimerRef.current = setTimeout(() => setDialogState("closed"), 210);
+        return "closing";
+      });
     }
 
     return () => {
       if (dialogTimerRef.current) clearTimeout(dialogTimerRef.current);
     };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen]);
 
   return dialogState;
@@ -555,13 +557,13 @@ const MessageComposerView = forwardRef<MessageComposerHandle, Props>(function Me
 
     if (primaryAction.kind === "send") {
       emojiState.closeEmojiPicker();
-      draft.handleSend();
+      void draft.handleSend();
       return;
     }
 
     draft.clearComposerError();
     emojiState.closeEmojiPicker();
-    startRecording(primaryAction.mode);
+    void startRecording(primaryAction.mode);
   }, [
     draft,
     emojiState,

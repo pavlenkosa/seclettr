@@ -80,7 +80,7 @@ export function useCallInputDevices(stream: MediaStream | null): UseCallInputDev
   }, []);
 
   useEffect(() => {
-    refreshDevices();
+    void refreshDevices();
   }, [refreshDevices]);
 
   useEffect(() => {
@@ -92,9 +92,10 @@ export function useCallInputDevices(stream: MediaStream | null): UseCallInputDev
   useEffect(() => {
     const mediaDevices = navigator.mediaDevices;
     if (!mediaDevices?.addEventListener) return;
-    mediaDevices.addEventListener("devicechange", refreshDevices);
+    const handleDeviceChange = () => { void refreshDevices(); };
+    mediaDevices.addEventListener("devicechange", handleDeviceChange);
     return () => {
-      mediaDevices.removeEventListener("devicechange", refreshDevices);
+      mediaDevices.removeEventListener("devicechange", handleDeviceChange);
     };
   }, [refreshDevices]);
 

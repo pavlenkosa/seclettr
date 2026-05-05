@@ -188,7 +188,7 @@ export function useDirectCallFrameModeRecovery({
     const peerDeviceId = active.peerDeviceId;
     frameModeRecoveryAttemptedCallIdRef.current = callId;
     frameModeRecoveryTimerRef.current = globalThis.window.setTimeout(() => {
-      runFrameModeRecoveryFallback({
+      void runFrameModeRecoveryFallback({
         activeRef,
         callId,
         configureDirectCallFrameCrypto,

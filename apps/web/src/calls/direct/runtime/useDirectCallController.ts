@@ -691,6 +691,8 @@ export function useDirectCallController() {
     switchCamera,
     toggleVideo,
     toggleScreenShare,
+    selectedScreenResolution,
+    handleSelectScreenResolution,
   } = useDirectCallVisualMediaControls({
     active,
     ...mediaControlsOptions,
@@ -745,7 +747,7 @@ export function useDirectCallController() {
     pushNotice,
     recordCallEvent,
     rejectIncomingCall: (callId) => {
-      sendAuthoritativeDirectCallReject(callId);
+      void sendAuthoritativeDirectCallReject(callId);
     },
     finishCallSession,
     debugCallMedia,
@@ -829,6 +831,8 @@ export function useDirectCallController() {
     onSwitchCamera: switchCamera,
     onToggleVideo: toggleVideo,
     onToggleScreenShare: toggleScreenShare,
+    selectedScreenResolution,
+    onSelectScreenResolution: handleSelectScreenResolution,
     localStream: localStreamRef.current,
     cameraSenderRef,
   });

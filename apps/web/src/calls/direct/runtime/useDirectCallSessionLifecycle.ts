@@ -190,7 +190,7 @@ export function useDirectCallSessionLifecycle(options: UseDirectCallSessionLifec
 
   const resetCallState = useCallback((opts?: { sendHangup?: boolean; notice?: CallNotice }) => {
     if (opts?.sendHangup && activeRef.current) {
-      sendAuthoritativeDirectCallHangup(activeRef.current.callId);
+      void sendAuthoritativeDirectCallHangup(activeRef.current.callId);
     }
     directCallLifecycleTokenRef.current = beginDirectCallLifecycleToken(
       directCallLifecycleTokenRef.current
@@ -305,10 +305,10 @@ export function useDirectCallSessionLifecycle(options: UseDirectCallSessionLifec
     // session id first, dispatch the best-effort authoritative signal, and
     // then converge immediately on the local reset path.
     if (opts.authority === "hangup" && callId) {
-      sendAuthoritativeDirectCallHangup(callId);
+      void sendAuthoritativeDirectCallHangup(callId);
     }
     if (opts.authority === "reject" && callId) {
-      sendAuthoritativeDirectCallReject(callId);
+      void sendAuthoritativeDirectCallReject(callId);
     }
 
     resetCallState({ notice: opts.notice });

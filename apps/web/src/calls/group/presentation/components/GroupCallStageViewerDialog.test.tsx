@@ -56,7 +56,9 @@ describe("GroupCallStageViewerDialog", () => {
           isOpen
           stageTile={stageTile}
           stageEyebrowLabel="Stage"
-          fullscreenToggleLabel="Close viewer"
+          enterFullscreenLabel="Fullscreen"
+          exitFullscreenLabel="Exit fullscreen"
+          closeViewerLabel="Close viewer"
           canStopWatchingStageTile
           stopWatchingStageLabel="Stop viewing"
           onClose={onClose}
@@ -83,7 +85,9 @@ describe("GroupCallStageViewerDialog", () => {
           isOpen
           stageTile={stageTile}
           stageEyebrowLabel="Stage"
-          fullscreenToggleLabel="Close viewer"
+          enterFullscreenLabel="Fullscreen"
+          exitFullscreenLabel="Exit fullscreen"
+          closeViewerLabel="Close viewer"
           canStopWatchingStageTile
           stopWatchingStageLabel="Stop viewing"
           onClose={() => {}}

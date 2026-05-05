@@ -7,6 +7,7 @@ import { GroupCallDetailsDrawer } from "@/calls/group/presentation/components/Gr
 import { GroupCallDock } from "@/calls/group/presentation/components/GroupCallDock";
 import { GroupCallHeader } from "@/calls/group/presentation/components/GroupCallHeader";
 import { GroupCallMediaSection } from "@/calls/group/presentation/components/GroupCallMediaSection";
+import { GroupCallRemoteAudioTargets } from "@/calls/group/presentation/components/GroupCallRemoteAudioTargets";
 import type { UseGroupCallDevDebugOptions } from "@/calls/group/runtime/useGroupCallDevDebug";
 import type { GroupCallRemoteMedia } from "@/calls/group/runtime/sfu";
 import { useGroupCallPanelDock } from "@/calls/group/presentation/useGroupCallPanelDock";
@@ -16,6 +17,7 @@ import {
   useGroupCallPanelUiStateSync,
 } from "@/calls/group/presentation/useGroupCallPanelUiState";
 import { CallAudioOutputProvider } from "@/calls/shared/media/audio-output/CallAudioOutputProvider";
+import { useCallInputDevices } from "@/calls/shared/media/input-devices/useCallInputDevices";
 import {
   useGroupCallPanelRuntime,
   type UseGroupCallPanelRuntimeResult,
@@ -85,6 +87,13 @@ export function GroupCallPanel({ session, onClose }: Props) {
     setIsMinimized,
     setPinnedStageTileId,
   });
+
+  const {
+    micDevices,
+    cameraDevices,
+    selectedMicId,
+    selectedCameraId,
+  } = useCallInputDevices(runtime.localStream);
 
   // ─── Dev-only: mock remote participants for layout testing ──────────────────
   const [mockRemoteMedia, setMockRemoteMedia] = useState<GroupCallRemoteMedia[]>([]);
@@ -261,20 +270,23 @@ export function GroupCallPanel({ session, onClose }: Props) {
 
   if (surface === "dock") {
     const dockContent = (
-      <GroupCallDock
-        groupName={session.groupName}
-        groupInitials={presentation.groupInitials}
-        isDragging={isDraggingMinimizedDock}
-        dockRef={minimizedDockRef}
-        inlineStyle={resolvedDockInlineStyle}
-        dockMetaLabel={dockMetaLabel}
-        leaveActionLabel={presentation.leaveActionLabel}
-        onRestore={handleRestore}
-        onLeave={runtime.handleLeave}
-        onDragStart={startMinimizedDockDrag}
-        onDragMove={moveMinimizedDock}
-        onDragEnd={stopMinimizedDockDrag}
-      />
+      <CallAudioOutputProvider>
+        <GroupCallRemoteAudioTargets remoteMedia={combinedRemoteMedia} />
+        <GroupCallDock
+          groupName={session.groupName}
+          groupInitials={presentation.groupInitials}
+          isDragging={isDraggingMinimizedDock}
+          dockRef={minimizedDockRef}
+          inlineStyle={resolvedDockInlineStyle}
+          dockMetaLabel={dockMetaLabel}
+          leaveActionLabel={presentation.leaveActionLabel}
+          onRestore={handleRestore}
+          onLeave={runtime.handleLeave}
+          onDragStart={startMinimizedDockDrag}
+          onDragMove={moveMinimizedDock}
+          onDragEnd={stopMinimizedDockDrag}
+        />
+      </CallAudioOutputProvider>
     );
     return (
       <>
@@ -321,7 +333,9 @@ export function GroupCallPanel({ session, onClose }: Props) {
               localVideoStatusLabel={presentation.localVideoStatusLabel}
               stageEyebrowLabel={presentation.stageEyebrowLabel}
               focusHintLabel={presentation.focusHintLabel}
-              fullscreenToggleLabel={stageExpandLabel}
+              enterFullscreenLabel={stageExpandLabel}
+              exitFullscreenLabel={t("group.call.stage.exitFullscreen")}
+              closeViewerLabel={t("group.call.stage.closeViewer")}
               resetStageFocusLabel={presentation.resetStageFocusLabel}
               mediaGridClassName={presentation.mediaGridClassName}
               mediaEmptyClassName={presentation.mediaEmptyClassName}
@@ -367,11 +381,21 @@ export function GroupCallPanel({ session, onClose }: Props) {
             leaveActionLabel={presentation.leaveActionLabel}
             endForEveryoneLabel={presentation.endForEveryoneLabel}
             canEndForEveryone={presentation.canEndForEveryone}
+            micDevices={micDevices}
+            cameraDevices={cameraDevices}
+            selectedMicId={selectedMicId}
+            selectedCameraId={selectedCameraId}
+            selectedVideoResolution={runtime.selectedVideoResolution}
             onToggleMute={runtime.handleToggleMute}
             onToggleVideo={runtime.handleToggleVideo}
             onToggleScreenShare={runtime.handleToggleScreenShare}
             onLeave={runtime.handleLeave}
             onEndForEveryone={runtime.handleEndForEveryone}
+            onSelectMic={runtime.handleSwitchMic}
+            onSelectCamera={runtime.handleSwitchCamera}
+            onSelectVideoResolution={runtime.handleSelectVideoResolution}
+            selectedScreenResolution={runtime.selectedScreenResolution}
+            onSelectScreenResolution={runtime.handleSelectScreenResolution}
           />
         </div>
 
@@ -381,6 +405,7 @@ export function GroupCallPanel({ session, onClose }: Props) {
 
   const panelContent = (
     <CallAudioOutputProvider>
+      <GroupCallRemoteAudioTargets remoteMedia={combinedRemoteMedia} />
       {panelDialog}
     </CallAudioOutputProvider>
   );

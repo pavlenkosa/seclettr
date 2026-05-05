@@ -1,6 +1,6 @@
 import type { RefObject } from "react";
 import type { GroupCallStageTile } from "@/calls/group/model/group-call-types";
-import { CameraIcon, ExpandIcon, FocusIcon, ScreenShareIcon } from "@/calls/shared/presentation/CallIcons";
+import { CloseIcon, ExpandIcon, FocusIcon } from "@/calls/shared/presentation/CallIcons";
 import { IconButton } from "@/components/ui";
 
 import { GroupCallMediaTile } from "./GroupCallMediaTile";
@@ -27,7 +27,6 @@ interface GroupCallStageActionsProps {
   readonly canToggleStagePresentation: boolean;
   readonly canStopWatchingStageTile: boolean;
   readonly stopWatchingStageLabel?: string;
-  readonly videoSource: GroupCallStageTile["videoSource"];
   readonly fullscreenToggleLabel: string;
   readonly resetStageFocusLabel: string;
   readonly onResetStageFocus: () => void;
@@ -40,7 +39,6 @@ function GroupCallStageActions({
   canToggleStagePresentation,
   canStopWatchingStageTile,
   stopWatchingStageLabel,
-  videoSource,
   fullscreenToggleLabel,
   resetStageFocusLabel,
   onResetStageFocus,
@@ -49,8 +47,6 @@ function GroupCallStageActions({
 }: GroupCallStageActionsProps) {
   const hasActions = hasPinnedStageSelection || canStopWatchingStageTile || canToggleStagePresentation;
   if (!hasActions) return null;
-
-  const stopIcon = videoSource === "screen" ? <ScreenShareIcon /> : <CameraIcon />;
 
   return (
     <div className={styles.stageActionRail}>
@@ -75,7 +71,7 @@ function GroupCallStageActions({
           aria-label={stopWatchingStageLabel}
           title={stopWatchingStageLabel}
         >
-          {stopIcon}
+          <CloseIcon />
         </IconButton>
       ) : null}
       {canToggleStagePresentation ? (
@@ -133,7 +129,6 @@ export function GroupCallStageArea({
           canToggleStagePresentation={canToggleStagePresentation}
           canStopWatchingStageTile={canStopWatchingStageTile}
           stopWatchingStageLabel={stopWatchingStageLabel}
-          videoSource={stageTile.videoSource}
           fullscreenToggleLabel={fullscreenToggleLabel}
           resetStageFocusLabel={resetStageFocusLabel}
           onResetStageFocus={onResetStageFocus}

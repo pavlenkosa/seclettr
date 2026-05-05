@@ -1,3 +1,5 @@
+export { CallSetupTimeoutError as DirectCallSetupTimeoutError, withSetupStageTimeout } from "@/calls/shared/model/call-setup-timeout";
+
 export const DIRECT_CALL_SETUP_TIMEOUTS = {
   /** API call to create the server-side call record. */
   apiCreateCallMs: 10_000,
@@ -10,31 +12,3 @@ export const DIRECT_CALL_SETUP_TIMEOUTS = {
   /** ICE negotiation to reach "connected" after both descriptions are set. */
   iceConnectedMs: 30_000,
 } as const;
-
-export class DirectCallSetupTimeoutError extends Error {
-  readonly stage: string;
-  constructor(stage: string) {
-    super(`Direct call setup timed out at stage: ${stage}`);
-    this.stage = stage;
-  }
-}
-
-/**
- * Race a setup-stage promise against a deadline.
- * Throws `DirectCallSetupTimeoutError` if the deadline fires first.
- */
-export function withSetupStageTimeout<T>(
-  promise: Promise<T>,
-  ms: number,
-  stage: string
-): Promise<T> {
-  return new Promise<T>((resolve, reject) => {
-    const timer = setTimeout(() => {
-      reject(new DirectCallSetupTimeoutError(stage));
-    }, ms);
-    promise.then(
-      (value) => { clearTimeout(timer); resolve(value); },
-      (err)   => { clearTimeout(timer); reject(err); }
-    );
-  });
-}

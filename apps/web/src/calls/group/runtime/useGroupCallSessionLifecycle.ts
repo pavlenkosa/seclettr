@@ -16,7 +16,7 @@ import {
   GROUP_CALL_SETUP_TIMEOUTS,
   GroupCallSetupTimeoutError,
 } from "@/calls/group/model/group-call-setup-timeouts";
-import { withSetupStageTimeout } from "@/calls/direct/model/direct-call-setup-timeouts";
+import { withSetupStageTimeout } from "@/calls/shared/model/call-setup-timeout";
 import type { GroupCallRuntimeMediaEncryptionMode } from "@/calls/group/runtime/group-call/media-encryption-negotiation";
 import type {
   LocalGroupCallMediaKey,

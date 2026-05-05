@@ -1300,6 +1300,16 @@ export function createMessagesOutboundRuntime({
     }
   }
 
+  function isOutboundBubbleAlreadySettled(
+    bubble: ReturnType<typeof get>["conversations"][string]["messages"][number] | undefined
+  ): boolean {
+    return (
+      bubble?.status === "sent" ||
+      bubble?.status === "delivered" ||
+      bubble?.status === "read"
+    );
+  }
+
   // DM-01/DM-03: retry pending envelopes using stored ciphertext (no re-encrypt).
   // Called on WS reconnect. Enforces MAX_OUTBOUND_RETRIES budget (DM-03).
   async function resumePendingOutboundMessages(): Promise<void> {
@@ -1307,25 +1317,16 @@ export function createMessagesOutboundRuntime({
     const state = get();
 
     for (const item of items) {
-      const conv = state.conversations[item.recipientUserId];
-      const bubble = conv?.messages.find((m) => m.id === item.clientMessageId);
-      const requiresVisibleBubble =
-        item.messageType !== "sender_key_distribution";
+      const bubble = state.conversations[item.recipientUserId]?.messages.find(
+        (m) => m.id === item.clientMessageId
+      );
+      const requiresVisibleBubble = item.messageType !== "sender_key_distribution";
 
       if (requiresVisibleBubble && !bubble) {
-        // Orphan — no UI bubble, prune.
         await removeOutboundQueueItem(item.clientMessageId);
         continue;
       }
-
-      if (
-        bubble &&
-        (
-          bubble.status === "sent" ||
-          bubble.status === "delivered" ||
-          bubble.status === "read"
-        )
-      ) {
+      if (isOutboundBubbleAlreadySettled(bubble)) {
         await removeOutboundQueueItem(item.clientMessageId);
         continue;
       }
@@ -1339,15 +1340,9 @@ export function createMessagesOutboundRuntime({
 
       try {
         await applyQueuedSessionCommits(item);
-        const response = await api.post<unknown>(
-          "/messages",
-          buildQueuedDirectPayload(item)
-        );
+        const response = await api.post<unknown>("/messages", buildQueuedDirectPayload(item));
         const directDeliveries = parseDirectDeliveries(response);
-        const fullyAccepted = await settleAcceptedDirectQueueItem(
-          item,
-          directDeliveries
-        );
+        const fullyAccepted = await settleAcceptedDirectQueueItem(item, directDeliveries);
 
         if (requiresVisibleBubble) {
           await markDirectQueuedMessageStatus(

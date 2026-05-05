@@ -23,33 +23,50 @@ export function getPeerInitials(value: string): string {
   return trimmed.slice(0, 2).toUpperCase();
 }
 
+function mediaTimeoutErrorMessage(
+  error: DirectCallSetupTimeoutError,
+  callType: "audio" | "video",
+  t: DirectCallTranslator
+): string {
+  if (error.stage === "local-media") {
+    return callType === "video"
+      ? t("call.error.cameraMicTimeout")
+      : t("call.error.micTimeout");
+  }
+  return t("call.error.setupTimeout");
+}
+
+function domExceptionMediaErrorMessage(
+  error: DOMException,
+  callType: "audio" | "video",
+  t: DirectCallTranslator
+): string | null {
+  if (error.name === "NotAllowedError") {
+    return callType === "video"
+      ? t("call.error.cameraMicDenied")
+      : t("call.error.micDenied");
+  }
+  if (error.name === "NotFoundError" || error.name === "DevicesNotFoundError") {
+    return callType === "video"
+      ? t("call.error.noCameraMic")
+      : t("call.error.noMic");
+  }
+  if (error.name === "NotReadableError") {
+    return t("call.error.deviceInUse");
+  }
+  return null;
+}
+
 export function toMediaErrorMessage(
   error: unknown,
   callType: "audio" | "video",
   t: DirectCallTranslator
 ): string {
   if (error instanceof DirectCallSetupTimeoutError) {
-    if (error.stage === "local-media") {
-      return callType === "video"
-        ? t("call.error.cameraMicTimeout")
-        : t("call.error.micTimeout");
-    }
-    return t("call.error.setupTimeout");
+    return mediaTimeoutErrorMessage(error, callType, t);
   }
   if (error instanceof DOMException) {
-    if (error.name === "NotAllowedError") {
-      return callType === "video"
-        ? t("call.error.cameraMicDenied")
-        : t("call.error.micDenied");
-    }
-    if (error.name === "NotFoundError" || error.name === "DevicesNotFoundError") {
-      return callType === "video"
-        ? t("call.error.noCameraMic")
-        : t("call.error.noMic");
-    }
-    if (error.name === "NotReadableError") {
-      return t("call.error.deviceInUse");
-    }
+    return domExceptionMediaErrorMessage(error, callType, t) ?? t("call.error.unableStart");
   }
   if (error instanceof Error && error.message) return error.message;
   return t("call.error.unableStart");

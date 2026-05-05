@@ -493,6 +493,49 @@ export function useGroupCallSessionLifecycle({
       return stream;
     };
 
+    const resolveCallIdAndHost = async (): Promise<{
+      resolvedCallId: string;
+      nextHostUserId: string;
+      serverCreatedCall: boolean;
+      existingCall: Awaited<ReturnType<typeof api.getActiveGroupCall>>;
+    }> => {
+      const existing = await withSetupStageTimeout(
+        api.getActiveGroupCall(session.groupId),
+        GROUP_CALL_SETUP_TIMEOUTS.checkActiveCallMs,
+        "check-active-call"
+      );
+      await abortIfStaleSessionRun();
+      let nextHostUserId = existing?.callerUserId ?? session.hostUserId ?? userId;
+      let resolvedCallId = existing?.callId ?? null;
+      let serverCreatedCall = existing === null;
+      if (!resolvedCallId) {
+        const created = await withSetupStageTimeout(
+          api.post<CreateGroupCallResponse>("/calls", {
+            groupId: session.groupId,
+            callType: session.callType,
+          }),
+          GROUP_CALL_SETUP_TIMEOUTS.apiCallMs,
+          "api-create-call"
+        );
+        resolvedCallId = created.callId;
+        serverCreatedCall = created.created ?? true;
+        if (created.callerUserId) {
+          nextHostUserId = created.callerUserId;
+        } else if (!serverCreatedCall) {
+          const activeCall = await withSetupStageTimeout(
+            api.getActiveGroupCall(session.groupId),
+            GROUP_CALL_SETUP_TIMEOUTS.checkActiveCallMs,
+            "check-active-call"
+          );
+          await abortIfStaleSessionRun();
+          if (activeCall?.callId === resolvedCallId) {
+            nextHostUserId = activeCall.callerUserId;
+          }
+        }
+      }
+      return { resolvedCallId, nextHostUserId, serverCreatedCall, existingCall: existing };
+    };
+
     const startGroupCall = async () => {
       if (strictFrameEncryptionUnsupported) {
         await handleStartGroupCallFailure(new Error(frameUnsupportedStrictMessage));
@@ -505,42 +548,9 @@ export function useGroupCallSessionLifecycle({
         bootstrapAttempt += 1
       ) {
         try {
-          const existing = await withSetupStageTimeout(
-            api.getActiveGroupCall(session.groupId),
-            GROUP_CALL_SETUP_TIMEOUTS.checkActiveCallMs,
-            "check-active-call"
-          );
-          await abortIfStaleSessionRun();
-          let nextHostUserId = existing?.callerUserId ?? session.hostUserId ?? userId;
-          let resolvedCallId = existing?.callId ?? null;
-          let serverCreatedCall = existing === null;
-          if (!resolvedCallId) {
-            const created = await withSetupStageTimeout(
-              api.post<CreateGroupCallResponse>("/calls", {
-                groupId: session.groupId,
-                callType: session.callType,
-              }),
-              GROUP_CALL_SETUP_TIMEOUTS.apiCallMs,
-              "api-create-call"
-            );
-            resolvedCallId = created.callId;
-            serverCreatedCall = created.created ?? true;
-            if (created.callerUserId) {
-              nextHostUserId = created.callerUserId;
-            } else if (!serverCreatedCall) {
-              const activeCall = await withSetupStageTimeout(
-                api.getActiveGroupCall(session.groupId),
-                GROUP_CALL_SETUP_TIMEOUTS.checkActiveCallMs,
-                "check-active-call"
-              );
-              await abortIfStaleSessionRun();
-              if (activeCall?.callId === resolvedCallId) {
-                nextHostUserId = activeCall.callerUserId;
-              }
-            }
-          }
+          const { resolvedCallId, nextHostUserId, serverCreatedCall, existingCall } = await resolveCallIdAndHost();
           createdCallId = resolvedCallId;
-          createdHere = existing === null && serverCreatedCall;
+          createdHere = existingCall === null && serverCreatedCall;
           joinedHere = false;
           await abortIfStaleSessionRun(endCreatedCall);
 

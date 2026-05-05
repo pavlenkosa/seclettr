@@ -89,7 +89,7 @@ jobs:
     env:
       DATABASE_URL: postgresql://seclettr:${{ github.run_id }}-${{ github.run_attempt }}@127.0.0.1:5432/seclettr
       REDIS_URL: redis://127.0.0.1:6379
-      JWT_SECRET: 01234567890123456789012345678901
+      JWT_SECRET: "ci-jwt-secret-for-testing-only-1234567890"
       NODE_ENV: test
       ALLOW_PUBLIC_REGISTRATION: true
       TURN_SECRET: ci-turn-secret-0123456789
@@ -181,7 +181,7 @@ jobs:
     env:
       DATABASE_URL: postgresql://seclettr:${{ github.run_id }}-${{ github.run_attempt }}@127.0.0.1:5432/seclettr
       REDIS_URL: redis://127.0.0.1:6379
-      JWT_SECRET: 01234567890123456789012345678901
+      JWT_SECRET: "ci-jwt-secret-for-testing-only-1234567890"
       NODE_ENV: test
       ALLOW_PUBLIC_REGISTRATION: true
       TURN_SECRET: ci-turn-secret-0123456789

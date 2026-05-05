@@ -120,6 +120,8 @@ jobs:
       - run: pnpm --filter @seclettr/api db:migrate
 
       - run: pnpm build
+        env:
+          NODE_ENV: production
 
       - run: pnpm typecheck
 

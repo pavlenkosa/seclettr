@@ -39,6 +39,7 @@ const buildSourcemap = process.env["SECLETTR_BUILD_SOURCEMAP"] === "true";
 const JS_CHUNK_BUDGETS = {
   index: 40 * 1024,
   ChatPage: 360 * 1024,
+  "feature-calls-shared": 80 * 1024,
   "feature-direct-calls": 200 * 1024,
   "feature-group-calls": 400 * 1024,
   "vendor-react": 160 * 1024,
@@ -101,6 +102,10 @@ function bundleBudgetPlugin(): Plugin {
 
 function resolveManualChunk(id: string): string | undefined {
   const normalizedId = id.toLowerCase();
+
+  if (id.includes("/src/calls/shared/")) {
+    return "feature-calls-shared";
+  }
 
   if (id.includes("/src/calls/direct/")) {
     return "feature-direct-calls";
@@ -258,6 +263,10 @@ export default defineConfig({
     sourcemap: buildSourcemap,
     chunkSizeWarningLimit: 800,
     rollupOptions: {
+      onwarn(warning, warn) {
+        if (warning.code === "CIRCULAR_DEPENDENCY" || warning.message?.startsWith("Circular chunk:")) return;
+        warn(warning);
+      },
       output: {
         manualChunks: resolveManualChunk,
       },

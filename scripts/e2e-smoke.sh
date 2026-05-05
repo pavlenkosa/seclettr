@@ -100,7 +100,8 @@ if [[ "$REUSE_STACK" == "false" ]]; then
 fi
 
 wait_for_http "http://127.0.0.1:${DEV_API_PORT}/health" "API health endpoint"
-wait_for_http "https://127.0.0.1:${DEV_WEB_PORT}" "Web dev server" true
+# web-dev builds @seclettr/crypto and @seclettr/protocol before starting Vite — allow up to 5 min.
+wait_for_http "https://127.0.0.1:${DEV_WEB_PORT}" "Web dev server" true 300
 
 metrics_payload="$(curl -fsS "http://127.0.0.1:${DEV_API_PORT}/metrics")"
 grep -q "seclettr_http_requests_total" <<<"$metrics_payload" \

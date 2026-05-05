@@ -54,6 +54,9 @@ while [[ $# -gt 0 ]]; do
       SKIP_VERIFY=true
       shift
       ;;
+    --)
+      shift
+      ;;
     -h|--help)
       usage
       exit 0

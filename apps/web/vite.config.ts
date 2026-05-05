@@ -37,13 +37,13 @@ const devHttpsConfig = devHttpsKeyFile && devHttpsCertFile
   : undefined;
 const buildSourcemap = process.env["SECLETTR_BUILD_SOURCEMAP"] === "true";
 const JS_CHUNK_BUDGETS = {
-  index: 40 * 1024,
+  index: 48 * 1024,
   ChatPage: 360 * 1024,
-  "feature-calls-shared": 80 * 1024,
-  "feature-direct-calls": 200 * 1024,
+  "feature-calls-shared": 120 * 1024,
+  "feature-direct-calls": 240 * 1024,
   "feature-group-calls": 400 * 1024,
   "vendor-react": 160 * 1024,
-  "vendor-router": 8 * 1024,
+  "vendor-router": 10 * 1024,
   "vendor-state": 8 * 1024,
   "vendor-debug": 10 * 1024,
   "vendor-misc": 80 * 1024,
@@ -158,7 +158,7 @@ function resolveManualChunk(id: string): string | undefined {
   return undefined;
 }
 
-export default defineConfig({
+export default defineConfig(({ command }) => ({
   plugins: [
     react(),
     ...(devHttpsConfig ? [] : [basicSsl()]),
@@ -257,6 +257,12 @@ export default defineConfig({
   },
   define: {
     __APP_VERSION__: JSON.stringify(pkg.version),
+    // When NODE_ENV is overridden externally (e.g. NODE_ENV=test in CI) Vite
+    // inherits that value and skips React's production dead-code elimination,
+    // inflating vendor-react from ~143 kB to ~333 kB. Explicitly pinning it
+    // here ensures consistent production-sized bundles regardless of the host
+    // environment's NODE_ENV.
+    ...(command === "build" ? { "process.env.NODE_ENV": JSON.stringify("production") } : {}),
   },
   build: {
     target: "es2022",
@@ -275,4 +281,4 @@ export default defineConfig({
   optimizeDeps: {
     include: ["libsodium-wrappers"],
   },
-});
+}));

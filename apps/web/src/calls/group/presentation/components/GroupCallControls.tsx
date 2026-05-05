@@ -1,5 +1,7 @@
 import { useI18n } from "@/i18n";
 import { CallControlButton } from "@/calls/shared/presentation/CallControlButton";
+import { CallDevicePicker, type VideoResolution } from "@/calls/shared/presentation/CallDevicePicker";
+import type { InputDeviceOption } from "@/calls/shared/media/input-devices/useCallInputDevices";
 import type { GroupCallStatus } from "@/calls/group/model/group-call-types";
 import {
   CameraIcon,
@@ -25,11 +27,21 @@ interface GroupCallControlsProps {
   readonly leaveActionLabel: string;
   readonly endForEveryoneLabel: string;
   readonly canEndForEveryone: boolean;
+  readonly micDevices?: InputDeviceOption[];
+  readonly cameraDevices?: InputDeviceOption[];
+  readonly selectedMicId?: string | null;
+  readonly selectedCameraId?: string | null;
+  readonly selectedVideoResolution?: VideoResolution;
+  readonly selectedScreenResolution?: VideoResolution;
   readonly onToggleMute: () => void;
   readonly onToggleVideo: () => void | Promise<void>;
   readonly onToggleScreenShare: () => void | Promise<void>;
   readonly onLeave: () => void;
   readonly onEndForEveryone: () => void;
+  readonly onSelectMic?: (deviceId: string) => void;
+  readonly onSelectCamera?: (deviceId: string) => void;
+  readonly onSelectVideoResolution?: (res: VideoResolution) => void;
+  readonly onSelectScreenResolution?: (res: VideoResolution) => void;
 }
 
 const canScreenShare =
@@ -52,11 +64,21 @@ export function GroupCallControls({
   leaveActionLabel,
   endForEveryoneLabel,
   canEndForEveryone,
+  micDevices = [],
+  cameraDevices = [],
+  selectedMicId = null,
+  selectedCameraId = null,
+  selectedVideoResolution = "720p",
+  selectedScreenResolution = "720p",
   onToggleMute,
   onToggleVideo,
   onToggleScreenShare,
   onLeave,
   onEndForEveryone,
+  onSelectMic,
+  onSelectCamera,
+  onSelectVideoResolution,
+  onSelectScreenResolution,
 }: GroupCallControlsProps) {
   const { t } = useI18n();
   const isReady = hasLocalMedia && status === "ready";
@@ -67,46 +89,80 @@ export function GroupCallControls({
       role="toolbar"
       aria-label={t("group.call.controlsAria")}
     >
-      <CallControlButton
-        onClick={onToggleMute}
-        layout={layout}
-        className={styles.controlBtn}
-        active={isAudioMuted}
-        icon={<MuteIcon muted={isAudioMuted} />}
-        label={muteToggleLabel}
+      <CallDevicePicker
+        micDevices={micDevices}
+        selectedMicId={selectedMicId}
+        micSectionLabel={t("call.devices.microphone")}
+        onSelectMic={onSelectMic}
         disabled={!isReady}
-        collapseLabelOnNarrow
-        compactOnNarrow
-        aria-label={muteToggleLabel}
-        aria-pressed={isAudioMuted}
-      />
-      <CallControlButton
-        onClick={() => { onToggleVideo(); }}
-        layout={layout}
-        className={styles.controlBtn}
-        active={!isLocalVideoEnabled}
-        icon={<CameraIcon />}
-        label={videoToggleLabel}
-        disabled={!isReady || isVideoSwitching || isScreenSwitching}
-        collapseLabelOnNarrow
-        compactOnNarrow
-        aria-label={videoToggleLabel}
-        aria-pressed={!isLocalVideoEnabled}
-      />
-      {canScreenShare ? (
+        chevronAriaLabel={t("call.devices.micSettings")}
+        active={isAudioMuted}
+      >
         <CallControlButton
-          onClick={() => { onToggleScreenShare(); }}
+          onClick={onToggleMute}
           layout={layout}
           className={styles.controlBtn}
-          active={isLocalScreenSharing}
-          icon={<ScreenShareIcon />}
-          label={screenShareToggleLabel}
+          active={isAudioMuted}
+          icon={<MuteIcon muted={isAudioMuted} />}
+          label={muteToggleLabel}
+          disabled={!isReady}
+          collapseLabelOnNarrow
+          compactOnNarrow
+          aria-label={muteToggleLabel}
+          aria-pressed={isAudioMuted}
+        />
+      </CallDevicePicker>
+      <CallDevicePicker
+        cameraDevices={cameraDevices}
+        selectedCameraId={selectedCameraId}
+        cameraSectionLabel={t("call.devices.camera")}
+        selectedResolution={selectedVideoResolution}
+        showResolution={isLocalVideoEnabled}
+        resolutionSectionLabel={t("call.devices.videoQuality")}
+        onSelectCamera={onSelectCamera}
+        onSelectResolution={onSelectVideoResolution}
+        disabled={!isReady || isVideoSwitching || isScreenSwitching}
+        chevronAriaLabel={t("call.devices.cameraSettings")}
+        active={!isLocalVideoEnabled}
+      >
+        <CallControlButton
+          onClick={() => { onToggleVideo(); }}
+          layout={layout}
+          className={styles.controlBtn}
+          active={!isLocalVideoEnabled}
+          icon={<CameraIcon />}
+          label={videoToggleLabel}
           disabled={!isReady || isVideoSwitching || isScreenSwitching}
           collapseLabelOnNarrow
           compactOnNarrow
-          aria-label={screenShareToggleLabel}
-          aria-pressed={isLocalScreenSharing}
+          aria-label={videoToggleLabel}
+          aria-pressed={!isLocalVideoEnabled}
         />
+      </CallDevicePicker>
+      {canScreenShare ? (
+        <CallDevicePicker
+          selectedResolution={selectedScreenResolution}
+          showResolution={isLocalScreenSharing}
+          resolutionSectionLabel={t("call.devices.screenQuality")}
+          onSelectResolution={onSelectScreenResolution}
+          disabled={!isReady || isVideoSwitching || isScreenSwitching}
+          chevronAriaLabel={t("call.devices.screenSettings")}
+          active={isLocalScreenSharing}
+        >
+          <CallControlButton
+            onClick={() => { onToggleScreenShare(); }}
+            layout={layout}
+            className={styles.controlBtn}
+            active={isLocalScreenSharing}
+            icon={<ScreenShareIcon />}
+            label={screenShareToggleLabel}
+            disabled={!isReady || isVideoSwitching || isScreenSwitching}
+            collapseLabelOnNarrow
+            compactOnNarrow
+            aria-label={screenShareToggleLabel}
+            aria-pressed={isLocalScreenSharing}
+          />
+        </CallDevicePicker>
       ) : null}
       <CallControlButton
         onClick={onLeave}

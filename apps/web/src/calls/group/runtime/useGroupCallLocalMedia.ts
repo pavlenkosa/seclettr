@@ -10,6 +10,14 @@ import { logGroupCallWarn } from "@/calls/group/runtime/group-call/logger";
 import type { GroupSfuClient } from "@/calls/group/runtime/sfu";
 import { resolveErrorMessage } from "@/calls/group/runtime/runtime-utils";
 import type { GroupCallStatus } from "@/calls/group/model/group-call-types";
+import type { VideoResolution } from "@/calls/shared/presentation/CallDevicePicker";
+
+const VIDEO_RESOLUTION_CONSTRAINTS: Record<VideoResolution, { width: number; height: number }> = {
+  "360p": { width: 640, height: 360 },
+  "480p": { width: 854, height: 480 },
+  "720p": { width: 1280, height: 720 },
+  "1080p": { width: 1920, height: 1080 },
+};
 
 interface UseGroupCallLocalMediaOptions {
   status: GroupCallStatus;
@@ -27,6 +35,8 @@ interface UseGroupCallLocalMediaResult {
   isVideoSwitching: boolean;
   isScreenSwitching: boolean;
   isLocalScreenSharing: boolean;
+  selectedVideoResolution: VideoResolution;
+  selectedScreenResolution: VideoResolution;
   localStreamRef: MutableRefObject<MediaStream | null>;
   localScreenStreamRef: MutableRefObject<MediaStream | null>;
   attachInitialStream: (stream: MediaStream) => void;
@@ -35,6 +45,10 @@ interface UseGroupCallLocalMediaResult {
   handleToggleMute: () => void;
   handleToggleVideo: () => Promise<void>;
   handleToggleScreenShare: () => Promise<void>;
+  handleSwitchMic: (deviceId: string) => Promise<void>;
+  handleSwitchCamera: (deviceId: string) => Promise<void>;
+  handleSelectVideoResolution: (resolution: VideoResolution) => Promise<void>;
+  handleSelectScreenResolution: (resolution: VideoResolution) => void;
 }
 
 export function useGroupCallLocalMedia({
@@ -51,6 +65,8 @@ export function useGroupCallLocalMedia({
   const [isVideoSwitching, setIsVideoSwitching] = useState(false);
   const [isScreenSwitching, setIsScreenSwitching] = useState(false);
   const [isLocalScreenSharing, setIsLocalScreenSharing] = useState(false);
+  const [selectedVideoResolution, setSelectedVideoResolution] = useState<VideoResolution>("720p");
+  const [selectedScreenResolution, setSelectedScreenResolution] = useState<VideoResolution>("720p");
   const localStreamRef = useRef<MediaStream | null>(null);
   const localScreenStreamRef = useRef<MediaStream | null>(null);
 
@@ -298,6 +314,114 @@ export function useGroupCallLocalMedia({
     syncLocalScreenPreview,
   ]);
 
+  const handleSwitchMic = useCallback(async (deviceId: string) => {
+    const currentStream = localStreamRef.current;
+    const sfuClient = sfuClientRef.current;
+    if (!currentStream || status !== "ready") return;
+
+    let nextTrack: MediaStreamTrack | null = null;
+    try {
+      const capture = await navigator.mediaDevices.getUserMedia({
+        audio: { deviceId: { exact: deviceId } },
+        video: false,
+      });
+      nextTrack = capture.getAudioTracks()[0] ?? null;
+      if (!nextTrack) throw new Error("No audio track");
+
+      const currentMuted = !currentStream.getAudioTracks()[0]?.enabled;
+      nextTrack.enabled = !currentMuted;
+
+      const oldTrack = currentStream.getAudioTracks()[0] ?? null;
+      if (oldTrack) {
+        currentStream.removeTrack(oldTrack);
+        oldTrack.stop();
+      }
+      currentStream.addTrack(nextTrack);
+
+      if (sfuClient) {
+        await sfuClient.setAudioTrack(nextTrack);
+      }
+    } catch (caughtError) {
+      nextTrack?.stop();
+      setError(resolveErrorMessage(caughtError, mediaPermissionError));
+    }
+  }, [mediaPermissionError, setError, sfuClientRef, status]);
+
+  const handleSwitchCamera = useCallback(async (deviceId: string) => {
+    const currentStream = localStreamRef.current;
+    const sfuClient = sfuClientRef.current;
+    if (!currentStream || !sfuClient || isVideoSwitching || status !== "ready") return;
+
+    setIsVideoSwitching(true);
+    setError(null);
+    let nextTrack: MediaStreamTrack | null = null;
+    try {
+      const constraints = VIDEO_RESOLUTION_CONSTRAINTS[selectedVideoResolution];
+      const capture = await navigator.mediaDevices.getUserMedia({
+        audio: false,
+        video: {
+          deviceId: { exact: deviceId },
+          width: { ideal: constraints.width },
+          height: { ideal: constraints.height },
+          frameRate: { ideal: 30, max: 30 },
+        },
+      });
+      nextTrack = capture.getVideoTracks()[0] ?? null;
+      if (!nextTrack) throw new Error("No video track");
+
+      const oldTrack = currentStream.getVideoTracks()[0] ?? null;
+      if (oldTrack) {
+        currentStream.removeTrack(oldTrack);
+        oldTrack.stop();
+      }
+      currentStream.addTrack(nextTrack);
+      await sfuClient.setVideoTrack(nextTrack, "camera");
+      syncLocalPreview();
+    } catch (caughtError) {
+      nextTrack?.stop();
+      setError(resolveErrorMessage(caughtError, cameraToggleError));
+    } finally {
+      setIsVideoSwitching(false);
+    }
+  }, [cameraToggleError, isVideoSwitching, selectedVideoResolution, setError, sfuClientRef, status, syncLocalPreview]);
+
+  const handleSelectVideoResolution = useCallback(async (resolution: VideoResolution) => {
+    const currentStream = localStreamRef.current;
+    if (!currentStream) return;
+
+    const currentVideoTrack = currentStream.getVideoTracks()[0] ?? null;
+    if (!currentVideoTrack) {
+      setSelectedVideoResolution(resolution);
+      return;
+    }
+
+    const constraints = VIDEO_RESOLUTION_CONSTRAINTS[resolution];
+    try {
+      await currentVideoTrack.applyConstraints({
+        width: { ideal: constraints.width },
+        height: { ideal: constraints.height },
+        frameRate: { ideal: 30, max: 30 },
+      });
+      setSelectedVideoResolution(resolution);
+    } catch (caughtError) {
+      setError(resolveErrorMessage(caughtError, cameraToggleError));
+    }
+  }, [cameraToggleError, setError]);
+
+  const handleSelectScreenResolution = useCallback((resolution: VideoResolution) => {
+    const currentScreenTrack = localScreenStreamRef.current?.getVideoTracks()[0] ?? null;
+    if (currentScreenTrack) {
+      const constraints = VIDEO_RESOLUTION_CONSTRAINTS[resolution];
+      currentScreenTrack.applyConstraints({
+        width: { ideal: constraints.width },
+        height: { ideal: constraints.height },
+      }).catch((caughtError) => {
+        logGroupCallWarn("[group-call] failed to apply screen resolution constraints", caughtError);
+      });
+    }
+    setSelectedScreenResolution(resolution);
+  }, []);
+
   return {
     localStream,
     localScreenStream,
@@ -305,6 +429,8 @@ export function useGroupCallLocalMedia({
     isVideoSwitching,
     isScreenSwitching,
     isLocalScreenSharing,
+    selectedVideoResolution,
+    selectedScreenResolution,
     localStreamRef,
     localScreenStreamRef,
     attachInitialStream,
@@ -313,5 +439,9 @@ export function useGroupCallLocalMedia({
     handleToggleMute,
     handleToggleVideo,
     handleToggleScreenShare,
+    handleSwitchMic,
+    handleSwitchCamera,
+    handleSelectVideoResolution,
+    handleSelectScreenResolution,
   };
 }

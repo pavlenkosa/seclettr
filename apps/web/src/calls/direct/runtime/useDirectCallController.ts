@@ -829,6 +829,8 @@ export function useDirectCallController() {
     onSwitchCamera: switchCamera,
     onToggleVideo: toggleVideo,
     onToggleScreenShare: toggleScreenShare,
+    localStream: localStreamRef.current,
+    cameraSenderRef,
   });
 
   return {

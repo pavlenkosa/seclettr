@@ -149,6 +149,8 @@ interface DirectCallSurfaceRendererProps {
   readonly onSwitchCamera: () => void | Promise<void>;
   readonly onToggleVideo: () => void | Promise<void>;
   readonly onToggleScreenShare: () => void | Promise<void>;
+  readonly localStream?: MediaStream | null;
+  readonly cameraSenderRef?: RefObject<RTCRtpSender | null>;
 }
 
 export function DirectCallSurfaceRenderer({
@@ -255,6 +257,8 @@ export function DirectCallSurfaceRenderer({
   onSwitchCamera,
   onToggleVideo,
   onToggleScreenShare,
+  localStream,
+  cameraSenderRef,
 }: DirectCallSurfaceRendererProps) {
   if (surface === "hidden" && !notice) {
     return null;
@@ -434,6 +438,8 @@ export function DirectCallSurfaceRenderer({
           onToggleVideo={onToggleVideo}
           onToggleScreenShare={onToggleScreenShare}
           onHangup={onHangup}
+          localStream={localStream ?? null}
+          cameraSenderRef={cameraSenderRef ?? { current: null }}
         />
       ) : null}
     </>

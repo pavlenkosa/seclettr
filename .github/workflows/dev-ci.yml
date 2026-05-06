@@ -1,0 +1,129 @@
+name: Dev CI
+
+on:
+  push:
+    branches:
+      - dev/main
+
+concurrency:
+  group: dev-ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  repo-hygiene:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Fail if package-lock.json is tracked
+        run: |
+          if git ls-files --error-unmatch package-lock.json 2>/dev/null; then
+            echo "ERROR: package-lock.json must not be committed. This project uses pnpm exclusively."
+            exit 1
+          fi
+          echo "OK: package-lock.json is not tracked"
+
+      - name: Fail if dev certificates are tracked
+        run: |
+          if git ls-files infra/.dev-certs/ | grep -q .; then
+            echo "ERROR: Dev certificates/keys must not be committed."
+            git ls-files infra/.dev-certs/
+            exit 1
+          fi
+          echo "OK: no dev certs tracked"
+
+      - name: Fail if private keys or .env secrets are tracked
+        run: |
+          FOUND=0
+          for f in $(git ls-files '*.pem' '*.key' '*.p12' '*.pfx'); do
+            echo "ERROR: Tracked credential file: $f"
+            FOUND=1
+          done
+          for f in $(git ls-files 'infra/.env' 'infra/.env.dev' 'infra/.env.test' '.env' '.env.local'); do
+            echo "ERROR: Tracked env secret file: $f"
+            FOUND=1
+          done
+          if [ "$FOUND" -eq 1 ]; then exit 1; fi
+          echo "OK: no tracked secrets found"
+
+      - name: Fail if build artifacts are tracked
+        run: |
+          FOUND=0
+          for f in $(git ls-files '*.zip' 'dist/' 'build/' '.turbo/'); do
+            echo "ERROR: Tracked build artifact: $f"
+            FOUND=1
+          done
+          if [ "$FOUND" -eq 1 ]; then exit 1; fi
+          echo "OK: no build artifacts tracked"
+
+  verify:
+    needs: repo-hygiene
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_DB: seclettr
+          POSTGRES_USER: seclettr
+          POSTGRES_PASSWORD: ${{ github.run_id }}-${{ github.run_attempt }}
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U seclettr -d seclettr"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 20
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 20
+
+    env:
+      DATABASE_URL: postgresql://seclettr:${{ github.run_id }}-${{ github.run_attempt }}@127.0.0.1:5432/seclettr
+      REDIS_URL: redis://127.0.0.1:6379
+      JWT_SECRET: "ci-jwt-secret-for-testing-only-1234567890"
+      NODE_ENV: test
+      ALLOW_PUBLIC_REGISTRATION: true
+      TURN_SECRET: ci-turn-secret-0123456789
+      TURN_DOMAIN: localhost
+      S3_ENDPOINT: http://127.0.0.1:9000
+      S3_BUCKET: seclettr-attachments
+      S3_ACCESS_KEY: minioadmin
+      S3_SECRET_KEY: minioadmin
+
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 8.15.0
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      - run: pnpm licenses:third-party:check
+
+      - run: pnpm --filter @seclettr/protocol build
+
+      - run: pnpm --filter @seclettr/api db:migrate
+
+      - run: pnpm build
+        env:
+          NODE_ENV: production
+
+      - run: pnpm typecheck
+
+      - run: pnpm lint
+
+      - run: pnpm verify:release
+
+      - run: pnpm --filter @seclettr/api test:unit

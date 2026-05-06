@@ -3,7 +3,7 @@ name: Dev Bundle
 on:
   workflow_run:
     workflows:
-      - CI
+      - Dev CI
     types:
       - completed
     branches:

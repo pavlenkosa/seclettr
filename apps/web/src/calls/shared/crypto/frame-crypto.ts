@@ -194,6 +194,13 @@ function bindFrameCryptoScriptTransform(
     });
   };
 
+  const cleanup = () => {
+    worker.removeEventListener("message", handleWorkerMessage as EventListener);
+    worker.removeEventListener("messageerror", handleWorkerError as EventListener);
+    worker.removeEventListener("error", handleWorkerError as EventListener);
+    worker.terminate();
+  };
+
   try {
     configure(initialKeyInput);
     endpoint.transform = new ScriptTransform(worker, {
@@ -203,10 +210,16 @@ function bindFrameCryptoScriptTransform(
     });
   } catch (err) {
     logCallMediaError("[frame-crypto] failed to attach RTCRtpScriptTransform — frame encryption disabled", { direction, context, err });
-    worker.removeEventListener("message", handleWorkerMessage as EventListener);
-    worker.removeEventListener("messageerror", handleWorkerError as EventListener);
-    worker.removeEventListener("error", handleWorkerError as EventListener);
-    worker.terminate();
+    cleanup();
+    return createNoopHandle();
+  }
+
+  // On some iOS WebKit builds the transform setter accepts the value without
+  // throwing but silently discards it (onrtctransform never fires). Detect
+  // this by reading back the property immediately after assignment.
+  if (!endpoint.transform) {
+    logCallMediaWarn("[frame-crypto] RTCRtpScriptTransform assignment silently ignored — frame encryption disabled", { direction, context });
+    cleanup();
     return createNoopHandle();
   }
 

@@ -70,6 +70,7 @@ export function useDirectCallController() {
     isCurrentActiveCallContext,
     setActiveIfCurrent,
     directCallLifecycleTokenRef,
+    outgoingRingingTimeoutRef,
   } = sessionState;
 
   const {
@@ -603,6 +604,7 @@ export function useDirectCallController() {
     acceptingIncomingCallRef,
     peerConnectionRef,
     directCallLifecycleTokenRef,
+    outgoingRingingTimeoutRef,
     directCallNegotiationRoleRef,
     supportsPeerRenegotiationV1Ref,
     renegotiationUnsupportedRef,

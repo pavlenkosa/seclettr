@@ -165,20 +165,27 @@ function resolveParticipantDevicesForMediaKeySharing(
   return participantDevices;
 }
 
+interface ShareMediaKeySenderIdentity {
+  senderUserId: string;
+  senderDeviceId: string;
+}
+
+interface ShareMediaKeyDeliveryContext {
+  sharedMediaKeyTargets: Set<string>;
+  markMediaKeyDeliveryAttempt: UseGroupCallMediaKeyExchangeOptions["markMediaKeyDeliveryAttempt"];
+  deliveryTracker: GroupCallMediaKeyDeliveryTracker | null;
+}
+
 async function shareMediaKeyToParticipantDevices(
   callId: string,
   participantDevices: GroupCallParticipantDevice[],
   localMediaKey: LocalGroupCallMediaKey,
-  senderIdentity: readonly [senderUserId: string, senderDeviceId: string],
-  deliveryContext: readonly [
-    sharedMediaKeyTargets: Set<string>,
-    markMediaKeyDeliveryAttempt: UseGroupCallMediaKeyExchangeOptions["markMediaKeyDeliveryAttempt"],
-    deliveryTracker: GroupCallMediaKeyDeliveryTracker | null,
-  ],
+  senderIdentity: ShareMediaKeySenderIdentity,
+  deliveryContext: ShareMediaKeyDeliveryContext,
   isCancelled: () => boolean
 ): Promise<ShareMediaKeyToDevicesResult> {
-  const [senderUserId, senderDeviceId] = senderIdentity;
-  const [sharedMediaKeyTargets, markMediaKeyDeliveryAttempt, deliveryTracker] = deliveryContext;
+  const { senderUserId, senderDeviceId } = senderIdentity;
+  const { sharedMediaKeyTargets, markMediaKeyDeliveryAttempt, deliveryTracker } = deliveryContext;
   let attemptedTargets = 0;
 
   for (const participantDevice of participantDevices) {
@@ -478,12 +485,12 @@ export function useGroupCallMediaKeyExchange({
           callId,
           participantDevices,
           localMediaKey,
-          [userId, deviceId],
-          [
-            sharedMediaKeyTargetsRef.current,
+          { senderUserId: userId, senderDeviceId: deviceId },
+          {
+            sharedMediaKeyTargets: sharedMediaKeyTargetsRef.current,
             markMediaKeyDeliveryAttempt,
-            mediaKeyDeliveryTrackerRef.current,
-          ],
+            deliveryTracker: mediaKeyDeliveryTrackerRef.current,
+          },
           () => cancelled
         );
         attemptedTargets += shareResult.attemptedTargets;

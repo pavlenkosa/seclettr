@@ -25,14 +25,14 @@ export function CallDurationText({
     }
 
     setNowMs(Date.now());
-    const timer = setInterval(() => {
+    const timer = globalThis.window.setInterval(() => {
       setNowMs(Date.now());
     }, 1000);
 
     return () => {
       clearInterval(timer);
     };
-  }, [isRunning, startedAtMs]) as unknown as number;
+  }, [isRunning, startedAtMs]);
 
   const label = isRunning
     ? formatCallDuration(resolveCallDurationSeconds({ baseSeconds, startedAtMs }, nowMs))

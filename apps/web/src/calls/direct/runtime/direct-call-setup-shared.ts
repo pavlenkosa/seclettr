@@ -57,6 +57,7 @@ export interface DirectCallSetupSessionContext {
   incomingRef: MutableRefObject<IncomingCall | null>;
   acceptingIncomingCallRef: MutableRefObject<IncomingCall | null>;
   directCallLifecycleTokenRef: MutableRefObject<number>;
+  outgoingRingingTimeoutRef: MutableRefObject<ReturnType<typeof setTimeout> | null>;
   commitIncomingState: CommitDirectCallState<IncomingCall>;
   commitActiveState: CommitDirectCallState<ActiveCall>;
   setIsMinimized: Dispatch<SetStateAction<boolean>>;

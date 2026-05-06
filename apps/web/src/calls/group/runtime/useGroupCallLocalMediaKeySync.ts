@@ -68,6 +68,7 @@ export function useGroupCallLocalMediaKeySync({
     exhaustedTargetDeviceIds: new Set(),
   });
 
+  // Keep effectiveMediaEncryptionModeRef in sync for use inside stable callbacks.
   useEffect(() => {
     effectiveMediaEncryptionModeRef.current = effectiveMediaEncryptionMode;
   }, [effectiveMediaEncryptionMode]);
@@ -126,6 +127,7 @@ export function useGroupCallLocalMediaKeySync({
     evaluateBalancedMediaKeyFallback(keyId);
   }, [evaluateBalancedMediaKeyFallback]);
 
+  // Mirror WS connection state so effects that re-send on reconnect re-fire.
   useEffect(() => {
     let active = true;
     const unsubscribe = wsClient.onConnectionChange((connected) => {
@@ -139,6 +141,7 @@ export function useGroupCallLocalMediaKeySync({
     };
   }, []);
 
+  // Advertise local encryption mode to peers whenever it changes or WS reconnects.
   useEffect(() => {
     if (!callId || !deviceId || status !== "ready") {
       return;
@@ -158,6 +161,7 @@ export function useGroupCallLocalMediaKeySync({
     );
   }, [callId, deviceId, localAdvertisedMediaEncryptionMode, status, wsConnected]);
 
+  // Push current key + arm/disarm decision to the SFU client on every key change.
   useEffect(() => {
     localMediaKeyRef.current = localMediaKey;
     const shouldArmFrameEncryption = shouldArmLocalGroupCallFrameEncryption({
@@ -191,6 +195,7 @@ export function useGroupCallLocalMediaKeySync({
     sfuClientRef,
   ]);
 
+  // Reset delivery tracking state whenever the active key changes.
   useEffect(() => {
     sharedMediaKeyTargetsRef.current = new Set();
     setSharedMediaKeyDeviceCount(0);
@@ -212,6 +217,7 @@ export function useGroupCallLocalMediaKeySync({
     sharedMediaKeyTargetsRef,
   ]);
 
+  // Create/teardown the delivery tracker, which owns retry scheduling and ACK tracking.
   useEffect(() => {
     if (!callId || !deviceId) {
       mediaKeyDeliveryTrackerRef.current?.clear();
@@ -239,6 +245,7 @@ export function useGroupCallLocalMediaKeySync({
     };
   }, [callId, deviceId, markMediaKeyDeliveryExhausted, mediaKeyDeliveryTrackerRef, resetMediaKeyDeliveryState]);
 
+  // Drive periodic key rotation ticks while frame encryption is active.
   useEffect(() => {
     if (!effectiveFrameEncryptionEnabled || status !== "ready" || !callId || !localMediaKey) {
       return;
@@ -251,7 +258,7 @@ export function useGroupCallLocalMediaKeySync({
     return () => {
       clearInterval(timer);
     };
-  }, [callId, effectiveFrameEncryptionEnabled, localMediaKey, status]) as unknown as number;
+  }, [callId, effectiveFrameEncryptionEnabled, localMediaKey, status]);
 
   return {
     wsConnected,

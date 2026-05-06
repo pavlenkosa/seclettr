@@ -212,6 +212,7 @@ export async function handleGroupCallMediaKeyAckSignal(
     targetDeviceId: msg.targetDeviceId,
     epoch: msg.epoch,
     keyId: msg.keyId,
+    keyProof: msg.keyProof,
     ackedAt: new Date().toISOString(),
   });
 

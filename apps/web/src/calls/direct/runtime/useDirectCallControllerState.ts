@@ -39,6 +39,10 @@ declare global {
   }
 }
 
+function applySetStateAction<T>(current: T, action: SetStateAction<T>): T {
+  return typeof action === "function" ? (action as (prev: T) => T)(current) : action;
+}
+
 export function useDirectCallControllerState() {
   const [incoming, setIncoming] = useState<IncomingCall | null>(null);
   const [active, setActive] = useState<ActiveCall | null>(null);
@@ -134,6 +138,7 @@ export function useDirectCallControllerState() {
   const disconnectResetTimerRef = useRef<number | null>(null);
   const disconnectRecoveryAttemptedRef = useRef(false);
   const directCallLifecycleTokenRef = useRef(0);
+  const outgoingRingingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const callMediaDebugEnabledRef = useRef(readCallMediaDebugEnabled());
   const syncOutgoingVisualMediaStateTrackBindingsRef = useRef<(callIdOverride?: string) => void>(() => {});
   const clearOutgoingMediaStateTrackBindingsRef = useRef<() => void>(() => {});
@@ -148,19 +153,13 @@ export function useDirectCallControllerState() {
   });
 
   const commitIncomingState = useCallback((next: SetStateAction<IncomingCall | null>) => {
-    const resolved = typeof next === "function"
-      ? (next as (prev: IncomingCall | null) => IncomingCall | null)(incomingRef.current)
-      : next;
-    incomingRef.current = resolved;
-    setIncoming(resolved);
+    incomingRef.current = applySetStateAction(incomingRef.current, next);
+    setIncoming(incomingRef.current);
   }, []);
 
   const commitActiveState = useCallback((next: SetStateAction<ActiveCall | null>) => {
-    const resolved = typeof next === "function"
-      ? (next as (prev: ActiveCall | null) => ActiveCall | null)(activeRef.current)
-      : next;
-    activeRef.current = resolved;
-    setActive(resolved);
+    activeRef.current = applySetStateAction(activeRef.current, next);
+    setActive(activeRef.current);
   }, []);
 
   const debugCallMedia = useCallback((event: string, payload: Record<string, unknown>) => {
@@ -246,6 +245,7 @@ export function useDirectCallControllerState() {
     isCurrentActiveCallContext,
     setActiveIfCurrent,
     directCallLifecycleTokenRef,
+    outgoingRingingTimeoutRef,
   };
 
   const presentationState = {

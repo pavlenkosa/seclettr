@@ -388,7 +388,9 @@ export function useDirectCallSignalRuntime({
           ? { ...prev, peerLabel: resolvedLabel }
           : prev
       ));
-    }).catch(() => {});
+    }).catch((err) => {
+      logger.warn("[CALL] failed to resolve peer label for incoming call", err);
+    });
 
     setIncoming({
       callId: message.callId,

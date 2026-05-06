@@ -7,16 +7,10 @@ import {
 } from "react";
 import { api } from "@/lib/api";
 import {
-  startGroupSfuClient,
   type GroupCallRemoteMedia,
   type GroupSfuClient,
 } from "@/calls/group/runtime/sfu";
-import { buildParticipantDeviceIndex, isMediaCaptureError, resolveErrorMessage } from "@/calls/group/runtime/runtime-utils";
-import {
-  GROUP_CALL_SETUP_TIMEOUTS,
-  GroupCallSetupTimeoutError,
-} from "@/calls/group/model/group-call-setup-timeouts";
-import { withSetupStageTimeout } from "@/calls/shared/model/call-setup-timeout";
+import { buildParticipantDeviceIndex } from "@/calls/group/runtime/runtime-utils";
 import type { GroupCallRuntimeMediaEncryptionMode } from "@/calls/group/runtime/group-call/media-encryption-negotiation";
 import type {
   LocalGroupCallMediaKey,
@@ -29,46 +23,20 @@ import type {
   GroupCallStatusAction,
 } from "@/calls/group/model/group-call-types";
 import type { MediaKeyRotationState } from "./group-call-session-types";
+import {
+  GroupCallSessionAbortError,
+  runGroupCallBootstrap,
+  type BootstrapContext,
+  type BootstrapCallState,
+} from "./group-call-bootstrap";
+import {
+  buildAttemptSfuRejoin,
+  type RejoinContext,
+  type RejoinState,
+} from "./group-call-rejoin";
+import type { CreateSfuClientWithRetryContext } from "./group-call-sfu-client";
 
-class GroupCallSessionAbortError extends Error {
-  constructor() {
-    super("Group call session run is stale");
-  }
-}
-
-function readApiErrorStatus(error: unknown): number | null {
-  if (typeof error !== "object" || error === null) {
-    return null;
-  }
-  const status = (error as { status?: unknown }).status;
-  return typeof status === "number" ? status : null;
-}
-
-function isRecoverableGroupCallBootstrapError(error: unknown): boolean {
-  if (error instanceof GroupCallSetupTimeoutError) {
-    return true;
-  }
-  const status = readApiErrorStatus(error);
-  if (status === 401 || status === 403 || status === 404 || status === 409) {
-    return true;
-  }
-  if (!(error instanceof Error)) {
-    return false;
-  }
-  const message = error.message.toLowerCase();
-  return message.includes("call not found")
-    || message.includes("forbidden")
-    || message.includes("missing access token")
-    || message.includes("network");
-}
-
-const INITIAL_CALL_BOOTSTRAP_ATTEMPTS = 2;
-
-type CreateGroupCallResponse = {
-  callId: string;
-  created?: boolean;
-  callerUserId?: string;
-};
+const MAX_REJOIN_ATTEMPTS = 3;
 
 interface UseGroupCallSessionLifecycleOptions {
   session: GroupCallPanelSession | null;
@@ -183,41 +151,45 @@ export function useGroupCallSessionLifecycle({
     let cancelled = false;
     const sessionRunId = sessionRunIdRef.current + 1;
     sessionRunIdRef.current = sessionRunId;
-    let createdCallId: string | null = null;
-    let createdHere = false;
-    let joinedHere = false;
-    let localStream: MediaStream | null = null;
+
+    // Mutable state shared between bootstrap and rejoin closures
+    const bootstrapState: BootstrapCallState = {
+      createdCallId: null,
+      createdHere: false,
+      joinedHere: false,
+      localStream: null,
+    };
+
     const isCurrentSessionRun = () =>
       !cancelled && sessionRunIdRef.current === sessionRunId;
+
     const stopLocalStream = (stream: MediaStream | null) => {
       if (!stream) return;
       for (const track of stream.getTracks()) {
         track.stop();
       }
     };
+
     const endCreatedCall = async () => {
-      if (!createdCallId || !createdHere) return;
+      if (!bootstrapState.createdCallId || !bootstrapState.createdHere) return;
       try {
-        await api.put<{ ok: boolean }>(`/calls/${createdCallId}/status`, {
+        await api.put<{ ok: boolean }>(`/calls/${bootstrapState.createdCallId}/status`, {
           status: "ended",
         });
       } catch {
         // Best-effort cleanup for stale or aborted room creation.
       }
     };
+
     const leaveJoinedCall = async () => {
-      if (!createdCallId || !joinedHere) return;
+      if (!bootstrapState.createdCallId || !bootstrapState.joinedHere) return;
       try {
-        await api.leaveGroupCall(createdCallId);
+        await api.leaveGroupCall(bootstrapState.createdCallId);
       } catch {
         // Best-effort participant cleanup for stale or aborted joins.
       }
     };
-    const resolveInitialLocalMediaKey = () => (
-      localAdvertisedMediaEncryptionMode === "required"
-        ? localMediaKeyRef.current ?? null
-        : null
-    );
+
     const abortIfStaleSessionRun = async (
       onAbort?: () => void | Promise<void>
     ) => {
@@ -227,11 +199,13 @@ export function useGroupCallSessionLifecycle({
       await onAbort?.();
       throw new GroupCallSessionAbortError();
     };
+
     const updateRemoteMediaIfCurrent = (nextParticipants: GroupCallRemoteMedia[]) => {
       if (isCurrentSessionRun()) {
         setRemoteMedia(nextParticipants);
       }
     };
+
     const syncParticipantDevices = (participantDevices: Awaited<
       ReturnType<typeof api.getGroupCallParticipantDevices>
     >) => {
@@ -242,50 +216,39 @@ export function useGroupCallSessionLifecycle({
         buildParticipantDeviceIndex(participantDevices)
       );
     };
-    const createSfuClient = (
-      roomId: string,
-      stream: MediaStream,
-      onTransportFailed: () => void
-    ) => startGroupSfuClient({
-      roomId,
-      userId,
-      deviceId,
-      callType: session.callType,
-      localStream: stream,
-      initialLocalMediaKey: resolveInitialLocalMediaKey(),
-      mediaEncryptionMode: localAdvertisedMediaEncryptionMode,
-      onRemoteMediaUpdate: updateRemoteMediaIfCurrent,
-      onTransportFailed,
-    });
-    const INITIAL_SFU_START_ATTEMPTS = 3;
-    const wait = (delayMs: number) =>
-      new Promise<void>((resolve) => setTimeout(resolve, delayMs));
-    const createSfuClientWithRetry = async (
-      roomId: string,
-      stream: MediaStream,
-      onTransportFailed: () => void
-    ) => {
-      let lastError: unknown = null;
-      for (let attempt = 1; attempt <= INITIAL_SFU_START_ATTEMPTS; attempt += 1) {
-        try {
-          return await withSetupStageTimeout(
-            createSfuClient(roomId, stream, onTransportFailed),
-            GROUP_CALL_SETUP_TIMEOUTS.sfuConnectMs,
-            "sfu-connect"
-          );
-        } catch (caughtError) {
-          lastError = caughtError;
-          if (attempt >= INITIAL_SFU_START_ATTEMPTS) {
-            break;
-          }
-          await abortIfStaleSessionRun();
-          await wait(350 * attempt);
-        }
+
+    const resolveInitialLocalMediaKey = () => (
+      localAdvertisedMediaEncryptionMode === "required"
+        ? localMediaKeyRef.current ?? null
+        : null
+    );
+
+    const ensureLocalStream = async (): Promise<MediaStream> => {
+      if (bootstrapState.localStream) {
+        bootstrapState.localStream.getAudioTracks().forEach((track) => {
+          track.enabled = true;
+        });
+        setAccessGranted(true);
+        return bootstrapState.localStream;
       }
-      throw lastError ?? new Error(startErrorMessage);
+
+      if (!navigator.mediaDevices?.getUserMedia) {
+        throw new Error(mediaPermissionErrorMessage);
+      }
+
+      const stream = await navigator.mediaDevices.getUserMedia({
+        audio: true,
+        video: false,
+      });
+      bootstrapState.localStream = stream;
+      stream.getAudioTracks().forEach((track) => {
+        track.enabled = true;
+      });
+      attachInitialStream(stream);
+      activeStreamRef.current = stream;
+      setAccessGranted(true);
+      return stream;
     };
-    const MAX_REJOIN_ATTEMPTS = 3;
-    let rejoinAttempts = 0;
 
     const failSessionStart = (cleanupMedia: boolean) => {
       dispatchStatus({ type: "SESSION_ERROR" });
@@ -295,138 +258,76 @@ export function useGroupCallSessionLifecycle({
       }
     };
 
-    const attemptSfuRejoin = () => {
-      if (!isCurrentSessionRun()) return;
-      if (rejoinAttempts >= MAX_REJOIN_ATTEMPTS) {
-        failSessionStart(true);
-        return;
-      }
-      rejoinAttempts += 1;
-      dispatchStatus({ type: "RECONNECT_START" });
-      const delayMs = Math.pow(2, rejoinAttempts - 1) * 1000;
-      setTimeout(() => {
-        void runSfuRejoinAttempt();
-      }, delayMs);
+    const sfuClientCtx: CreateSfuClientWithRetryContext = {
+      userId,
+      deviceId,
+      callType: session.callType,
+      initialLocalMediaKey: resolveInitialLocalMediaKey(),
+      mediaEncryptionMode: localAdvertisedMediaEncryptionMode,
+      onRemoteMediaUpdate: updateRemoteMediaIfCurrent,
+      startErrorMessage,
+      abortIfStaleSessionRun,
     };
 
-    const resolveActiveRejoinCallId = async (
-      fallbackCallId: string
-    ): Promise<string | null> => {
-      try {
-        const [participants, participantDevices] = await Promise.all([
-          withSetupStageTimeout(
-            api.joinGroupCall(fallbackCallId),
-            GROUP_CALL_SETUP_TIMEOUTS.apiCallMs,
-            "join-call"
-          ),
-          api.getGroupCallParticipantDevices(fallbackCallId).catch(() => []),
-        ]);
-        await abortIfStaleSessionRun();
-        joinedParticipantRef.current = true;
-        setActiveParticipantUserIds(
-          participants.map((participant) => participant.userId)
-        );
-        syncParticipantDevices(participantDevices);
-        return fallbackCallId;
-      } catch (joinError) {
-        const status = readApiErrorStatus(joinError);
-        if (status !== 401 && status !== 403 && status !== 404) {
-          throw joinError;
-        }
-      }
-
-      const nextActiveCall = await withSetupStageTimeout(
-        api.getActiveGroupCall(session.groupId),
-        GROUP_CALL_SETUP_TIMEOUTS.checkActiveCallMs,
-        "check-active-call"
-      );
-      await abortIfStaleSessionRun();
-      if (!nextActiveCall) {
-        return null;
-      }
-
-      const [participants, participantDevices] = await Promise.all([
-        withSetupStageTimeout(
-          api.joinGroupCall(nextActiveCall.callId),
-          GROUP_CALL_SETUP_TIMEOUTS.apiCallMs,
-          "join-call"
-        ),
-        api.getGroupCallParticipantDevices(nextActiveCall.callId).catch(() => []),
-      ]);
-      await abortIfStaleSessionRun();
-      joinedParticipantRef.current = true;
-      callIdRef.current = nextActiveCall.callId;
-      setCallId(nextActiveCall.callId);
-      setCallHostUserId(nextActiveCall.callerUserId);
-      ownsServerCallRef.current = nextActiveCall.callerUserId === userId;
-      setActiveParticipantUserIds(
-        participants.map((participant) => participant.userId)
-      );
-      syncParticipantDevices(participantDevices);
-      return nextActiveCall.callId;
+    const rejoinState: RejoinState = {
+      rejoinAttempts: 0,
+      rejoinTimerId: null,
     };
 
-    const runSfuRejoinAttempt = async () => {
-      if (!isCurrentSessionRun()) return;
-      const currentStream = activeStreamRef.current;
-      const fallbackCallId = callIdRef.current;
-      if (!currentStream || !fallbackCallId) {
-        failSessionStart(false);
-        return;
-      }
-      sfuClientRef.current?.close();
-      sfuClientRef.current = null;
-      try {
-        const resolvedCallId = await resolveActiveRejoinCallId(fallbackCallId);
-        if (!resolvedCallId) {
-          failSessionStart(true);
-          return;
-        }
-        const nextSfuClient = await createSfuClient(
-          resolvedCallId,
-          currentStream,
-          attemptSfuRejoin
-        );
-        if (!isCurrentSessionRun()) {
-          nextSfuClient.close();
-          return;
-        }
-        sfuClientRef.current = nextSfuClient;
-        rejoinAttempts = 0;
-        dispatchStatus({ type: "SESSION_READY" });
-      } catch {
-        if (isCurrentSessionRun()) {
-          attemptSfuRejoin();
-        }
-      }
+    const rejoinCtx: RejoinContext = {
+      userId,
+      groupId: session.groupId,
+      sfuClientCtx,
+      sfuClientRef,
+      activeStreamRef,
+      callIdRef,
+      joinedParticipantRef,
+      ownsServerCallRef,
+      isCurrentSessionRun,
+      abortIfStaleSessionRun,
+      syncParticipantDevices,
+      failSessionStart,
+      dispatchStatus,
+      setCallId,
+      setCallHostUserId,
+      setActiveParticipantUserIds,
     };
-    const handleStartGroupCallFailure = async (error: unknown) => {
-      if (!isCurrentSessionRun()) {
-        stopLocalStream(localStream);
-        await leaveJoinedCall();
-        await endCreatedCall();
-        return;
-      }
-      cleanupLocalMedia();
-      await leaveCurrentCall();
 
-      if (createdCallId && createdHere) {
-        callIdRef.current = createdCallId;
-        await endServerRoom("ended");
-      }
+    const attemptSfuRejoin = buildAttemptSfuRejoin(rejoinCtx, rejoinState, MAX_REJOIN_ATTEMPTS);
 
-      if (isCurrentSessionRun()) {
-        dispatchStatus({ type: "SESSION_ERROR" });
-        setAccessGranted(false);
-        setError(
-          resolveErrorMessage(
-            error,
-            isMediaCaptureError(error)
-              ? mediaPermissionErrorMessage
-              : startErrorMessage
-          )
-        );
-      }
+    const bootstrapCtx: BootstrapContext = {
+      userId,
+      groupId: session.groupId,
+      callType: session.callType,
+      sfuClientCtx,
+      sfuClientRef,
+      callIdRef,
+      joinedParticipantRef,
+      ownsServerCallRef,
+      isCurrentSessionRun,
+      abortIfStaleSessionRun,
+      syncParticipantDevices,
+      stopLocalStream,
+      ensureLocalStream,
+      endCreatedCall,
+      leaveJoinedCall,
+      cleanupLocalMedia,
+      leaveCurrentCall,
+      endServerRoom,
+      dispatchStatus,
+      setCallId,
+      setCallHostUserId,
+      setAccessGranted,
+      setError,
+      setActiveParticipantUserIds,
+      setActiveParticipantDeviceIdsByUserId,
+      setRemoteParticipantMediaModes,
+      setRemoteMedia,
+      startErrorMessage,
+      mediaPermissionErrorMessage,
+      frameUnsupportedStrictMessage,
+      strictFrameEncryptionUnsupported,
+      attemptSfuRejoin,
     };
 
     dispatchStatus({ type: "SESSION_START" });
@@ -466,197 +367,16 @@ export function useGroupCallSessionLifecycle({
     mediaKeyDeliveryTrackerRef.current = null;
     cleanupLocalMedia();
 
-    const ensureLocalStream = async (): Promise<MediaStream> => {
-      if (localStream) {
-        localStream.getAudioTracks().forEach((track) => {
-          track.enabled = true;
-        });
-        setAccessGranted(true);
-        return localStream;
-      }
-
-      if (!navigator.mediaDevices?.getUserMedia) {
-        throw new Error(mediaPermissionErrorMessage);
-      }
-
-      const stream = await navigator.mediaDevices.getUserMedia({
-        audio: true,
-        video: false,
-      });
-      localStream = stream;
-      stream.getAudioTracks().forEach((track) => {
-        track.enabled = true;
-      });
-      attachInitialStream(stream);
-      activeStreamRef.current = stream;
-      setAccessGranted(true);
-      return stream;
-    };
-
-    const resolveCallIdAndHost = async (): Promise<{
-      resolvedCallId: string;
-      nextHostUserId: string;
-      serverCreatedCall: boolean;
-      existingCall: Awaited<ReturnType<typeof api.getActiveGroupCall>>;
-    }> => {
-      const existing = await withSetupStageTimeout(
-        api.getActiveGroupCall(session.groupId),
-        GROUP_CALL_SETUP_TIMEOUTS.checkActiveCallMs,
-        "check-active-call"
-      );
-      await abortIfStaleSessionRun();
-      let nextHostUserId = existing?.callerUserId ?? session.hostUserId ?? userId;
-      let resolvedCallId = existing?.callId ?? null;
-      let serverCreatedCall = existing === null;
-      if (!resolvedCallId) {
-        const created = await withSetupStageTimeout(
-          api.post<CreateGroupCallResponse>("/calls", {
-            groupId: session.groupId,
-            callType: session.callType,
-          }),
-          GROUP_CALL_SETUP_TIMEOUTS.apiCallMs,
-          "api-create-call"
-        );
-        resolvedCallId = created.callId;
-        serverCreatedCall = created.created ?? true;
-        if (created.callerUserId) {
-          nextHostUserId = created.callerUserId;
-        } else if (!serverCreatedCall) {
-          const activeCall = await withSetupStageTimeout(
-            api.getActiveGroupCall(session.groupId),
-            GROUP_CALL_SETUP_TIMEOUTS.checkActiveCallMs,
-            "check-active-call"
-          );
-          await abortIfStaleSessionRun();
-          if (activeCall?.callId === resolvedCallId) {
-            nextHostUserId = activeCall.callerUserId;
-          }
-        }
-      }
-      return { resolvedCallId, nextHostUserId, serverCreatedCall, existingCall: existing };
-    };
-
-    const startGroupCall = async () => {
-      if (strictFrameEncryptionUnsupported) {
-        await handleStartGroupCallFailure(new Error(frameUnsupportedStrictMessage));
-        return;
-      }
-
-      for (
-        let bootstrapAttempt = 1;
-        bootstrapAttempt <= INITIAL_CALL_BOOTSTRAP_ATTEMPTS;
-        bootstrapAttempt += 1
-      ) {
-        try {
-          const { resolvedCallId, nextHostUserId, serverCreatedCall, existingCall } = await resolveCallIdAndHost();
-          createdCallId = resolvedCallId;
-          createdHere = existingCall === null && serverCreatedCall;
-          joinedHere = false;
-          await abortIfStaleSessionRun(endCreatedCall);
-
-          ownsServerCallRef.current = createdHere;
-          setCallHostUserId(nextHostUserId);
-          setCallId(resolvedCallId);
-          callIdRef.current = resolvedCallId;
-
-          const stream = await withSetupStageTimeout(
-            ensureLocalStream(),
-            GROUP_CALL_SETUP_TIMEOUTS.localMediaMs,
-            "local-media"
-          );
-          await abortIfStaleSessionRun(async () => {
-            stopLocalStream(stream);
-            await endCreatedCall();
-          });
-
-          const [participants, participantDevices] = await Promise.all([
-            withSetupStageTimeout(
-              api.joinGroupCall(resolvedCallId),
-              GROUP_CALL_SETUP_TIMEOUTS.apiCallMs,
-              "join-call"
-            ),
-            api.getGroupCallParticipantDevices(resolvedCallId).catch(() => []),
-          ]);
-          joinedHere = true;
-          await abortIfStaleSessionRun(async () => {
-            await leaveJoinedCall();
-            stopLocalStream(stream);
-            await endCreatedCall();
-          });
-          joinedParticipantRef.current = true;
-          setActiveParticipantUserIds(
-            participants.map((participant) => participant.userId)
-          );
-          syncParticipantDevices(participantDevices);
-
-          try {
-            await api.put<{ ok: boolean }>(`/calls/${resolvedCallId}/status`, {
-              status: "active",
-            });
-          } catch {
-            // Best-effort room state update.
-          }
-
-          await abortIfStaleSessionRun(async () => {
-            await leaveJoinedCall();
-            stopLocalStream(stream);
-            await endCreatedCall();
-          });
-
-          const sfuClient = await createSfuClientWithRetry(
-            resolvedCallId,
-            stream,
-            attemptSfuRejoin
-          );
-          await abortIfStaleSessionRun(() => {
-            sfuClient.close();
-          });
-          sfuClientRef.current = sfuClient;
-
-          await abortIfStaleSessionRun();
-          dispatchStatus({ type: "SESSION_READY" });
-          return;
-        } catch (error) {
-          if (error instanceof GroupCallSessionAbortError) {
-            return;
-          }
-          const canRetryBootstrap =
-            bootstrapAttempt < INITIAL_CALL_BOOTSTRAP_ATTEMPTS
-            && isRecoverableGroupCallBootstrapError(error);
-          if (!canRetryBootstrap) {
-            await handleStartGroupCallFailure(error);
-            return;
-          }
-
-          sfuClientRef.current?.close();
-          sfuClientRef.current = null;
-          await leaveJoinedCall();
-          await endCreatedCall();
-
-          createdCallId = null;
-          createdHere = false;
-          joinedHere = false;
-          joinedParticipantRef.current = false;
-          ownsServerCallRef.current = false;
-          callIdRef.current = null;
-          setCallId(null);
-          setActiveParticipantUserIds([]);
-          setActiveParticipantDeviceIdsByUserId({});
-          setRemoteParticipantMediaModes({});
-          setRemoteMedia([]);
-          setAccessGranted(localStream !== null);
-          await abortIfStaleSessionRun();
-          await wait(250 * bootstrapAttempt);
-        }
-      }
-    };
-
-    void startGroupCall();
+    void runGroupCallBootstrap(bootstrapCtx, bootstrapState);
 
     return () => {
       cancelled = true;
       if (sessionRunIdRef.current === sessionRunId) {
         sessionRunIdRef.current += 1;
+      }
+      if (rejoinState.rejoinTimerId !== null) {
+        clearTimeout(rejoinState.rejoinTimerId);
+        rejoinState.rejoinTimerId = null;
       }
       activeStreamRef.current = null;
       cleanupLocalMedia();

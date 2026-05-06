@@ -95,6 +95,7 @@ function HookHarness(props: {
   acceptingIncomingCallRef?: MutableRefObject<IncomingCall | null>;
   peerConnectionRef: MutableRefObject<RTCPeerConnection | null>;
   directCallLifecycleTokenRef: MutableRefObject<number>;
+  outgoingRingingTimeoutRef?: MutableRefObject<ReturnType<typeof setTimeout> | null>;
   directCallNegotiationRoleRef: MutableRefObject<"polite" | "impolite">;
   supportsPeerRenegotiationV1Ref: MutableRefObject<boolean>;
   renegotiationUnsupportedRef: MutableRefObject<boolean>;
@@ -149,6 +150,7 @@ function HookHarness(props: {
     acceptingIncomingCallRef: props.acceptingIncomingCallRef ?? { current: null },
     peerConnectionRef: props.peerConnectionRef,
     directCallLifecycleTokenRef: props.directCallLifecycleTokenRef,
+    outgoingRingingTimeoutRef: props.outgoingRingingTimeoutRef ?? { current: null },
     directCallNegotiationRoleRef: props.directCallNegotiationRoleRef,
     supportsPeerRenegotiationV1Ref: props.supportsPeerRenegotiationV1Ref,
     renegotiationUnsupportedRef: props.renegotiationUnsupportedRef,

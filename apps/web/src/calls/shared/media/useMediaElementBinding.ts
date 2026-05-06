@@ -126,7 +126,7 @@ export function useMediaElementBinding<TElement extends HTMLMediaElement>(
     tryPlay();
 
     if (options.kind === "video" && attachedStream) {
-      readinessPollTimer = globalThis.setInterval(() => {
+      readinessPollTimer = globalThis.window.setInterval(() => {
         syncReadyState();
         if (isVideoElementReady(element as unknown as HTMLVideoElement)) {
           if (readinessPollTimer !== null) {
@@ -136,7 +136,7 @@ export function useMediaElementBinding<TElement extends HTMLMediaElement>(
         } else {
           tryPlay();
         }
-      }, 500) as unknown as number;
+      }, 500);
     }
 
     return () => {

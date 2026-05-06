@@ -812,6 +812,11 @@ async function handleUpdateCallStatusRequest(
     return undefined;
   }
 
+  if (!currentCall.group_id) {
+    void reply.code(400).send({ error: "Use direct call lifecycle endpoints" });
+    return undefined;
+  }
+
   const userId = request.auth.sub;
   if (!(await authorizeCallStatusUpdate(reply, currentCall, userId, body.status))) {
     return undefined;

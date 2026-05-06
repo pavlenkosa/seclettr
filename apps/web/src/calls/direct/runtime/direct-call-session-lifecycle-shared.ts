@@ -28,19 +28,14 @@ export type PlaybackRef = MutableRefObject<{
   lastProgressAt: number;
 }>;
 
-export interface UseDirectCallSessionLifecycleOptions {
-  active: ActiveCall | null;
-  incomingCallId: string | null;
-  callSecurityMode: CallSecurityMode;
-  remoteVideoReady: boolean;
-  remoteScreenReady: boolean;
-  remoteCameraSlot: RemoteMediaSlot;
-  remoteScreenSlot: RemoteMediaSlot;
-  remoteCameraStreamRef: MutableRefObject<MediaStream | null>;
-  remoteScreenStreamRef: MutableRefObject<MediaStream | null>;
-  incomingRef: MutableRefObject<IncomingCall | null>;
-  acceptingIncomingCallRef: MutableRefObject<IncomingCall | null>;
-  activeRef: MutableRefObject<ActiveCall | null>;
+// ---------------------------------------------------------------------------
+// Sub-contexts for UseDirectCallSessionLifecycleOptions
+// Each groups one logical domain so consumers can name what they actually need.
+// UseDirectCallSessionLifecycleOptions is the intersection of all five — zero callers change.
+// ---------------------------------------------------------------------------
+
+/** DOM element refs for local and remote video/audio elements. */
+export interface DirectCallLifecycleVideoElementRefs {
   localVideoRef: MutableRefObject<HTMLVideoElement | null>;
   localScreenPreviewRef: MutableRefObject<HTMLVideoElement | null>;
   remoteVideoRef: MutableRefObject<HTMLVideoElement | null>;
@@ -48,6 +43,10 @@ export interface UseDirectCallSessionLifecycleOptions {
   remoteCameraProbeRef: MutableRefObject<HTMLVideoElement | null>;
   remoteScreenProbeRef: MutableRefObject<HTMLVideoElement | null>;
   remoteAudioRef: MutableRefObject<HTMLAudioElement | null>;
+}
+
+/** Playback, sequence, and revision refs for remote media state tracking. */
+export interface DirectCallLifecycleMediaStateRefs {
   remoteCameraPlaybackRef: PlaybackRef;
   remoteScreenPlaybackRef: PlaybackRef;
   remoteInboundVideoProgressRef: MutableRefObject<Map<string, RemoteInboundVideoProgress>>;
@@ -56,10 +55,13 @@ export interface UseDirectCallSessionLifecycleOptions {
   remoteMediaStateSeqRef: MutableRefObject<Record<CallMediaSource, number>>;
   remoteMediaStateRevisionRef: MutableRefObject<Record<CallMediaSource, number>>;
   lastIncomingMediaStateRef: MutableRefObject<Record<CallMediaSource, LastIncomingMediaState | null>>;
-  setIncoming: Dispatch<SetStateAction<IncomingCall | null>>;
-  setActive: Dispatch<SetStateAction<ActiveCall | null>>;
-  setIsMinimized: Dispatch<SetStateAction<boolean>>;
-  peerConnectionRef: MutableRefObject<RTCPeerConnection | null>;
+}
+
+/** Refs for call session ownership: active/incoming state, WebRTC transport, and media streams. */
+export interface DirectCallLifecycleSessionRefs {
+  activeRef: MutableRefObject<ActiveCall | null>;
+  incomingRef: MutableRefObject<IncomingCall | null>;
+  acceptingIncomingCallRef: MutableRefObject<IncomingCall | null>;
   localStreamRef: MutableRefObject<MediaStream | null>;
   cameraSenderRef: MutableRefObject<RTCRtpSender | null>;
   cameraTransceiverRef: MutableRefObject<RTCRtpTransceiver | null>;
@@ -68,27 +70,16 @@ export interface UseDirectCallSessionLifecycleOptions {
   screenShareTransceiverRef: MutableRefObject<RTCRtpTransceiver | null>;
   localScreenPreviewStreamRef: MutableRefObject<MediaStream | null>;
   remoteAudioStreamRef: MutableRefObject<MediaStream | null>;
-  outgoingIceBatchReset: () => void;
-  resetRemoteMediaRuntime: () => void;
-  closeDirectCallFrameCrypto: () => void;
-  resetMinimizedDockState: () => void;
-  resetLocalPreviewState: () => void;
-  resetLocalScreenPreviewState: () => void;
-  configureDirectCallFrameCrypto: (params: {
-    callId: string;
-    mediaEncryptionMode: DirectCallMediaEncryptionMode;
-    peerUserId: string;
-    peerDeviceId: string | null;
-  }) => Promise<boolean>;
-  pushNotice: PushNotice;
-  t: Translate;
-  outboundMediaEncryptionOfferRef: MutableRefObject<DirectCallMediaEncryptionOffer | null>;
+  peerConnectionRef: MutableRefObject<RTCPeerConnection | null>;
   pendingIceCandidatesRef: MutableRefObject<Map<string, RTCIceCandidateInit[]>>;
   incomingIceCandidatesRef: MutableRefObject<Map<string, RTCIceCandidateInit[]>>;
-  frameModeRecoveryTimerRef: MutableRefObject<number | null>;
-  frameModeRecoveryAttemptedCallIdRef: MutableRefObject<string | null>;
-  incomingRingtoneRef: MutableRefObject<HTMLAudioElement | null>;
+  outboundMediaEncryptionOfferRef: MutableRefObject<DirectCallMediaEncryptionOffer | null>;
+  clearOutgoingMediaStateTrackBindingsRef: MutableRefObject<() => void>;
   directCallLifecycleTokenRef: MutableRefObject<number>;
+}
+
+/** Mutable refs for WebRTC offer/answer and renegotiation negotiation state. */
+export interface DirectCallLifecycleNegotiationRefs {
   directCallNegotiationRoleRef: MutableRefObject<DirectCallNegotiationRole>;
   supportsPeerRenegotiationV1Ref: MutableRefObject<boolean>;
   renegotiationUnsupportedRef: MutableRefObject<boolean>;
@@ -102,8 +93,55 @@ export interface UseDirectCallSessionLifecycleOptions {
   pendingRenegotiationReasonRef: MutableRefObject<string | null>;
   lastRenegotiationAttemptRef: MutableRefObject<Record<string, unknown> | null>;
   lastSignalingErrorRef: MutableRefObject<Record<string, unknown> | null>;
-  disconnectResetTimerRef: MutableRefObject<number | null>;
-  disconnectRecoveryAttemptedRef: MutableRefObject<boolean>;
-  clearOutgoingMediaStateTrackBindingsRef: MutableRefObject<() => void>;
-  isCurrentActiveCallContext: (callId: string, pc?: RTCPeerConnection | null) => boolean;
 }
+
+/** State setters and side-effect callbacks for the call lifecycle. */
+export interface DirectCallLifecycleCallbacks {
+  setIncoming: Dispatch<SetStateAction<IncomingCall | null>>;
+  setActive: Dispatch<SetStateAction<ActiveCall | null>>;
+  setIsMinimized: Dispatch<SetStateAction<boolean>>;
+  outgoingIceBatchReset: () => void;
+  resetRemoteMediaRuntime: () => void;
+  closeDirectCallFrameCrypto: () => void;
+  resetMinimizedDockState: () => void;
+  resetLocalPreviewState: () => void;
+  resetLocalScreenPreviewState: () => void;
+  pushNotice: PushNotice;
+  configureDirectCallFrameCrypto: (params: {
+    callId: string;
+    mediaEncryptionMode: DirectCallMediaEncryptionMode;
+    peerUserId: string;
+    peerDeviceId: string | null;
+  }) => Promise<boolean>;
+  isCurrentActiveCallContext: (callId: string, pc?: RTCPeerConnection | null) => boolean;
+  t: Translate;
+}
+
+/**
+ * Full options bag for useDirectCallSessionLifecycle.
+ * Defined as an intersection of five sub-context interfaces plus scalar/presentation
+ * fields so each concern is self-documenting. Callers pass a flat object — the
+ * intersection is structural, not nominal, so nothing changes at the call site.
+ */
+export type UseDirectCallSessionLifecycleOptions =
+  DirectCallLifecycleVideoElementRefs &
+  DirectCallLifecycleMediaStateRefs &
+  DirectCallLifecycleSessionRefs &
+  DirectCallLifecycleNegotiationRefs &
+  DirectCallLifecycleCallbacks & {
+    // scalar/presentation fields that don't fit a group
+    active: ActiveCall | null;
+    incomingCallId: string | null;
+    callSecurityMode: CallSecurityMode;
+    remoteVideoReady: boolean;
+    remoteScreenReady: boolean;
+    remoteCameraSlot: RemoteMediaSlot;
+    remoteScreenSlot: RemoteMediaSlot;
+    remoteCameraStreamRef: MutableRefObject<MediaStream | null>;
+    remoteScreenStreamRef: MutableRefObject<MediaStream | null>;
+    frameModeRecoveryTimerRef: MutableRefObject<number | null>;
+    frameModeRecoveryAttemptedCallIdRef: MutableRefObject<string | null>;
+    incomingRingtoneRef: MutableRefObject<HTMLAudioElement | null>;
+    disconnectResetTimerRef: MutableRefObject<number | null>;
+    disconnectRecoveryAttemptedRef: MutableRefObject<boolean>;
+  };

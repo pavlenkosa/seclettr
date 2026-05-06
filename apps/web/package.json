@@ -11,7 +11,8 @@
     "test": "vitest run",
     "test:coverage": "vitest run --coverage --coverage.provider=v8 --coverage.reporter=lcov",
     "typecheck": "tsc --noEmit && tsc --noEmit -p tsconfig.node.json",
-    "lint": "eslint src --ext .ts,.tsx"
+    "lint": "eslint src --ext .ts,.tsx",
+    "check:ui-style": "node scripts/check-ui-style.mjs"
   },
   "dependencies": {
     "@seclettr/crypto": "workspace:*",

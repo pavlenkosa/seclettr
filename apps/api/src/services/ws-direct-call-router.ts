@@ -107,8 +107,8 @@ function isCallerSignal(senderDeviceId: string, session: CallSession): boolean {
 
 export function supportsRenegotiationV1(session: CallSession): boolean {
   return (
-    session.callerSupportsRenegotiationV1 !== false &&
-    session.calleeSupportsRenegotiationV1 !== false
+    session.callerSupportsRenegotiationV1 === true &&
+    session.calleeSupportsRenegotiationV1 === true
   );
 }
 

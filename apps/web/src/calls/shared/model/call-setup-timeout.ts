@@ -1,3 +1,8 @@
+/** Resolves after `ms` milliseconds. Useful for retry back-off inside async loops. */
+export function sleep(ms: number): Promise<void> {
+  return new Promise<void>((resolve) => setTimeout(resolve, ms));
+}
+
 export class CallSetupTimeoutError extends Error {
   readonly stage: string;
   constructor(stage: string) {

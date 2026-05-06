@@ -1,4 +1,5 @@
 import { useEffect, type MutableRefObject } from "react";
+import { logger } from "@/lib/logger.js";
 import { readDecodedFrameCount } from "@/calls/shared/media/call-media-debug";
 import { REMOTE_MIN_FRAME_DIMENSION, REMOTE_TRACK_ACTIVE_WINDOW_MS } from "@/calls/direct/model/direct-call-types";
 import type { ActiveCall } from "@/calls/direct/model/direct-call-types";
@@ -151,7 +152,9 @@ export function useDirectCallRemoteTelemetry({
           receivedPackets,
           receivedBytes,
         });
-      }).catch(() => {});
+      }).catch((err) => {
+        logger.debug("[CALL] getStats failed", err);
+      });
     }, 2000);
 
     return () => clearInterval(timer);

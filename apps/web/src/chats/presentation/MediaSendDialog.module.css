@@ -9,8 +9,6 @@
   justify-content: center;
   padding: 1rem;
   background: rgb(0 0 0 / 0.52);
-  -webkit-backdrop-filter: blur(4px);
-  backdrop-filter: blur(4px);
   animation: overlayIn 160ms ease both;
 }
 
@@ -25,8 +23,8 @@
 }
 
 @keyframes overlayOut {
-  from { opacity: 1; backdrop-filter: blur(4px); }
-  to   { opacity: 0; backdrop-filter: blur(0px); }
+  from { opacity: 1; }
+  to { opacity: 0; }
 }
 
 /* ─── Dialog surface ─────────────────────────────────────────────────────── */
@@ -42,11 +40,9 @@
   background:
     linear-gradient(
       180deg,
-      color-mix(in srgb, var(--surface-float) 96%, var(--glass-surface-fill, transparent)),
+      color-mix(in srgb, var(--surface-float) 96%, transparent),
       color-mix(in srgb, var(--surface-shell) 98%, transparent)
     );
-  -webkit-backdrop-filter: blur(var(--glass-blur-medium, 16px)) saturate(var(--glass-saturate, 1.08));
-  backdrop-filter: blur(var(--glass-blur-medium, 16px)) saturate(var(--glass-saturate, 1.08));
   box-shadow:
     inset 0 1px 0 rgb(255 255 255 / 0.07),
     0 24px 64px rgb(2 8 20 / 0.42),
@@ -205,7 +201,6 @@
 
 .thumbRemove:hover {
   background: rgb(0 0 0 / 0.82);
-  transform: scale(1.08);
 }
 
 .thumbRemove:focus-visible {

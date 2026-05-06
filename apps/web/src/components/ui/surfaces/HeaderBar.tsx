@@ -15,8 +15,8 @@ export interface HeaderBarProps extends Readonly<HTMLAttributes<HTMLElement>> {
 }
 
 /**
- * Shared three-slot header shell for glass surfaces, call overlays, and other
- * panel headers that need balanced leading, centered, and trailing content.
+ * Shared three-slot header shell for call overlays and panel headers that need
+ * balanced leading, centered, and trailing content.
  */
 export function HeaderBar({
   as: Component = "div",

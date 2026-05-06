@@ -81,7 +81,6 @@
   background: var(--timestamp-bg);
   border: 1px solid var(--timestamp-border);
   border-radius: var(--radius-full);
-  backdrop-filter: blur(6px);
   animation: messageTimestampIn var(--motion-duration-base) var(--motion-ease-emphasized) both;
   animation-delay: var(--message-enter-delay, 0ms);
 }
@@ -200,7 +199,6 @@
 }
 
 .bubble:hover {
-  transform: translateY(-1px);
   box-shadow:
     var(--bubble-shadow),
     0 10px 20px rgb(2 8 20 / 0.08);
@@ -266,16 +264,18 @@
   flex-direction: column;
   gap: 0.12rem;
   margin-bottom: 0.42rem;
-  padding: 0.36rem 0.62rem 0.36rem 0.52rem;
+  min-width: 0;
+  padding: 0.4rem 0.62rem 0.42rem 0.58rem;
   border-radius: 10px;
-  border-left: 3px solid;
+  border: 0;
+  border-left: 3px solid transparent;
   cursor: default;
   overflow: hidden;
 }
 
 button.quotedBubble {
-  border: 0;
-  background: none;
+  border-left-width: 3px;
+  border-left-style: solid;
   color: inherit;
   text-align: left;
   font: inherit;
@@ -287,33 +287,40 @@ button.quotedBubble {
 }
 
 .quotedBubbleClickable:hover {
-  opacity: 0.8;
+  opacity: 0.92;
 }
 
 .quotedBubbleOwn {
-  border-left-color: color-mix(in srgb, var(--message-out-ui) 70%, transparent);
-  background: color-mix(in srgb, var(--message-out-bg) 60%, transparent);
+  border-left-color: color-mix(in srgb, var(--message-out-ui) 82%, transparent);
+  background: rgb(255 255 255 / 0.14);
 }
 
 .quotedBubbleTheirs {
-  border-left-color: color-mix(in srgb, var(--message-ui-accent) 70%, transparent);
-  background: color-mix(in srgb, var(--message-in-bg) 60%, transparent);
+  border-left-color: color-mix(in srgb, var(--message-ui-accent) 74%, transparent);
+  background: color-mix(in srgb, var(--message-ui-accent) 10%, transparent);
 }
 
 .quotedSender {
   font-size: 0.68rem;
   font-weight: 700;
-  color: var(--message-ui-accent);
   line-height: 1.2;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
+.quotedBubbleOwn .quotedSender {
+  color: var(--message-out-ui);
+}
+
+.quotedBubbleTheirs .quotedSender {
+  color: var(--message-ui-accent);
+}
+
 .quotedText {
   font-size: 0.82rem;
   line-height: 1.36;
-  opacity: 0.82;
+  opacity: 0.9;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -437,7 +444,6 @@ button.quotedBubble {
   background: var(--voice-decrypt-hover-bg);
   border-color: var(--voice-decrypt-border);
   box-shadow: inset 0 0 0 1px rgb(186 230 253 / 0.18);
-  transform: translateY(-1px);
 }
 
 .voiceDecryptBtn:disabled {
@@ -456,8 +462,6 @@ button.quotedBubble {
   flex-shrink: 0;
   background: color-mix(in srgb, var(--voice-decrypt-bg) 88%, transparent);
   border: 1px solid color-mix(in srgb, var(--voice-decrypt-border) 88%, transparent);
-  -webkit-backdrop-filter: blur(10px);
-  backdrop-filter: blur(10px);
 }
 
 .voiceDecryptGhostWave {
@@ -504,8 +508,6 @@ button.quotedBubble {
   background: color-mix(in srgb, var(--surface-shell-strong) 82%, transparent);
   border: 1px solid color-mix(in srgb, var(--voice-decrypt-border) 92%, transparent);
   color: var(--voice-decrypt-icon, #edf6ff);
-  -webkit-backdrop-filter: blur(12px);
-  backdrop-filter: blur(12px);
   flex-shrink: 0;
 }
 
@@ -611,7 +613,6 @@ button.quotedBubble {
 
 .voicePlayBtn:hover {
   background: var(--voice-play-hover-bg);
-  transform: translateY(-1px) scale(1.01);
 }
 
 .voicePlayBtn:active {
@@ -772,7 +773,6 @@ button.quotedBubble {
 
 .voiceSpeedBtn:hover {
   background: color-mix(in srgb, var(--message-ui-accent) 24%, transparent);
-  transform: translateY(-1px);
 }
 
 .voiceDot {
@@ -954,7 +954,6 @@ button.quotedBubble {
 }
 
 .videoCircleButton:hover {
-  transform: translateY(-1px);
   box-shadow:
     var(--bubble-shadow),
     0 12px 24px rgb(2 6 23 / 0.14);
@@ -1121,8 +1120,6 @@ button.quotedBubble {
   background:
     radial-gradient(circle at 34% 30%, rgb(255 255 255 / 0.1), transparent 34%),
     color-mix(in srgb, var(--voice-decrypt-bg) 92%, var(--bg-secondary));
-  -webkit-backdrop-filter: blur(12px);
-  backdrop-filter: blur(12px);
 }
 
 .bubbleOwn .videoDecryptCircle {
@@ -1162,8 +1159,6 @@ button.quotedBubble {
   background: rgb(9 23 38 / 0.48);
   border: 1px solid color-mix(in srgb, var(--voice-decrypt-border) 90%, transparent);
   color: #eff7ff;
-  -webkit-backdrop-filter: blur(16px);
-  backdrop-filter: blur(16px);
 }
 
 .bubbleOwn .videoDecryptLock {
@@ -1228,7 +1223,6 @@ button.quotedBubble {
 .fileDecryptBtn:hover:not(:disabled) {
   background: var(--voice-decrypt-hover-bg);
   border-color: var(--voice-decrypt-border);
-  transform: translateY(-1px);
 }
 
 .bubbleOwn .fileDecryptBtn {
@@ -1366,8 +1360,6 @@ button.quotedBubble {
   inset: 3px;
   border-radius: 50%;
   background: rgb(2 6 23 / 0.66);
-  -webkit-backdrop-filter: blur(10px);
-  backdrop-filter: blur(10px);
 }
 
 .uploadRingCompact {
@@ -1395,7 +1387,6 @@ button.quotedBubble {
 }
 
 .uploadRingCancel:hover {
-  transform: scale(1.04);
   background: rgb(255 255 255 / 0.14);
   border-color: rgb(255 255 255 / 0.28);
 }
@@ -1686,8 +1677,6 @@ button.quotedBubble {
   right: 0;
   padding: 3px 7px 4px;
   background: rgb(0 0 0 / 0.45);
-  backdrop-filter: blur(6px);
-  -webkit-backdrop-filter: blur(6px);
   color: #fff;
   font-size: 0.68rem;
   font-weight: 600;
@@ -1756,8 +1745,6 @@ button.quotedBubble {
   right: 0;
   padding: 3px 7px 4px;
   background: rgb(0 0 0 / 0.45);
-  backdrop-filter: blur(6px);
-  -webkit-backdrop-filter: blur(6px);
   border-radius: 0 0 14px 0;
   color: #fff;
   font-size: 0.68rem;
@@ -1770,7 +1757,6 @@ button.quotedBubble {
 }
 
 .inlineMediaBtn:hover:not(:disabled) {
-  transform: scale(1.01);
   filter: brightness(1.04);
 }
 

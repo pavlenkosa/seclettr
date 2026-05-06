@@ -14,7 +14,7 @@ export interface SelectFieldProps extends Omit<SelectHTMLAttributes<HTMLSelectEl
 
 /**
  * Shared native select shell for modal forms and compact settings controls.
- * It keeps borders, glass-aware fills, and caret treatment aligned with InputField.
+ * It keeps borders, flat fills, and caret treatment aligned with InputField.
  */
 export const SelectField = forwardRef<HTMLSelectElement, SelectFieldProps>(function SelectField(
   {

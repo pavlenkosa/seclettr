@@ -14,7 +14,7 @@ export interface InputFieldProps extends Omit<InputHTMLAttributes<HTMLInputEleme
 
 /**
  * Shared single-line input shell for search/name fields. It keeps focus ring,
- * glass-aware fill, radius, and icon spacing consistent across the UI kit.
+ * flat fill, radius, and icon spacing consistent across the UI kit.
  */
 export const InputField = forwardRef<HTMLInputElement, InputFieldProps>(function InputField(
   {

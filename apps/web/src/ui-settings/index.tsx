@@ -6,21 +6,18 @@ import { useShallow } from "zustand/react/shallow";
 export type ThemeMode = "light" | "dark";
 export type AccentColor = "blue" | "emerald" | "rose" | "violet";
 export type CallSecurityMode = "compatibility" | "balanced" | "strict";
-export type GlassMode = "on" | "off";
 export type AudioOutputPreference = "system" | `device:${string}`;
 export type AutoDecryptMedia = "on" | "off";
 
 const THEME_STORAGE_KEY = "seclettr.ui.theme.v1";
 const ACCENT_STORAGE_KEY = "seclettr.ui.accent.v1";
 const CALL_SECURITY_MODE_STORAGE_KEY = "seclettr.ui.callSecurityMode.v1";
-const GLASS_MODE_STORAGE_KEY = "seclettr.ui.glassMode.v1";
 const AUDIO_OUTPUT_PREFERENCE_STORAGE_KEY = "seclettr.ui.audioOutputPreference.v1";
 const AUTO_DECRYPT_MEDIA_STORAGE_KEY = "seclettr.ui.autoDecryptMedia.v1";
 
 const THEME_VALUES: ReadonlySet<ThemeMode> = new Set(["light", "dark"]);
 const ACCENT_VALUES: ReadonlySet<AccentColor> = new Set(["blue", "emerald", "rose", "violet"]);
 const CALL_SECURITY_MODE_VALUES: ReadonlySet<CallSecurityMode> = new Set(["compatibility", "balanced", "strict"]);
-const GLASS_MODE_VALUES: ReadonlySet<GlassMode> = new Set(["on", "off"]);
 const AUTO_DECRYPT_MEDIA_VALUES: ReadonlySet<AutoDecryptMedia> = new Set(["on", "off"]);
 
 function readStorageValue(key: string): string | null {
@@ -57,12 +54,6 @@ function resolveInitialCallSecurityMode(): CallSecurityMode {
   return "balanced";
 }
 
-function resolveInitialGlassMode(): GlassMode {
-  const saved = readStorageValue(GLASS_MODE_STORAGE_KEY);
-  if (saved && GLASS_MODE_VALUES.has(saved as GlassMode)) return saved as GlassMode;
-  return "on";
-}
-
 function isAudioOutputPreference(value: string | null): value is AudioOutputPreference {
   return value !== null && (value === "system" || value.startsWith("device:"));
 }
@@ -82,13 +73,11 @@ function resolveInitialAutoDecryptMedia(): AutoDecryptMedia {
 interface UiSettingsState {
   themeMode: ThemeMode;
   accentColor: AccentColor;
-  glassMode: GlassMode;
   callSecurityMode: CallSecurityMode;
   autoDecryptMedia: AutoDecryptMedia;
   audioOutputPreference: AudioOutputPreference;
   setThemeMode: (next: ThemeMode) => void;
   setAccentColor: (next: AccentColor) => void;
-  setGlassMode: (next: GlassMode) => void;
   setCallSecurityMode: (next: CallSecurityMode) => void;
   setAutoDecryptMedia: (next: AutoDecryptMedia) => void;
   setAudioOutputPreference: (next: AudioOutputPreference) => void;
@@ -98,14 +87,12 @@ export const useUiSettingsStore = create<UiSettingsState>()(
   subscribeWithSelector((set) => ({
     themeMode: resolveInitialTheme(),
     accentColor: resolveInitialAccent(),
-    glassMode: resolveInitialGlassMode(),
     callSecurityMode: resolveInitialCallSecurityMode(),
     autoDecryptMedia: resolveInitialAutoDecryptMedia(),
     audioOutputPreference: resolveInitialAudioOutputPreference(),
 
     setThemeMode: (next) => { if (THEME_VALUES.has(next)) set({ themeMode: next }); },
     setAccentColor: (next) => { if (ACCENT_VALUES.has(next)) set({ accentColor: next }); },
-    setGlassMode: (next) => { if (GLASS_MODE_VALUES.has(next)) set({ glassMode: next }); },
     setCallSecurityMode: (next) => { if (CALL_SECURITY_MODE_VALUES.has(next)) set({ callSecurityMode: next }); },
     setAutoDecryptMedia: (next) => { if (AUTO_DECRYPT_MEDIA_VALUES.has(next)) set({ autoDecryptMedia: next }); },
     setAudioOutputPreference: (next) => { if (isAudioOutputPreference(next)) set({ audioOutputPreference: next }); },
@@ -117,7 +104,6 @@ export const useUiSettingsStore = create<UiSettingsState>()(
 const _s = useUiSettingsStore.getState();
 document.documentElement.dataset.theme = _s.themeMode;
 document.documentElement.dataset.accent = _s.accentColor;
-document.documentElement.dataset.glass = _s.glassMode;
 document.documentElement.dataset.callSecurityMode = _s.callSecurityMode;
 
 useUiSettingsStore.subscribe(
@@ -127,10 +113,6 @@ useUiSettingsStore.subscribe(
 useUiSettingsStore.subscribe(
   (s) => s.accentColor,
   (v) => { document.documentElement.dataset.accent = v; writeStorageValue(ACCENT_STORAGE_KEY, v); }
-);
-useUiSettingsStore.subscribe(
-  (s) => s.glassMode,
-  (v) => { document.documentElement.dataset.glass = v; writeStorageValue(GLASS_MODE_STORAGE_KEY, v); }
 );
 useUiSettingsStore.subscribe(
   (s) => s.callSecurityMode,
@@ -150,10 +132,8 @@ useUiSettingsStore.subscribe(
 export interface AppearanceSettingsContextValue {
   themeMode: ThemeMode;
   accentColor: AccentColor;
-  glassMode: GlassMode;
   setThemeMode: (next: ThemeMode) => void;
   setAccentColor: (next: AccentColor) => void;
-  setGlassMode: (next: GlassMode) => void;
 }
 
 export interface SecuritySettingsContextValue {
@@ -173,10 +153,8 @@ export function useAppearanceSettings(): AppearanceSettingsContextValue {
     useShallow((s) => ({
       themeMode: s.themeMode,
       accentColor: s.accentColor,
-      glassMode: s.glassMode,
       setThemeMode: s.setThemeMode,
       setAccentColor: s.setAccentColor,
-      setGlassMode: s.setGlassMode,
     }))
   );
 }

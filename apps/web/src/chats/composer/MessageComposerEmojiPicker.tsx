@@ -79,7 +79,6 @@ export function MessageComposerEmojiPicker({
         onClick={onToggleOpen}
         disabled={disabled}
         className={styles.secondaryBtn}
-        variant="glass"
         active={isOpen}
         aria-label={t(
           isOpen

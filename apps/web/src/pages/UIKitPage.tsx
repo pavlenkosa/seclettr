@@ -19,17 +19,11 @@ import {
 import styles from "./UIKitPage.module.css";
 
 type DensityMode = "compact" | "airy";
-type SurfaceMode = "glass" | "solid";
 
 const densityOptions = [
   { value: "compact", label: "Compact" },
   { value: "airy", label: "Airy" },
 ] satisfies Array<{ value: DensityMode; label: string }>;
-
-const surfaceOptions = [
-  { value: "glass", label: "Glass" },
-  { value: "solid", label: "Solid" },
-] satisfies Array<{ value: SurfaceMode; label: string }>;
 
 const conversationSamples = [
   {
@@ -62,11 +56,6 @@ const noopPointerHandler: PointerEventHandler<HTMLButtonElement> = () => {};
 
 export function UIKitPage() {
   const [densityMode, setDensityMode] = useState<DensityMode>("compact");
-  const [surfaceMode, setSurfaceMode] = useState<SurfaceMode>("glass");
-
-  const usesGlass = surfaceMode === "glass";
-  const panelGlass = usesGlass ? "strong" : "none";
-  const panelTone = usesGlass ? "default" : "strong";
 
   return (
     <div
@@ -81,7 +70,6 @@ export function UIKitPage() {
         <SurfacePanel
           as="section"
           tone="accent"
-          glass={usesGlass ? "strong" : "soft"}
           padding="lg"
           radius="xl"
           className={styles.heroPanel}
@@ -95,7 +83,7 @@ export function UIKitPage() {
 
           <h1 className={styles.heroTitle}>Mobile exterior, reusable web primitives</h1>
           <p className={styles.heroCopy}>
-            Reference surface for buttons, rows, badges, docks, and glass panels
+            Reference surface for buttons, rows, badges, docks, and flat panels
             built from the same compact language as the mobile shell.
           </p>
 
@@ -125,8 +113,7 @@ export function UIKitPage() {
               </div>
 
               <SurfacePanel
-                tone={panelTone}
-                glass={panelGlass}
+                tone="strong"
                 padding="md"
                 radius="xl"
                 className={styles.previewHeaderPanel}
@@ -144,14 +131,12 @@ export function UIKitPage() {
                   trailing={(
                     <div className={styles.headerActions}>
                       <IconButton
-                        variant="glass"
                         size={36}
                         aria-label="Search showcase"
                       >
                         <SearchIcon />
                       </IconButton>
                       <IconButton
-                        variant="glass"
                         size={36}
                         aria-label="Toggle notifications"
                       >
@@ -163,8 +148,7 @@ export function UIKitPage() {
               </SurfacePanel>
 
               <SurfacePanel
-                tone={panelTone}
-                glass={usesGlass ? "medium" : "none"}
+                tone="strong"
                 padding="sm"
                 radius="xl"
                 className={styles.previewSearchPanel}
@@ -199,7 +183,7 @@ export function UIKitPage() {
               </div>
 
               <InlineNotice tone="info" size="md" className={styles.previewNotice}>
-                Dock, row density, and glass treatment stay aligned with the mobile
+                Dock, row density, and flat surfaces stay aligned with the mobile
                 shell even when composed as web primitives.
               </InlineNotice>
 
@@ -217,14 +201,12 @@ export function UIKitPage() {
                 actions={(
                   <>
                     <IconButton
-                      variant="glass"
                       size={36}
                       aria-label="Mute call"
                     >
                       <MicIcon />
                     </IconButton>
                     <IconButton
-                      variant="glass"
                       tone="danger"
                       size={36}
                       aria-label="Leave call"
@@ -275,7 +257,6 @@ export function UIKitPage() {
         <SurfacePanel
           as="section"
           tone="strong"
-          glass={usesGlass ? "soft" : "none"}
           padding="lg"
           radius="xl"
           className={styles.controlPanel}
@@ -303,17 +284,6 @@ export function UIKitPage() {
             </div>
 
             <div className={styles.controlGroup}>
-              <span className={styles.controlLabel}>Surface mode</span>
-              <SegmentedControl
-                value={surfaceMode}
-                options={surfaceOptions}
-                onChange={setSurfaceMode}
-                ariaLabel="Select showcase surface mode"
-                grouped
-              />
-            </div>
-
-            <div className={styles.controlGroup}>
               <span className={styles.controlLabel}>Usage focus</span>
               <SelectField defaultValue="chat" size="pill" aria-label="Choose usage focus">
                 <option value="chat">Chat shell</option>
@@ -328,7 +298,6 @@ export function UIKitPage() {
           <SurfacePanel
             as="section"
             tone="default"
-            glass={usesGlass ? "medium" : "none"}
             padding="lg"
             radius="xl"
             className={styles.sectionPanel}
@@ -359,7 +328,7 @@ export function UIKitPage() {
               <IconButton variant="default" aria-label="Mute notifications">
                 <BellIcon />
               </IconButton>
-              <IconButton variant="glass" aria-label="Search">
+              <IconButton aria-label="Search">
                 <SearchIcon />
               </IconButton>
               <IconButton variant="ghost" aria-label="Archive">
@@ -371,7 +340,6 @@ export function UIKitPage() {
           <SurfacePanel
             as="section"
             tone="default"
-            glass={usesGlass ? "medium" : "none"}
             padding="lg"
             radius="xl"
             className={styles.sectionPanel}
@@ -412,7 +380,6 @@ export function UIKitPage() {
           <SurfacePanel
             as="section"
             tone="default"
-            glass={usesGlass ? "medium" : "none"}
             padding="lg"
             radius="xl"
             className={styles.sectionPanel}
@@ -448,7 +415,6 @@ export function UIKitPage() {
           <SurfacePanel
             as="section"
             tone="default"
-            glass={usesGlass ? "medium" : "none"}
             padding="lg"
             radius="xl"
             className={styles.sectionPanel}
@@ -486,7 +452,6 @@ export function UIKitPage() {
           <SurfacePanel
             as="section"
             tone="accent"
-            glass={usesGlass ? "strong" : "soft"}
             padding="lg"
             radius="xl"
             className={styles.sectionPanel}

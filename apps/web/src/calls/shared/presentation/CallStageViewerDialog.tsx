@@ -148,7 +148,6 @@ export function CallStageViewerDialog({
               onClick={() => handleToggleNativeFullscreen()}
               className={styles.actionButton}
               size={36}
-              variant="glass"
               aria-label={isNativeFullscreen ? exitFullscreenLabel : enterFullscreenLabel}
               title={isNativeFullscreen ? exitFullscreenLabel : enterFullscreenLabel}
             >
@@ -160,7 +159,6 @@ export function CallStageViewerDialog({
               onClick={handleStopWatching}
               className={styles.actionButton}
               size={36}
-              variant="glass"
               aria-label={stopWatchingLabel}
               title={stopWatchingLabel}
             >
@@ -172,7 +170,6 @@ export function CallStageViewerDialog({
             onClick={handleClose}
             className={styles.actionButton}
             size={36}
-            variant="glass"
             aria-label={closeLabel}
             title={closeLabel}
           >

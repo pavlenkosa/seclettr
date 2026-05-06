@@ -67,7 +67,7 @@ export function NewChatModal({ onClose, onSelect }: Props) {
         />
       </div>
 
-      <SurfacePanel as="ul" className={styles.results} role="listbox" padding="none" radius="lg" glass="medium">
+      <SurfacePanel as="ul" className={styles.results} role="listbox" padding="none" radius="lg">
         {loading && <li className={styles.hint}>{t("newChat.searching")}</li>}
         {!loading && error && (
           <li className={styles.hint} role="alert">{error}</li>

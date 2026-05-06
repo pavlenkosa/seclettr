@@ -55,7 +55,6 @@ function GroupCallStageActions({
           onClick={onResetStageFocus}
           className={styles.stageActionIconBtn}
           size={34}
-          variant="glass"
           aria-label={resetStageFocusLabel}
           title={resetStageFocusLabel}
         >
@@ -67,7 +66,6 @@ function GroupCallStageActions({
           onClick={onStopWatchingStageTile}
           className={styles.stageActionIconBtn}
           size={34}
-          variant="glass"
           aria-label={stopWatchingStageLabel}
           title={stopWatchingStageLabel}
         >
@@ -79,7 +77,6 @@ function GroupCallStageActions({
           onClick={() => { void onToggleStagePresentation(); }}
           className={styles.stageActionIconBtn}
           size={34}
-          variant="glass"
           aria-label={fullscreenToggleLabel}
           title={fullscreenToggleLabel}
         >

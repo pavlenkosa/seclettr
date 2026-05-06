@@ -295,7 +295,6 @@ function AttachmentButton({
       onClick={() => draft.attachmentInputRef.current?.click()}
       disabled={draft.sending}
       className={styles.secondaryBtn}
-      variant="glass"
       title={attachTitle}
       aria-label={attachLabel}
     >

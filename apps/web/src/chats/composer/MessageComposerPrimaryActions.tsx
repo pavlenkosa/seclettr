@@ -119,7 +119,6 @@ export const MessageComposerPrimaryActions = memo(function MessageComposerPrimar
           <IconButton
             onClick={onCancelRecording}
             className={styles.recordCancelButton}
-            variant="glass"
             aria-label={cancelRecordingAriaLabel}
             title={cancelRecordingTitle}
           >

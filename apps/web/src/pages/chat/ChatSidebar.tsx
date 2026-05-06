@@ -78,18 +78,51 @@ export function ChatSidebar({
           <span className={styles.sidebarBrandMark} aria-hidden="true">
             <SeclettrMark decorative />
           </span>
-          <span className={styles.sidebarTitle}>{t("chat.sidebarTitle")}</span>
+          <div className={styles.sidebarBrandCopy}>
+            <span className={styles.sidebarTitle}>{t("chat.sidebarTitle")}</span>
+            {username ? (
+              <span className={styles.sidebarUsername}>@{username}</span>
+            ) : null}
+          </div>
         </div>
         <div className={styles.sidebarActions}>
+          <IconButton
+            onClick={onOpenNewChat}
+            className={`${styles.iconBtn} ${styles.desktopOnlyAction}`}
+            size={40}
+            title={t("chat.newConversation")}
+            aria-label={t("chat.newConversation")}
+          >
+            <svg width="16" height="16" viewBox="0 0 18 18" fill="none">
+              <path d="M9 3v12M3 9h12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+            </svg>
+          </IconButton>
+
+          <IconButton
+            onClick={onOpenNewGroup}
+            className={`${styles.iconBtn} ${styles.desktopOnlyAction}`}
+            size={40}
+            title={t("group.create.open")}
+            aria-label={t("group.create.open")}
+          >
+            <svg width="16" height="16" viewBox="0 0 18 18" fill="none">
+              <circle cx="6.2" cy="6.2" r="2.2" stroke="currentColor" strokeWidth="1.5" />
+              <circle cx="11.8" cy="7.2" r="1.8" stroke="currentColor" strokeWidth="1.5" />
+              <path d="M2.8 13.3c.7-1.7 2.1-2.7 3.9-2.7s3.1 1 3.8 2.7" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+              <path d="M14.6 11.8v4M12.6 13.8h4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+            </svg>
+          </IconButton>
+
+          <span className={`${styles.sidebarActionDivider} ${styles.desktopOnlyAction}`} aria-hidden="true" />
+
           <IconButton
             onClick={onOpenSettings}
             className={`${styles.iconBtn} ${styles.desktopOnlyAction}`}
             size={40}
-            variant="glass"
             title={t("chat.settings")}
             aria-label={t("chat.settings")}
           >
-            <svg width="18" height="18" viewBox="0 0 16 16" fill="none">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
               <path
                 fill="currentColor"
                 d="M9.405 1.05c-.413-1.4-2.397-1.4-2.81 0l-.101.345a1.464 1.464 0 0 1-2.105.872l-.312-.164c-1.265-.666-2.669.738-2.003 2.003l.164.312c.446.847.023 1.89-.872 2.105l-.345.101c-1.4.413-1.4 2.397 0 2.81l.345.101c.895.214 1.318 1.258.872 2.105l-.164.312c-.666 1.265.738 2.669 2.003 2.003l.312-.164a1.464 1.464 0 0 1 2.105.872l.101.345c.413 1.4 2.397 1.4 2.81 0l.101-.345a1.464 1.464 0 0 1 2.105-.872l.312.164c1.265.666 2.669-.738 2.003-2.003l-.164-.312a1.464 1.464 0 0 1 .872-2.105l.345-.101c1.4-.413 1.4-2.397 0-2.81l-.345-.101a1.464 1.464 0 0 1-.872-2.105l.164-.312c.666-1.265-.738-2.669-2.003-2.003l-.312.164a1.464 1.464 0 0 1-2.105-.872l-.101-.345ZM8 5.43a2.57 2.57 0 1 1 0 5.14 2.57 2.57 0 0 1 0-5.14Z"
@@ -102,11 +135,10 @@ export function ChatSidebar({
               onClick={onLock}
               className={styles.iconBtn}
               size={40}
-              variant="glass"
               title={t("chat.lock")}
               aria-label={t("chat.lock")}
             >
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
                 <rect x="5" y="11" width="14" height="10" rx="2" stroke="currentColor" strokeWidth="1.6" />
                 <path d="M8 11V7a4 4 0 0 1 8 0v4" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
               </svg>
@@ -117,11 +149,10 @@ export function ChatSidebar({
             onClick={onLogout}
             className={styles.iconBtn}
             size={40}
-            variant="glass"
             title={t("chat.signOut")}
             aria-label={t("chat.signOut")}
           >
-            <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+            <svg width="16" height="16" viewBox="0 0 18 18" fill="none">
               <path
                 d="M6.75 15.75H3.75A1.5 1.5 0 0 1 2.25 14.25V3.75A1.5 1.5 0 0 1 3.75 2.25h3M12 12.75l3.75-3.75L12 5.25M15.75 9H7.5"
                 stroke="currentColor"
@@ -131,45 +162,6 @@ export function ChatSidebar({
               />
             </svg>
           </IconButton>
-        </div>
-      </div>
-
-      <div className={styles.sidebarMeta}>
-        {username ? (
-          <div className={styles.myUsername}>@{username}</div>
-        ) : null}
-
-        <div className={`${styles.quickActions} ${styles.desktopOnlyAction}`}>
-          <button
-            type="button"
-            onClick={onOpenNewChat}
-            className={styles.quickActionBtn}
-            aria-label={t("chat.newConversation")}
-          >
-            <span className={styles.quickActionIcon} aria-hidden="true">
-              <svg width="16" height="16" viewBox="0 0 18 18" fill="none">
-                <path d="M9 3v12M3 9h12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-              </svg>
-            </span>
-            <span className={styles.quickActionLabel}>{t("chat.newConversation")}</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={onOpenNewGroup}
-            className={styles.quickActionBtn}
-            aria-label={t("group.create.open")}
-          >
-            <span className={styles.quickActionIcon} aria-hidden="true">
-              <svg width="16" height="16" viewBox="0 0 18 18" fill="none">
-                <circle cx="6.2" cy="6.2" r="2.2" stroke="currentColor" strokeWidth="1.5" />
-                <circle cx="11.8" cy="7.2" r="1.8" stroke="currentColor" strokeWidth="1.5" />
-                <path d="M2.8 13.3c.7-1.7 2.1-2.7 3.9-2.7s3.1 1 3.8 2.7" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
-                <path d="M14.6 11.8v4M12.6 13.8h4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
-              </svg>
-            </span>
-            <span className={styles.quickActionLabel}>{t("group.create.open")}</span>
-          </button>
         </div>
       </div>
 

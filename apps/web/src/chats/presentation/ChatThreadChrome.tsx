@@ -66,15 +66,14 @@ export function ChatThreadChrome({
         as="header"
         className={styles.headerSurface}
         padding="none"
-        radius="xl"
-        glass="strong"
+        radius="md"
       >
         <div className={styles.header}>
           <IconButton
             onClick={onBack}
             className={`${styles.iconBtn} ${styles.backBtn}`}
             size={40}
-            variant="glass"
+            variant="ghost"
             aria-label={backAriaLabel}
           >
             <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
@@ -84,14 +83,17 @@ export function ChatThreadChrome({
 
           <Avatar
             label={avatarLabel}
-            size={42}
-            fontSize="0.86rem"
+            size={38}
+            fontSize="0.82rem"
             ariaHidden
           />
 
           <div className={styles.info}>
             <span className={styles.title}>{title}</span>
             <span className={styles.subtitle}>{subtitle}</span>
+          </div>
+
+          <div className={styles.actions}>
             <StatusBadge
               className={styles.statusBadge}
               tone={resolveStatusBadgeTone(statusTone)}
@@ -103,9 +105,9 @@ export function ChatThreadChrome({
               </svg>
               {statusLabel}
             </StatusBadge>
+            <span className={styles.actionsDivider} aria-hidden="true" />
+            {actions}
           </div>
-
-          <div className={styles.actions}>{actions}</div>
         </div>
       </SurfacePanel>
 

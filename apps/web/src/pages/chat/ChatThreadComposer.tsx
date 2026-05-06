@@ -42,7 +42,7 @@ export const ChatThreadComposer = memo(function ChatThreadComposer({
   const isDirectThread = activeThreadKind === "direct" && activeConversation;
   if (isDirectThread && directTrustBlocked) {
     return (
-      <SurfacePanel className={styles.trustNotice} padding="lg" radius="xl" glass="strong">
+      <SurfacePanel className={styles.trustNotice} padding="lg" radius="xl">
         <div className={styles.trustNoticeHeader}>
           <StatusBadge tone="danger" size="md">
             {t("chat.securityReverifyRequired")}

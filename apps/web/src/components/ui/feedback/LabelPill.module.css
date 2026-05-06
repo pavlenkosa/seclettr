@@ -6,13 +6,11 @@
   padding: var(--label-pill-padding, 0 0.55rem);
   border-radius: 999px;
   border: 1px solid var(--label-pill-border, color-mix(in srgb, var(--panel-border-soft) 88%, transparent));
-  background: var(--label-pill-bg, color-mix(in srgb, var(--surface-shell) 88%, var(--glass-surface-fill, transparent)));
+  background: var(--label-pill-bg, color-mix(in srgb, var(--surface-shell) 88%, transparent));
   color: var(--label-pill-color, var(--text-primary));
   font-weight: 650;
   line-height: 1.1;
   white-space: nowrap;
-  -webkit-backdrop-filter: blur(var(--label-pill-blur, var(--glass-blur-soft, 0px))) saturate(var(--glass-saturate, 1));
-  backdrop-filter: blur(var(--label-pill-blur, var(--glass-blur-soft, 0px))) saturate(var(--glass-saturate, 1));
 }
 
 .xs {
@@ -34,7 +32,7 @@
 }
 
 .default {
-  --label-pill-bg: color-mix(in srgb, var(--surface-shell) 88%, var(--glass-surface-fill, transparent));
+  --label-pill-bg: color-mix(in srgb, var(--surface-shell) 88%, transparent);
   --label-pill-border: color-mix(in srgb, var(--panel-border-soft) 88%, transparent);
   --label-pill-color: var(--text-primary);
 }

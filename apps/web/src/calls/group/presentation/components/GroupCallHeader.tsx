@@ -99,7 +99,6 @@ export function GroupCallHeader({
             onClick={onMinimize}
             className={styles.iconBtn}
             size={38}
-            variant="glass"
             aria-label={t("group.call.minimize")}
           >
             <MinimizeIcon />

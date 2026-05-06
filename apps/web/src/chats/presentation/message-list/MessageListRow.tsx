@@ -152,6 +152,18 @@ function SenderLabel({ presentation, message }: SenderLabelProps) {
     : null;
 }
 
+function resolveQuotedReplyText(content: string, t: Props["t"]): string {
+  if (content === "[voice note]") return t("conversation.voiceNotePreview");
+  if (content === "[video note]") return t("conversation.videoNotePreview");
+  if (content === "[attachment]") return t("conversation.attachmentPreview");
+  if (content === "[invalid attachment]") return t("conversation.invalidAttachmentPreview");
+  if (content === "[encrypted message]" || content === "[encrypted group message]") {
+    return t("conversation.encryptedMessagePreview");
+  }
+
+  return content;
+}
+
 function QuotedReply({
   message,
   onScrollToMessage,
@@ -166,6 +178,7 @@ function QuotedReply({
   }
 
   const quotedClassName = `${styles.quotedBubble} ${message.isOwn ? styles.quotedBubbleOwn : styles.quotedBubbleTheirs} ${canScrollToReply ? styles.quotedBubbleClickable : ""}`;
+  const quotedText = resolveQuotedReplyText(reply.content, t);
 
   if (canScrollToReply && replyId) {
     return (
@@ -178,7 +191,7 @@ function QuotedReply({
         {reply.senderName ? (
           <span className={styles.quotedSender}>{reply.senderName}</span>
         ) : null}
-        <span className={styles.quotedText}>{reply.content}</span>
+        <span className={styles.quotedText}>{quotedText}</span>
       </button>
     );
   }
@@ -188,7 +201,7 @@ function QuotedReply({
       {reply.senderName ? (
         <span className={styles.quotedSender}>{reply.senderName}</span>
       ) : null}
-      <span className={styles.quotedText}>{reply.content}</span>
+      <span className={styles.quotedText}>{quotedText}</span>
     </div>
   );
 }

@@ -1,5 +1,4 @@
 import { lazy, memo, Suspense, useCallback } from "react";
-import { SettingsModal } from "@/components/common/SettingsModal";
 import type {
   SecurityWorkspaceState,
   WorkspaceEntryState,
@@ -133,9 +132,6 @@ export const ChatModals = memo(function ChatModals({
             onClose={security.clearGroupSecurityTarget}
           />
         </Suspense>
-      )}
-      {workspaceUiState.showSettings && (
-        <SettingsModal onClose={workspaceUiState.closeSettings} />
       )}
     </>
   );

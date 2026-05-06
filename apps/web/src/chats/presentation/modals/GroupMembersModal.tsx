@@ -207,7 +207,7 @@ export function GroupMembersModal({ group, myUserId, onVerifyMember, onClose }: 
       )}
     >
       {canManageMembers ? (
-          <SurfacePanel className={styles.addPanel} padding="md" radius="lg" glass="medium">
+          <SurfacePanel className={styles.addPanel} padding="md" radius="lg">
             <FieldSection
               className={styles.addSection}
               label={t("group.members.addSectionTitle")}
@@ -246,7 +246,7 @@ export function GroupMembersModal({ group, myUserId, onVerifyMember, onClose }: 
               </div>
             </FieldSection>
             {showSearchResults ? (
-              <SurfacePanel as="ul" className={styles.searchResults} role="listbox" padding="none" radius="md" glass="soft">
+              <SurfacePanel as="ul" className={styles.searchResults} role="listbox" padding="none" radius="md">
                 {loadingSearch ? <li className={styles.hint}>{t("group.members.searching")}</li> : null}
                 {!loadingSearch && !error && inputValue.trim().length >= USER_SEARCH_MIN_QUERY_LENGTH && results.length === 0 ? (
                   <li className={styles.hint}>{t("group.members.noUsersFound")}</li>
@@ -297,7 +297,7 @@ export function GroupMembersModal({ group, myUserId, onVerifyMember, onClose }: 
           );
 
           return (
-            <SurfacePanel as="li" key={member.userId} className={styles.memberItem} padding="md" radius="lg" glass="medium">
+            <SurfacePanel as="li" key={member.userId} className={styles.memberItem} padding="md" radius="lg">
               <EntityRow
                 as="div"
                 className={styles.memberIdentity}

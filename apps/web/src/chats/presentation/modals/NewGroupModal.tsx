@@ -172,7 +172,7 @@ export function NewGroupModal({ onClose, onCreate }: Props) {
           </div>
         ) : null}
 
-        <SurfacePanel as="ul" className={styles.results} role="listbox" padding="none" radius="lg" glass="medium">
+        <SurfacePanel as="ul" className={styles.results} role="listbox" padding="none" radius="lg">
           {loading && <li className={styles.hint}>{t("group.create.searching")}</li>}
           {!loading && !searchError && inputValue.trim().length >= USER_SEARCH_MIN_QUERY_LENGTH && results.length === 0 && (
             <li className={styles.hint}>{t("group.create.noUsersFound")}</li>

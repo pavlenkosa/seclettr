@@ -23,14 +23,12 @@
   background:
     linear-gradient(
       180deg,
-      color-mix(in srgb, var(--surface-float) 80%, var(--glass-surface-fill, transparent)),
-      color-mix(in srgb, var(--composer-inner-bg) 84%, var(--glass-surface-fill, transparent))
+      color-mix(in srgb, var(--surface-float) 80%, transparent),
+      color-mix(in srgb, var(--composer-inner-bg) 84%, transparent)
     );
   border: 1px solid color-mix(in srgb, var(--composer-inner-border) 94%, transparent);
   border-radius: 28px;
   padding: 0.44rem 0.58rem;
-  -webkit-backdrop-filter: blur(var(--glass-blur-strong, 0px)) saturate(var(--glass-saturate, 1));
-  backdrop-filter: blur(var(--glass-blur-strong, 0px)) saturate(var(--glass-saturate, 1));
   box-shadow:
     inset 0 1px 0 rgb(255 255 255 / 0.2);
   background-clip: padding-box;
@@ -68,9 +66,7 @@
   gap: 1rem;
   padding: 1.4rem 1rem calc(8.6rem + var(--safe-bottom));
   background: radial-gradient(circle at 50% 46%, #0e172e, #020617);
-  /* No backdrop-filter: even with opaque colours the blur leaks through
-     semi-transparent colour-mix layers. A solid dark background is simpler
-     and more reliable. */
+  /* A solid dark background keeps recording mode predictable over messages. */
   animation: composerOverlayIn var(--motion-duration-base) var(--motion-ease-emphasized) both;
 }
 
@@ -176,11 +172,10 @@
   line-height: 0;
   cursor: pointer;
   border: 1px solid transparent;
-  box-shadow: 0 14px 28px rgb(2 6 23 / 0.32);
+  box-shadow: none;
   transition:
     transform var(--motion-duration-fast) var(--motion-ease-standard),
-    filter var(--motion-duration-fast) var(--motion-ease-standard),
-    box-shadow var(--motion-duration-fast) var(--motion-ease-standard);
+    filter var(--motion-duration-fast) var(--motion-ease-standard);
 }
 
 .videoRecordingOverlayCancelBtn {
@@ -199,7 +194,6 @@
 
 .videoRecordingOverlayCancelBtn:hover,
 .videoRecordingOverlayStopBtn:hover {
-  transform: translateY(-1px);
   filter: brightness(1.06);
 }
 
@@ -294,12 +288,8 @@
 .secondaryBtn {
   align-self: center;
   --icon-button-size: 40px;
-  --icon-button-shadow-base:
-    inset 0 1px 0 rgb(255 255 255 / 0.18),
-    0 8px 18px rgb(15 23 42 / 0.08);
-  --icon-button-shadow-hover-base:
-    inset 0 1px 0 rgb(255 255 255 / 0.22),
-    0 10px 22px rgb(15 23 42 / 0.11);
+  --icon-button-shadow-base: none;
+  --icon-button-shadow-hover-base: none;
 }
 
 .primaryDock {
@@ -336,7 +326,7 @@
   transform: translateX(-50%);
   padding: 0.36rem 0.72rem;
   border-radius: 999px;
-  background: color-mix(in srgb, var(--surface-float) 74%, var(--glass-surface-fill, transparent));
+  background: color-mix(in srgb, var(--surface-float) 74%, transparent);
   border: 1px solid color-mix(in srgb, var(--panel-border-soft) 82%, transparent);
   color: var(--text-secondary);
   font-size: 0.64rem;
@@ -347,8 +337,6 @@
     inset 0 1px 0 rgb(255 255 255 / 0.12),
     0 10px 20px rgb(15 23 42 / 0.06);
   pointer-events: none;
-  -webkit-backdrop-filter: blur(var(--glass-blur-medium, 0px)) saturate(var(--glass-saturate, 1));
-  backdrop-filter: blur(var(--glass-blur-medium, 0px)) saturate(var(--glass-saturate, 1));
   animation: composerHintIn var(--motion-duration-base) var(--motion-ease-emphasized) both;
 }
 
@@ -362,8 +350,8 @@
   background:
     linear-gradient(
       180deg,
-      color-mix(in srgb, var(--surface-float) 76%, var(--glass-surface-fill, transparent)),
-      color-mix(in srgb, var(--composer-inner-bg) 82%, var(--glass-surface-fill, transparent))
+      color-mix(in srgb, var(--surface-float) 76%, transparent),
+      color-mix(in srgb, var(--composer-inner-bg) 82%, transparent)
     );
   border: 1px solid color-mix(in srgb, var(--panel-border-soft) 86%, transparent);
   color: var(--text-secondary);
@@ -371,23 +359,16 @@
   font-weight: 700;
   line-height: 1;
   text-transform: capitalize;
-  -webkit-backdrop-filter: blur(var(--glass-blur-medium, 0px)) saturate(var(--glass-saturate, 1));
-  backdrop-filter: blur(var(--glass-blur-medium, 0px)) saturate(var(--glass-saturate, 1));
-  box-shadow:
-    inset 0 1px 0 rgb(255 255 255 / 0.16),
-    0 8px 18px rgb(15 23 42 / 0.06);
+  box-shadow: none;
   transition:
     color var(--motion-duration-fast) var(--motion-ease-standard),
-    border-color var(--motion-duration-fast) var(--motion-ease-standard),
-    transform var(--motion-duration-fast) var(--motion-ease-standard),
-    box-shadow var(--motion-duration-fast) var(--motion-ease-standard);
+    border-color var(--motion-duration-fast) var(--motion-ease-standard);
   animation: composerContentLiftIn var(--motion-duration-base) var(--motion-ease-emphasized) both;
 }
 
 .recordModeChip:hover:not(:disabled) {
   color: var(--text-primary);
   border-color: color-mix(in srgb, var(--accent) 34%, transparent);
-  transform: translateY(-1px);
 }
 
 .recordModeChip:disabled {
@@ -404,12 +385,8 @@
 .recordCancelButton {
   align-self: center;
   --icon-button-size: 40px;
-  --icon-button-shadow-base:
-    inset 0 1px 0 rgb(255 255 255 / 0.16),
-    0 8px 18px rgb(15 23 42 / 0.08);
-  --icon-button-shadow-hover-base:
-    inset 0 1px 0 rgb(255 255 255 / 0.2),
-    0 10px 22px rgb(15 23 42 / 0.11);
+  --icon-button-shadow-base: none;
+  --icon-button-shadow-hover-base: none;
 }
 
 .actionBtn {
@@ -432,7 +409,6 @@
 .actionBtn:hover:not(:disabled) {
   color: var(--icon-btn-hover-color);
   background: var(--icon-btn-hover-bg);
-  transform: translateY(-1px);
 }
 
 .actionBtn:disabled {
@@ -469,8 +445,6 @@
       color-mix(in srgb, var(--composer-inner-bg) 99%, var(--bg-secondary))
     );
   box-shadow: 0 16px 30px rgb(2 6 23 / 0.18);
-  -webkit-backdrop-filter: blur(var(--glass-blur-strong, 0px)) saturate(var(--glass-saturate, 1));
-  backdrop-filter: blur(var(--glass-blur-strong, 0px)) saturate(var(--glass-saturate, 1));
   transform-origin: left bottom;
   animation: composerPickerIn var(--motion-duration-base) var(--motion-ease-emphasized) both;
 }
@@ -532,7 +506,6 @@
 .emojiGroupTab:focus-visible {
   color: var(--text-primary);
   border-color: color-mix(in srgb, var(--accent) 28%, transparent);
-  transform: translateY(-1px);
 }
 
 .emojiGroupTabActive {
@@ -606,7 +579,6 @@
 .emojiButton:focus-visible {
   background: color-mix(in srgb, var(--accent) 14%, var(--surface-shell-strong));
   border-color: color-mix(in srgb, var(--accent) 34%, transparent);
-  transform: translateY(-1px);
 }
 
 .emojiEmptyState {
@@ -643,7 +615,6 @@
 .recordBtn:hover:not(:disabled) {
   color: var(--icon-btn-hover-color);
   background: var(--icon-btn-hover-bg);
-  transform: translateY(-1px);
 }
 
 .recordBtn:disabled {
@@ -674,15 +645,13 @@
   line-height: 0;
   align-self: center;
   border: 1px solid color-mix(in srgb, var(--accent) 56%, transparent);
-  box-shadow: 0 10px 22px color-mix(in srgb, var(--accent) 24%, rgb(15 23 42 / 0.12));
+  box-shadow: none;
   transition:
     transform var(--motion-duration-fast) var(--motion-ease-standard),
-    filter var(--motion-duration-fast) var(--motion-ease-standard),
-    box-shadow var(--motion-duration-fast) var(--motion-ease-standard);
+    filter var(--motion-duration-fast) var(--motion-ease-standard);
 }
 
 .sendBtn:hover:not(:disabled) {
-  transform: translateY(-1px);
   filter: brightness(1.06);
 }
 
@@ -694,23 +663,19 @@
   background:
     linear-gradient(
       180deg,
-      color-mix(in srgb, var(--surface-float) 80%, var(--glass-surface-fill, transparent)),
-      color-mix(in srgb, var(--composer-inner-bg) 84%, var(--glass-surface-fill, transparent))
+      color-mix(in srgb, var(--surface-float) 80%, transparent),
+      color-mix(in srgb, var(--composer-inner-bg) 84%, transparent)
     );
   color: var(--icon-btn-color);
   border: 1px solid color-mix(in srgb, var(--icon-btn-border) 92%, transparent);
-  -webkit-backdrop-filter: blur(var(--glass-blur-medium, 0px)) saturate(var(--glass-saturate, 1));
-  backdrop-filter: blur(var(--glass-blur-medium, 0px)) saturate(var(--glass-saturate, 1));
-  box-shadow:
-    inset 0 1px 0 rgb(255 255 255 / 0.16),
-    0 8px 18px rgb(15 23 42 / 0.08);
+  box-shadow: none;
 }
 
 .sendBtnRecording {
   background: color-mix(in srgb, var(--danger) 86%, black 14%);
   color: #fff;
   border: 1px solid color-mix(in srgb, var(--danger) 56%, transparent);
-  box-shadow: 0 10px 22px color-mix(in srgb, var(--danger) 24%, rgb(15 23 42 / 0.12));
+  box-shadow: none;
 }
 
 .sendBtn:disabled {
@@ -764,8 +729,6 @@
   background:
     radial-gradient(circle at 34% 30%, rgb(255 255 255 / 0.16), transparent 34%),
     linear-gradient(180deg, color-mix(in srgb, var(--surface-float) 94%, transparent), color-mix(in srgb, var(--composer-inner-bg) 94%, transparent));
-  -webkit-backdrop-filter: blur(var(--glass-blur-soft, 0px)) saturate(var(--glass-saturate, 1));
-  backdrop-filter: blur(var(--glass-blur-soft, 0px)) saturate(var(--glass-saturate, 1));
   box-shadow: var(--elevated-shadow-sm);
 }
 
@@ -789,8 +752,6 @@
     radial-gradient(circle at 34% 30%, rgb(255 255 255 / 0.16), transparent 34%),
     color-mix(in srgb, var(--surface-shell-strong) 88%, var(--bg-secondary));
   border: 1px solid color-mix(in srgb, var(--message-ui-accent) 36%, transparent);
-  -webkit-backdrop-filter: blur(var(--glass-blur-soft, 0px)) saturate(var(--glass-saturate, 1));
-  backdrop-filter: blur(var(--glass-blur-soft, 0px)) saturate(var(--glass-saturate, 1));
   box-shadow: 0 16px 28px rgb(2 6 23 / 0.22);
 }
 
@@ -900,8 +861,6 @@
   background:
     linear-gradient(180deg, color-mix(in srgb, var(--surface-float) 92%, transparent), color-mix(in srgb, var(--composer-inner-bg) 92%, transparent));
   border: 1px solid color-mix(in srgb, var(--message-ui-accent) 28%, transparent);
-  -webkit-backdrop-filter: blur(var(--glass-blur-soft, 0px)) saturate(var(--glass-saturate, 1));
-  backdrop-filter: blur(var(--glass-blur-soft, 0px)) saturate(var(--glass-saturate, 1));
   box-shadow: var(--elevated-shadow-sm);
 }
 

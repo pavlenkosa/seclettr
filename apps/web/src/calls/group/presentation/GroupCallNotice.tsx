@@ -61,7 +61,6 @@ export function GroupCallNotice({
       className={styles.notice}
       padding="md"
       radius="xl"
-      glass="medium"
       role="status"
       aria-live="polite"
     >

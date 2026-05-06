@@ -37,8 +37,6 @@
   position: absolute;
   inset: 0;
   background: rgb(2 6 23 / 0.88);
-  -webkit-backdrop-filter: blur(6px);
-  backdrop-filter: blur(6px);
   cursor: zoom-out;
 }
 
@@ -234,8 +232,6 @@
   background: rgb(2 6 23 / 0.68);
   color: rgb(255 255 255 / 0.92);
   box-shadow: 0 16px 44px rgb(0 0 0 / 0.28);
-  -webkit-backdrop-filter: blur(14px);
-  backdrop-filter: blur(14px);
   font-size: 0.92rem;
   line-height: 1.45;
   overflow-wrap: anywhere;
@@ -333,7 +329,6 @@
     padding: 0.45rem 0.62rem;
     border-radius: 999px;
     background: rgb(2 6 23 / 0.5);
-    backdrop-filter: blur(10px);
   }
 
   .mobileSequenceDot {
@@ -359,7 +354,6 @@
     color: rgb(255 255 255 / 0.8);
     font-size: 0.72rem;
     font-weight: 600;
-    backdrop-filter: blur(10px);
   }
 
   .mobileSwipeChevron {

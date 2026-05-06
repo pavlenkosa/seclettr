@@ -23,7 +23,7 @@ export interface PillButtonProps extends ButtonHTMLAttributes<HTMLButtonElement>
 /**
  * Shared rounded action button for compact CTA patterns. It keeps chip-like
  * buttons, small member actions, and secondary modal controls on one
- * interaction recipe while respecting the global glass surface settings.
+ * interaction recipe while respecting the flat surface system.
  */
 export const PillButton = forwardRef<HTMLButtonElement, PillButtonProps>(function PillButton(
   {

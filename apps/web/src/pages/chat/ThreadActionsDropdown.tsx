@@ -71,7 +71,6 @@ export function ThreadActionsDropdown({ items, disabled }: Props) {
         onClick={disabled ? undefined : () => setOpen((o) => !o)}
         className={`${pageStyles.iconBtn} ${open ? pageStyles.iconBtnActive : ""}`}
         size={40}
-        variant="glass"
         title={t("chat.moreActions")}
         aria-label={t("chat.moreActions")}
         aria-haspopup="true"

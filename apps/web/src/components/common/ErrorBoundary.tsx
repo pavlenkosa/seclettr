@@ -107,7 +107,7 @@ export function AppErrorFallback(_: { readonly onReset: () => void }) {
 
   return (
     <div className={styles.appFallback} role="alert" aria-live="assertive">
-      <SurfacePanel padding="lg" radius="xl" glass="medium" tone="strong" className={styles.appFallbackPanel}>
+      <SurfacePanel padding="lg" radius="xl" tone="strong" className={styles.appFallbackPanel}>
         <p className={styles.appFallbackTitle}>{t("error.boundary.app.title")}</p>
         <p className={styles.appFallbackBody}>{t("error.boundary.app.body")}</p>
         <PillButton tone="accent" appearance="soft" size="md" onClick={handleReload}>
@@ -127,7 +127,7 @@ export function CallErrorFallback({ onDismiss }: { readonly onDismiss: () => voi
 
   return (
     <div className={styles.callFallback} role="alert">
-      <SurfacePanel padding="md" radius="xl" glass="medium" tone="strong" className={styles.callFallbackPanel}>
+      <SurfacePanel padding="md" radius="xl" tone="strong" className={styles.callFallbackPanel}>
         <p className={styles.callFallbackTitle}>{t("error.boundary.call.title")}</p>
         <p className={styles.callFallbackBody}>{t("error.boundary.call.body")}</p>
         <PillButton tone="neutral" appearance="soft" size="sm" onClick={onDismiss}>
@@ -147,7 +147,7 @@ export function ThreadErrorFallback({ onReset }: { readonly onReset: () => void 
 
   return (
     <div className={styles.threadFallback} role="alert">
-      <SurfacePanel padding="md" radius="xl" glass="soft" tone="strong" className={styles.threadFallbackPanel}>
+      <SurfacePanel padding="md" radius="xl" tone="strong" className={styles.threadFallbackPanel}>
         <p className={styles.threadFallbackTitle}>{t("error.boundary.thread.title")}</p>
         <p className={styles.threadFallbackBody}>{t("error.boundary.thread.body")}</p>
         <PillButton tone="neutral" appearance="soft" size="sm" onClick={onReset}>

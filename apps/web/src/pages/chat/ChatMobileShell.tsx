@@ -8,23 +8,31 @@ import styles from "./ChatMobileShell.module.css";
  */
 export interface ChatMobileShellProps {
   readonly isConversationVisible: boolean;
+  readonly isSettingsVisible: boolean;
   readonly sidebar: ReactNode;
   readonly thread: ReactNode;
   readonly sidebarDock: ReactNode;
+  readonly settings: ReactNode;
 }
 
 export function ChatMobileShell({
   isConversationVisible,
+  isSettingsVisible,
   sidebar,
   thread,
   sidebarDock,
+  settings,
 }: ChatMobileShellProps) {
   const sidebarPresence = useAnimatedPresence({
-    isOpen: !isConversationVisible,
+    isOpen: !isConversationVisible && !isSettingsVisible,
     durationMs: 220,
   });
   const threadPresence = useAnimatedPresence({
-    isOpen: isConversationVisible,
+    isOpen: isConversationVisible && !isSettingsVisible,
+    durationMs: 220,
+  });
+  const settingsPresence = useAnimatedPresence({
+    isOpen: isSettingsVisible,
     durationMs: 220,
   });
 
@@ -51,6 +59,17 @@ export function ChatMobileShell({
           <div className={styles.threadBody}>
             {thread}
           </div>
+        </div>
+      ) : null}
+
+      {settingsPresence.isMounted ? (
+        <div
+          className={[
+            styles.settingsView,
+            settingsPresence.isClosing ? styles.surfaceClosing : "",
+          ].filter(Boolean).join(" ")}
+        >
+          {settings}
         </div>
       ) : null}
 

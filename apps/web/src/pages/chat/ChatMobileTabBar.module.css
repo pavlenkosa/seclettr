@@ -1,56 +1,61 @@
 .scrim {
   position: fixed;
   inset: 0;
-  z-index: 54;
+  z-index: 55;
   display: block;
   padding: 0;
-  background:
-    radial-gradient(circle at 50% 100%, color-mix(in srgb, var(--accent) 12%, transparent), transparent 34%),
-    linear-gradient(180deg, rgb(2 6 23 / 0.16), rgb(2 6 23 / 0.28) 42%, rgb(2 6 23 / 0.46) 100%);
+  background: transparent;
   border: 0;
-  -webkit-backdrop-filter: blur(10px) saturate(1.04);
-  backdrop-filter: blur(10px) saturate(1.04);
-  will-change: opacity;
-  animation: mobileScrimIn var(--motion-duration-base) var(--motion-ease-standard) both;
 }
 
 .scrimClosing {
   pointer-events: none;
-  animation: mobileScrimOut var(--motion-duration-base) var(--motion-ease-exit) both;
 }
 
 .menuOpen {
   --bottom-dock-z-index: 61;
 }
 
+.navDock {
+  --bottom-dock-columns: 2;
+  --bottom-dock-z-index: 60;
+  position: fixed;
+  top: auto;
+  right: 0;
+  bottom: var(--safe-bottom);
+  left: 0;
+}
+
 .tabButton {
-  min-height: 56px;
+  width: min(11rem, calc(100% - 0.7rem));
+  min-height: 50px;
   display: inline-flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 0.24rem;
-  border-radius: 20px;
+  gap: 0.14rem;
+  justify-self: center;
+  border-radius: 8px;
   background: transparent;
   color: var(--text-secondary);
   border: 1px solid transparent;
-  padding: 0.38rem 0.3rem;
+  padding: 0.34rem 0.3rem;
   line-height: 1;
   transition:
     background-color var(--motion-duration-fast) var(--motion-ease-standard),
     border-color var(--motion-duration-fast) var(--motion-ease-standard),
-    color var(--motion-duration-fast) var(--motion-ease-standard),
-    transform var(--motion-duration-fast) var(--motion-ease-standard);
+    color var(--motion-duration-fast) var(--motion-ease-standard);
 }
 
 .tabButtonActive {
-  background: color-mix(in srgb, var(--surface-float) 74%, transparent);
-  border-color: color-mix(in srgb, var(--accent) 26%, transparent);
+  background: color-mix(in srgb, var(--accent) 5%, transparent);
+  border-color: color-mix(in srgb, var(--accent) 14%, transparent);
   color: var(--text-primary);
 }
 
 .tabButton:hover {
-  transform: translateY(-1px);
+  background: color-mix(in srgb, var(--accent) 4%, transparent);
+  border-color: color-mix(in srgb, var(--accent) 12%, transparent);
   color: var(--text-primary);
 }
 
@@ -58,8 +63,8 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 30px;
-  height: 30px;
+  width: 28px;
+  height: 28px;
 }
 
 .tabLabel {
@@ -71,38 +76,31 @@
   max-width: 100%;
 }
 
-.createDock {
-  position: relative;
-  z-index: 3;
-  display: flex;
+.createLayer {
+  position: fixed;
+  right: max(1.1rem, env(safe-area-inset-right, 0px));
+  bottom: calc(5.35rem + var(--safe-bottom));
+  z-index: 62;
+  display: inline-flex;
+  align-items: center;
   justify-content: center;
-  align-self: stretch;
 }
 
 .createMenu {
   position: absolute;
-  left: 50%;
-  bottom: calc(100% + 0.58rem);
-  transform: translateX(-50%) translateY(0.42rem) scale(0.96);
-  transform-origin: center bottom;
+  right: 0;
+  bottom: calc(100% + 0.7rem);
+  transform-origin: right bottom;
   opacity: 0;
-  width: min(16rem, calc(100vw - 2rem));
+  width: min(15.2rem, calc(100vw - 2rem));
   display: grid;
-  gap: 0.44rem;
-  padding: 0.5rem;
-  border-radius: 24px;
+  gap: 0.28rem;
+  padding: 0.36rem;
+  border-radius: 8px;
   border: 1px solid color-mix(in srgb, var(--panel-border-soft) 88%, transparent);
-  background:
-    linear-gradient(
-      180deg,
-      color-mix(in srgb, var(--surface-float) 96%, var(--bg-secondary)),
-      color-mix(in srgb, var(--surface-shell-strong) 97%, var(--bg-secondary))
-    );
-  -webkit-backdrop-filter: blur(var(--glass-blur-medium, 18px)) saturate(var(--glass-saturate, 1.08));
-  backdrop-filter: blur(var(--glass-blur-medium, 18px)) saturate(var(--glass-saturate, 1.08));
+  background: color-mix(in srgb, var(--bg-secondary) 98%, var(--bg-primary));
   z-index: 5;
-  box-shadow: 0 18px 34px rgb(2 6 23 / 0.3);
-  animation: mobileCreateMenuIn var(--motion-duration-slow) var(--motion-ease-emphasized) forwards;
+  animation: mobileCreateMenuIn var(--motion-duration-base) var(--motion-ease-standard) forwards;
 }
 
 .createMenuClosing {
@@ -111,14 +109,14 @@
 }
 
 .createMenuButton {
-  min-height: 54px;
+  min-height: 48px;
   display: flex;
   align-items: center;
-  gap: 0.62rem;
-  padding: 0.56rem 0.62rem;
-  border-radius: 18px;
-  border: 1px solid color-mix(in srgb, var(--panel-border-soft) 84%, transparent);
-  background: color-mix(in srgb, var(--surface-shell-strong) 86%, transparent);
+  gap: 0.58rem;
+  padding: 0.48rem 0.54rem;
+  border-radius: 10px;
+  border: 1px solid transparent;
+  background: transparent;
   color: var(--text-primary);
   text-align: left;
   transition:
@@ -126,8 +124,7 @@
     border-color var(--motion-duration-fast) var(--motion-ease-standard),
     transform var(--motion-duration-fast) var(--motion-ease-standard);
   opacity: 0;
-  transform: translateY(0.42rem);
-  animation: mobileCreateMenuItemIn var(--motion-duration-slow) var(--motion-ease-emphasized) forwards;
+  animation: mobileCreateMenuItemIn var(--motion-duration-base) var(--motion-ease-standard) forwards;
 }
 
 .createMenuButton:nth-child(2) {
@@ -135,22 +132,21 @@
 }
 
 .createMenuButton:hover {
-  transform: translateY(-1px);
-  background: color-mix(in srgb, var(--surface-float) 90%, transparent);
+  background: color-mix(in srgb, var(--accent) 8%, transparent);
   border-color: color-mix(in srgb, var(--accent) 28%, transparent);
 }
 
 .createMenuIcon {
-  width: 36px;
-  height: 36px;
-  border-radius: 14px;
+  width: 32px;
+  height: 32px;
+  border-radius: 10px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  color: #f7fbff;
-  background: linear-gradient(145deg, color-mix(in srgb, var(--accent) 82%, white 18%), var(--accent));
-  box-shadow: 0 10px 18px rgb(15 23 42 / 0.12);
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+  box-shadow: none;
 }
 
 .createMenuText {
@@ -174,104 +170,74 @@
 }
 
 .createFab {
-  min-width: 118px;
-  min-height: 60px;
-  margin-top: -0.78rem;
+  width: 56px;
+  height: 56px;
   position: relative;
   z-index: 4;
   isolation: isolate;
-  padding: 0.56rem 0.9rem 0.68rem;
+  padding: 0;
   display: inline-flex;
-  flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 0.26rem;
-  border-radius: 22px;
-  border: 1px solid color-mix(in srgb, var(--accent) 16%, var(--panel-border-soft));
-  color: var(--text-primary);
-  background:
-    linear-gradient(
-      180deg,
-      color-mix(in srgb, var(--surface-float) 94%, var(--bg-secondary)),
-      color-mix(in srgb, var(--surface-shell-strong) 97%, var(--bg-secondary))
-    );
-  -webkit-backdrop-filter: blur(var(--glass-blur-medium, 16px)) saturate(var(--glass-saturate, 1.04));
-  backdrop-filter: blur(var(--glass-blur-medium, 16px)) saturate(var(--glass-saturate, 1.04));
-  box-shadow:
-    inset 0 1px 0 rgb(255 255 255 / 0.08),
-    0 10px 22px rgb(15 23 42 / 0.1);
+  border-radius: 999px;
+  border: 1px solid color-mix(in srgb, var(--accent) 58%, transparent);
+  color: #fff;
+  background: var(--accent);
+  box-shadow: none;
   transition:
-    transform var(--motion-duration-base) var(--motion-ease-standard),
-    box-shadow var(--motion-duration-base) var(--motion-ease-standard),
     border-color var(--motion-duration-base) var(--motion-ease-standard),
     background-color var(--motion-duration-base) var(--motion-ease-standard),
     color var(--motion-duration-base) var(--motion-ease-standard);
 }
 
 .createFab:hover {
-  transform: translateY(-1px);
-  border-color: color-mix(in srgb, var(--accent) 24%, transparent);
+  border-color: color-mix(in srgb, var(--accent) 68%, white 18%);
+  background: var(--accent-hover);
 }
 
 .createFabActive {
-  transform: translateY(-1px);
-  color: color-mix(in srgb, var(--text-primary) 88%, white 12%);
-  border-color: color-mix(in srgb, var(--accent) 30%, transparent);
-  background:
-    linear-gradient(
-      180deg,
-      color-mix(in srgb, var(--surface-float) 90%, var(--accent) 10%),
-      color-mix(in srgb, var(--surface-shell-strong) 94%, var(--accent) 12%)
-    );
-  box-shadow:
-    inset 0 1px 0 rgb(255 255 255 / 0.1),
-    0 12px 24px rgb(15 23 42 / 0.12);
+  color: #fff;
+  border-color: color-mix(in srgb, var(--accent) 72%, white 20%);
+  background: var(--accent-hover);
+  box-shadow: none;
 }
 
 .createFabIcon {
-  width: 32px;
-  height: 32px;
-  border-radius: 12px;
+  width: 100%;
+  height: 100%;
+  border-radius: inherit;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  color: color-mix(in srgb, var(--accent) 78%, white 8%);
-  background: color-mix(in srgb, var(--accent) 12%, transparent);
-  border: 1px solid color-mix(in srgb, var(--accent) 18%, transparent);
+  color: inherit;
+  background: transparent;
+  border: 0;
   transition:
     transform var(--motion-duration-slow) var(--motion-ease-emphasized),
-    background-color var(--motion-duration-base) var(--motion-ease-standard),
-    border-color var(--motion-duration-base) var(--motion-ease-standard),
     color var(--motion-duration-base) var(--motion-ease-standard);
 }
 
 .createFabActive .createFabIcon {
   transform: rotate(45deg);
-  background: color-mix(in srgb, var(--accent) 16%, transparent);
-  border-color: color-mix(in srgb, var(--accent) 26%, transparent);
-  color: color-mix(in srgb, var(--accent) 84%, white 10%);
+  color: inherit;
 }
 
 .createFabLabel {
-  font-size: 0.68rem;
-  font-weight: 700;
-  letter-spacing: 0.01em;
-}
-
-@keyframes mobileScrimOut {
-  from { opacity: 1; }
-  to { opacity: 0; }
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
 }
 
 @keyframes mobileCreateMenuOut {
   from {
     opacity: 1;
-    transform: translateX(-50%) translateY(0) scale(1);
   }
 
   to {
     opacity: 0;
-    transform: translateX(-50%) translateY(0.4rem) scale(0.97);
   }
 }
 
@@ -281,18 +247,11 @@
 }
 
 :global(:root[data-theme="light"]) .createMenuButton {
-  background:
-    linear-gradient(
-      180deg,
-      color-mix(in srgb, var(--surface-float) 84%, white),
-      color-mix(in srgb, var(--surface-shell-strong) 88%, white)
-    );
+  background: transparent;
 }
 
 :global(:root[data-theme="light"]) .scrim {
-  background:
-    radial-gradient(circle at 50% 100%, color-mix(in srgb, var(--accent) 10%, transparent), transparent 34%),
-    linear-gradient(180deg, rgb(148 163 184 / 0.14), rgb(148 163 184 / 0.22) 42%, rgb(148 163 184 / 0.32) 100%);
+  background: transparent;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -304,35 +263,37 @@
   .createFabIcon {
     animation: none !important;
     transition: none !important;
+  }
+
+  .scrim,
+  .tabButton,
+  .createMenuButton,
+  .createFabIcon {
     transform: none !important;
+  }
+
+  .createMenu,
+  .createFab {
+    transform: none !important;
+  }
+
+  .createMenu,
+  .createMenuButton {
+    opacity: 1 !important;
   }
 }
 
 @keyframes mobileCreateMenuIn {
   0% {
     opacity: 0;
-    transform: translateX(-50%) translateY(0.42rem) scale(0.96);
   }
 
   100% {
     opacity: 1;
-    transform: translateX(-50%) translateY(0) scale(1);
   }
 }
 
 @keyframes mobileCreateMenuItemIn {
-  0% {
-    opacity: 0;
-    transform: translateY(0.42rem);
-  }
-
-  100% {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-@keyframes mobileScrimIn {
   0% {
     opacity: 0;
   }

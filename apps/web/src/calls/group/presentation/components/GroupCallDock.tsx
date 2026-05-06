@@ -64,7 +64,6 @@ export function GroupCallDock({
             onClick={onRestore}
             className={styles.dockBtn}
             size={38}
-            variant="glass"
             aria-label={t("group.call.restore")}
           >
             <ExpandIcon />

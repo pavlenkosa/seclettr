@@ -3,7 +3,7 @@ import { useI18n } from "@/i18n";
 import type { PushPreferencesDto, PushSubscriptionDto } from "@/lib/api";
 import { PillButton, SegmentedControl, StatusBadge } from "@/components/ui";
 import { SettingsGroup, SettingsRow } from "./SettingsSectionPrimitives";
-import styles from "../SettingsModal.module.css";
+import styles from "../SettingsSections.module.css";
 
 const TOGGLE_OPTIONS = [
   { value: "on", label: "On" },

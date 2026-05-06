@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, type PointerEvent } from "react";
 
 const STORAGE_KEY = "sidebar-width";
 const DEFAULT_WIDTH = 340;
-const MIN_WIDTH = 220;
+const MIN_WIDTH = 260;
 const MAX_WIDTH = 540;
 
 function readStoredWidth(): number {

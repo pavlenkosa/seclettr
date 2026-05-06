@@ -1,23 +1,20 @@
 import { useI18n } from "@/i18n";
 import type { Locale } from "@/i18n/messages";
-import type { AccentColor, GlassMode, ThemeMode } from "@/ui-settings";
+import type { AccentColor, ThemeMode } from "@/ui-settings";
 import { SegmentedControl } from "@/components/ui";
 import { SettingsGroup, SettingsRow } from "./SettingsSectionPrimitives";
-import styles from "../SettingsModal.module.css";
+import styles from "../SettingsSections.module.css";
 
 const THEMES: ThemeMode[] = ["dark", "light"];
 const ACCENTS: AccentColor[] = ["blue", "emerald", "rose", "violet"];
-const GLASS_MODES: GlassMode[] = ["on", "off"];
 
 interface AppearanceSettingsSectionProps {
   readonly locale: Locale;
   readonly setLocale: (next: Locale) => void;
   readonly themeMode: ThemeMode;
   readonly accentColor: AccentColor;
-  readonly glassMode: GlassMode;
   readonly setThemeMode: (next: ThemeMode) => void;
   readonly setAccentColor: (next: AccentColor) => void;
-  readonly setGlassMode: (next: GlassMode) => void;
 }
 
 function getAccentClass(accent: AccentColor): string {
@@ -32,10 +29,8 @@ export function AppearanceSettingsSection({
   setLocale,
   themeMode,
   accentColor,
-  glassMode,
   setThemeMode,
   setAccentColor,
-  setGlassMode,
 }: AppearanceSettingsSectionProps) {
   const { t } = useI18n();
 
@@ -44,7 +39,6 @@ export function AppearanceSettingsSection({
     { value: "ru", label: t("common.language.russian") },
   ];
   const themeOptions = THEMES.map((theme) => ({ value: theme, label: t(`settings.theme.${theme}`) }));
-  const glassModeOptions = GLASS_MODES.map((mode) => ({ value: mode, label: t(`settings.glassEffects.${mode}`) }));
 
   return (
     <div className={styles.groupStack}>
@@ -80,19 +74,6 @@ export function AppearanceSettingsSection({
         description={t("settings.groups.appearance.style.description")}
         tone="accent"
       >
-        <SettingsRow
-          label={t("settings.glassEffects")}
-          description={t("settings.glassEffects.description")}
-        >
-          <SegmentedControl
-            value={glassMode}
-            onChange={setGlassMode}
-            ariaLabel={t("settings.glassEffects")}
-            grouped
-            options={glassModeOptions}
-          />
-        </SettingsRow>
-
         <SettingsRow label={t("settings.colors")} controlClassName={styles.settingControlWide}>
           <div className={styles.swatches}>
             {ACCENTS.map((accent) => (

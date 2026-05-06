@@ -51,8 +51,6 @@
   justify-content: center;
   padding: var(--modal-overlay-padding, 1rem);
   background: rgb(2 6 23 / 0.52);
-  -webkit-backdrop-filter: blur(var(--glass-blur-soft, 10px));
-  backdrop-filter: blur(var(--glass-blur-soft, 10px));
   animation: overlayIn var(--motion-duration-base) var(--motion-ease-standard) both;
 }
 
@@ -71,11 +69,9 @@
   background:
     linear-gradient(
       180deg,
-      color-mix(in srgb, var(--surface-float) 96%, var(--glass-surface-fill, transparent)),
-      color-mix(in srgb, var(--surface-shell-strong) 98%, var(--glass-surface-fill, transparent))
+      color-mix(in srgb, var(--surface-float) 96%, transparent),
+      color-mix(in srgb, var(--surface-shell-strong) 98%, transparent)
     );
-  -webkit-backdrop-filter: blur(var(--glass-blur-medium, 16px)) saturate(var(--glass-saturate, 1.08));
-  backdrop-filter: blur(var(--glass-blur-medium, 16px)) saturate(var(--glass-saturate, 1.08));
   box-shadow:
     0 24px 44px rgb(2 6 23 / 0.22),
     var(--elevated-shadow-lg);
@@ -135,7 +131,6 @@
   background: var(--icon-btn-hover-bg);
   border-color: color-mix(in srgb, var(--accent) 30%, transparent);
   color: var(--icon-btn-hover-color);
-  transform: translateY(-1px);
 }
 
 .closeButton svg {
@@ -150,8 +145,6 @@
 
 :global(:root[data-theme="light"]) .overlay {
   background: rgb(15 23 42 / 0.3);
-  -webkit-backdrop-filter: blur(var(--glass-blur-medium, 14px)) saturate(var(--glass-saturate, 1.12));
-  backdrop-filter: blur(var(--glass-blur-medium, 14px)) saturate(var(--glass-saturate, 1.12));
 }
 
 :global(:root[data-theme="light"]) .surface {

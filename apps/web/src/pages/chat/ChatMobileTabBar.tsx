@@ -132,7 +132,10 @@ export function ChatMobileTabBar({
       <BottomDockSurface
         as="nav"
         placement={placement}
-        className={isCreateMenuOpen || createMenuPresence.isClosing ? styles.menuOpen : ""}
+        className={[
+          styles.navDock,
+          isCreateMenuOpen || createMenuPresence.isClosing ? styles.menuOpen : "",
+        ].filter(Boolean).join(" ")}
         aria-label={t("chat.sidebarTitle")}
       >
         <button
@@ -155,28 +158,6 @@ export function ChatMobileTabBar({
           <span className={styles.tabLabel}>{t("chat.sidebarTitle")}</span>
         </button>
 
-        <div className={styles.createDock}>
-          {createMenuPresence.isMounted ? createMenuContent(styles.createMenu) : null}
-
-          <button
-            ref={createFabRef}
-            type="button"
-            onClick={onToggleCreateMenu}
-            className={`${styles.createFab} ${isCreateMenuOpen ? styles.createFabActive : ""}`}
-            aria-label={isCreateMenuOpen ? t("chat.closeCreateMenu") : t("chat.openCreateMenu")}
-            aria-expanded={isCreateMenuOpen}
-            aria-controls={createMenuId}
-            aria-haspopup="menu"
-          >
-            <span className={styles.createFabIcon} aria-hidden="true">
-              <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
-                <path d="M9 3v12M3 9h12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-              </svg>
-            </span>
-            <span className={styles.createFabLabel}>{t("chat.createAction")}</span>
-          </button>
-        </div>
-
         <button
           type="button"
           onClick={onOpenSettings}
@@ -194,6 +175,28 @@ export function ChatMobileTabBar({
           <span className={styles.tabLabel}>{t("chat.settings")}</span>
         </button>
       </BottomDockSurface>
+
+      <div className={styles.createLayer}>
+        {createMenuPresence.isMounted ? createMenuContent(styles.createMenu) : null}
+
+        <button
+          ref={createFabRef}
+          type="button"
+          onClick={onToggleCreateMenu}
+          className={`${styles.createFab} ${isCreateMenuOpen ? styles.createFabActive : ""}`}
+          aria-label={isCreateMenuOpen ? t("chat.closeCreateMenu") : t("chat.openCreateMenu")}
+          aria-expanded={isCreateMenuOpen}
+          aria-controls={createMenuId}
+          aria-haspopup="menu"
+        >
+          <span className={styles.createFabIcon} aria-hidden="true">
+            <svg width="20" height="20" viewBox="0 0 18 18" fill="none">
+              <path d="M9 3v12M3 9h12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+            </svg>
+          </span>
+          <span className={styles.createFabLabel}>{t("chat.createAction")}</span>
+        </button>
+      </div>
     </>
   );
 }

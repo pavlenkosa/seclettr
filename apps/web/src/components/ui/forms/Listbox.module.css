@@ -8,9 +8,7 @@
   align-items: center;
   gap: 0.5rem;
   border: 1px solid color-mix(in srgb, var(--panel-border-soft) 92%, transparent);
-  background: color-mix(in srgb, var(--surface-shell) 88%, var(--glass-surface-fill, transparent));
-  -webkit-backdrop-filter: blur(var(--glass-blur-soft, 0px)) saturate(var(--glass-saturate, 1));
-  backdrop-filter: blur(var(--glass-blur-soft, 0px)) saturate(var(--glass-saturate, 1));
+  background: color-mix(in srgb, var(--surface-shell) 88%, transparent);
   color: var(--text-primary);
   text-align: left;
   cursor: pointer;
@@ -22,7 +20,7 @@
 
 .trigger:hover:not(:disabled) {
   border-color: color-mix(in srgb, var(--accent) 40%, var(--panel-border-soft));
-  background: color-mix(in srgb, var(--surface-shell) 96%, var(--glass-surface-fill, transparent));
+  background: color-mix(in srgb, var(--surface-shell) 96%, transparent);
 }
 
 .triggerOpen,
@@ -106,11 +104,9 @@
   background:
     linear-gradient(
       180deg,
-      color-mix(in srgb, var(--surface-float) 96%, var(--glass-surface-fill, transparent)),
+      color-mix(in srgb, var(--surface-float) 96%, transparent),
       color-mix(in srgb, var(--surface-shell) 98%, transparent)
     );
-  -webkit-backdrop-filter: blur(var(--glass-blur-medium, 16px)) saturate(var(--glass-saturate, 1.08));
-  backdrop-filter: blur(var(--glass-blur-medium, 16px)) saturate(var(--glass-saturate, 1.08));
   box-shadow:
     inset 0 1px 0 rgb(255 255 255 / 0.06),
     0 8px 32px rgb(2 8 20 / 0.32),

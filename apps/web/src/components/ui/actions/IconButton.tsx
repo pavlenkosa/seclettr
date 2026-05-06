@@ -2,7 +2,7 @@ import { forwardRef, type ButtonHTMLAttributes, type CSSProperties } from "react
 import styles from "./IconButton.module.css";
 
 type IconButtonTone = "default" | "danger" | "success";
-type IconButtonVariant = "default" | "glass" | "ghost";
+type IconButtonVariant = "default" | "ghost";
 
 export interface IconButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   /** Square button size in pixels or any supported CSS unit. */
@@ -11,7 +11,7 @@ export interface IconButtonProps extends ButtonHTMLAttributes<HTMLButtonElement>
   readonly active?: boolean;
   /** Visual tone used for destructive or success-oriented icon actions. */
   readonly tone?: IconButtonTone;
-  /** Surface recipe used for neutral solid, glassy, or ghost circular buttons. */
+  /** Surface recipe used for neutral solid or ghost circular buttons. */
   readonly variant?: IconButtonVariant;
 }
 
@@ -49,7 +49,6 @@ export const IconButton = forwardRef<HTMLButtonElement, IconButtonProps>(functio
       type={type}
       className={[
         styles.button,
-        variant === "glass" ? styles.glass : "",
         variant === "ghost" ? styles.ghost : "",
         active ? styles.active : "",
         tone === "danger" ? styles.danger : "",

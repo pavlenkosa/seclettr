@@ -14,7 +14,7 @@ export interface InlineNoticeProps extends Readonly<HTMLAttributes<HTMLDivElemen
 
 /**
  * Shared compact notice surface for inline hints, transport warnings, and
- * lightweight overlay messages that should stay on the same glass system.
+ * lightweight overlay messages that should stay on the same flat system.
  */
 export function InlineNotice({
   tone = "info",

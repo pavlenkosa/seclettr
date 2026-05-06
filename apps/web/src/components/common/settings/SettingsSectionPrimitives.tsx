@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 import { FieldSection, SurfacePanel } from "@/components/ui";
-import styles from "../SettingsModal.module.css";
+import styles from "../SettingsSections.module.css";
 
 interface SettingsRowProps {
   readonly label: ReactNode;
@@ -62,7 +62,6 @@ export function SettingsGroup({
       className={styles.groupPanel}
       padding="md"
       radius="xl"
-      glass="medium"
       tone={tone}
     >
       <div className={styles.groupHeader}>

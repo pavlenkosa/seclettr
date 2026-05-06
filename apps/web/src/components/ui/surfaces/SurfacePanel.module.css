@@ -1,32 +1,29 @@
 .root {
-  --surface-panel-bg-start: color-mix(in srgb, var(--surface-float) 76%, var(--glass-surface-fill, transparent));
-  --surface-panel-bg-end: color-mix(in srgb, var(--surface-shell-strong) 68%, var(--glass-surface-fill, transparent));
+  --surface-panel-bg-start: var(--surface-float);
+  --surface-panel-bg-end: var(--surface-shell-strong);
   --surface-panel-border: color-mix(in srgb, var(--panel-border-soft) 90%, transparent);
-  --surface-panel-blur: var(--glass-blur-medium, 0px);
   --surface-panel-shadow: var(--elevated-shadow-sm);
   position: relative;
   overflow: visible;
   border: 1px solid var(--surface-panel-border);
-  background: linear-gradient(180deg, var(--surface-panel-bg-start), var(--surface-panel-bg-end));
-  -webkit-backdrop-filter: blur(var(--surface-panel-blur)) saturate(var(--glass-saturate, 1));
-  backdrop-filter: blur(var(--surface-panel-blur)) saturate(var(--glass-saturate, 1));
+  background: var(--surface-panel-bg-start);
   box-shadow: var(--surface-panel-shadow);
   background-clip: padding-box;
 }
 
 .default {
-  --surface-panel-bg-start: color-mix(in srgb, var(--surface-float) 76%, var(--glass-surface-fill, transparent));
-  --surface-panel-bg-end: color-mix(in srgb, var(--surface-shell-strong) 68%, var(--glass-surface-fill, transparent));
+  --surface-panel-bg-start: var(--surface-float);
+  --surface-panel-bg-end: var(--surface-shell-strong);
 }
 
 .strong {
-  --surface-panel-bg-start: color-mix(in srgb, var(--surface-shell) 88%, var(--glass-surface-fill, transparent));
-  --surface-panel-bg-end: color-mix(in srgb, var(--surface-shell-strong) 94%, var(--glass-surface-fill, transparent));
+  --surface-panel-bg-start: color-mix(in srgb, var(--surface-shell) 94%, var(--bg-secondary));
+  --surface-panel-bg-end: color-mix(in srgb, var(--surface-shell-strong) 96%, var(--bg-secondary));
 }
 
 .accent {
-  --surface-panel-bg-start: color-mix(in srgb, var(--accent) 8%, color-mix(in srgb, var(--surface-float) 76%, var(--glass-surface-fill, transparent)));
-  --surface-panel-bg-end: color-mix(in srgb, var(--accent) 4%, color-mix(in srgb, var(--surface-shell-strong) 70%, var(--glass-surface-fill, transparent)));
+  --surface-panel-bg-start: color-mix(in srgb, var(--accent) 8%, var(--surface-float));
+  --surface-panel-bg-end: color-mix(in srgb, var(--accent) 4%, var(--surface-shell-strong));
   --surface-panel-border: color-mix(in srgb, var(--accent) 22%, var(--panel-border-soft));
 }
 
@@ -41,22 +38,6 @@
   --surface-panel-bg-start: color-mix(in srgb, var(--accent) 10%, color-mix(in srgb, var(--surface-float) 90%, white));
   --surface-panel-bg-end: color-mix(in srgb, var(--accent) 6%, color-mix(in srgb, var(--surface-shell-strong) 94%, white));
   --surface-panel-border: color-mix(in srgb, var(--accent) 28%, var(--panel-border-soft));
-}
-
-.glassNone {
-  --surface-panel-blur: 0px;
-}
-
-.glassSoft {
-  --surface-panel-blur: var(--glass-blur-soft, 0px);
-}
-
-.glassMedium {
-  --surface-panel-blur: var(--glass-blur-medium, 0px);
-}
-
-.glassStrong {
-  --surface-panel-blur: var(--glass-blur-strong, 0px);
 }
 
 .paddingNone {
@@ -76,15 +57,15 @@
 }
 
 .radiusMd {
-  border-radius: 16px;
+  border-radius: 8px;
 }
 
 .radiusLg {
-  border-radius: 20px;
+  border-radius: 8px;
 }
 
 .radiusXl {
-  border-radius: 24px;
+  border-radius: 8px;
 }
 
 .radiusPill {

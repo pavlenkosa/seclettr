@@ -2,7 +2,7 @@ import { useI18n } from "@/i18n";
 import { SurfacePanel, type StatusBadgeTone } from "@/components/ui";
 import { resolvePushStatusLabel, type UsePushSettingsResult } from "../usePushSettings";
 import { NotificationsSettingsSection } from "./NotificationsSettingsSection";
-import styles from "../SettingsModal.module.css";
+import styles from "../SettingsSections.module.css";
 
 export interface NotificationsSectionMeta {
   summary: string;
@@ -45,7 +45,6 @@ export function NotificationsSettingsSectionContainer({
           tone="strong"
           padding="md"
           radius="lg"
-          glass="medium"
         >
           <p className={styles.error}>{pushError}</p>
         </SurfacePanel>

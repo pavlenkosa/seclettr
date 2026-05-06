@@ -1,14 +1,12 @@
 .root {
   --inline-notice-border: color-mix(in srgb, var(--panel-border-soft) 88%, transparent);
-  --inline-notice-bg-start: color-mix(in srgb, var(--surface-float) 74%, var(--glass-surface-fill, transparent));
-  --inline-notice-bg-end: color-mix(in srgb, var(--surface-shell) 82%, var(--glass-surface-fill, transparent));
+  --inline-notice-bg-start: color-mix(in srgb, var(--surface-float) 74%, transparent);
+  --inline-notice-bg-end: color-mix(in srgb, var(--surface-shell) 82%, transparent);
   --inline-notice-color: var(--text-primary);
   border: 1px solid var(--inline-notice-border);
   border-radius: 12px;
   background: linear-gradient(180deg, var(--inline-notice-bg-start), var(--inline-notice-bg-end));
   color: var(--inline-notice-color);
-  -webkit-backdrop-filter: blur(var(--glass-blur-soft, 0px)) saturate(var(--glass-saturate, 1));
-  backdrop-filter: blur(var(--glass-blur-soft, 0px)) saturate(var(--glass-saturate, 1));
 }
 
 .sm {
@@ -27,7 +25,7 @@
 .info {
   --inline-notice-border: color-mix(in srgb, var(--panel-border-soft) 88%, transparent);
   --inline-notice-bg-start: color-mix(in srgb, var(--panel-header-bg) 78%, var(--bg-secondary));
-  --inline-notice-bg-end: color-mix(in srgb, var(--surface-shell) 72%, var(--glass-surface-fill, transparent));
+  --inline-notice-bg-end: color-mix(in srgb, var(--surface-shell) 72%, transparent);
   --inline-notice-color: var(--text-primary);
 }
 

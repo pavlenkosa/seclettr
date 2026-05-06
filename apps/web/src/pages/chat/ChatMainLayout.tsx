@@ -6,28 +6,38 @@ import styles from "../ChatPage.module.css";
 export const ChatMainLayout = memo(function ChatMainLayout({
   isMobileViewport,
   mobileShowConversation,
+  showSettings,
   sidebar,
   threadPane,
   sidebarDock,
+  settingsScreen,
   startResize,
   resetWidth,
 }: {
   isMobileViewport: boolean;
   mobileShowConversation: boolean;
+  showSettings: boolean;
   sidebar: ReactNode;
   threadPane: ReactNode;
   sidebarDock: ReactNode;
+  settingsScreen: ReactNode;
   startResize: ReturnType<typeof useSidebarResize>["startResize"];
   resetWidth: ReturnType<typeof useSidebarResize>["resetWidth"];
 }) {
-  return isMobileViewport ? (
-    <ChatMobileShell
-      isConversationVisible={mobileShowConversation}
-      sidebar={sidebar}
-      thread={threadPane}
-      sidebarDock={sidebarDock}
-    />
-  ) : (
+  if (isMobileViewport) {
+    return (
+      <ChatMobileShell
+        isConversationVisible={mobileShowConversation}
+        isSettingsVisible={showSettings}
+        sidebar={sidebar}
+        thread={threadPane}
+        sidebarDock={sidebarDock}
+        settings={settingsScreen}
+      />
+    );
+  }
+
+  return (
     <>
       {sidebar}
       <div
@@ -40,6 +50,9 @@ export const ChatMainLayout = memo(function ChatMainLayout({
       <main className={styles.main}>
         {threadPane}
       </main>
+      {showSettings ? (
+        <div className={styles.settingsOverlay}>{settingsScreen}</div>
+      ) : null}
     </>
   );
 });

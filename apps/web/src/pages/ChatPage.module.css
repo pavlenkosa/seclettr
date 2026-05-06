@@ -10,12 +10,10 @@
   /* Width is driven by --sidebar-width set by useSidebarResize on the root div.
      CSS min/max act as a safety clamp. */
   width: var(--sidebar-width, 340px);
-  min-width: 220px;
+  min-width: 260px;
   max-width: 540px;
   flex-shrink: 0;
-  background:
-    linear-gradient(180deg, color-mix(in srgb, var(--panel-header-bg) 72%, transparent), transparent 20%),
-    var(--panel-sidebar-bg);
+  background: var(--panel-sidebar-bg);
   /* border-right removed — replaced by .resizer which also acts as the divider */
   display: flex;
   flex-direction: column;
@@ -29,72 +27,50 @@
 .resizer {
   position: relative;
   z-index: 20;
-  width: 5px;
+  width: 0;
   flex-shrink: 0;
   cursor: col-resize;
-  /* Visual separator — matches the old sidebar border-right */
-  background: transparent;
 }
 
+/* Visible separator line — drawn as a 1px pseudo on top of the zero-width element */
 .resizer::before {
   content: "";
   position: absolute;
-  inset: 0;
-  left: 2px;
+  top: 0;
+  bottom: 0;
+  left: -1px;
   width: 1px;
   background: var(--panel-border);
-  transition: left 140ms ease, width 140ms ease, background 140ms ease;
+  transition: width 140ms ease, left 140ms ease, background 140ms ease;
 }
 
-.resizer:hover::before {
-  left: 1px;
-  width: 3px;
-  background: color-mix(in srgb, var(--accent) 64%, transparent);
-}
-
-/* Small grip dots in the vertical center */
+/* Wider hit area for grabbing — invisible but hoverable */
 .resizer::after {
   content: "";
   position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  width: 3px;
-  height: 24px;
-  border-radius: 999px;
-  background: repeating-linear-gradient(
-    to bottom,
-    color-mix(in srgb, var(--text-muted) 0%, transparent) 0px,
-    color-mix(in srgb, var(--text-muted) 0%, transparent) 3px,
-    transparent 3px,
-    transparent 5px
-  );
-  opacity: 0;
-  transition: opacity 140ms ease, background 140ms ease;
+  top: 0;
+  bottom: 0;
+  left: -3px;
+  width: 7px;
 }
 
-.resizer:hover::after {
-  background: repeating-linear-gradient(
-    to bottom,
-    color-mix(in srgb, var(--accent) 80%, transparent) 0px,
-    color-mix(in srgb, var(--accent) 80%, transparent) 3px,
-    transparent 3px,
-    transparent 5px
-  );
-  opacity: 1;
+.resizer:hover::before {
+  left: -2px;
+  width: 3px;
+  background: color-mix(in srgb, var(--accent) 64%, transparent);
 }
 
 .sidebarHeader {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0.85rem 0.95rem;
-  border: 1px solid color-mix(in srgb, var(--panel-border) 84%, transparent);
-  border-radius: 24px;
-  background: color-mix(in srgb, var(--surface-float) 86%, transparent);
-  -webkit-backdrop-filter: blur(var(--glass-blur-medium, 16px)) saturate(var(--glass-saturate, 1.08));
-  backdrop-filter: blur(var(--glass-blur-medium, 16px)) saturate(var(--glass-saturate, 1.08));
-  box-shadow: var(--elevated-shadow-sm);
+  min-height: var(--panel-header-height);
+  margin: -0.72rem -0.72rem 0;
+  padding: 0 0.82rem;
+  border: 0;
+  border-bottom: 1px solid var(--panel-border);
+  border-radius: 0;
+  background: var(--bg-secondary);
 }
 
 .sidebarBrand {
@@ -120,39 +96,46 @@
   display: block;
 }
 
+.sidebarBrandCopy {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.06rem;
+}
+
 .sidebarTitle {
   font-size: 1.08rem;
   font-weight: 720;
   color: var(--text-primary);
   letter-spacing: -0.02em;
   white-space: nowrap;
+  line-height: 1.2;
+}
+
+.sidebarUsername {
+  font-size: 0.72rem;
+  font-weight: 500;
+  color: var(--text-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  letter-spacing: 0.01em;
 }
 
 .sidebarActions {
   display: flex;
-  gap: 0.42rem;
-}
-
-.sidebarMeta {
-  display: flex;
-  flex-direction: column;
-  gap: 0.62rem;
-}
-
-.myUsername {
-  display: inline-flex;
   align-items: center;
-  width: fit-content;
-  min-height: 30px;
-  padding: 0.22rem 0.82rem;
-  margin-left: 0.2rem;
-  border-radius: 999px;
-  border: 1px solid color-mix(in srgb, var(--panel-border-soft) 95%, transparent);
-  background: color-mix(in srgb, var(--surface-float) 82%, transparent);
-  color: var(--text-secondary);
-  font-size: 0.74rem;
-  font-weight: 600;
-  letter-spacing: 0.01em;
+  gap: 0.24rem;
+  flex-shrink: 0;
+}
+
+.sidebarActionDivider {
+  display: block;
+  width: 1px;
+  height: 18px;
+  margin: 0 0.14rem;
+  background: color-mix(in srgb, var(--panel-border) 70%, transparent);
+  flex-shrink: 0;
 }
 
 .sidebarSearch {
@@ -218,55 +201,6 @@
   color: var(--text-primary);
 }
 
-.quickActions {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 0.5rem;
-}
-
-.quickActionBtn {
-  min-height: 60px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: flex-start;
-  gap: 0.62rem;
-  padding: 0.68rem 0.8rem;
-  border-radius: 20px;
-  border: 1px solid color-mix(in srgb, var(--panel-border-soft) 92%, transparent);
-  background:
-    linear-gradient(180deg, color-mix(in srgb, var(--surface-float) 92%, transparent), color-mix(in srgb, var(--surface-shell) 90%, transparent));
-  color: var(--text-primary);
-  text-align: left;
-  box-shadow: var(--elevated-shadow-sm);
-  transition:
-    transform var(--motion-duration-fast) var(--motion-ease-standard),
-    border-color var(--motion-duration-fast) var(--motion-ease-standard),
-    background-color var(--motion-duration-fast) var(--motion-ease-standard),
-    box-shadow var(--motion-duration-fast) var(--motion-ease-standard);
-}
-
-.quickActionBtn:hover {
-  transform: translateY(-1px);
-  border-color: color-mix(in srgb, var(--accent) 34%, var(--panel-border-soft));
-}
-
-.quickActionIcon {
-  width: 34px;
-  height: 34px;
-  border-radius: 14px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-  color: #eff6ff;
-  background: linear-gradient(145deg, color-mix(in srgb, var(--accent) 82%, white 18%), var(--accent));
-}
-
-.quickActionLabel {
-  font-size: 0.83rem;
-  font-weight: 650;
-  line-height: 1.25;
-}
 
 .main {
   flex: 1;
@@ -276,7 +210,13 @@
   position: relative;
   isolation: isolate;
   background: transparent;
-  padding: 0.72rem;
+}
+
+.settingsOverlay {
+  position: absolute;
+  inset: 0;
+  z-index: 50;
+  overflow: hidden;
 }
 
 .iconBtn {
@@ -368,9 +308,9 @@
   background:
     linear-gradient(
       90deg,
-      color-mix(in srgb, var(--surface-float) 80%, var(--glass-surface-fill, transparent)),
-      color-mix(in srgb, var(--composer-inner-bg) 84%, var(--glass-surface-fill, transparent)),
-      color-mix(in srgb, var(--surface-float) 80%, var(--glass-surface-fill, transparent))
+      color-mix(in srgb, var(--surface-float) 80%, transparent),
+      color-mix(in srgb, var(--composer-inner-bg) 84%, transparent),
+      color-mix(in srgb, var(--surface-float) 80%, transparent)
     );
   background-size: 220% 100%;
   box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.2);
@@ -395,8 +335,6 @@
   display: grid;
   place-items: center;
   background: rgb(2 6 23 / 0.28);
-  -webkit-backdrop-filter: blur(var(--glass-blur-soft, 10px));
-  backdrop-filter: blur(var(--glass-blur-soft, 10px));
 }
 
 .modalLazyFallback::after {
@@ -457,30 +395,15 @@
   line-height: 1.45;
 }
 
-:global(:root[data-theme="light"]) .sidebarHeader,
-:global(:root[data-theme="light"]) .quickActionBtn {
-  border-color: color-mix(in srgb, var(--panel-border-soft) 92%, transparent);
-}
-
 :global(:root[data-theme="light"]) .sidebarHeader {
-  background: color-mix(in srgb, var(--surface-float) 82%, white);
-}
-
-:global(:root[data-theme="light"]) .myUsername {
-  color: color-mix(in srgb, var(--text-primary) 74%, var(--text-secondary));
-  background: color-mix(in srgb, var(--surface-float) 78%, white);
-}
-
-:global(:root[data-theme="light"]) .quickActionBtn {
-  background:
-    linear-gradient(
-      180deg,
-      color-mix(in srgb, var(--surface-float) 84%, white),
-      color-mix(in srgb, var(--surface-shell-strong) 88%, white)
-    );
+  background: var(--bg-secondary);
 }
 
 @media (max-width: 640px) {
+  :global(:root) {
+    --panel-header-height: 68px;
+  }
+
   .sidebar {
     position: absolute;
     inset: 0;
@@ -493,6 +416,11 @@
     padding-bottom: calc(6.5rem + var(--safe-bottom));
   }
 
+  .sidebarHeader {
+    margin: -0.65rem -0.65rem 0;
+    padding: 0 0.74rem;
+  }
+
   .iconBtn {
     --icon-button-size: 38px;
   }
@@ -503,10 +431,6 @@
 
   .threadChromeSlot {
     padding: 0 0 0.14rem;
-  }
-
-  .quickActions {
-    grid-template-columns: 1fr;
   }
 
   .desktopOnlyAction {

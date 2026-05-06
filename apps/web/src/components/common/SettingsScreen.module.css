@@ -1,0 +1,337 @@
+.root {
+  height: 100%;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+}
+
+.header {
+  flex-shrink: 0;
+  min-height: 58px;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.7rem 0.9rem;
+  border-bottom: 1px solid color-mix(in srgb, var(--panel-border-soft) 82%, transparent);
+  background: var(--bg-secondary);
+}
+
+.headerDesktop {
+  grid-template-columns: minmax(0, 1fr) auto;
+}
+
+.backButton,
+.closeButton {
+  width: 38px;
+  height: 38px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--text-secondary);
+  transition:
+    background-color var(--motion-duration-fast) var(--motion-ease-standard),
+    border-color var(--motion-duration-fast) var(--motion-ease-standard),
+    color var(--motion-duration-fast) var(--motion-ease-standard);
+}
+
+.backButton:hover,
+.closeButton:hover {
+  border-color: color-mix(in srgb, var(--accent) 28%, transparent);
+  background: color-mix(in srgb, var(--accent) 10%, transparent);
+  color: var(--text-primary);
+}
+
+.title {
+  margin: 0;
+  min-width: 0;
+  color: var(--text-primary);
+  font-size: 1.04rem;
+  font-weight: 730;
+  line-height: 1.2;
+}
+
+.layout {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: minmax(260px, 34%) minmax(0, 1fr);
+  overflow: hidden;
+}
+
+.menuPane {
+  min-width: 0;
+  min-height: 0;
+  overflow-y: auto;
+  border-right: 1px solid color-mix(in srgb, var(--panel-border-soft) 82%, transparent);
+  background: color-mix(in srgb, var(--bg-secondary) 94%, var(--bg-primary));
+  padding: 0.78rem 0;
+}
+
+.accountRow {
+  min-height: 72px;
+  display: grid;
+  grid-template-columns: 48px minmax(0, 1fr);
+  align-items: center;
+  gap: 0.78rem;
+  padding: 0.78rem 1rem;
+  border-bottom: 1px solid color-mix(in srgb, var(--panel-border-soft) 78%, transparent);
+}
+
+.accountAvatar {
+  width: 48px;
+  height: 48px;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  background: var(--accent);
+  font-size: 0.9rem;
+  font-weight: 760;
+}
+
+.accountCopy {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.16rem;
+}
+
+.accountName {
+  overflow: hidden;
+  color: var(--text-primary);
+  font-size: 0.98rem;
+  font-weight: 720;
+  line-height: 1.25;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.accountMeta {
+  overflow: hidden;
+  color: var(--text-secondary);
+  font-size: 0.78rem;
+  line-height: 1.35;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sectionList {
+  display: flex;
+  flex-direction: column;
+  padding: 0.58rem 0;
+}
+
+.sectionButton {
+  min-height: 58px;
+  display: grid;
+  grid-template-columns: 34px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0.78rem;
+  padding: 0.58rem 1rem;
+  border: 1px solid transparent;
+  border-radius: 0;
+  background: transparent;
+  color: var(--text-primary);
+  text-align: left;
+  transition:
+    background-color var(--motion-duration-fast) var(--motion-ease-standard),
+    border-color var(--motion-duration-fast) var(--motion-ease-standard),
+    color var(--motion-duration-fast) var(--motion-ease-standard);
+}
+
+.sectionButton:hover {
+  border-color: color-mix(in srgb, var(--accent) 24%, transparent);
+  background: color-mix(in srgb, var(--accent) 8%, transparent);
+}
+
+.sectionButtonActive {
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+  border-color: color-mix(in srgb, var(--accent) 30%, transparent);
+}
+
+.sectionIcon {
+  width: 34px;
+  height: 34px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--accent);
+}
+
+.sectionCopy {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.12rem;
+}
+
+.sectionTitle {
+  overflow: hidden;
+  color: inherit;
+  font-size: 0.9rem;
+  font-weight: 680;
+  line-height: 1.28;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sectionDescription {
+  overflow: hidden;
+  color: var(--text-secondary);
+  font-size: 0.72rem;
+  line-height: 1.35;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sectionChevron {
+  color: color-mix(in srgb, var(--text-secondary) 78%, transparent);
+}
+
+.menuNote {
+  margin: 0.35rem 1rem 0;
+  color: var(--text-secondary);
+  font-size: 0.74rem;
+  line-height: 1.45;
+}
+
+.detailPane {
+  min-width: 0;
+  min-height: 0;
+  overflow-y: auto;
+  background: var(--bg-primary);
+  padding: 1rem;
+}
+
+.detailHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 0.9rem;
+  padding-bottom: 0.9rem;
+  border-bottom: 1px solid color-mix(in srgb, var(--panel-border-soft) 78%, transparent);
+}
+
+.detailHeading {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.24rem;
+}
+
+.detailTitle {
+  margin: 0;
+  color: var(--text-primary);
+  font-size: 1.22rem;
+  font-weight: 760;
+  line-height: 1.16;
+}
+
+.detailDescription {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 0.84rem;
+  line-height: 1.45;
+}
+
+.detailSummary {
+  flex: 0 0 auto;
+  max-width: min(280px, 45%);
+  color: var(--text-secondary);
+  font-size: 0.78rem;
+  font-weight: 650;
+  line-height: 1.35;
+  text-align: right;
+}
+
+.emptyState {
+  min-height: 240px;
+  display: grid;
+  place-items: center;
+  color: var(--text-secondary);
+  font-size: 0.86rem;
+}
+
+.sectionSkeletonStack {
+  display: flex;
+  flex-direction: column;
+  gap: 0.74rem;
+}
+
+.skeletonBlock {
+  min-height: 92px;
+  border: 1px solid color-mix(in srgb, var(--panel-border-soft) 72%, transparent);
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--surface-shell) 92%, var(--bg-primary));
+}
+
+@media (max-width: 760px) {
+  .root {
+    position: absolute;
+    inset: 0;
+    z-index: 36;
+  }
+
+  .header {
+    min-height: 56px;
+    padding: 0.58rem 0.72rem;
+  }
+
+  .layout {
+    display: block;
+    position: relative;
+  }
+
+  .menuPane,
+  .detailPane {
+    position: absolute;
+    inset: 0;
+    border-right: 0;
+    padding-bottom: calc(1rem + var(--safe-bottom));
+  }
+
+  .menuPane {
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  .detailPane {
+    opacity: 0;
+    pointer-events: none;
+    padding: 0.86rem;
+  }
+
+  .layout[data-detail-open="true"] .menuPane {
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  .layout[data-detail-open="true"] .detailPane {
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  .detailHeader {
+    display: none;
+  }
+
+  .sectionButton {
+    min-height: 62px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .backButton,
+  .closeButton,
+  .sectionButton {
+    transition: none !important;
+  }
+}

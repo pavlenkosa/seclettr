@@ -68,7 +68,6 @@ export function DirectCallIncomingOverlay({
             onClick={onMinimize}
             className={styles.minimizeBtn}
             size={34}
-            variant="glass"
             aria-label={minimizeAriaLabel}
           >
             <MinimizeIcon />

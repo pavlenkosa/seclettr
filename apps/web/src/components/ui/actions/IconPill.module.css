@@ -9,12 +9,10 @@
   background:
     linear-gradient(
       180deg,
-      color-mix(in srgb, var(--surface-float) 72%, var(--glass-surface-fill, transparent)),
-      color-mix(in srgb, var(--surface-shell) 82%, var(--glass-surface-fill, transparent))
+      color-mix(in srgb, var(--surface-float) 72%, transparent),
+      color-mix(in srgb, var(--surface-shell) 82%, transparent)
     );
   color: var(--text-primary);
-  -webkit-backdrop-filter: blur(var(--glass-blur-medium, 0px)) saturate(var(--glass-saturate, 1));
-  backdrop-filter: blur(var(--glass-blur-medium, 0px)) saturate(var(--glass-saturate, 1));
   box-shadow:
     inset 0 1px 0 rgb(255 255 255 / 0.12),
     0 8px 18px rgb(15 23 42 / 0.06);

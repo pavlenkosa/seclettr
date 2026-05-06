@@ -201,7 +201,6 @@ function LightboxToolbar({
           <span className={styles.toolbarCounter}>{sequenceLabel}</span>
         ) : null}
         <IconButton
-          variant="glass"
           className={styles.iconBtn}
           onClick={onDownload}
           disabled={downloading}
@@ -215,7 +214,6 @@ function LightboxToolbar({
         </IconButton>
         <IconButton
           ref={closeButtonRef}
-          variant="glass"
           className={styles.iconBtn}
           onClick={onClose}
           aria-label={t("message.media.close")}
@@ -241,7 +239,6 @@ function LightboxNavButton({ direction, label, onNavigate }: LightboxNavButtonPr
   const isPrevious = direction === -1;
   return (
     <IconButton
-      variant="glass"
       className={`${styles.navBtn} ${isPrevious ? styles.navBtnPrev : styles.navBtnNext}`}
       onClick={() => onNavigate(direction)}
       aria-label={label}

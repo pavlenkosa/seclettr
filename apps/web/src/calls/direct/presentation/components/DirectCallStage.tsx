@@ -110,7 +110,6 @@ function StageActionRail({
           onClick={() => scene.selectSource("screen")}
           className={styles.stageActionIconBtn}
           size={34}
-          variant="glass"
           aria-label={showScreenOnStageLabel}
           title={showScreenOnStageLabel}
         >
@@ -122,7 +121,6 @@ function StageActionRail({
           onClick={scene.restoreScreenShare}
           className={styles.stageActionIconBtn}
           size={34}
-          variant="glass"
           aria-label={showScreenOnStageLabel}
           title={showScreenOnStageLabel}
         >
@@ -134,7 +132,6 @@ function StageActionRail({
           onClick={scene.stopWatchingScreen}
           className={styles.stageActionIconBtn}
           size={34}
-          variant="glass"
           aria-label={stopWatchingScreenLabel}
           title={stopWatchingScreenLabel}
         >
@@ -146,7 +143,6 @@ function StageActionRail({
           onClick={scene.openScreenViewer}
           className={styles.stageActionIconBtn}
           size={34}
-          variant="glass"
           aria-label={enterFullscreenLabel}
           title={enterFullscreenLabel}
         >

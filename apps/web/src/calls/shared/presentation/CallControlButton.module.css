@@ -21,8 +21,6 @@
   padding: var(--call-control-inline-padding, 0 0.85rem);
   border-radius: var(--call-control-inline-radius, 999px);
   background: color-mix(in srgb, var(--panel-header-bg) 80%, var(--bg-secondary));
-  -webkit-backdrop-filter: blur(var(--call-control-inline-blur, 0px));
-  backdrop-filter: blur(var(--call-control-inline-blur, 0px));
 }
 
 .inline:hover:not(:disabled) {

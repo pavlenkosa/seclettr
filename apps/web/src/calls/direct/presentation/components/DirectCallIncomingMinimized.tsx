@@ -101,7 +101,6 @@ export function DirectCallIncomingMinimized({
             onClick={onOpenDetails}
             className={styles.minimizedBtn}
             size={38}
-            variant="glass"
             aria-label={expandAriaLabel}
           >
             <ExpandIcon />

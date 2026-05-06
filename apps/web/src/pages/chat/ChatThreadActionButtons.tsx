@@ -112,7 +112,6 @@ export function ChatThreadActionButtons({
           onClick={() => onStartDirectCall("audio")}
           className={styles.iconBtn}
           size={40}
-          variant="glass"
           title={t("chat.voiceCall")}
           aria-label={t("chat.voiceCall")}
         >
@@ -128,7 +127,6 @@ export function ChatThreadActionButtons({
           onClick={() => onStartDirectCall("video")}
           className={styles.iconBtn}
           size={40}
-          variant="glass"
           title={t("chat.videoCall")}
           aria-label={t("chat.videoCall")}
         >
@@ -166,7 +164,6 @@ export function ChatThreadActionButtons({
           onClick={onStartGroupCall}
           className={styles.iconBtn}
           size={40}
-          variant="glass"
           title={t("group.call.launch")}
           aria-label={t("group.call.launch")}
           disabled={groupCallDisabled}

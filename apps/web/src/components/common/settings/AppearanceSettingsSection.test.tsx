@@ -36,7 +36,6 @@ describe("AppearanceSettingsSection", () => {
     const setLocale = vi.fn();
     const setThemeMode = vi.fn();
     const setAccentColor = vi.fn();
-    const setGlassMode = vi.fn();
 
     act(() => {
       root.render(
@@ -45,10 +44,8 @@ describe("AppearanceSettingsSection", () => {
           setLocale={setLocale}
           themeMode="dark"
           accentColor="blue"
-          glassMode="on"
           setThemeMode={setThemeMode}
           setAccentColor={setAccentColor}
-          setGlassMode={setGlassMode}
         />
       );
     });
@@ -62,25 +59,19 @@ describe("AppearanceSettingsSection", () => {
     const emeraldSwatch = document.body.querySelector<HTMLButtonElement>(
       '[aria-label="settings.colors.emerald"]'
     );
-    const glassOffButton = Array.from(document.body.querySelectorAll<HTMLButtonElement>("button")).find(
-      (button) => button.textContent === "settings.glassEffects.off"
-    );
 
     expect(russianButton).not.toBeNull();
     expect(lightThemeButton).not.toBeUndefined();
     expect(emeraldSwatch).not.toBeNull();
-    expect(glassOffButton).not.toBeUndefined();
 
     act(() => {
       russianButton?.click();
       lightThemeButton?.click();
       emeraldSwatch?.click();
-      glassOffButton?.click();
     });
 
     expect(setLocale).toHaveBeenCalledWith("ru");
     expect(setThemeMode).toHaveBeenCalledWith("light");
     expect(setAccentColor).toHaveBeenCalledWith("emerald");
-    expect(setGlassMode).toHaveBeenCalledWith("off");
   });
 });

@@ -7,8 +7,8 @@
   z-index: 0;
   overflow: hidden;
   --surface-panel-border: color-mix(in srgb, var(--panel-border-soft) 78%, transparent);
-  --surface-panel-bg-start: color-mix(in srgb, var(--surface-float) 66%, var(--glass-surface-fill, transparent));
-  --surface-panel-bg-end: color-mix(in srgb, var(--surface-shell-strong) 52%, var(--glass-surface-fill, transparent));
+  --surface-panel-bg-start: color-mix(in srgb, var(--surface-float) 66%, transparent);
+  --surface-panel-bg-end: color-mix(in srgb, var(--surface-shell-strong) 52%, transparent);
   --surface-panel-shadow:
     0 12px 24px rgb(2 6 23 / 0.12),
     var(--elevated-shadow-sm);

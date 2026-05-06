@@ -243,7 +243,7 @@
   --icon-button-color-hover: var(--text-primary);
   --icon-button-blur: 8px;
   --icon-button-transform: none;
-  --icon-button-transform-hover: translateY(-1px);
+  --icon-button-transform-hover: none;
 }
 
 .modeChip {
@@ -389,12 +389,10 @@
   color: var(--text-primary);
   font-size: 0.74rem;
   font-weight: 700;
-  backdrop-filter: blur(10px);
   transition: transform 0.12s ease, border-color 0.12s ease;
 }
 
 .stageActionBtn:hover {
-  transform: translateY(-1px);
   border-color: color-mix(in srgb, var(--accent) 28%, var(--panel-border-soft));
 }
 
@@ -407,9 +405,9 @@
   --icon-button-bg-active: color-mix(in srgb, var(--panel-header-bg) 62%, transparent);
   --icon-button-color: var(--text-primary);
   --icon-button-color-hover: var(--text-primary);
-  --icon-button-shadow: 0 10px 24px color-mix(in srgb, var(--bg-primary) 18%, transparent);
-  --icon-button-shadow-hover: 0 12px 26px color-mix(in srgb, var(--bg-primary) 20%, transparent);
-  --icon-button-transform-hover: translateY(-1px);
+  --icon-button-shadow: none;
+  --icon-button-shadow-hover: none;
+  --icon-button-transform-hover: none;
   --icon-button-blur: 10px;
 }
 
@@ -513,7 +511,6 @@
   box-shadow:
     0 24px 54px rgb(2 8 20 / 0.18),
     inset 0 1px 0 rgb(255 255 255 / 0.03);
-  backdrop-filter: blur(20px);
 }
 
 .securitySummaryRow {
@@ -760,14 +757,12 @@
   border: 1px solid color-mix(in srgb, var(--panel-border-soft) 88%, transparent);
   background: color-mix(in srgb, var(--panel-header-bg) 84%, transparent);
   color: var(--text-primary);
-  backdrop-filter: blur(10px);
   box-shadow: 0 10px 24px color-mix(in srgb, var(--bg-primary) 18%, transparent);
   z-index: 2;
   transition: transform 120ms ease, border-color 120ms ease, opacity 120ms ease;
 }
 
 .localPreviewAction:hover:not(:disabled) {
-  transform: translateY(-1px);
   border-color: color-mix(in srgb, var(--accent) 34%, var(--panel-border-soft));
 }
 
@@ -793,7 +788,6 @@
   border: 1px solid color-mix(in srgb, var(--panel-border-soft) 88%, transparent);
   background: color-mix(in srgb, var(--panel-header-bg) 84%, transparent);
   color: var(--text-primary);
-  backdrop-filter: blur(10px);
   box-shadow: 0 10px 24px color-mix(in srgb, var(--bg-primary) 18%, transparent);
   z-index: 2;
   touch-action: none;
@@ -802,7 +796,6 @@
 }
 
 .localPreviewResizeHandle:hover {
-  transform: translateY(-1px);
   border-color: color-mix(in srgb, var(--accent) 34%, var(--panel-border-soft));
 }
 
@@ -861,7 +854,6 @@
   box-shadow:
     0 22px 52px rgb(2 8 20 / 0.28),
     inset 0 1px 0 rgb(255 255 255 / 0.04);
-  backdrop-filter: blur(20px);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -878,7 +870,6 @@
   border: 1px solid color-mix(in srgb, var(--panel-border-soft) 78%, transparent);
   background: color-mix(in srgb, var(--surface-shell) 88%, transparent);
   box-shadow: 0 16px 36px rgb(2 8 20 / 0.14);
-  backdrop-filter: blur(18px);
   animation: callContentIn 240ms cubic-bezier(0.18, 0.9, 0.2, 1) 80ms both;
 }
 

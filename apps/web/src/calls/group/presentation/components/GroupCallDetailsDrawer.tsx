@@ -53,20 +53,19 @@ export function GroupCallDetailsDrawer({
         inline ? styles.detailsDrawerInline : "",
       ].filter(Boolean).join(" ")}
       tone="strong"
-      glass="strong"
       padding="lg"
       radius="xl"
       aria-hidden={inline ? undefined : !isOpen}
     >
       <FieldSection className={styles.section} label={t("group.call.roomId")}>
-        <SurfacePanel className={styles.detailsCard} padding="md" glass="soft">
+        <SurfacePanel className={styles.detailsCard} padding="md">
           <div className={styles.roomIdCode}>{roomCode}</div>
           <div className={styles.roomIdHint}>{statusLabel}</div>
         </SurfacePanel>
       </FieldSection>
 
       <FieldSection className={styles.section} label={t("group.call.mediaKeySection")}>
-        <SurfacePanel className={styles.detailsCard} padding="md" glass="soft">
+        <SurfacePanel className={styles.detailsCard} padding="md">
           <div className={styles.metaPrimary}>{mediaKeyStatusLabel}</div>
           <div className={styles.metaSecondary}>{t("group.call.mediaKeyMode", { mode: mediaKeyModeLabel })}</div>
           {mediaModeDowngraded ? (
@@ -96,7 +95,6 @@ export function GroupCallDetailsDrawer({
                 key={member.userId}
                 className={`${styles.memberRow} ${isActiveParticipant ? styles.memberRowActive : ""}`}
                 padding="none"
-                glass="soft"
               >
                 <EntityRow
                   as="div"
@@ -126,7 +124,7 @@ export function GroupCallDetailsDrawer({
       </FieldSection>
 
       <FieldSection className={styles.section} label={t("call.audioOutput.label")}>
-        <SurfacePanel className={styles.detailsCard} padding="md" glass="soft">
+        <SurfacePanel className={styles.detailsCard} padding="md">
           <AudioOutputSelector className={styles.audioOutputSelector} />
         </SurfacePanel>
       </FieldSection>
@@ -137,7 +135,7 @@ export function GroupCallDetailsDrawer({
         </InlineNotice>
       ) : null}
 
-      <SurfacePanel className={styles.contractHint} padding="sm" glass="soft">
+      <SurfacePanel className={styles.contractHint} padding="sm">
         <p className={styles.contractHintText}>{t("group.call.contractHint")}</p>
       </SurfacePanel>
     </SurfacePanel>

@@ -17,6 +17,7 @@ import { useI18n } from "@/i18n";
 import { useAnimatedPresence, useIsMobileViewport } from "@/lib/hooks";
 import { ErrorBoundary, ThreadErrorFallback } from "@/components/common/ErrorBoundary";
 import { ConnectionBanner } from "@/components/common/ConnectionBanner";
+import { SettingsScreen } from "@/components/common/SettingsScreen";
 import { ChatSidebar } from "./chat/ChatSidebar";
 import { ChatMobileTabBar } from "./chat/ChatMobileTabBar";
 import { ChatThreadActionButtons } from "./chat/ChatThreadActionButtons";
@@ -350,6 +351,14 @@ export function ChatPage() {
     />
   );
 
+  const settingsScreen = (
+    <SettingsScreen
+      username={username}
+      isMobileViewport={isMobileViewport}
+      onClose={workspaceUiState.closeSettings}
+    />
+  );
+
   return (
     <div ref={rootRef} className={styles.root}>
       <ConnectionBanner />
@@ -375,9 +384,11 @@ export function ChatPage() {
       <ChatMainLayout
         isMobileViewport={isMobileViewport}
         mobileShowConversation={workspaceUiState.mobileShowConversation}
+        showSettings={workspaceUiState.showSettings}
         sidebar={sidebar}
         threadPane={threadPane}
         sidebarDock={sidebarDock}
+        settingsScreen={settingsScreen}
         startResize={startResize}
         resetWidth={resetWidth}
       />

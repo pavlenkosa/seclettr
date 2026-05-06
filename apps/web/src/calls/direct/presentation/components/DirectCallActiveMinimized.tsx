@@ -93,7 +93,6 @@ export function DirectCallActiveMinimized({
             onClick={onToggleMute}
             className={styles.minimizedBtn}
             size={38}
-            variant="glass"
             active={muted}
             aria-label={muteAriaLabel}
             aria-pressed={muted}
@@ -104,7 +103,6 @@ export function DirectCallActiveMinimized({
             onClick={onOpenDetails}
             className={styles.minimizedBtn}
             size={38}
-            variant="glass"
             aria-label={expandAriaLabel}
           >
             <ExpandIcon />

@@ -6,24 +6,6 @@
   background: var(--bg-primary);
 }
 
-.sidebar {
-  /* Width is driven by --sidebar-width set by useSidebarResize on the root div.
-     CSS min/max act as a safety clamp. */
-  width: var(--sidebar-width, 340px);
-  min-width: 260px;
-  max-width: 540px;
-  flex-shrink: 0;
-  background: var(--panel-sidebar-bg);
-  /* border-right removed — replaced by .resizer which also acts as the divider */
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-  padding: 0.72rem 0.72rem 0.86rem;
-  gap: 0.62rem;
-}
-
-/* ─── Resize handle between sidebar and main ─────────────────────────────── */
-
 .resizer {
   position: relative;
   z-index: 20;
@@ -60,148 +42,6 @@
   background: color-mix(in srgb, var(--accent) 64%, transparent);
 }
 
-.sidebarHeader {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  min-height: var(--panel-header-height);
-  margin: -0.72rem -0.72rem 0;
-  padding: 0 0.82rem;
-  border: 0;
-  border-bottom: 1px solid var(--panel-border);
-  border-radius: 0;
-  background: var(--bg-secondary);
-}
-
-.sidebarBrand {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.62rem;
-  min-width: 0;
-}
-
-.sidebarBrandMark {
-  width: 30px;
-  height: 30px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  color: var(--accent);
-  flex-shrink: 0;
-}
-
-.sidebarBrandMark :global(svg) {
-  width: 100%;
-  height: 100%;
-  display: block;
-}
-
-.sidebarBrandCopy {
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 0.06rem;
-}
-
-.sidebarTitle {
-  font-size: 1.08rem;
-  font-weight: 720;
-  color: var(--text-primary);
-  letter-spacing: -0.02em;
-  white-space: nowrap;
-  line-height: 1.2;
-}
-
-.sidebarUsername {
-  font-size: 0.72rem;
-  font-weight: 500;
-  color: var(--text-secondary);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  letter-spacing: 0.01em;
-}
-
-.sidebarActions {
-  display: flex;
-  align-items: center;
-  gap: 0.24rem;
-  flex-shrink: 0;
-}
-
-.sidebarActionDivider {
-  display: block;
-  width: 1px;
-  height: 18px;
-  margin: 0 0.14rem;
-  background: color-mix(in srgb, var(--panel-border) 70%, transparent);
-  flex-shrink: 0;
-}
-
-.sidebarSearch {
-  position: relative;
-  display: flex;
-  align-items: center;
-  gap: 0.4rem;
-  padding: 0 0.5rem 0 0.62rem;
-  height: 36px;
-  border-radius: 20px;
-  border: 1px solid color-mix(in srgb, var(--panel-border-soft) 80%, transparent);
-  background: color-mix(in srgb, var(--surface-float) 64%, transparent);
-  transition: border-color var(--motion-duration-fast) ease, background var(--motion-duration-fast) ease;
-}
-
-.sidebarSearch:focus-within {
-  border-color: var(--accent);
-  background: color-mix(in srgb, var(--surface-float) 88%, transparent);
-}
-
-.sidebarSearchIcon {
-  flex-shrink: 0;
-  color: var(--text-secondary);
-  pointer-events: none;
-}
-
-.sidebarSearchInput {
-  flex: 1;
-  min-width: 0;
-  background: transparent;
-  border: none;
-  outline: none;
-  color: var(--text-primary);
-  font-size: 0.8rem;
-  line-height: 1;
-}
-
-.sidebarSearchInput::placeholder {
-  color: var(--text-muted);
-}
-
-.sidebarSearchInput::-webkit-search-decoration,
-.sidebarSearchInput::-webkit-search-cancel-button {
-  appearance: none;
-}
-
-.sidebarSearchClear {
-  all: unset;
-  flex-shrink: 0;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 18px;
-  height: 18px;
-  border-radius: 50%;
-  color: var(--text-secondary);
-  cursor: pointer;
-  transition: background var(--motion-duration-fast) ease, color var(--motion-duration-fast) ease;
-}
-
-.sidebarSearchClear:hover {
-  background: color-mix(in srgb, var(--accent) 14%, transparent);
-  color: var(--text-primary);
-}
-
-
 .main {
   flex: 1;
   display: flex;
@@ -219,21 +59,6 @@
   overflow: hidden;
 }
 
-.iconBtn {
-  --icon-button-size: 40px;
-}
-
-.iconBtnActive {
-  background: color-mix(in srgb, var(--accent) 16%, transparent) !important;
-  color: var(--accent) !important;
-}
-
-.threadActionGroup {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.38rem;
-}
-
 .searchBarPresence {
   flex-shrink: 0;
 }
@@ -247,15 +72,8 @@
   height: 40px;
   flex-shrink: 0;
   border-bottom: 1px solid color-mix(in srgb, var(--panel-border-soft) 70%, transparent);
-  background:
-    linear-gradient(
-      90deg,
-      color-mix(in srgb, var(--surface-shell) 78%, transparent),
-      color-mix(in srgb, var(--surface-float) 92%, transparent),
-      color-mix(in srgb, var(--surface-shell) 78%, transparent)
-    );
-  background-size: 220% 100%;
-  animation: lazyPanelShimmer 900ms linear infinite;
+  background: color-mix(in srgb, var(--surface-float) 82%, transparent);
+  animation: lazyPanelPulse 900ms ease-in-out infinite;
 }
 
 .mediaPanelPresence {
@@ -273,15 +91,8 @@
   position: absolute;
   inset: 0;
   border-radius: 20px;
-  background:
-    linear-gradient(
-      90deg,
-      color-mix(in srgb, var(--bg-secondary) 94%, var(--bg-primary)),
-      color-mix(in srgb, var(--surface-float) 86%, var(--bg-secondary)),
-      color-mix(in srgb, var(--bg-secondary) 94%, var(--bg-primary))
-    );
-  background-size: 220% 100%;
-  animation: lazyPanelShimmer 900ms linear infinite;
+  background: color-mix(in srgb, var(--bg-secondary) 94%, var(--bg-primary));
+  animation: lazyPanelPulse 900ms ease-in-out infinite;
 }
 
 .composerLazyFallback {
@@ -305,27 +116,13 @@
   min-block-size: calc(40px + 0.88rem + 2px);
   border: 1px solid color-mix(in srgb, var(--composer-inner-border) 94%, transparent);
   border-radius: 28px;
-  background:
-    linear-gradient(
-      90deg,
-      color-mix(in srgb, var(--surface-float) 80%, transparent),
-      color-mix(in srgb, var(--composer-inner-bg) 84%, transparent),
-      color-mix(in srgb, var(--surface-float) 80%, transparent)
-    );
-  background-size: 220% 100%;
-  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.2);
+  background: color-mix(in srgb, var(--composer-inner-bg) 84%, transparent);
   box-sizing: border-box;
-  animation: lazyPanelShimmer 900ms linear infinite;
+  animation: lazyPanelPulse 900ms ease-in-out infinite;
 }
 
 :global(:root[data-theme="light"]) .composerLazyFallback::before {
-  background:
-    linear-gradient(
-      90deg,
-      color-mix(in srgb, var(--surface-float) 84%, white),
-      color-mix(in srgb, var(--composer-inner-bg) 90%, white),
-      color-mix(in srgb, var(--surface-float) 84%, white)
-    );
+  background: color-mix(in srgb, var(--composer-inner-bg) 90%, white);
 }
 
 .modalLazyFallback {
@@ -348,18 +145,18 @@
 }
 
 @keyframes searchBarPresenceOut {
-  from { opacity: 1; transform: translateY(0); }
-  to   { opacity: 0; transform: translateY(-6px); }
+  from { opacity: 1; }
+  to   { opacity: 0; }
 }
 
 @keyframes mediaPanelPresenceOut {
-  from { opacity: 1; transform: translateX(0); }
-  to   { opacity: 0; transform: translateX(18px); }
+  from { opacity: 1; }
+  to   { opacity: 0; }
 }
 
-@keyframes lazyPanelShimmer {
-  from { background-position: 100% 0; }
-  to   { background-position: -120% 0; }
+@keyframes lazyPanelPulse {
+  0%, 100% { opacity: 0.62; }
+  50% { opacity: 1; }
 }
 
 @keyframes modalLazySpin {
@@ -395,46 +192,9 @@
   line-height: 1.45;
 }
 
-:global(:root[data-theme="light"]) .sidebarHeader {
-  background: var(--bg-secondary);
-}
-
 @media (max-width: 640px) {
   :global(:root) {
     --panel-header-height: 68px;
-  }
-
-  .sidebar {
-    position: absolute;
-    inset: 0;
-    width: 100%;
-    min-width: 0;
-    max-width: 100%;
-    border-right: 0;
-    padding: 0.65rem;
-    padding-right: 0.65rem;
-    padding-bottom: calc(6.5rem + var(--safe-bottom));
-  }
-
-  .sidebarHeader {
-    margin: -0.65rem -0.65rem 0;
-    padding: 0 0.74rem;
-  }
-
-  .iconBtn {
-    --icon-button-size: 38px;
-  }
-
-  .threadActionGroup {
-    gap: 0.24rem;
-  }
-
-  .threadChromeSlot {
-    padding: 0 0 0.14rem;
-  }
-
-  .desktopOnlyAction {
-    display: none !important;
   }
 }
 
@@ -463,13 +223,13 @@
 }
 
 @keyframes bannerIn {
-  from { opacity: 0; transform: translateY(-100%); }
-  to   { opacity: 1; transform: translateY(0); }
+  from { opacity: 0; }
+  to   { opacity: 1; }
 }
 
 @keyframes bannerOut {
-  from { opacity: 1; transform: translateY(0); }
-  to   { opacity: 0; transform: translateY(-100%); }
+  from { opacity: 1; }
+  to   { opacity: 0; }
 }
 
 /* ─── Call notification banners ─────────────────────────────────────────────── */
@@ -576,7 +336,6 @@
     border: 1px solid color-mix(in srgb, var(--panel-border-soft) 88%, transparent);
     border-radius: 14px;
     padding: 0.52rem 0.62rem;
-    box-shadow: var(--elevated-shadow-sm);
   }
 
   .callAlertBannerText {
@@ -597,9 +356,6 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .iconBtn,
-  .quickActionBtn,
-  .sidebar,
   .main,
   .chatNotice,
   .chatNoticeClosing,

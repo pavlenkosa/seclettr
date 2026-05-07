@@ -1,11 +1,10 @@
 .root {
   --inline-notice-border: color-mix(in srgb, var(--panel-border-soft) 88%, transparent);
-  --inline-notice-bg-start: color-mix(in srgb, var(--surface-float) 74%, transparent);
-  --inline-notice-bg-end: color-mix(in srgb, var(--surface-shell) 82%, transparent);
+  --inline-notice-bg: var(--surface-shell);
   --inline-notice-color: var(--text-primary);
   border: 1px solid var(--inline-notice-border);
   border-radius: 12px;
-  background: linear-gradient(180deg, var(--inline-notice-bg-start), var(--inline-notice-bg-end));
+  background: var(--inline-notice-bg);
   color: var(--inline-notice-color);
 }
 
@@ -24,21 +23,18 @@
 
 .info {
   --inline-notice-border: color-mix(in srgb, var(--panel-border-soft) 88%, transparent);
-  --inline-notice-bg-start: color-mix(in srgb, var(--panel-header-bg) 78%, var(--bg-secondary));
-  --inline-notice-bg-end: color-mix(in srgb, var(--surface-shell) 72%, transparent);
+  --inline-notice-bg: var(--surface-shell);
   --inline-notice-color: var(--text-primary);
 }
 
 .warning {
   --inline-notice-border: color-mix(in srgb, #f59e0b 34%, var(--panel-border-soft));
-  --inline-notice-bg-start: color-mix(in srgb, #f59e0b 12%, var(--panel-header-bg));
-  --inline-notice-bg-end: color-mix(in srgb, #f59e0b 8%, var(--surface-shell));
+  --inline-notice-bg: color-mix(in srgb, #f59e0b 10%, var(--surface-shell));
   --inline-notice-color: var(--text-secondary);
 }
 
 .error {
   --inline-notice-border: var(--danger-soft-border);
-  --inline-notice-bg-start: var(--danger-soft-bg);
-  --inline-notice-bg-end: color-mix(in srgb, var(--danger-soft-bg) 84%, var(--surface-shell));
+  --inline-notice-bg: var(--danger-soft-bg);
   --inline-notice-color: var(--danger-contrast);
 }

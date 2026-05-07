@@ -11,9 +11,7 @@
   justify-content: center;
   line-height: 0;
   flex-shrink: 0;
-  box-shadow: var(--icon-button-shadow, var(--icon-button-shadow-base, none));
-  transform: var(--icon-button-transform, none);
-  transition: background-color 0.12s ease, border-color 0.12s ease, color 0.12s ease, transform 0.12s ease, box-shadow 0.12s ease;
+  transition: background-color 0.12s ease, border-color 0.12s ease, color 0.12s ease, opacity 0.12s ease;
 }
 
 .button :global(svg) {
@@ -24,33 +22,25 @@
   background: var(--icon-button-bg-hover, var(--icon-button-bg-hover-base, var(--icon-btn-hover-bg)));
   border-color: var(--icon-button-border-hover, var(--icon-button-border-hover-base, color-mix(in srgb, var(--accent) 28%, var(--icon-btn-border))));
   color: var(--icon-button-color-hover, var(--icon-button-color-hover-base, var(--icon-btn-hover-color)));
-  box-shadow: var(--icon-button-shadow-hover, var(--icon-button-shadow-hover-base, var(--icon-button-shadow, var(--icon-button-shadow-base, none))));
-  transform: var(--icon-button-transform-hover, none);
 }
 
 .button:active:not(:disabled) {
   background: var(--icon-button-bg-active, var(--icon-button-bg-hover, var(--icon-button-bg-hover-base, var(--icon-button-bg, var(--icon-button-bg-base)))));
   border-color: var(--icon-button-border-active, var(--icon-button-border-hover, var(--icon-button-border-hover-base, var(--icon-button-border, var(--icon-button-border-base)))));
-  box-shadow: var(--icon-button-shadow-active, var(--icon-button-shadow-hover, var(--icon-button-shadow-hover-base, var(--icon-button-shadow, var(--icon-button-shadow-base, none)))));
-  transform: var(--icon-button-transform-active, translateY(0));
 }
 
 .button:disabled {
   cursor: not-allowed;
   opacity: 0.58;
-  transform: var(--icon-button-transform, none);
 }
 
 .ghost {
   --icon-button-bg-base: transparent;
   --icon-button-border-base: color-mix(in srgb, var(--panel-border-soft) 28%, transparent);
   --icon-button-color-base: color-mix(in srgb, var(--text-primary) 82%, var(--text-secondary) 18%);
-  --icon-button-blur-base: 0px;
-  --icon-button-shadow-base: none;
   --icon-button-bg-hover-base: color-mix(in srgb, var(--accent) 10%, transparent);
   --icon-button-border-hover-base: color-mix(in srgb, var(--accent) 22%, transparent);
   --icon-button-color-hover-base: var(--text-primary);
-  --icon-button-shadow-hover-base: none;
 }
 
 .active {
@@ -58,7 +48,6 @@
   --icon-button-bg-hover: color-mix(in srgb, var(--accent) 28%, var(--icon-button-bg-hover-base, var(--icon-btn-hover-bg)));
   --icon-button-border: color-mix(in srgb, var(--accent) 48%, var(--icon-button-border-base, var(--icon-btn-border)));
   --icon-button-border-hover: color-mix(in srgb, var(--accent) 56%, var(--icon-button-border-hover-base, var(--icon-btn-border)));
-  --icon-button-shadow: var(--icon-button-shadow-active-base, var(--icon-button-shadow-base, none));
 }
 
 .ghost.active {
@@ -69,8 +58,8 @@
 }
 
 .danger {
-  --icon-button-bg: linear-gradient(145deg, #ef4444, #b91c1c);
-  --icon-button-bg-hover: linear-gradient(145deg, #f05252, #dc2626);
+  --icon-button-bg: var(--danger);
+  --icon-button-bg-hover: color-mix(in srgb, var(--danger) 88%, var(--bg-secondary));
   --icon-button-border: rgb(252 165 165 / 0.45);
   --icon-button-border-hover: rgb(252 165 165 / 0.58);
   --icon-button-color: #fff;

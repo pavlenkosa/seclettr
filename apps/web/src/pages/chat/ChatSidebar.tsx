@@ -6,7 +6,7 @@ import { ConversationList } from "@/chats/presentation/ConversationList";
 import { SeclettrMark } from "@/components/common/SeclettrMark";
 import { IconButton } from "@/components/ui";
 
-import styles from "@/pages/ChatPage.module.css";
+import styles from "./ChatSidebar.module.css";
 
 /**
  * Props for the persistent chat list sidebar.
@@ -73,19 +73,19 @@ export function ChatSidebar({
 
   return (
     <aside className={styles.sidebar} data-testid="chat-sidebar">
-      <div className={styles.sidebarHeader}>
-        <div className={styles.sidebarBrand}>
-          <span className={styles.sidebarBrandMark} aria-hidden="true">
+      <div className={styles.header}>
+        <div className={styles.brand}>
+          <span className={styles.brandMark} aria-hidden="true">
             <SeclettrMark decorative />
           </span>
-          <div className={styles.sidebarBrandCopy}>
-            <span className={styles.sidebarTitle}>{t("chat.sidebarTitle")}</span>
+          <div className={styles.brandCopy}>
+            <span className={styles.title}>{t("chat.sidebarTitle")}</span>
             {username ? (
-              <span className={styles.sidebarUsername}>@{username}</span>
+              <span className={styles.username}>@{username}</span>
             ) : null}
           </div>
         </div>
-        <div className={styles.sidebarActions}>
+        <div className={styles.actions}>
           <IconButton
             onClick={onOpenNewChat}
             className={`${styles.iconBtn} ${styles.desktopOnlyAction}`}
@@ -113,7 +113,7 @@ export function ChatSidebar({
             </svg>
           </IconButton>
 
-          <span className={`${styles.sidebarActionDivider} ${styles.desktopOnlyAction}`} aria-hidden="true" />
+          <span className={`${styles.actionDivider} ${styles.desktopOnlyAction}`} aria-hidden="true" />
 
           <IconButton
             onClick={onOpenSettings}
@@ -165,14 +165,14 @@ export function ChatSidebar({
         </div>
       </div>
 
-      <div className={styles.sidebarSearch}>
-        <svg className={styles.sidebarSearchIcon} width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+      <div className={styles.search}>
+        <svg className={styles.searchIcon} width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true">
           <circle cx="6.5" cy="6.5" r="4.5" stroke="currentColor" strokeWidth="1.5" />
           <path d="M10.5 10.5L14 14" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
         </svg>
         <input
           type="search"
-          className={styles.sidebarSearchInput}
+          className={styles.searchInput}
           value={searchQuery}
           onChange={handleSearchChange}
           placeholder={t("chat.search.placeholder")}
@@ -181,7 +181,7 @@ export function ChatSidebar({
         {searchQuery && (
           <button
             type="button"
-            className={styles.sidebarSearchClear}
+            className={styles.searchClear}
             onClick={handleSearchClear}
             aria-label={t("chat.search.clear")}
           >

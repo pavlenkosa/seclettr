@@ -17,7 +17,6 @@
   border-top: 1px solid color-mix(in srgb, var(--panel-border-soft) 82%, transparent);
   border-radius: 0;
   background: color-mix(in srgb, var(--bg-secondary) 96%, var(--bg-primary));
-  box-shadow: var(--elevated-shadow-sm);
   transition:
     background-color var(--motion-duration-fast) var(--motion-ease-standard),
     opacity var(--motion-duration-base) var(--motion-ease-standard);

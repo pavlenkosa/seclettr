@@ -46,41 +46,30 @@
   border: 1px solid color-mix(in srgb, var(--panel-border-soft) 80%, transparent);
   background: color-mix(in srgb, var(--surface-float) 90%, transparent);
   color: var(--text-primary);
-  box-shadow:
-    inset 0 1px 0 rgb(255 255 255 / 0.08),
-    0 8px 20px rgb(2 8 20 / 0.22);
   cursor: pointer;
   opacity: 0;
   pointer-events: none;
   transition:
     background var(--motion-duration-fast) var(--motion-ease-standard),
-    box-shadow var(--motion-duration-fast) var(--motion-ease-standard),
-    transform var(--motion-duration-base) var(--motion-ease-emphasized),
     opacity var(--motion-duration-base) var(--motion-ease-emphasized);
-  transform: translateY(10px) scale(0.9);
 }
 
 .jumpToBottomVisible {
   opacity: 1;
   pointer-events: auto;
-  transform: translateY(0) scale(1);
 }
 
 .jumpToBottomHidden {
   opacity: 0;
   pointer-events: none;
-  transform: translateY(10px) scale(0.9);
 }
 
 .jumpToBottom:hover {
   background: color-mix(in srgb, var(--accent) 14%, var(--surface-float));
-  box-shadow:
-    inset 0 1px 0 rgb(255 255 255 / 0.1),
-    0 10px 24px rgb(2 8 20 / 0.26);
 }
 
 .jumpToBottom:active {
-  transform: scale(0.92);
+  background: color-mix(in srgb, var(--accent) 20%, var(--surface-float));
 }
 
 .jumpToBottomBadge {
@@ -99,19 +88,12 @@
   font-size: 0.64rem;
   font-weight: 800;
   letter-spacing: 0.01em;
-  box-shadow:
-    0 6px 16px rgb(4 12 30 / 0.26),
-    inset 0 1px 0 rgb(255 255 255 / 0.2);
   opacity: 0;
-  transform: scale(0.8);
-  transition:
-    opacity var(--motion-duration-fast) var(--motion-ease-standard),
-    transform var(--motion-duration-fast) var(--motion-ease-standard);
+  transition: opacity var(--motion-duration-fast) var(--motion-ease-standard);
 }
 
 .jumpToBottomBadgeVisible {
   opacity: 1;
-  transform: scale(1);
 }
 
 .composerRail {
@@ -128,13 +110,7 @@
   position: absolute;
   inset: 0.18rem 0 0;
   pointer-events: none;
-  background:
-    linear-gradient(
-      180deg,
-      rgb(255 255 255 / 0),
-      color-mix(in srgb, var(--bg-primary) 74%, transparent) 36%,
-      color-mix(in srgb, var(--bg-primary) 92%, transparent)
-    );
+  background: color-mix(in srgb, var(--bg-primary) 92%, transparent);
 }
 
 .empty {
@@ -150,7 +126,6 @@
   border: 1px solid color-mix(in srgb, var(--panel-border-soft) 92%, transparent);
   border-radius: 0;
   background: var(--bg-secondary);
-  box-shadow: var(--elevated-shadow-sm);
   color: var(--text-secondary);
   font-size: 0.9375rem;
   text-align: center;
@@ -197,7 +172,6 @@
   font-weight: 700;
   text-align: center;
   padding: 1rem 2rem;
-  text-shadow: 0 1px 4px rgb(0 0 0 / 0.4);
 }
 
 @keyframes dropOverlayIn {

@@ -6,16 +6,8 @@
   padding: var(--icon-pill-padding, 0 0.8rem);
   border-radius: 999px;
   border: 1px solid color-mix(in srgb, var(--panel-border-soft) 88%, transparent);
-  background:
-    linear-gradient(
-      180deg,
-      color-mix(in srgb, var(--surface-float) 72%, transparent),
-      color-mix(in srgb, var(--surface-shell) 82%, transparent)
-    );
+  background: var(--surface-shell);
   color: var(--text-primary);
-  box-shadow:
-    inset 0 1px 0 rgb(255 255 255 / 0.12),
-    0 8px 18px rgb(15 23 42 / 0.06);
 }
 
 .icon {

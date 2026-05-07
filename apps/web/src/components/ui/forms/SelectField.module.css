@@ -8,12 +8,13 @@
   border: 1px solid color-mix(in srgb, var(--panel-border-soft) 92%, transparent);
   background: color-mix(in srgb, var(--surface-shell) 88%, transparent);
   color: var(--text-primary);
-  transition: border-color 0.14s ease, background-color 0.14s ease, box-shadow 0.14s ease;
+  transition: border-color 0.14s ease, background-color 0.14s ease, outline-color 0.14s ease;
 }
 
 .root:focus-within {
   border-color: var(--accent);
-  box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 22%, transparent);
+  outline: 2px solid color-mix(in srgb, var(--accent) 22%, transparent);
+  outline-offset: -2px;
 }
 
 .md {

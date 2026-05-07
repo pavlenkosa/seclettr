@@ -28,7 +28,7 @@ fieldset{
   color: var(--text-primary);
   font-size: 0.84rem;
   font-weight: 600;
-  transition: border-color 0.14s ease, background-color 0.14s ease, color 0.14s ease, transform 0.14s ease;
+  transition: border-color 0.14s ease, background-color 0.14s ease, color 0.14s ease;
 }
 
 .grouped .button {

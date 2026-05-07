@@ -99,30 +99,30 @@
   width: 34px;
   height: 34px;
   border-radius: 999px;
-  border: 2px solid rgb(255 255 255 / 0.24);
-  box-shadow: none;
-  transition: transform 0.16s ease, border-color 0.16s ease, box-shadow 0.16s ease;
+  border: 2px solid color-mix(in srgb, var(--panel-border-soft) 86%, transparent);
+  transition: border-color 0.16s ease, outline-color 0.16s ease;
 }
 
 .swatchBtnActive {
-  transform: none;
-  box-shadow: none;
+  border-color: color-mix(in srgb, var(--accent) 72%, var(--panel-border-soft));
+  outline: 2px solid color-mix(in srgb, var(--accent) 24%, transparent);
+  outline-offset: 2px;
 }
 
 .swatchBlue {
-  background: linear-gradient(145deg, #0ea5e9, #2563eb);
+  background: #2563eb;
 }
 
 .swatchEmerald {
-  background: linear-gradient(145deg, #10b981, #059669);
+  background: #059669;
 }
 
 .swatchRose {
-  background: linear-gradient(145deg, #fb7185, #e11d48);
+  background: #e11d48;
 }
 
 .swatchViolet {
-  background: linear-gradient(145deg, #a78bfa, #7c3aed);
+  background: #7c3aed;
 }
 
 .feedbackPanel,
@@ -148,14 +148,8 @@
   content: "";
   position: absolute;
   inset: 0;
-  transform: translateX(-100%);
-  background: linear-gradient(
-    90deg,
-    transparent,
-    color-mix(in srgb, var(--surface-float) 30%, transparent),
-    transparent
-  );
-  animation: settingsSkeletonSweep 1.35s ease-in-out infinite;
+  background: color-mix(in srgb, var(--accent) 6%, transparent);
+  animation: settingsSkeletonPulse 1.1s ease-in-out infinite;
   pointer-events: none;
 }
 
@@ -195,11 +189,7 @@
 .skeletonLine {
   display: block;
   border-radius: 999px;
-  background: linear-gradient(
-    90deg,
-    color-mix(in srgb, var(--text-muted) 14%, transparent),
-    color-mix(in srgb, var(--accent) 10%, transparent)
-  );
+  background: color-mix(in srgb, var(--text-muted) 14%, transparent);
 }
 
 .skeletonEyebrow {
@@ -234,10 +224,9 @@
   height: 34px;
 }
 
-@keyframes settingsSkeletonSweep {
-  100% {
-    transform: translateX(100%);
-  }
+@keyframes settingsSkeletonPulse {
+  0%, 100% { opacity: 0.42; }
+  50% { opacity: 0.74; }
 }
 
 .note,
@@ -270,7 +259,6 @@
   border-radius: 8px;
   border: 1px solid color-mix(in srgb, var(--accent) 14%, var(--panel-border-soft));
   background: var(--bg-secondary);
-  box-shadow: var(--elevated-shadow-sm);
 }
 
 .deviceMeta {
@@ -371,7 +359,6 @@
 @media (prefers-reduced-motion: reduce) {
   .swatchBtn {
     transition: none !important;
-    transform: none !important;
   }
 
   .skeletonGroupPanel::after {

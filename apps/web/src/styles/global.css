@@ -58,7 +58,7 @@
 
   --accent: #3b82f6;
   --accent-hover: #2563eb;
-  --accent-gradient: linear-gradient(145deg, #2ea6ff, #2f6fff);
+  --accent-gradient: var(--accent);
 
   --app-glow-left: transparent;
   --app-glow-right: transparent;
@@ -162,7 +162,7 @@
 
   --accent: #2563eb;
   --accent-hover: #1d4ed8;
-  --accent-gradient: linear-gradient(145deg, #3b82f6, #2563eb);
+  --accent-gradient: var(--accent);
 
   --app-glow-left: transparent;
   --app-glow-right: transparent;
@@ -246,11 +246,11 @@
 :root[data-accent="blue"] {
   --accent: #2563eb;
   --accent-hover: #1d4ed8;
-  --accent-gradient: linear-gradient(145deg, #0ea5e9, #2563eb);
+  --accent-gradient: var(--accent);
   --avatar-grad-start: #0ea5e9;
   --avatar-grad-end: #2563eb;
   --message-ui-accent: #7fd2ff;
-  --message-out-bg: linear-gradient(145deg, rgb(2 132 199 / 0.92), rgb(37 99 235 / 0.92));
+  --message-out-bg: var(--accent);
   --message-out-tail: #2563eb;
   --list-item-active-bg: rgb(37 99 235 / 0.32);
   --list-item-active-ring: rgb(56 189 248 / 0.28);
@@ -260,18 +260,18 @@
 
 :root[data-theme="light"][data-accent="blue"] {
   --message-ui-accent: #2563eb;
-  --message-out-bg: linear-gradient(145deg, rgb(37 99 235 / 0.95), rgb(59 130 246 / 0.95));
+  --message-out-bg: var(--accent);
   --message-out-tail: #2563eb;
 }
 
 :root[data-accent="emerald"] {
   --accent: #059669;
   --accent-hover: #047857;
-  --accent-gradient: linear-gradient(145deg, #10b981, #059669);
+  --accent-gradient: var(--accent);
   --avatar-grad-start: #34d399;
   --avatar-grad-end: #059669;
   --message-ui-accent: #6ee7d4;
-  --message-out-bg: linear-gradient(145deg, rgb(15 118 110 / 0.94), rgb(13 148 136 / 0.92));
+  --message-out-bg: var(--accent);
   --message-out-tail: #0f766e;
   --list-item-active-bg: rgb(5 150 105 / 0.3);
   --list-item-active-ring: rgb(52 211 153 / 0.32);
@@ -283,7 +283,7 @@
 
 :root[data-theme="light"][data-accent="emerald"] {
   --message-ui-accent: #0f766e;
-  --message-out-bg: linear-gradient(145deg, rgb(15 118 110 / 0.92), rgb(20 184 166 / 0.9));
+  --message-out-bg: var(--accent);
   --message-out-tail: #0f766e;
   --list-item-active-bg: rgb(209 250 229 / 0.92);
   --list-item-active-ring: rgb(5 150 105 / 0.32);
@@ -294,11 +294,11 @@
 :root[data-accent="rose"] {
   --accent: #e11d48;
   --accent-hover: #be123c;
-  --accent-gradient: linear-gradient(145deg, #fb7185, #e11d48);
+  --accent-gradient: var(--accent);
   --avatar-grad-start: #fb7185;
   --avatar-grad-end: #e11d48;
   --message-ui-accent: #f9a8b4;
-  --message-out-bg: linear-gradient(145deg, rgb(190 24 93 / 0.92), rgb(157 23 77 / 0.94));
+  --message-out-bg: var(--accent);
   --message-out-tail: #9d174d;
   --list-item-active-bg: rgb(225 29 72 / 0.28);
   --list-item-active-ring: rgb(251 113 133 / 0.34);
@@ -310,7 +310,7 @@
 
 :root[data-theme="light"][data-accent="rose"] {
   --message-ui-accent: #be123c;
-  --message-out-bg: linear-gradient(145deg, rgb(225 29 72 / 0.9), rgb(244 63 94 / 0.88));
+  --message-out-bg: var(--accent);
   --message-out-tail: #e11d48;
   --list-item-active-bg: rgb(255 228 230 / 0.92);
   --list-item-active-ring: rgb(225 29 72 / 0.32);
@@ -321,11 +321,11 @@
 :root[data-accent="violet"] {
   --accent: #7c3aed;
   --accent-hover: #6d28d9;
-  --accent-gradient: linear-gradient(145deg, #a78bfa, #7c3aed);
+  --accent-gradient: var(--accent);
   --avatar-grad-start: #a78bfa;
   --avatar-grad-end: #7c3aed;
   --message-ui-accent: #c4b5fd;
-  --message-out-bg: linear-gradient(145deg, rgb(109 40 217 / 0.92), rgb(91 33 182 / 0.94));
+  --message-out-bg: var(--accent);
   --message-out-tail: #6d28d9;
   --list-item-active-bg: rgb(124 58 237 / 0.28);
   --list-item-active-ring: rgb(167 139 250 / 0.34);
@@ -337,7 +337,7 @@
 
 :root[data-theme="light"][data-accent="violet"] {
   --message-ui-accent: #6d28d9;
-  --message-out-bg: linear-gradient(145deg, rgb(124 58 237 / 0.9), rgb(139 92 246 / 0.88));
+  --message-out-bg: var(--accent);
   --message-out-tail: #7c3aed;
   --list-item-active-bg: rgb(237 233 254 / 0.92);
   --list-item-active-ring: rgb(124 58 237 / 0.3);

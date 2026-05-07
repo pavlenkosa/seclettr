@@ -2,12 +2,10 @@
   --surface-panel-bg-start: var(--surface-float);
   --surface-panel-bg-end: var(--surface-shell-strong);
   --surface-panel-border: color-mix(in srgb, var(--panel-border-soft) 90%, transparent);
-  --surface-panel-shadow: var(--elevated-shadow-sm);
   position: relative;
   overflow: visible;
   border: 1px solid var(--surface-panel-border);
   background: var(--surface-panel-bg-start);
-  box-shadow: var(--surface-panel-shadow);
   background-clip: padding-box;
 }
 
@@ -31,7 +29,6 @@
   --surface-panel-border: color-mix(in srgb, var(--panel-border-soft) 94%, transparent);
   --surface-panel-bg-start: color-mix(in srgb, var(--surface-float) 82%, white);
   --surface-panel-bg-end: color-mix(in srgb, var(--surface-shell-strong) 86%, white);
-  --surface-panel-shadow: var(--elevated-shadow-sm);
 }
 
 :global(:root[data-theme="light"]) .accent {

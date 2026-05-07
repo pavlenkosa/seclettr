@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState, type ReactNode } from "react"
 import { useI18n } from "@/i18n";
 import { useAnimatedPresence } from "@/lib/hooks";
 import { IconButton } from "@/components/ui";
-import pageStyles from "@/pages/ChatPage.module.css";
+import actionStyles from "./ChatThreadActions.module.css";
 import styles from "./ThreadActionsDropdown.module.css";
 
 export interface ThreadActionsItem {
@@ -69,7 +69,7 @@ export function ThreadActionsDropdown({ items, disabled }: Props) {
       <IconButton
         ref={triggerRef}
         onClick={disabled ? undefined : () => setOpen((o) => !o)}
-        className={`${pageStyles.iconBtn} ${open ? pageStyles.iconBtnActive : ""}`}
+        className={`${actionStyles.iconBtn} ${open ? actionStyles.iconBtnActive : ""}`}
         size={40}
         title={t("chat.moreActions")}
         aria-label={t("chat.moreActions")}

@@ -29,6 +29,8 @@ interface SfuRequestOptions extends RequestInit {
 
 interface CreateSfuHttpClientOptions {
   sfuBaseUrl: string;
+  /** If provided, use this token directly instead of reading from the auth store. */
+  staticToken?: string;
 }
 
 type RawSfuHeaders = SfuRequestOptions["headers"];
@@ -119,6 +121,7 @@ export function createSfuHttpClient(
   options: CreateSfuHttpClientOptions
 ): SfuHttpClient {
   const ensureSfuAccessToken = async (): Promise<string | null> => {
+    if (options.staticToken) return options.staticToken;
     const token = getAccessToken();
     if (token) return token;
     // Shared refresh — deduplication across HTTP, WS, and SFU is in session.ts.

@@ -11,7 +11,7 @@ import {
   SFU_PROTOCOL_VERSION,
   SfuRoomAccessResponseSchema,
 } from "@seclettr/protocol";
-import { requireAuth } from "../../middleware/auth.js";
+import { requireAuth, requireGuestOrAuth } from "../../middleware/auth.js";
 import { query, transaction, type PoolClient } from "../../db/pool.js";
 import { config } from "../../config.js";
 import { consumeFixedWindowRateLimit } from "../../utils/fixed-window-rate-limit.js";
@@ -55,6 +55,7 @@ type ActiveCallSession = {
   group_id: string | null;
   call_type: "audio" | "video";
   status: "ringing" | "active" | "ended" | "missed" | "rejected";
+  is_room: boolean;
 };
 
 type GroupMemberRole = "owner" | "admin" | "member";
@@ -132,7 +133,7 @@ async function getActiveCallSession(
   callId: string
 ): Promise<ActiveCallSession | null> {
   const calls = await query<ActiveCallSession>(
-    `SELECT id, caller_user_id, callee_user_id, group_id, call_type, status
+    `SELECT id, caller_user_id, callee_user_id, group_id, call_type, status, is_room
      FROM call_sessions
      WHERE id = $1
        AND status IN ('ringing', 'active')`,
@@ -976,16 +977,31 @@ export async function callRoutes(fastify: FastifyInstance): Promise<void> {
 
   fastify.get<{ Params: { callId: string } }>(
     "/:callId/sfu-access",
-    { preHandler: callPreHandlers },
+    { preHandler: [enforceCallRouteRateLimit, requireGuestOrAuth] },
     async (request, reply) => {
       const { callId } = request.params;
-      const { sub: userId } = request.auth;
+      const { sub: userId, tokenUse, roomId } = request.auth;
 
       const call = await getActiveCallSession(callId);
       if (!call) {
         return reply.code(404).send({ error: "Call not found" });
       }
 
+      // Standalone room: allow guest token or authenticated host.
+      if (call.is_room) {
+        if (tokenUse === "guest") {
+          if (roomId !== callId) {
+            return reply.code(403).send({ error: "Forbidden" });
+          }
+          return SfuRoomAccessResponseSchema.parse({ version: SFU_PROTOCOL_VERSION, ok: true });
+        }
+        if (call.caller_user_id !== userId) {
+          return reply.code(403).send({ error: "Forbidden" });
+        }
+        return SfuRoomAccessResponseSchema.parse({ version: SFU_PROTOCOL_VERSION, ok: true });
+      }
+
+      // Direct call: only caller or callee.
       if (!call.group_id) {
         if (call.caller_user_id !== userId && call.callee_user_id !== userId) {
           return reply.code(403).send({ error: "Forbidden" });
@@ -996,6 +1012,7 @@ export async function callRoutes(fastify: FastifyInstance): Promise<void> {
         });
       }
 
+      // Group call: active membership required.
       if (!(await hasActiveGroupMembership(call.group_id, userId))) {
         return reply.code(403).send({ error: "Forbidden" });
       }

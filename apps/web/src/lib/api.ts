@@ -5,6 +5,7 @@
 import {
   DEVICES_PROTOCOL_VERSION,
   GROUPS_PROTOCOL_VERSION,
+  ROOMS_PROTOCOL_VERSION,
   DirectMissedCallsResponseSchema,
   GroupActiveCallSchema,
   GroupActiveCallsResponseSchema,
@@ -14,6 +15,10 @@ import {
   GroupHistoryResponseSchema,
   GroupMemberDevicesResponseSchema,
   UserDeviceDirectoryResponseSchema,
+  RoomCreateResponseSchema,
+  RoomJoinPreviewResponseSchema,
+  RoomJoinResponseSchema,
+  RoomParticipantsResponseSchema,
   safeParseVersionedWire,
   type DirectMissedCallEntry,
   type GroupActiveCall,
@@ -23,6 +28,10 @@ import {
   type GroupHistoryMessage,
   type GroupMemberPublicDevice,
   type UserDeviceDirectoryEntry,
+  type RoomCreateResponse,
+  type RoomJoinPreviewResponse,
+  type RoomJoinResponse,
+  type RoomParticipantsResponse,
 } from "@seclettr/protocol";
 import { z, type ZodTypeAny } from "zod";
 import { refreshSessionAccessToken } from "./session";
@@ -454,6 +463,56 @@ export const api = {
         body: JSON.stringify({ status }),
       }
     );
+  },
+
+  createRoom: async (body: { callType: "audio" | "video"; expiresInMinutes: number }): Promise<RoomCreateResponse> => {
+    const raw = await request<unknown>("/rooms", {
+      method: "POST",
+      body: JSON.stringify(body),
+    });
+    return parseVersionedApiPayload(RoomCreateResponseSchema, raw, ROOMS_PROTOCOL_VERSION);
+  },
+
+  getRoomPreview: async (token: string): Promise<RoomJoinPreviewResponse> => {
+    const raw = await request<unknown>(`/rooms/join/${encodeURIComponent(token)}`);
+    return parseVersionedApiPayload(RoomJoinPreviewResponseSchema, raw, ROOMS_PROTOCOL_VERSION);
+  },
+
+  redeemRoomInvite: async (token: string, body: { guestName: string }): Promise<RoomJoinResponse> => {
+    const raw = await request<unknown>(`/rooms/join/${encodeURIComponent(token)}`, {
+      method: "POST",
+      body: JSON.stringify(body),
+    });
+    return parseVersionedApiPayload(RoomJoinResponseSchema, raw, ROOMS_PROTOCOL_VERSION);
+  },
+
+  getRoomParticipants: async (callId: string, guestToken?: string): Promise<RoomParticipantsResponse> => {
+    const headers: Record<string, string> = {};
+    if (guestToken) {
+      headers["Authorization"] = `Bearer ${guestToken}`;
+    }
+    const raw = await request<unknown>(`/rooms/${encodeURIComponent(callId)}/participants`, { headers });
+    return parseVersionedApiPayload(RoomParticipantsResponseSchema, raw, ROOMS_PROTOCOL_VERSION);
+  },
+
+  joinRoomPresence: async (callId: string, guestToken?: string): Promise<void> => {
+    const headers: Record<string, string> = {};
+    if (guestToken) {
+      headers["Authorization"] = `Bearer ${guestToken}`;
+    }
+    await request<void>(`/rooms/${encodeURIComponent(callId)}/participants`, { method: "POST", headers });
+  },
+
+  leaveRoomPresence: (callId: string, guestToken?: string): void => {
+    const headers: Record<string, string> = {};
+    if (guestToken) {
+      headers["Authorization"] = `Bearer ${guestToken}`;
+    }
+    sendBestEffortKeepalive(`/rooms/${encodeURIComponent(callId)}/participants/me`, { method: "DELETE", headers });
+  },
+
+  closeRoom: async (callId: string): Promise<void> => {
+    await request<void>(`/rooms/${encodeURIComponent(callId)}`, { method: "DELETE" });
   },
 
   post: <T>(path: string, body?: unknown, options: RequestInit = {}) =>

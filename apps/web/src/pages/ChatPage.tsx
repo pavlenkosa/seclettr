@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useRef } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
 import { useShallow } from "zustand/react/shallow";
 import { useAuthStore } from "@/stores/auth";
 import type { DirectCallPanelHandle } from "@/calls/direct/model/direct-call-types";
@@ -31,6 +31,7 @@ import { ChatThreadComposer } from "./chat/ChatThreadComposer";
 import { ChatCallPanels } from "./chat/ChatCallPanels";
 import { ChatMainLayout } from "./chat/ChatMainLayout";
 import { ChatModals } from "./chat/ChatModals";
+import { CreateRoomDialog } from "./chat/CreateRoomDialog";
 import type { WorkspaceEntryState } from "./chat/chat-page-types";
 import styles from "./ChatPage.module.css";
 
@@ -97,6 +98,9 @@ export function ChatPage() {
     }))
   );
   const isMobileViewport = useIsMobileViewport();
+  const [createRoomOpen, setCreateRoomOpen] = useState(false);
+  const handleOpenCreateRoom = useCallback(() => setCreateRoomOpen(true), []);
+  const handleCloseCreateRoom = useCallback(() => setCreateRoomOpen(false), []);
   const directCallPanelRef = useRef<DirectCallPanelHandle>(null);
   const messageComposerRef = useRef<MessageComposerHandle>(null);
   const workspaceUiState = useChatWorkspaceUiState();
@@ -258,6 +262,7 @@ export function ChatPage() {
       onStartDirectCall={interactions.handleStartCall}
       onStartGroupCall={handleStartGroupCall}
       onOpenGroupMembers={interactions.handleOpenGroupMembers}
+      onCreateRoom={handleOpenCreateRoom}
       onToggleSearch={threadPaneState.handleToggleSearch}
       onToggleMediaPanel={threadPaneState.handleToggleMediaPanel}
     />
@@ -403,6 +408,12 @@ export function ChatPage() {
         activeConversation={activeConversation}
         acceptPeerIdentityChange={acceptPeerIdentityChange}
       />
+      {createRoomOpen && (
+        <CreateRoomDialog
+          onClose={handleCloseCreateRoom}
+          onRoomCreated={() => {}}
+        />
+      )}
     </div>
   );
 }

@@ -34,6 +34,7 @@ import { messageRoutes, groupMessageRoutes } from "./routes/messages/index.js";
 import { groupRoutes } from "./routes/groups/index.js";
 import { attachmentRoutes } from "./routes/attachments/index.js";
 import { callRoutes } from "./routes/calls/index.js";
+import { roomRoutes } from "./routes/rooms/index.js";
 import { pushRoutes } from "./routes/push/index.js";
 import { clientErrorRoutes } from "./routes/client-errors/index.js";
 
@@ -156,6 +157,7 @@ export async function buildApp() {
   await fastify.register(groupMessageRoutes, { prefix: "/groups" });
   await fastify.register(attachmentRoutes, { prefix: "/attachments" });
   await fastify.register(callRoutes, { prefix: "/calls" });
+  await fastify.register(roomRoutes, { prefix: "/rooms" });
   await fastify.register(pushRoutes, { prefix: "/push" });
   await fastify.register(clientErrorRoutes, { prefix: "/client-errors" });
 
@@ -245,7 +247,7 @@ export async function buildApp() {
   return fastify;
 }
 
-const EXPECTED_LATEST_MIGRATION = "017_group_crypto_epoch.sql";
+const EXPECTED_LATEST_MIGRATION = "018_standalone_rooms.sql";
 
 async function checkDbSchemaVersion(): Promise<void> {
   const rows = await query<{ filename: string }>(

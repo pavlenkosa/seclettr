@@ -7,6 +7,7 @@ import { useI18n } from "./i18n";
 import { useInactivityLock } from "./lib/useInactivityLock";
 import { AuthPage } from "./pages/AuthPage";
 import { AuthRecoveryPage } from "./pages/AuthRecoveryPage";
+import { RoomJoinPage } from "./pages/RoomJoinPage";
 import { useAuthStore } from "./stores/auth";
 import { useMessagesStore } from "./stores/messages";
 import { useGroupsStore } from "./stores/groups";
@@ -239,6 +240,11 @@ export function App() {
               )}
             />
           ) : null}
+
+          <Route
+            path="/room/:token"
+            element={<RoomJoinPage />}
+          />
 
           <Route
             path="/auth/recovery"

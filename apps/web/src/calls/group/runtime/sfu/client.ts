@@ -50,6 +50,10 @@ export interface GroupSfuClientOptions {
   onRemoteMediaUpdate?: (participants: GroupCallRemoteMedia[]) => void;
   /** Called when the send transport enters a terminal failure state. */
   onTransportFailed?: () => void;
+  /** Override SFU base URL (used for guest/room calls where SFU URL comes from the join response). */
+  sfuBaseUrl?: string;
+  /** Static bearer token for SFU auth (used for guests who have no auth store session). */
+  staticToken?: string;
 }
 
 export interface GroupSfuClient {
@@ -64,11 +68,15 @@ export interface GroupSfuClient {
   close: () => void;
 }
 
-const sfuHttpClient = createSfuHttpClient({
+const defaultSfuHttpClient = createSfuHttpClient({
   sfuBaseUrl: SFU_BASE_URL,
 });
 
 export async function startGroupSfuClient(options: GroupSfuClientOptions): Promise<GroupSfuClient> {
+  const sfuHttpClient = (options.sfuBaseUrl || options.staticToken)
+    ? createSfuHttpClient({ sfuBaseUrl: options.sfuBaseUrl ?? SFU_BASE_URL, staticToken: options.staticToken })
+    : defaultSfuHttpClient;
+
   const device = new MediasoupDevice();
   const routerRtpCapabilities = await sfuHttpClient.getRouterRtpCapabilities(options.roomId);
   await device.load({ routerRtpCapabilities });

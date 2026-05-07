@@ -20,7 +20,7 @@ CREATE TABLE room_invites (
 );
 
 CREATE INDEX ri_call_session ON room_invites (call_session_id);
-CREATE INDEX ri_token_active ON room_invites (token) WHERE expires_at > now();
+CREATE INDEX ri_expires_at ON room_invites (expires_at);
 
 CREATE TABLE room_guest_sessions (
   id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),

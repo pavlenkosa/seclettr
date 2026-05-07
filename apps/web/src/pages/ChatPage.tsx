@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useShallow } from "zustand/react/shallow";
 import { useAuthStore } from "@/stores/auth";
 import type { DirectCallPanelHandle } from "@/calls/direct/model/direct-call-types";
@@ -32,6 +32,8 @@ import { ChatCallPanels } from "./chat/ChatCallPanels";
 import { ChatMainLayout } from "./chat/ChatMainLayout";
 import { ChatModals } from "./chat/ChatModals";
 import { CreateRoomDialog } from "./chat/CreateRoomDialog";
+import { RoomCallPanel } from "@/calls/room/RoomCallPanel";
+import type { RoomCallSession } from "@/calls/room/room-call-bootstrap";
 import type { WorkspaceEntryState } from "./chat/chat-page-types";
 import styles from "./ChatPage.module.css";
 
@@ -99,8 +101,15 @@ export function ChatPage() {
   );
   const isMobileViewport = useIsMobileViewport();
   const [createRoomOpen, setCreateRoomOpen] = useState(false);
+  const [activeRoomSession, setActiveRoomSession] = useState<RoomCallSession | null>(null);
   const handleOpenCreateRoom = useCallback(() => setCreateRoomOpen(true), []);
   const handleCloseCreateRoom = useCallback(() => setCreateRoomOpen(false), []);
+  const handleLeaveRoom = useCallback(() => setActiveRoomSession(null), []);
+
+  useEffect(() => {
+    (globalThis as Record<string, unknown>).__scCreateRoom = handleOpenCreateRoom;
+    return () => { delete (globalThis as Record<string, unknown>).__scCreateRoom; };
+  }, [handleOpenCreateRoom]);
   const directCallPanelRef = useRef<DirectCallPanelHandle>(null);
   const messageComposerRef = useRef<MessageComposerHandle>(null);
   const workspaceUiState = useChatWorkspaceUiState();
@@ -262,7 +271,6 @@ export function ChatPage() {
       onStartDirectCall={interactions.handleStartCall}
       onStartGroupCall={handleStartGroupCall}
       onOpenGroupMembers={interactions.handleOpenGroupMembers}
-      onCreateRoom={handleOpenCreateRoom}
       onToggleSearch={threadPaneState.handleToggleSearch}
       onToggleMediaPanel={threadPaneState.handleToggleMediaPanel}
     />
@@ -411,8 +419,26 @@ export function ChatPage() {
       {createRoomOpen && (
         <CreateRoomDialog
           onClose={handleCloseCreateRoom}
-          onRoomCreated={() => {}}
+          onRoomCreated={(res, callType) => {
+            handleCloseCreateRoom();
+            if (!userId || !deviceId || !username) return;
+            setActiveRoomSession({
+              callId: res.callId,
+              callType,
+              participantId: userId,
+              deviceId,
+              displayName: username,
+              isGuest: false,
+              isHost: true,
+              guestToken: null,
+              sfuBaseUrl: null,
+              inviteUrl: res.inviteUrl,
+            });
+          }}
         />
+      )}
+      {activeRoomSession && (
+        <RoomCallPanel session={activeRoomSession} onLeave={handleLeaveRoom} />
       )}
     </div>
   );

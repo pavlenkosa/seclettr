@@ -1,9 +1,12 @@
 import { useCallback, useState } from "react";
+import { createPortal } from "react-dom";
 import { api } from "@/lib/api";
+import type { RoomCreateResponse } from "@seclettr/protocol";
+import styles from "./CreateRoomDialog.module.css";
 
 interface Props {
   readonly onClose: () => void;
-  readonly onRoomCreated: (callId: string, inviteUrl: string, guestToken: null) => void;
+  readonly onRoomCreated: (result: RoomCreateResponse, callType: "audio" | "video") => void;
 }
 
 type CallType = "audio" | "video";
@@ -21,183 +24,106 @@ export function CreateRoomDialog({ onClose, onRoomCreated }: Props) {
   const [expiresInMinutes, setExpiresInMinutes] = useState(60);
   const [isCreating, setIsCreating] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [createdInviteUrl, setCreatedInviteUrl] = useState<string | null>(null);
-  const [copied, setCopied] = useState(false);
 
   const handleCreate = useCallback(async () => {
     setIsCreating(true);
     setError(null);
     try {
       const res = await api.createRoom({ callType, expiresInMinutes });
-      setCreatedInviteUrl(res.inviteUrl);
-      onRoomCreated(res.callId, res.inviteUrl, null);
+      onRoomCreated(res, callType);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to create room");
       setIsCreating(false);
     }
   }, [callType, expiresInMinutes, onRoomCreated]);
 
-  const handleCopy = useCallback(async () => {
-    if (!createdInviteUrl) return;
-    try {
-      await navigator.clipboard.writeText(createdInviteUrl);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    } catch {
-      // Fallback: select the text
-    }
-  }, [createdInviteUrl]);
+  return createPortal(
+    <div
+      className={styles.overlay}
+      onClick={onClose}
+      role="presentation"
+    >
+      {/* eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions */}
+      <dialog
+        open
+        aria-modal="true"
+        aria-label="Create room call"
+        className={styles.surface}
+        onCancel={(e) => { e.preventDefault(); onClose(); }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className={styles.header}>
+          <span className={styles.headerTitle}>Create room call</span>
+          <button
+            type="button"
+            className={styles.headerClose}
+            onClick={onClose}
+            aria-label="Close"
+          >
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+              <path d="M2 2l10 10M12 2L2 12" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" />
+            </svg>
+          </button>
+        </div>
 
-  return (
-    <div style={overlayStyle} onClick={onClose}>
-      <div style={dialogStyle} onClick={(e) => e.stopPropagation()}>
-        <h3 style={{ marginBottom: 16, fontSize: "1rem", fontWeight: 600 }}>
-          Create room call
-        </h3>
+        <div className={styles.body}>
+          <div className={styles.field}>
+            <label className={styles.label}>Call type</label>
+            <div className={styles.segments}>
+              {(["audio", "video"] as CallType[]).map((type) => (
+                <button
+                  key={type}
+                  type="button"
+                  onClick={() => setCallType(type)}
+                  className={[
+                    styles.segmentButton,
+                    callType === type ? styles.segmentButtonActive : "",
+                  ].filter(Boolean).join(" ")}
+                >
+                  {type === "audio" ? "Audio" : "Video"}
+                </button>
+              ))}
+            </div>
+          </div>
 
-        {!createdInviteUrl ? (
-          <>
-            <div style={{ marginBottom: 16 }}>
-              <label style={labelStyle}>Call type</label>
-              <div style={{ display: "flex", gap: 8 }}>
-                {(["audio", "video"] as CallType[]).map((type) => (
-                  <button
-                    key={type}
-                    type="button"
-                    onClick={() => setCallType(type)}
-                    style={{
-                      ...segmentBtn,
-                      background: callType === type ? "var(--color-accent, #3b82f6)" : "var(--bg-secondary, #333)",
-                    }}
-                  >
-                    {type === "audio" ? "Audio" : "Video"}
-                  </button>
-                ))}
-              </div>
-            </div>
+          <div className={styles.field}>
+            <label className={styles.label}>Link expires after</label>
+            <select
+              value={expiresInMinutes}
+              onChange={(e) => setExpiresInMinutes(Number(e.target.value))}
+              className={styles.select}
+            >
+              {TTL_OPTIONS.map((opt) => (
+                <option key={opt.minutes} value={opt.minutes}>
+                  {opt.label}
+                </option>
+              ))}
+            </select>
+          </div>
 
-            <div style={{ marginBottom: 20 }}>
-              <label style={labelStyle}>Link expires after</label>
-              <select
-                value={expiresInMinutes}
-                onChange={(e) => setExpiresInMinutes(Number(e.target.value))}
-                style={selectStyle}
-              >
-                {TTL_OPTIONS.map((opt) => (
-                  <option key={opt.minutes} value={opt.minutes}>
-                    {opt.label}
-                  </option>
-                ))}
-              </select>
-            </div>
+          {error && <p className={styles.error}>{error}</p>}
+        </div>
 
-            {error && (
-              <p style={{ color: "var(--color-danger, red)", marginBottom: 12, fontSize: "0.875rem" }}>
-                {error}
-              </p>
-            )}
-
-            <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
-              <button type="button" onClick={onClose} style={cancelBtnStyle} disabled={isCreating}>
-                Cancel
-              </button>
-              <button type="button" onClick={() => void handleCreate()} style={createBtnStyle} disabled={isCreating}>
-                {isCreating ? "Creating…" : "Create room"}
-              </button>
-            </div>
-          </>
-        ) : (
-          <>
-            <p style={{ marginBottom: 12, fontSize: "0.875rem", opacity: 0.8 }}>
-              Room created! Share this link with participants:
-            </p>
-            <div style={{ display: "flex", gap: 8, marginBottom: 16, alignItems: "center" }}>
-              <input
-                readOnly
-                value={createdInviteUrl}
-                style={{ ...selectStyle, flex: 1, fontSize: "0.8rem" }}
-                onClick={(e) => (e.target as HTMLInputElement).select()}
-              />
-              <button type="button" onClick={() => void handleCopy()} style={createBtnStyle}>
-                {copied ? "Copied!" : "Copy"}
-              </button>
-            </div>
-            <div style={{ display: "flex", justifyContent: "flex-end" }}>
-              <button type="button" onClick={onClose} style={cancelBtnStyle}>
-                Close
-              </button>
-            </div>
-          </>
-        )}
-      </div>
-    </div>
+        <div className={styles.footer}>
+          <button
+            type="button"
+            onClick={onClose}
+            className={`${styles.button} ${styles.secondaryButton}`}
+            disabled={isCreating}
+          >
+            Cancel
+          </button>
+          <button
+            type="button"
+            onClick={() => void handleCreate()}
+            className={`${styles.button} ${styles.primaryButton}`}
+            disabled={isCreating}
+          >
+            {isCreating ? "Creating…" : "Start room"}
+          </button>
+        </div>
+      </dialog>
+    </div>,
+    document.body
   );
 }
-
-const overlayStyle: React.CSSProperties = {
-  position: "fixed",
-  inset: 0,
-  background: "rgba(0,0,0,0.6)",
-  display: "flex",
-  alignItems: "center",
-  justifyContent: "center",
-  zIndex: 1000,
-};
-
-const dialogStyle: React.CSSProperties = {
-  background: "var(--bg-primary, #1a1a1a)",
-  border: "1px solid var(--border-subtle, #333)",
-  borderRadius: 12,
-  padding: 24,
-  width: "min(90vw, 400px)",
-  color: "var(--text-primary, #fff)",
-};
-
-const labelStyle: React.CSSProperties = {
-  display: "block",
-  marginBottom: 8,
-  fontSize: "0.8rem",
-  opacity: 0.7,
-};
-
-const segmentBtn: React.CSSProperties = {
-  flex: 1,
-  padding: "8px 0",
-  borderRadius: 6,
-  border: "none",
-  cursor: "pointer",
-  color: "var(--text-primary, #fff)",
-  fontSize: "0.875rem",
-};
-
-const selectStyle: React.CSSProperties = {
-  display: "block",
-  width: "100%",
-  padding: "8px 12px",
-  borderRadius: 6,
-  border: "1px solid var(--border-subtle, #444)",
-  background: "var(--bg-secondary, #222)",
-  color: "var(--text-primary, #fff)",
-  fontSize: "0.875rem",
-};
-
-const cancelBtnStyle: React.CSSProperties = {
-  padding: "8px 16px",
-  borderRadius: 6,
-  border: "1px solid var(--border-subtle, #444)",
-  background: "transparent",
-  color: "var(--text-primary, #fff)",
-  cursor: "pointer",
-  fontSize: "0.875rem",
-};
-
-const createBtnStyle: React.CSSProperties = {
-  padding: "8px 16px",
-  borderRadius: 6,
-  border: "none",
-  background: "var(--color-accent, #3b82f6)",
-  color: "#fff",
-  cursor: "pointer",
-  fontSize: "0.875rem",
-  fontWeight: 600,
-};

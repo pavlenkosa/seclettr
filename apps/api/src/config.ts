@@ -70,6 +70,7 @@ const ConfigSchema = z.object({
   TURN_PORT: z.coerce.number().int().min(1).max(65535).default(3478),
   TURNS_PORT: z.coerce.number().int().min(1).max(65535).default(5349),
   SFU_URL: z.string().default("http://localhost:3002"),
+  APP_URL: z.string().default("http://localhost:5173"),
   COOKIE_SECURE: EnvBooleanSchema.default(true),
   MAX_ATTACHMENT_BYTES: z.coerce.number().int().default(100 * 1024 * 1024),
   MAX_MESSAGE_JSON_BYTES: z.coerce.number().int().min(64 * 1024).default(12 * 1024 * 1024),

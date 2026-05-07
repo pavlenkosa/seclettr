@@ -11,9 +11,12 @@ export interface RoomCallSession {
   deviceId: string;
   displayName: string;
   isGuest: boolean;
+  isHost: boolean;
   /** Guest JWT or null for authenticated host (uses auth store token). */
   guestToken: string | null;
   sfuBaseUrl: string | null;
+  /** Invite URL shown in the host UI for sharing. */
+  inviteUrl: string | null;
 }
 
 export interface RoomSfuClient {

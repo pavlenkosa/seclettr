@@ -19,7 +19,6 @@ export interface ChatThreadActionButtonsProps {
   readonly onOpenGroupMembers: () => void;
   readonly onToggleSearch: () => void;
   readonly onToggleMediaPanel: () => void;
-  readonly onCreateRoom: () => void;
 }
 
 // ── Shared SVG icons ──────────────────────────────────────────────────────────
@@ -76,25 +75,10 @@ export function ChatThreadActionButtons({
   onOpenGroupMembers,
   onToggleSearch,
   onToggleMediaPanel,
-  onCreateRoom,
 }: ChatThreadActionButtonsProps) {
   const { t } = useI18n();
 
-  const RoomIcon = (
-    <svg width="15" height="15" viewBox="0 0 16 16" fill="none">
-      <path d="M2 4h12v9a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V4Z" stroke="currentColor" strokeWidth="1.4" />
-      <path d="M0 4h16" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
-      <path d="M6 4V2.5a2 2 0 0 1 4 0V4" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
-    </svg>
-  );
-
   const sharedOverflowItems: ThreadActionsItem[] = [
-    {
-      id: "create-room",
-      labelKey: "room.create",
-      icon: RoomIcon,
-      onClick: onCreateRoom,
-    },
     {
       id: "search",
       labelKey: "chat.search.toggle",

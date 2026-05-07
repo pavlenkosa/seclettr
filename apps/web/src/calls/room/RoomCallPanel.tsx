@@ -1,27 +1,72 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
+import { useI18n } from "@/i18n";
 import { api } from "@/lib/api";
 import { joinRoomAndStartSfu, type RoomCallSession, type RoomSfuClient } from "./room-call-bootstrap";
 import type { GroupCallRemoteMedia } from "@/calls/group/runtime/sfu";
 import type { RoomParticipantsResponse } from "@seclettr/protocol";
+
+import { GroupCallControls } from "@/calls/group/presentation/components/GroupCallControls";
+import { GroupCallDock } from "@/calls/group/presentation/components/GroupCallDock";
+import { GroupCallHeader } from "@/calls/group/presentation/components/GroupCallHeader";
+import { GroupCallMediaTile } from "@/calls/group/presentation/components/GroupCallMediaTile";
+import { GroupCallRemoteAudioTargets } from "@/calls/group/presentation/components/GroupCallRemoteAudioTargets";
+import { useGroupCallPanelDock } from "@/calls/group/presentation/useGroupCallPanelDock";
+import { useCallInputDevices } from "@/calls/shared/media/input-devices/useCallInputDevices";
+import { CallAudioOutputProvider } from "@/calls/shared/media/audio-output/CallAudioOutputProvider";
+import { CallDurationText } from "@/calls/shared/presentation/CallDurationText";
+import { getMemberInitials, resolveGroupCallDockInlineStyle } from "@/calls/group/presentation/display";
+import { PillButton } from "@/components/ui";
+import { DetailsIcon } from "@/calls/group/presentation/components/GroupCallIcons";
+
+import groupStyles from "@/calls/group/presentation/GroupCallPanel.module.css";
+import styles from "./RoomCallPanel.module.css";
 
 interface Props {
   readonly session: RoomCallSession;
   readonly onLeave: () => void;
 }
 
-type Status = "connecting" | "ready" | "error" | "leaving";
+type RoomStatus = "connecting" | "ready" | "error" | "leaving";
 
 export function RoomCallPanel({ session, onLeave }: Props) {
-  const [status, setStatus] = useState<Status>("connecting");
+  const { t } = useI18n();
+
+  const [isMinimized, setIsMinimized] = useState(false);
+  const [isParticipantsOpen, setIsParticipantsOpen] = useState(false);
+  const [copied, setCopied] = useState(false);
+
+  const [status, setStatus] = useState<RoomStatus>("connecting");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isAudioMuted, setIsAudioMuted] = useState(false);
+  const [isVideoEnabled, setIsVideoEnabled] = useState(session.callType === "video");
+  const [isVideoSwitching, setIsVideoSwitching] = useState(false);
+  const [isScreenSharing, setIsScreenSharing] = useState(false);
+  const [isScreenSwitching, setIsScreenSwitching] = useState(false);
   const [remoteMedia, setRemoteMedia] = useState<GroupCallRemoteMedia[]>([]);
   const [participants, setParticipants] = useState<RoomParticipantsResponse["participants"]>([]);
-  const [localStream, setLocalStream] = useState<MediaStream | null>(null);
+  const [kickingId, setKickingId] = useState<string | null>(null);
+  const [callStartMs, setCallStartMs] = useState<number | null>(null);
 
   const sfuClientRef = useRef<RoomSfuClient | null>(null);
   const abortRef = useRef<AbortController>(new AbortController());
   const localStreamRef = useRef<MediaStream | null>(null);
+  const [localStream, setLocalStream] = useState<MediaStream | null>(null);
+
+  const {
+    isDraggingMinimizedDock,
+    minimizedDockRef,
+    dockInlineStyle,
+    resetMinimizedDock,
+    startMinimizedDockDrag,
+    moveMinimizedDock,
+    stopMinimizedDockDrag,
+  } = useGroupCallPanelDock({ isMinimized });
+
+  const { micDevices, cameraDevices, selectedMicId, selectedCameraId } = useCallInputDevices(localStream);
+
+  const handleMinimize = useCallback(() => setIsMinimized(true), []);
+  const handleRestore = useCallback(() => setIsMinimized(false), []);
 
   const stopLocalStream = useCallback(() => {
     localStreamRef.current?.getTracks().forEach((t) => t.stop());
@@ -35,16 +80,152 @@ export function RoomCallPanel({ session, onLeave }: Props) {
     sfuClientRef.current?.close();
     sfuClientRef.current = null;
     stopLocalStream();
+    resetMinimizedDock();
     onLeave();
-  }, [onLeave, stopLocalStream]);
+  }, [onLeave, stopLocalStream, resetMinimizedDock]);
+
+  const handleEndForEveryone = useCallback(() => {
+    if (!session.isHost) return;
+    setStatus("leaving");
+    abortRef.current.abort();
+    sfuClientRef.current?.close();
+    sfuClientRef.current = null;
+    stopLocalStream();
+    resetMinimizedDock();
+    void api.closeRoom(session.callId).catch(() => {});
+    onLeave();
+  }, [session.isHost, session.callId, onLeave, stopLocalStream, resetMinimizedDock]);
+
+  const handleKickGuest = useCallback(async (guestId: string) => {
+    if (!session.isHost || kickingId) return;
+    setKickingId(guestId);
+    try {
+      await api.kickRoomGuest(session.callId, guestId);
+      setParticipants((prev) => prev.filter((p) => p.id !== guestId));
+    } catch { /* best-effort */ }
+    finally { setKickingId(null); }
+  }, [session.isHost, session.callId, kickingId]);
+
+  const handleCopyInvite = useCallback(async () => {
+    if (!session.inviteUrl) return;
+    try {
+      await navigator.clipboard.writeText(session.inviteUrl);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch { /* ignore */ }
+  }, [session.inviteUrl]);
+
+  const handleToggleMute = useCallback(() => {
+    if (!localStreamRef.current) return;
+    const next = !isAudioMuted;
+    localStreamRef.current.getAudioTracks().forEach((t) => { t.enabled = !next; });
+    setIsAudioMuted(next);
+  }, [isAudioMuted]);
+
+  const handleToggleVideo = useCallback(async () => {
+    const stream = localStreamRef.current;
+    const client = sfuClientRef.current?.sfuClient;
+    if (!stream || !client || isVideoSwitching || isScreenSwitching || status !== "ready") return;
+    setIsVideoSwitching(true);
+
+    const currentTrack = stream.getVideoTracks()[0] ?? null;
+    if (currentTrack) {
+      try {
+        await client.setVideoTrack(null, "camera");
+        stream.removeTrack(currentTrack);
+        currentTrack.stop();
+        setIsVideoEnabled(false);
+      } catch { /* ignore */ }
+      finally { setIsVideoSwitching(false); }
+      return;
+    }
+
+    let nextTrack: MediaStreamTrack | null = null;
+    try {
+      const capture = await navigator.mediaDevices.getUserMedia({
+        audio: false,
+        video: { facingMode: "user", width: { ideal: 1280 }, height: { ideal: 720 }, frameRate: { ideal: 30, max: 30 } },
+      });
+      nextTrack = capture.getVideoTracks()[0] ?? null;
+      if (!nextTrack) throw new Error("No video track");
+      await client.setVideoTrack(nextTrack, "camera");
+      stream.addTrack(nextTrack);
+      setIsVideoEnabled(true);
+    } catch { nextTrack?.stop(); }
+    finally { setIsVideoSwitching(false); }
+  }, [isVideoSwitching, isScreenSwitching, status]);
+
+  const handleToggleScreenShare = useCallback(async () => {
+    const stream = localStreamRef.current;
+    const client = sfuClientRef.current?.sfuClient;
+    if (!stream || !client || isScreenSwitching || isVideoSwitching || status !== "ready") return;
+    setIsScreenSwitching(true);
+
+    if (isScreenSharing) {
+      const screenTrack = stream.getVideoTracks().find((t) => t.label.includes("screen") || t.contentHint === "detail") ?? null;
+      try {
+        await client.setVideoTrack(null, "screen");
+        if (screenTrack) { stream.removeTrack(screenTrack); screenTrack.stop(); }
+        setIsScreenSharing(false);
+      } catch { /* ignore */ }
+      finally { setIsScreenSwitching(false); }
+      return;
+    }
+
+    let nextTrack: MediaStreamTrack | null = null;
+    try {
+      const capture = await navigator.mediaDevices.getDisplayMedia({ audio: false, video: { frameRate: { ideal: 15, max: 30 } } });
+      nextTrack = capture.getVideoTracks()[0] ?? null;
+      if (!nextTrack) throw new Error("No screen track");
+      await client.setVideoTrack(nextTrack, "screen");
+      stream.addTrack(nextTrack);
+      setIsScreenSharing(true);
+      nextTrack.addEventListener("ended", () => void handleToggleScreenShare(), { once: true });
+    } catch { nextTrack?.stop(); }
+    finally { setIsScreenSwitching(false); }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isScreenSwitching, isVideoSwitching, isScreenSharing, status]);
+
+  const handleSwitchMic = useCallback(async (deviceId: string) => {
+    const stream = localStreamRef.current;
+    const client = sfuClientRef.current?.sfuClient;
+    if (!stream || status !== "ready") return;
+    let nextTrack: MediaStreamTrack | null = null;
+    try {
+      const capture = await navigator.mediaDevices.getUserMedia({ audio: { deviceId: { exact: deviceId } }, video: false });
+      nextTrack = capture.getAudioTracks()[0] ?? null;
+      if (!nextTrack) throw new Error("No audio track");
+      const wasMuted = !stream.getAudioTracks()[0]?.enabled;
+      nextTrack.enabled = !wasMuted;
+      const old = stream.getAudioTracks()[0] ?? null;
+      if (old) { stream.removeTrack(old); old.stop(); }
+      stream.addTrack(nextTrack);
+      if (client) await client.setAudioTrack(nextTrack);
+    } catch { nextTrack?.stop(); }
+  }, [status]);
+
+  const handleSwitchCamera = useCallback(async (deviceId: string) => {
+    const stream = localStreamRef.current;
+    const client = sfuClientRef.current?.sfuClient;
+    if (!stream || !client || status !== "ready") return;
+    let nextTrack: MediaStreamTrack | null = null;
+    try {
+      const capture = await navigator.mediaDevices.getUserMedia({ audio: false, video: { deviceId: { exact: deviceId } } });
+      nextTrack = capture.getVideoTracks()[0] ?? null;
+      if (!nextTrack) throw new Error("No video track");
+      const old = stream.getVideoTracks()[0] ?? null;
+      if (old) { stream.removeTrack(old); old.stop(); }
+      stream.addTrack(nextTrack);
+      await client.setVideoTrack(nextTrack, "camera");
+    } catch { nextTrack?.stop(); }
+  }, [status]);
 
   useEffect(() => {
     const ac = new AbortController();
     abortRef.current = ac;
 
-    let stream: MediaStream | null = null;
-
     const start = async () => {
+      let stream: MediaStream | null = null;
       try {
         stream = await navigator.mediaDevices.getUserMedia({
           audio: true,
@@ -53,141 +234,312 @@ export function RoomCallPanel({ session, onLeave }: Props) {
         localStreamRef.current = stream;
         setLocalStream(stream);
 
-        if (ac.signal.aborted) {
-          stream.getTracks().forEach((t) => t.stop());
-          return;
-        }
+        if (ac.signal.aborted) { stream.getTracks().forEach((t) => t.stop()); return; }
 
         const client = await joinRoomAndStartSfu(
           session,
           stream,
           (media) => setRemoteMedia(media),
-          () => {
-            if (!ac.signal.aborted) {
-              setStatus("error");
-              setErrorMessage("Connection lost. Please rejoin.");
-            }
-          },
+          () => { if (!ac.signal.aborted) { setStatus("error"); setErrorMessage("Connection lost. Please rejoin."); } },
           ac.signal
         );
 
-        if (ac.signal.aborted) {
-          client.close();
-          stream.getTracks().forEach((t) => t.stop());
-          return;
-        }
+        if (ac.signal.aborted) { client.close(); stream.getTracks().forEach((t) => t.stop()); return; }
 
         sfuClientRef.current = client;
+        setCallStartMs(Date.now());
         setStatus("ready");
       } catch (err) {
         if (ac.signal.aborted) return;
-        const message = err instanceof Error ? err.message : "Failed to connect";
         setStatus("error");
-        setErrorMessage(message);
+        setErrorMessage(err instanceof Error ? err.message : "Failed to connect");
         stream?.getTracks().forEach((t) => t.stop());
       }
     };
 
     void start();
-
     return () => {
       ac.abort();
       sfuClientRef.current?.close();
       sfuClientRef.current = null;
-      stream?.getTracks().forEach((t) => t.stop());
+      localStreamRef.current?.getTracks().forEach((t) => t.stop());
+      localStreamRef.current = null;
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Poll participants list every 10 seconds
   useEffect(() => {
     if (status !== "ready") return;
     let active = true;
-
-    const fetchParticipants = async () => {
+    const fetch = async () => {
       try {
         const res = await api.getRoomParticipants(session.callId, session.guestToken ?? undefined);
         if (active) setParticipants(res.participants);
-      } catch {
-        // Best-effort
-      }
+      } catch { /* best-effort */ }
     };
-
-    void fetchParticipants();
-    const id = setInterval(() => void fetchParticipants(), 10_000);
-    return () => {
-      active = false;
-      clearInterval(id);
-    };
+    void fetch();
+    const id = setInterval(() => void fetch(), 10_000);
+    return () => { active = false; clearInterval(id); };
   }, [status, session.callId, session.guestToken]);
 
-  const toggleMute = useCallback(() => {
-    if (!localStreamRef.current) return;
-    const enabled = !isAudioMuted;
-    localStreamRef.current.getAudioTracks().forEach((t) => {
-      t.enabled = enabled;
-    });
-    setIsAudioMuted(!enabled);
-  }, [isAudioMuted]);
+  const isReady = status === "ready";
+  const hasLocalMedia = Boolean(localStream);
+  const resolvedDockInlineStyle = resolveGroupCallDockInlineStyle(dockInlineStyle);
+  const displayInitials = session.displayName.slice(0, 2).toUpperCase();
 
-  if (status === "error") {
-    return (
-      <div style={{ padding: 24, textAlign: "center" }}>
-        <p style={{ color: "var(--color-danger, red)", marginBottom: 16 }}>
-          {errorMessage ?? "Connection error"}
-        </p>
-        <button type="button" onClick={onLeave}>
-          Leave
-        </button>
-      </div>
+  const statusLabel =
+    status === "connecting" ? t("group.call.starting")
+    : status === "leaving" ? t("group.call.leaving")
+    : status === "error" ? (errorMessage ?? "Error")
+    : t("group.call.ready");
+
+  const muteToggleLabel = isAudioMuted ? t("call.unmute") : t("call.mute");
+  const videoToggleLabel = isVideoEnabled ? t("group.call.disableVideo") : t("group.call.enableVideo");
+  const screenShareToggleLabel = isScreenSharing ? t("group.call.stopScreenShare") : t("group.call.startScreenShare");
+  const leaveLabel = t("group.call.leave");
+  const endForEveryoneLabel = t("group.call.endForEveryone");
+
+  const participantNameById = useMemo(
+    () => new Map(participants.map((participant) => [participant.id, participant.displayName])),
+    [participants]
+  );
+
+  const screenShareStream = useMemo(() => {
+    if (!isScreenSharing || !localStream) return null;
+    const track = localStream.getVideoTracks().find((t) => t.contentHint === "detail" || t.label.toLowerCase().includes("screen")) ?? null;
+    if (!track) return null;
+    const s = new MediaStream();
+    s.addTrack(track);
+    return s;
+  }, [isScreenSharing, localStream]);
+
+  const allTiles = useMemo(() => {
+    const localVideoStream = isVideoEnabled ? localStream : null;
+    const localTile = {
+      id: "local",
+      label: session.displayName,
+      stream: localVideoStream,
+      audioStream: null,
+      fallbackInitials: displayInitials,
+      badge: isAudioMuted ? t("call.mute") : undefined,
+      muted: true as const,
+      videoSource: isVideoEnabled ? ("camera" as const) : null,
+    };
+    const remoteTiles = remoteMedia.map((media) => {
+      const displayName = participantNameById.get(media.userId) ?? media.userId.slice(0, 8);
+      return {
+        id: media.mediaId,
+        label: displayName,
+        stream: media.videoStream,
+        audioStream: media.audioStream,
+        fallbackInitials: getMemberInitials(displayName),
+        badge: media.hasVideo
+          ? media.videoSource === "screen"
+            ? t("group.call.screenSharing")
+            : t("group.call.videoOn")
+          : t("group.call.audioOnly"),
+        muted: false as const,
+        videoSource: media.videoSource,
+      };
+    });
+    const screenTile = screenShareStream ? {
+      id: "local:screen",
+      label: session.displayName,
+      stream: screenShareStream,
+      audioStream: null,
+      fallbackInitials: displayInitials,
+      badge: t("group.call.screenSharing"),
+      muted: true as const,
+      videoSource: "screen" as const,
+    } : null;
+
+    return [localTile, ...(screenTile ? [screenTile] : []), ...remoteTiles];
+  }, [
+    displayInitials,
+    isAudioMuted,
+    isVideoEnabled,
+    localStream,
+    participantNameById,
+    remoteMedia,
+    screenShareStream,
+    session.displayName,
+    t,
+  ]);
+
+  // ── Dock (minimized) ─────────────────────────────────────────────────────────
+  if (isMinimized) {
+    const dockContent = (
+      <CallAudioOutputProvider>
+        <GroupCallRemoteAudioTargets remoteMedia={remoteMedia} />
+        <GroupCallDock
+          groupName="Room call"
+          groupInitials="RC"
+          isDragging={isDraggingMinimizedDock}
+          dockRef={minimizedDockRef}
+          inlineStyle={resolvedDockInlineStyle}
+          dockMetaLabel={(
+            <CallDurationText baseSeconds={0} startedAtMs={callStartMs} />
+          )}
+          leaveActionLabel={leaveLabel}
+          onRestore={handleRestore}
+          onLeave={handleLeave}
+          onDragStart={startMinimizedDockDrag}
+          onDragMove={moveMinimizedDock}
+          onDragEnd={stopMinimizedDockDrag}
+        />
+      </CallAudioOutputProvider>
     );
+    return createPortal(dockContent, document.body);
   }
 
-  return (
-    <div style={{ display: "flex", flexDirection: "column", height: "100%", background: "var(--bg-primary, #111)", color: "var(--text-primary, #fff)" }}>
-      <div style={{ padding: "12px 16px", borderBottom: "1px solid var(--border-subtle, #333)", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-        <span style={{ fontWeight: 600 }}>Room call</span>
-        <span style={{ fontSize: "0.8rem", opacity: 0.6 }}>
-          {status === "connecting" ? "Connecting…" : `${participants.length} participant${participants.length !== 1 ? "s" : ""}`}
-        </span>
-      </div>
+  // ── Full panel ───────────────────────────────────────────────────────────────
+  const panelDialog = (
+    <dialog open className={groupStyles.backdrop} aria-modal="true" aria-label="Room call">
+      <div className={groupStyles.panel}>
 
-      <div style={{ flex: 1, overflowY: "auto", padding: 16 }}>
-        {remoteMedia.length === 0 && status === "ready" && (
-          <p style={{ opacity: 0.5, textAlign: "center", marginTop: 32 }}>Waiting for others to join…</p>
-        )}
-        {remoteMedia.map((media) => (
-          <div key={media.userId} style={{ marginBottom: 8, padding: 8, borderRadius: 4, background: "var(--bg-secondary, #222)" }}>
-            <span>{media.userId}</span>
-            {media.audioStream && (
-              // eslint-disable-next-line jsx-a11y/media-has-caption
-              <audio
-                autoPlay
-                ref={(el) => {
-                  if (el && media.audioStream) el.srcObject = media.audioStream;
-                }}
-              />
+        <GroupCallHeader
+          groupName="Room call"
+          memberCount={participants.length}
+          title={isReady ? `${participants.length} ${participants.length === 1 ? "participant" : "participants"}` : statusLabel}
+          callDurationSeconds={0}
+          callDurationStartedAtMs={callStartMs}
+          hasVisibleVideo={isVideoEnabled}
+          hasRemoteScreenShare={false}
+          heroStatusLabel={statusLabel}
+          heroStatusTone={status === "error" ? "danger" : isReady ? "success" : "neutral"}
+          detailsLabel={t("group.call.detailsTab")}
+          detailsToggleLabel={t("group.call.detailsTab")}
+          isDetailsOpen={isParticipantsOpen}
+          onToggleDetails={() => setIsParticipantsOpen((v) => !v)}
+          onMinimize={handleMinimize}
+        />
+
+        <div className={groupStyles.body}>
+          <div className={groupStyles.mainColumn}>
+
+            {session.isHost && session.inviteUrl && (
+              <div className={styles.inviteRow}>
+                <span className={styles.inviteLabel}>Invite link</span>
+                <PillButton
+                  type="button"
+                  onClick={() => void handleCopyInvite()}
+                  tone={copied ? "accent" : "neutral"}
+                  appearance="soft"
+                  size="sm"
+                  aria-label={copied ? "Link copied" : "Copy invite link"}
+                  leading={<DetailsIcon />}
+                >
+                  {copied ? "Copied!" : "Copy link"}
+                </PillButton>
+              </div>
+            )}
+
+            {status === "error" && (
+              <div className={styles.centeredState}>
+                <p className={styles.errorText}>{errorMessage ?? "Connection error"}</p>
+                <button type="button" onClick={handleLeave} className={styles.leaveBtn}>
+                  {leaveLabel}
+                </button>
+              </div>
+            )}
+
+            {status === "connecting" && (
+              <div className={styles.centeredState}>
+                <p className={styles.mutedText}>{t("group.call.starting")}</p>
+              </div>
+            )}
+
+            {/* Media tiles grid */}
+            {isReady && (
+              <div className={allTiles.length === 1 ? groupStyles.mediaGridSolo : groupStyles.mediaGrid}>
+                {allTiles.map((tile) => (
+                  <GroupCallMediaTile
+                    key={tile.id}
+                    label={tile.label}
+                    stream={tile.stream}
+                    audioStream={tile.audioStream}
+                    fallbackInitials={tile.fallbackInitials}
+                    badge={tile.badge}
+                    muted={tile.muted}
+                    variant={allTiles.length <= 2 ? "stage" : "strip"}
+                    videoSource={tile.videoSource}
+                  />
+                ))}
+              </div>
+            )}
+
+            {/* Participants list */}
+            {isParticipantsOpen && (
+              <div className={styles.participantsList}>
+                <p className={styles.participantsLabel}>
+                  Participants ({participants.length})
+                </p>
+                {participants.length === 0 && (
+                  <p className={styles.mutedText}>No participants yet</p>
+                )}
+                {participants.map((p) => (
+                  <div key={p.id} className={styles.participantRow}>
+                    <span className={styles.participantName}>
+                      {p.displayName}
+                      {!p.isGuest && <span className={styles.hostBadge}>host</span>}
+                    </span>
+                    {session.isHost && p.isGuest && (
+                      <button
+                        type="button"
+                        onClick={() => void handleKickGuest(p.id)}
+                        disabled={kickingId === p.id}
+                        className={styles.kickBtn}
+                      >
+                        {kickingId === p.id ? "…" : "Remove"}
+                      </button>
+                    )}
+                  </div>
+                ))}
+              </div>
             )}
           </div>
-        ))}
-      </div>
+        </div>
 
-      <div style={{ padding: 16, borderTop: "1px solid var(--border-subtle, #333)", display: "flex", gap: 12, justifyContent: "center" }}>
-        <button
-          type="button"
-          onClick={toggleMute}
-          style={{ padding: "8px 16px", borderRadius: 6, border: "none", cursor: "pointer", background: isAudioMuted ? "var(--color-warning, #e6a817)" : "var(--bg-secondary, #333)", color: "var(--text-primary, #fff)" }}
-        >
-          {isAudioMuted ? "Unmute" : "Mute"}
-        </button>
-        <button
-          type="button"
-          onClick={handleLeave}
-          style={{ padding: "8px 16px", borderRadius: 6, border: "none", cursor: "pointer", background: "var(--color-danger, #e53e3e)", color: "#fff" }}
-        >
-          Leave
-        </button>
+        <div className={groupStyles.bottomDock}>
+          <GroupCallControls
+            className={groupStyles.controlRail}
+            layout="inline"
+            hasLocalMedia={hasLocalMedia}
+            status={isReady ? "ready" : "starting"}
+            isAudioMuted={isAudioMuted}
+            isLocalVideoEnabled={isVideoEnabled}
+            isLocalScreenSharing={isScreenSharing}
+            isVideoSwitching={isVideoSwitching}
+            isScreenSwitching={isScreenSwitching}
+            muteToggleLabel={muteToggleLabel}
+            videoToggleLabel={videoToggleLabel}
+            screenShareToggleLabel={screenShareToggleLabel}
+            leaveActionLabel={leaveLabel}
+            endForEveryoneLabel={endForEveryoneLabel}
+            canEndForEveryone={session.isHost}
+            micDevices={micDevices}
+            cameraDevices={cameraDevices}
+            selectedMicId={selectedMicId}
+            selectedCameraId={selectedCameraId}
+            onToggleMute={handleToggleMute}
+            onToggleVideo={() => void handleToggleVideo()}
+            onToggleScreenShare={() => void handleToggleScreenShare()}
+            onLeave={handleLeave}
+            onEndForEveryone={handleEndForEveryone}
+            onSelectMic={(id) => void handleSwitchMic(id)}
+            onSelectCamera={(id) => void handleSwitchCamera(id)}
+          />
+        </div>
+
       </div>
-    </div>
+    </dialog>
+  );
+
+  return createPortal(
+    <CallAudioOutputProvider>
+      <GroupCallRemoteAudioTargets remoteMedia={remoteMedia} />
+      {panelDialog}
+    </CallAudioOutputProvider>,
+    document.body
   );
 }

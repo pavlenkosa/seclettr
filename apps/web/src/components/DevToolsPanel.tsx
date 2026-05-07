@@ -15,6 +15,7 @@ type CallDebugWindow = Window & {
   __scIsCallDebugEnabled?: () => boolean;
   __scInjectMockParticipants?: (count: number) => void;
   __scClearMockParticipants?: () => void;
+  __scCreateRoom?: () => void;
 };
 
 async function deleteAllDatabases(): Promise<void> {
@@ -203,6 +204,29 @@ export function DevToolsPanel() {
                 Clear
               </button>
             </div>
+          </div>
+
+          {/* ── Room call (dev only) ─────────────────────── */}
+          <div style={{ marginBottom: 12 }}>
+            <div style={{ color: "#64748b", fontSize: 10, textTransform: "uppercase", letterSpacing: 1, marginBottom: 6 }}>
+              Room Call
+            </div>
+            <button
+              onClick={() => callDebugWindow.__scCreateRoom?.()}
+              style={{
+                width: "100%",
+                background: "#0369a1",
+                color: "#fff",
+                border: "none",
+                borderRadius: 4,
+                padding: "6px 8px",
+                cursor: "pointer",
+                fontFamily: "monospace",
+                fontSize: 11,
+              }}
+            >
+              Create room…
+            </button>
           </div>
 
           <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>

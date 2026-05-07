@@ -515,6 +515,13 @@ export const api = {
     await request<void>(`/rooms/${encodeURIComponent(callId)}`, { method: "DELETE" });
   },
 
+  kickRoomGuest: async (callId: string, guestSessionId: string): Promise<void> => {
+    await request<void>(
+      `/rooms/${encodeURIComponent(callId)}/guests/${encodeURIComponent(guestSessionId)}`,
+      { method: "DELETE" }
+    );
+  },
+
   post: <T>(path: string, body?: unknown, options: RequestInit = {}) =>
     request<T>(path, {
       ...options,

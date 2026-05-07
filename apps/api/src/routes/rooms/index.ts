@@ -90,8 +90,8 @@ async function enforceRoomRateLimit(
 }
 
 function buildInviteUrl(token: string): string {
-  const origin = config.CORS_ORIGIN.split(",")[0]?.trim() ?? "";
-  return `${origin}/room/${token}`;
+  const base = config.APP_URL.replace(/\/+$/, "");
+  return `${base}/room/${token}`;
 }
 
 function resolveGuestTokenTtlSeconds(roomExpiresAt: Date): number {
@@ -224,6 +224,31 @@ export async function roomRoutes(fastify: FastifyInstance): Promise<void> {
         sfuUrl: config.SFU_URL,
         expiresAt: invite.expires_at.toISOString(),
       });
+    }
+  );
+
+  // DELETE /rooms/:callId/guests/:guestSessionId — host kicks a guest
+  fastify.delete<{ Params: { callId: string; guestSessionId: string } }>(
+    "/:callId/guests/:guestSessionId",
+    { preHandler: [enforceRoomRateLimit, requireAuth] },
+    async (request, reply) => {
+      const { callId, guestSessionId } = request.params;
+      const { sub: userId } = request.auth;
+
+      const room = await getActiveRoom(callId);
+      if (!room) {
+        return reply.code(404).send({ error: "Room not found" });
+      }
+      if (room.caller_user_id !== userId) {
+        return reply.code(403).send({ error: "Only the room host can kick guests" });
+      }
+
+      await query(
+        `DELETE FROM room_guest_sessions WHERE id = $1 AND call_session_id = $2`,
+        [guestSessionId, callId]
+      );
+
+      return reply.code(204).send();
     }
   );
 

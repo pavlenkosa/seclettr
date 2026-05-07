@@ -1,10 +1,8 @@
 @keyframes incomingRingPulse {
   0% {
-    transform: scale(1);
     opacity: 0.6;
   }
   100% {
-    transform: scale(1.58);
     opacity: 0;
   }
 }
@@ -12,44 +10,36 @@
 @keyframes noticeIn {
   from {
     opacity: 0;
-    transform: translateY(-8px);
   }
   to {
     opacity: 1;
-    transform: translateY(0);
   }
 }
 
 @keyframes callSurfaceIn {
   from {
     opacity: 0;
-    transform: scale(0.992);
   }
   to {
     opacity: 1;
-    transform: scale(1);
   }
 }
 
 @keyframes callDockIn {
   from {
     opacity: 0;
-    filter: blur(2px);
   }
   to {
     opacity: 1;
-    filter: blur(0);
   }
 }
 
 @keyframes callContentIn {
   from {
     opacity: 0;
-    transform: translateY(10px);
   }
   to {
     opacity: 1;
-    transform: translateY(0);
   }
 }
 
@@ -68,20 +58,12 @@
   pointer-events: auto;
   min-width: 220px;
   max-width: min(92vw, 520px);
-  box-shadow: 0 6px 18px rgb(0 0 0 / 0.24);
   animation: noticeIn 180ms cubic-bezier(0.18, 0.9, 0.2, 1) both;
 }
 
 .incomingOverlay {
   justify-content: space-between;
-  background:
-    radial-gradient(920px 520px at 20% -10%, color-mix(in srgb, var(--accent) 22%, transparent), transparent 58%),
-    radial-gradient(880px 520px at 100% 110%, color-mix(in srgb, var(--panel-header-bg) 32%, transparent), transparent 58%),
-    linear-gradient(
-      180deg,
-      color-mix(in srgb, var(--bg-primary) 92%, #091222),
-      color-mix(in srgb, var(--bg-primary) 98%, #091222)
-    );
+  background: color-mix(in srgb, var(--bg-primary) 96%, #091222);
 }
 
 .incomingCenter {
@@ -104,7 +86,7 @@
 .incomingAvatar {
   --avatar-size: clamp(108px, 22vw, 156px);
   --avatar-font-size: clamp(2rem, 4.5vw, 3rem);
-  --avatar-shadow: 0 16px 40px rgb(2 6 23 / 0.38);
+  --avatar-shadow: none;
   position: relative;
   font-weight: 700;
   letter-spacing: 0.03em;
@@ -202,10 +184,7 @@
     calc(env(safe-area-inset-top, 0px) + 18px)
     clamp(0.9rem, 1.5vw, 1.4rem)
     calc(env(safe-area-inset-bottom, 0px) + 22px);
-  background:
-    radial-gradient(1300px 760px at 12% -8%, color-mix(in srgb, var(--accent) 22%, transparent), transparent 54%),
-    radial-gradient(980px 620px at 92% 18%, color-mix(in srgb, var(--panel-header-bg) 28%, transparent), transparent 58%),
-    linear-gradient(180deg, color-mix(in srgb, var(--bg-primary) 94%, #07101d), color-mix(in srgb, var(--bg-primary) 98%, #030712));
+  background: color-mix(in srgb, var(--bg-primary) 96%, #07101d);
   animation: callSurfaceIn 220ms cubic-bezier(0.18, 0.9, 0.2, 1) both;
 }
 
@@ -241,7 +220,7 @@
   --icon-button-border-hover: color-mix(in srgb, var(--accent) 34%, var(--icon-btn-border));
   --icon-button-color: var(--text-primary);
   --icon-button-color-hover: var(--text-primary);
-  --icon-button-blur: 8px;
+  --icon-button-blur: 0;
   --icon-button-transform: none;
   --icon-button-transform-hover: none;
 }
@@ -295,12 +274,7 @@
   border-radius: 28px;
   overflow: hidden;
   border: 1px solid color-mix(in srgb, var(--panel-border-soft) 86%, transparent);
-  background:
-    radial-gradient(780px 420px at 50% 10%, color-mix(in srgb, var(--accent) 10%, transparent), transparent 70%),
-    linear-gradient(180deg, color-mix(in srgb, var(--panel-header-bg) 72%, transparent), color-mix(in srgb, var(--bg-primary) 72%, transparent));
-  box-shadow:
-    0 24px 56px rgb(2 8 20 / 0.32),
-    inset 0 1px 0 rgb(255 255 255 / 0.04);
+  background: color-mix(in srgb, var(--panel-header-bg) 72%, var(--bg-primary));
 }
 
 .callStageCamera {
@@ -346,9 +320,7 @@
   justify-content: center;
   gap: 0.8rem;
   padding: 1.2rem;
-  background:
-    radial-gradient(circle at 50% 42%, color-mix(in srgb, var(--accent) 20%, transparent), transparent 46%),
-    linear-gradient(180deg, transparent, color-mix(in srgb, var(--bg-primary) 18%, transparent));
+  background: color-mix(in srgb, var(--bg-primary) 18%, transparent);
 }
 
 .stageMeta {
@@ -358,7 +330,7 @@
   bottom: 0;
   --info-stack-gap: 0.12rem;
   padding: 0.8rem 0.92rem 0.78rem;
-  background: linear-gradient(180deg, transparent, color-mix(in srgb, var(--bg-primary) 56%, transparent));
+  background: color-mix(in srgb, var(--bg-primary) 62%, transparent);
 }
 
 .stageVisualBadge {
@@ -389,7 +361,7 @@
   color: var(--text-primary);
   font-size: 0.74rem;
   font-weight: 700;
-  transition: transform 0.12s ease, border-color 0.12s ease;
+  transition: background-color 0.12s ease, border-color 0.12s ease;
 }
 
 .stageActionBtn:hover {
@@ -408,13 +380,13 @@
   --icon-button-shadow: none;
   --icon-button-shadow-hover: none;
   --icon-button-transform-hover: none;
-  --icon-button-blur: 10px;
+  --icon-button-blur: 0;
 }
 
 .audioAvatar {
   --avatar-size: clamp(96px, 20vw, 138px);
   --avatar-font-size: clamp(1.75rem, 3.4vw, 2.5rem);
-  --avatar-shadow: 0 8px 22px rgb(2 6 23 / 0.28);
+  --avatar-shadow: none;
   position: relative;
   font-weight: 700;
   letter-spacing: 0.03em;
@@ -426,20 +398,16 @@
   aspect-ratio: 1 / 1;
   border-radius: 999px;
   border: 1px solid color-mix(in srgb, var(--accent) 34%, transparent);
-  background: radial-gradient(circle at center, color-mix(in srgb, var(--accent) 18%, transparent), transparent 70%);
+  background: color-mix(in srgb, var(--accent) 10%, transparent);
   opacity: 0.58;
-  transform: scale(1);
-  transition: transform 0.14s ease, opacity 0.14s ease, box-shadow 0.14s ease;
+  transition: opacity 0.14s ease, border-color 0.14s ease;
   pointer-events: none;
   z-index: 0;
 }
 
 .stageAudioPulseActive {
   opacity: 0.95;
-  transform: scale(1.09);
-  box-shadow:
-    0 0 0 7px color-mix(in srgb, var(--accent) 18%, transparent),
-    0 0 0 14px color-mix(in srgb, var(--accent) 10%, transparent);
+  border-color: color-mix(in srgb, var(--accent) 58%, transparent);
 }
 
 .peerName {
@@ -459,22 +427,11 @@
 
 :global(:root[data-theme="light"]) .callStage {
   border-color: color-mix(in srgb, var(--panel-border-soft) 92%, transparent);
-  background:
-    radial-gradient(780px 420px at 50% 10%, color-mix(in srgb, var(--accent) 10%, transparent), transparent 70%),
-    linear-gradient(
-      180deg,
-      color-mix(in srgb, var(--panel-header-bg) 72%, white),
-      color-mix(in srgb, var(--bg-primary) 84%, white)
-    );
+  background: color-mix(in srgb, var(--panel-header-bg) 72%, white);
 }
 
 :global(:root[data-theme="light"]) .stageMeta {
-  background:
-    linear-gradient(
-      180deg,
-      transparent,
-      rgb(15 23 42 / 0.16)
-    );
+  background: rgb(15 23 42 / 0.16);
 }
 
 :global(:root[data-theme="light"]) .peerName {
@@ -502,15 +459,7 @@
   padding: 0.8rem;
   border-radius: 28px;
   border: 1px solid color-mix(in srgb, var(--panel-border-soft) 74%, transparent);
-  background:
-    linear-gradient(
-      180deg,
-      color-mix(in srgb, var(--surface-float) 94%, transparent),
-      color-mix(in srgb, var(--surface-shell) 96%, transparent)
-    );
-  box-shadow:
-    0 24px 54px rgb(2 8 20 / 0.18),
-    inset 0 1px 0 rgb(255 255 255 / 0.03);
+  background: color-mix(in srgb, var(--surface-shell) 96%, var(--surface-float));
 }
 
 .securitySummaryRow {
@@ -643,7 +592,6 @@
   overflow: hidden;
   border: 1px solid color-mix(in srgb, var(--panel-border-soft) 90%, transparent);
   background: color-mix(in srgb, var(--panel-header-bg) 84%, var(--bg-secondary));
-  box-shadow: 0 10px 24px color-mix(in srgb, var(--bg-primary) 38%, transparent);
   z-index: 3;
   animation: callContentIn 260ms cubic-bezier(0.18, 0.9, 0.2, 1) 80ms both;
 }
@@ -740,7 +688,7 @@
   font-size: 0.6875rem;
   color: var(--text-primary);
   text-align: center;
-  background: linear-gradient(180deg, transparent, color-mix(in srgb, var(--bg-primary) 48%, transparent));
+  background: color-mix(in srgb, var(--bg-primary) 58%, transparent);
   z-index: 1;
 }
 
@@ -757,9 +705,8 @@
   border: 1px solid color-mix(in srgb, var(--panel-border-soft) 88%, transparent);
   background: color-mix(in srgb, var(--panel-header-bg) 84%, transparent);
   color: var(--text-primary);
-  box-shadow: 0 10px 24px color-mix(in srgb, var(--bg-primary) 18%, transparent);
   z-index: 2;
-  transition: transform 120ms ease, border-color 120ms ease, opacity 120ms ease;
+  transition: background-color 120ms ease, border-color 120ms ease, opacity 120ms ease;
 }
 
 .localPreviewAction:hover:not(:disabled) {
@@ -788,11 +735,10 @@
   border: 1px solid color-mix(in srgb, var(--panel-border-soft) 88%, transparent);
   background: color-mix(in srgb, var(--panel-header-bg) 84%, transparent);
   color: var(--text-primary);
-  box-shadow: 0 10px 24px color-mix(in srgb, var(--bg-primary) 18%, transparent);
   z-index: 2;
   touch-action: none;
   cursor: nwse-resize;
-  transition: transform 120ms ease, border-color 120ms ease;
+  transition: background-color 120ms ease, border-color 120ms ease;
 }
 
 .localPreviewResizeHandle:hover {
@@ -818,7 +764,7 @@
   font-size: 0.6875rem;
   color: var(--text-primary);
   text-align: left;
-  background: linear-gradient(180deg, transparent, color-mix(in srgb, var(--bg-primary) 58%, transparent));
+  background: color-mix(in srgb, var(--bg-primary) 64%, transparent);
   z-index: 1;
 }
 
@@ -845,15 +791,7 @@
   padding: 0.48rem;
   border-radius: 32px;
   border: 1px solid color-mix(in srgb, var(--panel-border-soft) 76%, transparent);
-  background:
-    linear-gradient(
-      180deg,
-      color-mix(in srgb, var(--surface-float) 94%, transparent),
-      color-mix(in srgb, var(--surface-shell) 98%, transparent)
-    );
-  box-shadow:
-    0 22px 52px rgb(2 8 20 / 0.28),
-    inset 0 1px 0 rgb(255 255 255 / 0.04);
+  background: color-mix(in srgb, var(--surface-shell) 98%, var(--surface-float));
   display: flex;
   align-items: center;
   justify-content: center;
@@ -869,7 +807,6 @@
   border-radius: 22px;
   border: 1px solid color-mix(in srgb, var(--panel-border-soft) 78%, transparent);
   background: color-mix(in srgb, var(--surface-shell) 88%, transparent);
-  box-shadow: 0 16px 36px rgb(2 8 20 / 0.14);
   animation: callContentIn 240ms cubic-bezier(0.18, 0.9, 0.2, 1) 80ms both;
 }
 
@@ -1110,7 +1047,6 @@
 .callStageAudio {
   border-color: transparent;
   background: transparent;
-  box-shadow: none;
 }
 
 @media (max-width: 720px) {

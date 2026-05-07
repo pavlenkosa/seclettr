@@ -10,6 +10,7 @@ ENV_TEMPLATE="$BUNDLE_DIR/.env.example"
 IMAGE_ARCHIVE="$BUNDLE_DIR/prebuilt-images.tar.gz"
 RUNTIME_CONFIG_FILE="$BUNDLE_DIR/nginx/runtime-config.js"
 PROJECT_NAME="seclettr"
+GITHUB_REPO="pavlenkosa/seclettr"
 SKIP_LOAD=false
 SKIP_MIGRATE=false
 SKIP_BACKUP=false
@@ -24,6 +25,7 @@ CLI_NETWORK_MODE=""
 CLI_WEB_RUNTIME_API_URL=""
 CLI_WEB_RUNTIME_SFU_URL=""
 INTERACTIVE_MODE="auto"
+SETUP_DOMAIN=""
 
 DEPLOY_MODE=""
 NETWORK_MODE=""
@@ -367,6 +369,71 @@ PYEOF
   log_warn "Set VAPID_PUBLIC_KEY and VAPID_PRIVATE_KEY manually in .env to enable push notifications."
   printf '\n'
   return 0
+}
+
+fetch_latest_release_archive() {
+  # Downloads the latest GitHub release bundle into $BUNDLE_DIR/.. and returns
+  # the path to the .tar.gz on stdout.  Dies on network or integrity errors.
+  local repo="${GITHUB_REPO}"
+  local dest_dir
+  dest_dir="$(cd "$BUNDLE_DIR/.." && pwd)"
+
+  log_step "Fetching latest release info from GitHub..."
+  command -v curl >/dev/null 2>&1 || die "curl is required to auto-fetch the latest release. Install it or download the bundle manually."
+
+  local release_json
+  release_json="$(curl -fsSL \
+    -H "Accept: application/vnd.github+json" \
+    "https://api.github.com/repos/${repo}/releases" \
+    | grep -o '"browser_download_url":"[^"]*"' | head -40)"
+
+  local asset_url="" checksum_url=""
+  while IFS= read -r line; do
+    local url="${line#*:\"}"
+    url="${url%\"}"
+    if [[ "$url" == *seclettr-release-*.tar.gz && "$url" != *.sha256 && -z "$asset_url" ]]; then
+      asset_url="$url"
+    fi
+    if [[ "$url" == *.tar.gz.sha256 && -z "$checksum_url" ]]; then
+      checksum_url="$url"
+    fi
+  done <<< "$release_json"
+
+  [[ -n "$asset_url" ]] || die "No release bundle found at api.github.com/repos/${repo}/releases. Make sure releases are published."
+
+  local archive_name
+  archive_name="$(basename "$asset_url")"
+  local archive_path="$dest_dir/$archive_name"
+
+  if [[ -f "$archive_path" ]]; then
+    log_ok "Release archive already present: $archive_path"
+  else
+    log_step "Downloading ${archive_name}..."
+    curl -fL --progress-bar -o "$archive_path" "$asset_url"
+    echo ""
+    log_ok "Downloaded: $archive_path"
+  fi
+
+  if [[ -n "$checksum_url" ]]; then
+    log_step "Verifying integrity..."
+    local checksum_file="$dest_dir/${archive_name}.sha256"
+    curl -fsSL -o "$checksum_file" "$checksum_url"
+    local expected actual
+    expected="$(awk '{print $1}' "$checksum_file")"
+    if command -v sha256sum >/dev/null 2>&1; then
+      actual="$(sha256sum "$archive_path" | awk '{print $1}')"
+    else
+      actual="$(shasum -a 256 "$archive_path" | awk '{print $1}')"
+    fi
+    [[ "$actual" == "$expected" ]] || die "Checksum mismatch for $archive_name — the file may be corrupted.
+  Expected: $expected
+  Actual:   $actual"
+    log_ok "Integrity verified"
+  else
+    log_warn "No checksum file found for $archive_name — skipping integrity check"
+  fi
+
+  printf '%s' "$archive_path"
 }
 
 fill_env_secrets() {
@@ -1070,12 +1137,148 @@ prompt_update_source_interactive() {
   printf '%s' "$(trim_string "$previous_dir")"
 }
 
+_quickstart_whiptail() {
+  local detected_ip="${1:-}"
+  local domain_hint=""
+  [[ -n "$detected_ip" ]] && domain_hint="$detected_ip"
+
+  local domain
+  domain="$({
+    whiptail --title "Seclettr — Quick Setup" --inputbox \
+"Welcome to Seclettr!
+
+Enter your server's domain name or leave empty to use the IP address.
+  Example: chat.example.com
+
+Everything else is configured automatically:
+  • All services will be installed on this server
+  • HTTPS will be enabled (certificate generated automatically)
+  • All secret keys are generated automatically" \
+      18 72 "$domain_hint" \
+      3>&1 1>&2 2>&3
+  })" || die "Installation cancelled"
+  domain="$(trim_string "$domain")"
+
+  DEPLOY_MODE="full"
+  NETWORK_MODE="tls"
+  CERT_MODE="selfsigned"
+
+  if [[ -n "$domain" && ! $(is_ip_address "$domain") ]]; then
+    local want_le
+    want_le="$({
+      whiptail --title "TLS Certificate" --yesno \
+"Do you want a free trusted certificate from Let's Encrypt?
+
+  YES — Trusted certificate, no browser warning
+         (requires domain $domain to point to this server and port 80 to be free)
+
+  NO  — Self-signed certificate  (browser will show a warning)" \
+        14 72 \
+        3>&1 1>&2 2>&3
+      echo $?
+    })" || want_le=1
+    if [[ "$want_le" -eq 0 ]]; then
+      CERT_MODE="letsencrypt"
+      LETSENCRYPT_EMAIL="$({
+        whiptail --title "TLS Certificate" --inputbox \
+          "Email for Let's Encrypt expiry alerts (optional — press Enter to skip):" \
+          10 72 "" \
+          3>&1 1>&2 2>&3
+      })" || true
+      LETSENCRYPT_EMAIL="$(trim_string "$LETSENCRYPT_EMAIL")"
+    fi
+  fi
+
+  printf '%s' "$domain"
+}
+
+_quickstart_text() {
+  local detected_ip="${1:-}"
+
+  echo ""
+  echo -e "${CYN}${BLD}╔══════════════════════════════════════════════════╗${RST}"
+  echo -e "${CYN}${BLD}║          Seclettr — Quick Setup                  ║${RST}"
+  echo -e "${CYN}${BLD}╚══════════════════════════════════════════════════╝${RST}"
+  echo ""
+  echo "  All services will be installed on this server."
+  echo "  HTTPS is enabled; secrets are generated automatically."
+  echo ""
+  if [[ -n "$detected_ip" ]]; then
+    echo -e "  Detected public IP: ${GRN}${detected_ip}${RST}"
+  fi
+  echo ""
+
+  local prompt_hint=""
+  [[ -n "$detected_ip" ]] && prompt_hint=" (or press Enter to use IP $detected_ip)"
+
+  local domain
+  read -r -p "  Domain name for your server${prompt_hint}: " domain
+  domain="$(trim_string "$domain")"
+
+  DEPLOY_MODE="full"
+  NETWORK_MODE="tls"
+  CERT_MODE="selfsigned"
+
+  if [[ -n "$domain" ]] && ! is_ip_address "$domain"; then
+    echo ""
+    echo "  TLS certificate options for ${domain}:"
+    echo "    1) Let's Encrypt — trusted, no browser warning  [recommended]"
+    echo "       (port 80 must be open and DNS must point to this server)"
+    echo "    2) Self-signed   — browser will show a security warning"
+    local cert_choice
+    read -r -p "  Certificate type [1-2] (default: 1): " cert_choice
+    cert_choice="$(trim_string "$cert_choice")"
+    cert_choice="${cert_choice:-1}"
+    if [[ "$cert_choice" == "1" ]]; then
+      CERT_MODE="letsencrypt"
+      read -r -p "  Let's Encrypt email (optional, press Enter to skip): " LETSENCRYPT_EMAIL
+      LETSENCRYPT_EMAIL="$(trim_string "$LETSENCRYPT_EMAIL")"
+    fi
+  fi
+
+  printf '%s' "$domain"
+}
+
 configure_interactive_inputs() {
   if ! is_interactive_enabled; then
     return
   fi
 
   detect_ui_backend
+
+  # Quick-start path: fresh install with no CLI overrides for mode/network.
+  # Only offer the advanced multi-screen flow if the user explicitly passed
+  # --mode, --network, or --interactive with mode!=full (they know what they want).
+  local use_quickstart=true
+  if [[ -n "$CLI_DEPLOY_MODE" || -n "$CLI_NETWORK_MODE" ]]; then
+    use_quickstart=false
+  fi
+  # Advanced mode/network already set to non-defaults → skip quickstart
+  if [[ "$DEPLOY_MODE" != "full" && -n "$DEPLOY_MODE" ]]; then
+    use_quickstart=false
+  fi
+
+  if [[ "$use_quickstart" == "true" ]]; then
+    # Detect IP first so we can pre-fill the domain hint
+    local detected_ip_qs=""
+    if command -v curl >/dev/null 2>&1; then
+      detected_ip_qs="$(detect_public_ip)" || detected_ip_qs=""
+    fi
+
+    local qs_domain=""
+    if [[ "$UI_BACKEND" == "whiptail" || "$UI_BACKEND" == "dialog" ]]; then
+      qs_domain="$(_quickstart_whiptail "$detected_ip_qs")"
+    else
+      qs_domain="$(_quickstart_text "$detected_ip_qs")"
+    fi
+
+    # Apply domain to env immediately (fill_env_secrets runs later but uses SETUP_DOMAIN)
+    SETUP_DOMAIN="$qs_domain"
+    # Defaults are already set inside _quickstart_*
+    return
+  fi
+
+  # Advanced / non-default path: show individual prompts as before
   if [[ "${_WELCOME_SHOWN:-false}" != "true" ]]; then
     show_welcome_banner
     _WELCOME_SHOWN=true
@@ -1473,6 +1676,11 @@ case "$ACTION" in
   *) die "Invalid action '$ACTION'. Use install or update" ;;
 esac
 
+if [[ "$ACTION" == "update" && -z "$CLI_UPDATE_ARCHIVE" && -z "$CLI_UPDATE_FROM" && ! -f "$ENV_FILE" ]]; then
+  # update with no args and no existing .env → auto-fetch latest release and hand off
+  CLI_UPDATE_ARCHIVE="$(fetch_latest_release_archive)"
+fi
+
 if [[ -n "$CLI_UPDATE_ARCHIVE" ]]; then
   handoff_update_archive
 fi
@@ -1504,6 +1712,13 @@ if env_has_placeholders; then
   ENV_NEEDS_GENERATION=true
 fi
 
+# Run the interactive setup early (before secrets generation) so the user's
+# domain and mode choices are available to fill_env_secrets.
+if [[ "$GENERATED_ENV" == "true" || "$ENV_NEEDS_GENERATION" == "true" ]] && is_interactive_enabled; then
+  configure_interactive_inputs
+  _CONFIGURE_DONE=true
+fi
+
 if [[ "$GENERATED_ENV" == "true" || "$ENV_NEEDS_GENERATION" == "true" ]]; then
   if [[ "$GENERATED_ENV" == "true" ]]; then
     log_step "No .env found — auto-generating settings and secrets"
@@ -1522,15 +1737,12 @@ if [[ "$GENERATED_ENV" == "true" || "$ENV_NEEDS_GENERATION" == "true" ]]; then
     fi
   fi
 
-  SETUP_DOMAIN=""
-  if is_interactive_enabled; then
+  # SETUP_DOMAIN may already be set by configure_interactive_inputs (quickstart path).
+  if [[ -z "${SETUP_DOMAIN:-}" ]] && is_interactive_enabled; then
     detect_ui_backend
-    if [[ "${_WELCOME_SHOWN:-false}" != "true" ]]; then
-      show_welcome_banner
-      _WELCOME_SHOWN=true
-    fi
     SETUP_DOMAIN="$(prompt_domain_setup)"
   fi
+  SETUP_DOMAIN="${SETUP_DOMAIN:-}"
 
   fill_env_secrets "$ENV_FILE" "$DETECTED_IP" "$SETUP_DOMAIN"
 
@@ -1571,7 +1783,10 @@ WEB_RUNTIME_SFU_URL="$(normalize_runtime_url "$WEB_RUNTIME_SFU_URL")"
 validate_mode "$DEPLOY_MODE"
 validate_network_mode "$NETWORK_MODE"
 
-configure_interactive_inputs
+# Skip if already called early (quickstart path during secret generation)
+if [[ "${_CONFIGURE_DONE:-false}" != "true" ]]; then
+  configure_interactive_inputs
+fi
 
 DEPLOY_MODE="$(trim_string "$DEPLOY_MODE")"
 NETWORK_MODE="$(trim_string "$NETWORK_MODE")"

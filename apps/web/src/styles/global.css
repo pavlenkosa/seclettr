@@ -46,7 +46,7 @@
 
   --text-primary: #edf4ff;
   --text-secondary: #91a5bf;
-  --text-muted: #627892;
+  --text-muted: #7188a3;
 
   --border: #29405b;
   --danger: #ef4444;
@@ -107,7 +107,7 @@
 
   --message-out-bg: var(--bg-message-out);
   --message-out-tail: #2f6fff;
-  --message-out-text: #eff7ff;
+  --message-out-text: #ffffff;
   --message-out-ui: rgb(255 255 255 / 0.92);
   --message-out-ui-muted: rgb(255 255 255 / 0.76);
   --message-out-ui-soft: rgb(255 255 255 / 0.16);
@@ -153,9 +153,9 @@
   --text-muted: #3c4f67;
 
   --border: #aebbd0;
-  --danger: #dc2626;
-  --success: #16a34a;
-  --warning: #ca8a04;
+  --danger: #b91c1c;
+  --success: #166534;
+  --warning: #92400e;
   --danger-contrast: #7f1d1d;
   --danger-soft-bg: rgb(254 226 226 / 0.75);
   --danger-soft-border: rgb(248 113 113 / 0.5);
@@ -211,7 +211,7 @@
 
   --message-out-bg: var(--bg-message-out);
   --message-out-tail: #2563eb;
-  --message-out-text: #eff6ff;
+  --message-out-text: #ffffff;
   --message-out-ui: rgb(255 255 255 / 0.94);
   --message-out-ui-muted: rgb(255 255 255 / 0.8);
   --message-out-ui-soft: rgb(255 255 255 / 0.18);
@@ -265,26 +265,26 @@
 }
 
 :root[data-accent="emerald"] {
-  --accent: #059669;
-  --accent-hover: #047857;
+  --accent: #047857;
+  --accent-hover: #065f46;
   --accent-gradient: var(--accent);
   --avatar-grad-start: #34d399;
-  --avatar-grad-end: #059669;
+  --avatar-grad-end: #047857;
   --message-ui-accent: #6ee7d4;
   --message-out-bg: var(--accent);
-  --message-out-tail: #0f766e;
+  --message-out-tail: #065f46;
   --list-item-active-bg: rgb(5 150 105 / 0.3);
   --list-item-active-ring: rgb(52 211 153 / 0.32);
-  --voice-play-bg: rgb(20 184 166 / 0.84);
-  --voice-play-hover-bg: rgb(13 148 136 / 0.9);
+  --voice-play-bg: rgb(4 120 87 / 0.92);
+  --voice-play-hover-bg: rgb(6 95 70 / 0.94);
   --app-glow-left: transparent;
   --app-glow-right: transparent;
 }
 
 :root[data-theme="light"][data-accent="emerald"] {
-  --message-ui-accent: #0f766e;
+  --message-ui-accent: #047857;
   --message-out-bg: var(--accent);
-  --message-out-tail: #0f766e;
+  --message-out-tail: #065f46;
   --list-item-active-bg: rgb(209 250 229 / 0.92);
   --list-item-active-ring: rgb(5 150 105 / 0.32);
   --app-glow-left: transparent;

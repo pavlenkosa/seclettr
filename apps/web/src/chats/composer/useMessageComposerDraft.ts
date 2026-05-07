@@ -36,7 +36,7 @@ interface UseMessageComposerDraftOptions {
   onClearReply?: () => void;
 }
 
-interface UseMessageComposerDraftResult {
+export interface UseMessageComposerDraftResult {
   isGroupComposer: boolean;
   text: string;
   trimmedText: string;

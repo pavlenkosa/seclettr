@@ -91,13 +91,13 @@
 }
 
 .inline.danger {
-  background: linear-gradient(145deg, #d42626, #b91c1c);
+  background: #b91c1c;
   border-color: rgb(252 165 165 / 0.4);
   color: #fff;
 }
 
 .inline.danger:hover:not(:disabled) {
-  background: linear-gradient(145deg, #dc2626, #b91c1c);
+  background: #dc2626;
   border-color: rgb(252 165 165 / 0.55);
 }
 
@@ -108,7 +108,7 @@
 }
 
 .stacked.danger .icon {
-  background: linear-gradient(180deg, #dc2626, #b91c1c);
+  background: #dc2626;
   color: #fff;
 }
 

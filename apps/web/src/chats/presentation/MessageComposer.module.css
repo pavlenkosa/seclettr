@@ -20,32 +20,24 @@
   max-inline-size: 100%;
   min-inline-size: 0;
   gap: 0.38rem;
-  background:
-    linear-gradient(
-      180deg,
-      color-mix(in srgb, var(--surface-float) 80%, transparent),
-      color-mix(in srgb, var(--composer-inner-bg) 84%, transparent)
-    );
+  background: color-mix(in srgb, var(--composer-inner-bg) 96%, var(--surface-float));
   border: 1px solid color-mix(in srgb, var(--composer-inner-border) 94%, transparent);
   border-radius: 28px;
   padding: 0.44rem 0.58rem;
-  box-shadow:
-    inset 0 1px 0 rgb(255 255 255 / 0.2);
+  outline: 1px solid transparent;
+  outline-offset: -1px;
   background-clip: padding-box;
   box-sizing: border-box;
   transition:
     border-color var(--motion-duration-fast) var(--motion-ease-standard),
-    box-shadow var(--motion-duration-fast) var(--motion-ease-standard),
-    background-color var(--motion-duration-fast) var(--motion-ease-standard),
-    transform var(--motion-duration-fast) var(--motion-ease-standard);
+    outline-color var(--motion-duration-fast) var(--motion-ease-standard),
+    background-color var(--motion-duration-fast) var(--motion-ease-standard);
   animation: composerSurfaceIn var(--motion-duration-base) var(--motion-ease-emphasized) both;
 }
 
 .inner:focus-within {
   border-color: var(--accent);
-  box-shadow:
-    inset 0 1px 0 rgb(255 255 255 / 0.24),
-    0 0 0 1px color-mix(in srgb, var(--accent) 22%, transparent);
+  outline-color: color-mix(in srgb, var(--accent) 24%, transparent);
 }
 
 .innerRecording {
@@ -65,7 +57,7 @@
   justify-content: center;
   gap: 1rem;
   padding: 1.4rem 1rem calc(8.6rem + var(--safe-bottom));
-  background: radial-gradient(circle at 50% 46%, #0e172e, #020617);
+  background: #020617;
   /* A solid dark background keeps recording mode predictable over messages. */
   animation: composerOverlayIn var(--motion-duration-base) var(--motion-ease-emphasized) both;
 }
@@ -108,19 +100,14 @@
   position: absolute;
   inset: -13%;
   border-radius: 50%;
-  background:
-    radial-gradient(circle, color-mix(in srgb, var(--message-ui-accent) 42%, white 8%), transparent 68%);
-  filter: blur(38px);
-  opacity: 0.78;
+  display: none;
 }
 
 .videoRecordingOverlayCircle .recordingVideoShell {
   width: min(72vw, 320px);
   height: min(72vw, 320px);
   border-width: 1px;
-  box-shadow:
-    0 28px 54px rgb(2 6 23 / 0.34),
-    0 0 0 1px rgb(255 255 255 / 0.06);
+  border-color: rgb(255 255 255 / 0.16);
 }
 
 .videoRecordingOverlayCircle .recordingVideoTimeBadge {
@@ -172,34 +159,32 @@
   line-height: 0;
   cursor: pointer;
   border: 1px solid transparent;
-  box-shadow: none;
   transition:
-    transform var(--motion-duration-fast) var(--motion-ease-standard),
-    filter var(--motion-duration-fast) var(--motion-ease-standard);
+    background-color var(--motion-duration-fast) var(--motion-ease-standard),
+    border-color var(--motion-duration-fast) var(--motion-ease-standard),
+    color var(--motion-duration-fast) var(--motion-ease-standard);
 }
 
 .videoRecordingOverlayCancelBtn {
   color: #d5e4f8;
   border-color: rgb(174 193 217 / 0.36);
-  background:
-    linear-gradient(180deg, rgb(20 30 55 / 0.86), rgb(10 18 35 / 0.94));
+  background: rgb(15 23 42 / 0.94);
 }
 
 .videoRecordingOverlayStopBtn {
   color: #fff;
   border-color: color-mix(in srgb, var(--danger) 44%, transparent);
-  background:
-    linear-gradient(180deg, color-mix(in srgb, var(--danger) 84%, white 4%), color-mix(in srgb, var(--danger) 80%, black 16%));
+  background: color-mix(in srgb, var(--danger) 88%, black 12%);
 }
 
-.videoRecordingOverlayCancelBtn:hover,
+.videoRecordingOverlayCancelBtn:hover {
+  background: rgb(30 41 59 / 0.96);
+  border-color: rgb(203 213 225 / 0.48);
+}
+
 .videoRecordingOverlayStopBtn:hover {
-  filter: brightness(1.06);
-}
-
-.videoRecordingOverlayCancelBtn:active,
-.videoRecordingOverlayStopBtn:active {
-  transform: scale(0.95);
+  background: color-mix(in srgb, var(--danger) 82%, black 18%);
+  border-color: color-mix(in srgb, var(--danger) 58%, transparent);
 }
 
 .textField {
@@ -237,14 +222,8 @@
 }
 
 :global(:root[data-theme="light"]) .inner {
-  background:
-    linear-gradient(
-      180deg,
-      color-mix(in srgb, var(--surface-float) 84%, white),
-      color-mix(in srgb, var(--composer-inner-bg) 90%, white)
-    );
+  background: color-mix(in srgb, var(--composer-inner-bg) 96%, white);
   border-color: color-mix(in srgb, var(--composer-inner-border) 94%, transparent);
-  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.78);
 }
 
 :global(:root[data-theme="light"]) .textarea::placeholder {
@@ -321,9 +300,8 @@
   position: absolute;
   left: 50%;
   bottom: calc(100% + 0.34rem);
-  min-width: 7.25rem;
-  max-width: 10rem;
-  transform: translateX(-50%);
+  width: 10rem;
+  margin-left: -5rem;
   padding: 0.36rem 0.72rem;
   border-radius: 999px;
   background: color-mix(in srgb, var(--surface-float) 74%, transparent);
@@ -333,9 +311,6 @@
   line-height: 1.3;
   text-align: center;
   text-wrap: balance;
-  box-shadow:
-    inset 0 1px 0 rgb(255 255 255 / 0.12),
-    0 10px 20px rgb(15 23 42 / 0.06);
   pointer-events: none;
   animation: composerHintIn var(--motion-duration-base) var(--motion-ease-emphasized) both;
 }
@@ -347,27 +322,22 @@
   gap: 0.34rem;
   padding: 0.18rem 0.72rem;
   border-radius: 999px;
-  background:
-    linear-gradient(
-      180deg,
-      color-mix(in srgb, var(--surface-float) 76%, transparent),
-      color-mix(in srgb, var(--composer-inner-bg) 82%, transparent)
-    );
+  background: color-mix(in srgb, var(--composer-inner-bg) 94%, var(--surface-float));
   border: 1px solid color-mix(in srgb, var(--panel-border-soft) 86%, transparent);
   color: var(--text-secondary);
   font-size: 0.72rem;
   font-weight: 700;
   line-height: 1;
   text-transform: capitalize;
-  box-shadow: none;
   transition:
+    background-color var(--motion-duration-fast) var(--motion-ease-standard),
     color var(--motion-duration-fast) var(--motion-ease-standard),
     border-color var(--motion-duration-fast) var(--motion-ease-standard);
-  animation: composerContentLiftIn var(--motion-duration-base) var(--motion-ease-emphasized) both;
 }
 
 .recordModeChip:hover:not(:disabled) {
   color: var(--text-primary);
+  background: color-mix(in srgb, var(--accent) 8%, var(--composer-inner-bg));
   border-color: color-mix(in srgb, var(--accent) 34%, transparent);
 }
 
@@ -403,12 +373,16 @@
   border: 1px solid color-mix(in srgb, var(--icon-btn-border) 92%, transparent);
   line-height: 0;
   align-self: center;
-  transition: background-color 0.15s, color 0.15s, transform 0.15s;
+  transition:
+    background-color var(--motion-duration-fast) var(--motion-ease-standard),
+    border-color var(--motion-duration-fast) var(--motion-ease-standard),
+    color var(--motion-duration-fast) var(--motion-ease-standard);
 }
 
 .actionBtn:hover:not(:disabled) {
   color: var(--icon-btn-hover-color);
   background: var(--icon-btn-hover-bg);
+  border-color: color-mix(in srgb, var(--accent) 26%, transparent);
 }
 
 .actionBtn:disabled {
@@ -438,14 +412,7 @@
   padding: 0.64rem;
   border-radius: 20px;
   border: 1px solid color-mix(in srgb, var(--panel-border-soft) 88%, transparent);
-  background:
-    linear-gradient(
-      180deg,
-      color-mix(in srgb, var(--surface-float) 98%, var(--bg-secondary)),
-      color-mix(in srgb, var(--composer-inner-bg) 99%, var(--bg-secondary))
-    );
-  box-shadow: 0 16px 30px rgb(2 6 23 / 0.18);
-  transform-origin: left bottom;
+  background: color-mix(in srgb, var(--surface-float) 98%, var(--bg-secondary));
   animation: composerPickerIn var(--motion-duration-base) var(--motion-ease-emphasized) both;
 }
 
@@ -464,8 +431,8 @@
   font-size: 0.82rem;
   line-height: 1.2;
   transition:
-    border-color var(--motion-duration-fast) var(--motion-ease-standard),
-    box-shadow var(--motion-duration-fast) var(--motion-ease-standard);
+    background-color var(--motion-duration-fast) var(--motion-ease-standard),
+    border-color var(--motion-duration-fast) var(--motion-ease-standard);
 }
 
 .emojiSearchInput:focus {
@@ -498,8 +465,7 @@
   transition:
     background-color var(--motion-duration-fast) var(--motion-ease-standard),
     color var(--motion-duration-fast) var(--motion-ease-standard),
-    border-color var(--motion-duration-fast) var(--motion-ease-standard),
-    transform var(--motion-duration-fast) var(--motion-ease-standard);
+    border-color var(--motion-duration-fast) var(--motion-ease-standard);
 }
 
 .emojiGroupTab:hover,
@@ -570,7 +536,6 @@
   font-size: 1.2rem;
   line-height: 1;
   transition:
-    transform var(--motion-duration-fast) var(--motion-ease-standard),
     background-color var(--motion-duration-fast) var(--motion-ease-standard),
     border-color var(--motion-duration-fast) var(--motion-ease-standard);
 }
@@ -609,12 +574,16 @@
   border: 1px solid color-mix(in srgb, var(--icon-btn-border) 92%, transparent);
   line-height: 0;
   align-self: center;
-  transition: background-color 0.15s, color 0.15s, transform 0.15s;
+  transition:
+    background-color var(--motion-duration-fast) var(--motion-ease-standard),
+    border-color var(--motion-duration-fast) var(--motion-ease-standard),
+    color var(--motion-duration-fast) var(--motion-ease-standard);
 }
 
 .recordBtn:hover:not(:disabled) {
   color: var(--icon-btn-hover-color);
   background: var(--icon-btn-hover-bg);
+  border-color: color-mix(in srgb, var(--accent) 26%, transparent);
 }
 
 .recordBtn:disabled {
@@ -632,7 +601,7 @@
 }
 
 .sendBtn {
-  background: var(--accent-gradient);
+  background: var(--accent);
   color: #fff;
   width: 44px;
   height: 44px;
@@ -645,43 +614,36 @@
   line-height: 0;
   align-self: center;
   border: 1px solid color-mix(in srgb, var(--accent) 56%, transparent);
-  box-shadow: none;
   transition:
-    transform var(--motion-duration-fast) var(--motion-ease-standard),
-    filter var(--motion-duration-fast) var(--motion-ease-standard);
+    background-color var(--motion-duration-fast) var(--motion-ease-standard),
+    border-color var(--motion-duration-fast) var(--motion-ease-standard),
+    color var(--motion-duration-fast) var(--motion-ease-standard);
 }
 
 .sendBtn:hover:not(:disabled) {
-  filter: brightness(1.06);
+  background: color-mix(in srgb, var(--accent) 88%, black 12%);
+  border-color: color-mix(in srgb, var(--accent) 70%, transparent);
 }
 
 .sendBtn:active:not(:disabled) {
-  transform: translateY(0) scale(0.96);
+  background: color-mix(in srgb, var(--accent) 82%, black 18%);
 }
 
 .sendBtnRecordMode {
-  background:
-    linear-gradient(
-      180deg,
-      color-mix(in srgb, var(--surface-float) 80%, transparent),
-      color-mix(in srgb, var(--composer-inner-bg) 84%, transparent)
-    );
+  background: color-mix(in srgb, var(--composer-inner-bg) 94%, var(--surface-float));
   color: var(--icon-btn-color);
   border: 1px solid color-mix(in srgb, var(--icon-btn-border) 92%, transparent);
-  box-shadow: none;
 }
 
 .sendBtnRecording {
   background: color-mix(in srgb, var(--danger) 86%, black 14%);
   color: #fff;
   border: 1px solid color-mix(in srgb, var(--danger) 56%, transparent);
-  box-shadow: none;
 }
 
 .sendBtn:disabled {
   background: var(--bg-tertiary);
   color: var(--text-secondary);
-  box-shadow: none;
 }
 
 .sendBtn svg {
@@ -695,7 +657,6 @@
   display: flex;
   align-items: center;
   gap: 0.72rem;
-  animation: composerContentLiftIn var(--motion-duration-base) var(--motion-ease-emphasized) both;
 }
 
 .recordingSurfaceVoice {
@@ -726,10 +687,7 @@
   align-items: center;
   justify-content: center;
   border: 1px solid color-mix(in srgb, var(--danger) 28%, transparent);
-  background:
-    radial-gradient(circle at 34% 30%, rgb(255 255 255 / 0.16), transparent 34%),
-    linear-gradient(180deg, color-mix(in srgb, var(--surface-float) 94%, transparent), color-mix(in srgb, var(--composer-inner-bg) 94%, transparent));
-  box-shadow: var(--elevated-shadow-sm);
+  background: color-mix(in srgb, var(--composer-inner-bg) 94%, var(--surface-float));
 }
 
 .recordingVoicePulse {
@@ -737,7 +695,6 @@
   height: 10px;
   border-radius: 50%;
   background: var(--danger);
-  box-shadow: 0 0 0 8px color-mix(in srgb, var(--danger) 14%, transparent);
   animation: recordingPulse 1.5s ease-in-out infinite;
 }
 
@@ -748,11 +705,8 @@
   border-radius: 50%;
   overflow: hidden;
   flex-shrink: 0;
-  background:
-    radial-gradient(circle at 34% 30%, rgb(255 255 255 / 0.16), transparent 34%),
-    color-mix(in srgb, var(--surface-shell-strong) 88%, var(--bg-secondary));
+  background: color-mix(in srgb, var(--surface-shell-strong) 88%, var(--bg-secondary));
   border: 1px solid color-mix(in srgb, var(--message-ui-accent) 36%, transparent);
-  box-shadow: 0 16px 28px rgb(2 6 23 / 0.22);
 }
 
 .recordingVoiceTrack,
@@ -826,19 +780,19 @@
   position: absolute;
   inset: 0;
   border-radius: 50%;
-  box-shadow:
-    inset 0 0 0 1px rgb(255 255 255 / 0.18),
-    inset 0 -20px 26px rgb(2 6 23 / 0.2);
+  border: 1px solid rgb(255 255 255 / 0.18);
   pointer-events: none;
 }
 
 .recordingVideoTimeBadge {
   position: absolute;
-  left: 50%;
+  left: 0;
+  right: 0;
   bottom: 8px;
-  transform: translateX(-50%);
   z-index: 2;
+  width: fit-content;
   min-width: 44px;
+  margin-inline: auto;
   padding: 0.14rem 0.46rem;
   border-radius: 999px;
   background: rgb(2 6 23 / 0.62);
@@ -858,10 +812,8 @@
   align-items: center;
   justify-content: center;
   color: var(--icon-btn-color);
-  background:
-    linear-gradient(180deg, color-mix(in srgb, var(--surface-float) 92%, transparent), color-mix(in srgb, var(--composer-inner-bg) 92%, transparent));
+  background: color-mix(in srgb, var(--composer-inner-bg) 92%, var(--surface-float));
   border: 1px solid color-mix(in srgb, var(--message-ui-accent) 28%, transparent);
-  box-shadow: var(--elevated-shadow-sm);
 }
 
 .recordingStageCopy {
@@ -983,8 +935,8 @@
 }
 
 @keyframes replyPreviewIn {
-  from { opacity: 0; transform: translateY(-4px) scaleY(0.92); }
-  to   { opacity: 1; transform: translateY(0) scaleY(1); }
+  from { opacity: 0; }
+  to   { opacity: 1; }
 }
 
 .error {
@@ -1084,8 +1036,8 @@
   }
 
   .recordHint {
-    min-width: 6.6rem;
-    max-width: 8.3rem;
+    width: 8.3rem;
+    margin-left: -4.15rem;
     font-size: 0.58rem;
     padding: 0.3rem 0.56rem;
     bottom: calc(100% + 0.28rem);
@@ -1197,7 +1149,6 @@
   .recordingVoicePulse {
     width: 8px;
     height: 8px;
-    box-shadow: 0 0 0 6px color-mix(in srgb, var(--danger) 14%, transparent);
   }
 
   .recordingVideoShell {
@@ -1306,7 +1257,6 @@
   .videoRecordingOverlayCircle,
   .videoRecordingOverlayFooter {
     transition: none !important;
-    transform: none !important;
     animation: none !important;
   }
 
@@ -1318,12 +1268,10 @@
 @keyframes composerSurfaceIn {
   0% {
     opacity: 0;
-    transform: translateY(6px) scale(0.99);
   }
 
   100% {
     opacity: 1;
-    transform: translateY(0) scale(1);
   }
 }
 
@@ -1340,48 +1288,40 @@
 @keyframes composerContentLiftIn {
   0% {
     opacity: 0;
-    transform: translateY(8px) scale(0.985);
   }
 
   100% {
     opacity: 1;
-    transform: translateY(0) scale(1);
   }
 }
 
 @keyframes composerHintIn {
   0% {
     opacity: 0;
-    transform: translateX(-50%) translateY(4px) scale(0.96);
   }
 
   100% {
     opacity: 1;
-    transform: translateX(-50%) translateY(0) scale(1);
   }
 }
 
 @keyframes composerPickerIn {
   0% {
     opacity: 0;
-    transform: translateY(6px) scale(0.96);
   }
 
   100% {
     opacity: 1;
-    transform: translateY(0) scale(1);
   }
 }
 
 @keyframes recordingPulse {
   0%,
   100% {
-    transform: scale(1);
     opacity: 1;
   }
 
   50% {
-    transform: scale(0.92);
     opacity: 0.82;
   }
 }

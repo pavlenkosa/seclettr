@@ -32,7 +32,7 @@ interface UseMessageComposerEmojiStateOptions {
   clearComposerError: () => void;
 }
 
-interface UseMessageComposerEmojiStateResult {
+export interface UseMessageComposerEmojiStateResult {
   emojiToggleButtonRef: RefObject<HTMLButtonElement>;
   emojiPickerRef: RefObject<HTMLElement>;
   emojiViewportRef: RefObject<HTMLDivElement>;

@@ -9,9 +9,7 @@
   --surface-panel-border: color-mix(in srgb, var(--panel-border-soft) 78%, transparent);
   --surface-panel-bg-start: color-mix(in srgb, var(--surface-float) 66%, transparent);
   --surface-panel-bg-end: color-mix(in srgb, var(--surface-shell-strong) 52%, transparent);
-  --surface-panel-shadow:
-    0 12px 24px rgb(2 6 23 / 0.12),
-    var(--elevated-shadow-sm);
+  --surface-panel-shadow: none;
   animation: groupCallNoticeIn var(--motion-duration-base) var(--motion-ease-emphasized) both;
 }
 
@@ -24,28 +22,26 @@
   justify-content: center;
   flex-shrink: 0;
   color: #eff6ff;
-  background: linear-gradient(145deg, color-mix(in srgb, var(--accent) 78%, white 22%), var(--accent));
+  background: var(--accent);
   animation: groupCallIconPulse 1800ms var(--motion-ease-standard) infinite;
 }
 
 @keyframes groupCallNoticeIn {
   from {
     opacity: 0;
-    transform: translateY(4px) scale(0.992);
   }
   to {
     opacity: 1;
-    transform: translateY(0) scale(1);
   }
 }
 
 @keyframes groupCallIconPulse {
   0%,
   100% {
-    box-shadow: 0 0 0 0 color-mix(in srgb, var(--accent) 30%, transparent);
+    opacity: 1;
   }
   50% {
-    box-shadow: 0 0 0 7px color-mix(in srgb, var(--accent) 0%, transparent);
+    opacity: 0.78;
   }
 }
 
@@ -59,7 +55,6 @@
   .notice,
   .iconWrap {
     animation: none !important;
-    transform: none !important;
   }
 }
 

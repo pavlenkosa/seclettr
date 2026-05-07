@@ -37,7 +37,7 @@
   align-items: flex-start;
   justify-content: space-between;
   gap: 0.75rem;
-  background: linear-gradient(180deg, rgb(3 8 18 / 0.72) 0%, transparent 100%);
+  background: rgb(3 8 18 / 0.72);
 }
 
 .meta {

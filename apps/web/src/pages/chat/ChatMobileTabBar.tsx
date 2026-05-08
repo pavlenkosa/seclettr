@@ -1,7 +1,9 @@
 import { useRef, type KeyboardEvent as ReactKeyboardEvent, type RefObject } from "react";
 import { useI18n } from "@/i18n";
 import { useAnimatedPresence } from "@/lib/hooks";
+import { MOTION_DURATION_MS } from "@/lib/motion";
 import { BottomDockSurface } from "@/components/ui";
+import motionStyles from "@/components/ui/motion/Motion.module.css";
 
 import styles from "./ChatMobileTabBar.module.css";
 
@@ -47,7 +49,7 @@ export function ChatMobileTabBar({
   const createFabRef = useRef<HTMLButtonElement | null>(null);
   const createMenuPresence = useAnimatedPresence({
     isOpen: isCreateMenuOpen,
-    durationMs: 180,
+    durationMs: MOTION_DURATION_MS.base,
     onHidden: () => {
       createFabRef.current?.focus();
     },
@@ -57,9 +59,9 @@ export function ChatMobileTabBar({
     <div
       id={createMenuId}
       ref={createMenuRef}
-      className={[
-        className,
-        createMenuPresence.isClosing ? styles.createMenuClosing : "",
+        className={[
+          className,
+          createMenuPresence.isClosing ? motionStyles.popoverOut : motionStyles.popoverIn,
       ].filter(Boolean).join(" ")}
       role="menu"
       tabIndex={-1}
@@ -122,7 +124,7 @@ export function ChatMobileTabBar({
           type="button"
           className={[
             styles.scrim,
-            createMenuPresence.isClosing ? styles.scrimClosing : "",
+            createMenuPresence.isClosing ? motionStyles.fadeOut : motionStyles.fadeIn,
           ].filter(Boolean).join(" ")}
           onClick={onCloseCreateMenu}
           aria-label={t("chat.closeCreateMenu")}

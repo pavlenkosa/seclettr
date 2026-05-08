@@ -397,17 +397,17 @@
   width: clamp(118px, 28%, 176px);
   aspect-ratio: 1 / 1;
   border-radius: 999px;
-  border: 1px solid color-mix(in srgb, var(--accent) 34%, transparent);
-  background: color-mix(in srgb, var(--accent) 10%, transparent);
-  opacity: 0.58;
-  transition: opacity 0.14s ease, border-color 0.14s ease;
+  border: 2px solid color-mix(in srgb, var(--accent) 58%, transparent);
+  background: transparent;
+  opacity: 1;
+  transition: border-color 0.14s ease, background-color 0.14s ease;
   pointer-events: none;
   z-index: 0;
 }
 
 .stageAudioPulseActive {
-  opacity: 0.95;
   border-color: color-mix(in srgb, var(--accent) 58%, transparent);
+  background: transparent;
 }
 
 .peerName {
@@ -782,20 +782,17 @@
 
 
 .controlsDock {
-  position: sticky;
-  bottom: calc(env(safe-area-inset-bottom, 0px) + 2px);
-  z-index: 7;
-  width: fit-content;
-  max-width: min(100%, 760px);
-  margin-inline: auto;
-  padding: 0.48rem;
-  border-radius: 32px;
-  border: 1px solid color-mix(in srgb, var(--panel-border-soft) 76%, transparent);
-  background: color-mix(in srgb, var(--surface-shell) 98%, var(--surface-float));
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.75rem;
+  --call-controls-position: sticky;
+  --call-controls-bottom: calc(env(safe-area-inset-bottom, 0px) + 2px);
+  --call-controls-z-index: 7;
+  --call-controls-width: fit-content;
+  --call-controls-max-width: min(100%, 760px);
+  --call-controls-width-narrow: min(100%, 440px);
+  --call-controls-margin: 0 auto;
+  --call-controls-padding: 0.48rem;
+  --call-controls-gap: 0.75rem;
+  --call-controls-direction-narrow: row;
+  --call-controls-align-narrow: center;
   animation: callContentIn 260ms cubic-bezier(0.18, 0.9, 0.2, 1) 90ms both;
 }
 
@@ -889,8 +886,7 @@
   }
 
   .controlsDock {
-    gap: 0.5rem;
-    width: min(100%, 440px);
+    --call-controls-gap: 0.5rem;
   }
 
   .audioOutputStrip {

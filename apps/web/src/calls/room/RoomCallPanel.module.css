@@ -100,6 +100,24 @@
   transition: background 0.12s ease, color 0.12s ease;
 }
 
+.hostActions {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.62rem;
+  padding: 0.68rem 0.75rem;
+  border-radius: 10px;
+  border: 1px solid color-mix(in srgb, var(--danger) 28%, var(--panel-border-soft));
+  background: color-mix(in srgb, var(--danger) 8%, var(--surface-float));
+}
+
+.hostActionHint {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 0.78rem;
+  line-height: 1.42;
+}
+
 .kickBtn:hover:not(:disabled) {
   background: color-mix(in srgb, var(--color-danger, #e53e3e) 15%, transparent);
   color: var(--color-danger, #e53e3e);

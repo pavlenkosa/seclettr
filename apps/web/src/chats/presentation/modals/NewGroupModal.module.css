@@ -78,9 +78,9 @@
   padding: 0 0.92rem;
   font-size: 0.82rem;
   font-weight: 600;
-  transition: border-color 0.14s ease, background-color 0.14s ease, transform 0.14s ease, opacity 0.14s ease;
+  transition: border-color 0.14s ease, background-color 0.14s ease, opacity 0.14s ease;
   border: 1px solid color-mix(in srgb, var(--accent) 52%, transparent);
-  background: linear-gradient(145deg, var(--accent), var(--accent-hover));
+  background: var(--accent);
   color: #fff;
 }
 
@@ -89,6 +89,7 @@
 }
 
 .createBtn:hover:not(:disabled) {
+  background: var(--accent-hover);
 }
 
 .createBtn:disabled,

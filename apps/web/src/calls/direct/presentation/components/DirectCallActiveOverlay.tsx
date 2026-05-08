@@ -7,7 +7,6 @@ import { DirectCallSecurityPanel } from "./DirectCallSecurityPanel";
 import { DirectCallStage } from "./DirectCallStage";
 import { AudioOutputSelector } from "@/calls/shared/media/audio-output/AudioOutputSelector";
 import { useCallAudioOutput } from "@/calls/shared/media/audio-output/CallAudioOutputProvider";
-import { useCallAudioActivity } from "@/calls/shared/media/useCallAudioActivity";
 import { useCallInputDevices } from "@/calls/shared/media/input-devices/useCallInputDevices";
 import type { VideoResolution } from "@/calls/shared/presentation/CallDevicePicker";
 import { CallDurationText } from "@/calls/shared/presentation/CallDurationText";
@@ -302,8 +301,7 @@ export function DirectCallActiveOverlay({
     }
   }, [remoteAudioRef]);
 
-  // Detect when peer is speaking
-  const peerIsSpeaking = useCallAudioActivity(remoteStream, true);
+  const peerHasAudio = Boolean(remoteStream?.getAudioTracks().some((track) => track.readyState === "live"));
 
   // Only show audio output controls when the browser actually supports it
   const { support: audioOutputSupport, canPromptForDevices: audioCanPrompt } = useCallAudioOutput();
@@ -394,7 +392,7 @@ export function DirectCallActiveOverlay({
           screenViewerDialogAriaLabel={screenViewerDialogAriaLabel}
           showCameraOnStageLabel={showCameraOnStageLabel}
           showScreenOnStageLabel={showScreenOnStageLabel}
-          peerIsSpeaking={peerIsSpeaking}
+          peerHasAudio={peerHasAudio}
         />
 
         <div className={styles.callSecuritySection}>

@@ -90,7 +90,7 @@ describe("CallMediaSurface", () => {
     expect(onSecondaryAction).toHaveBeenCalledTimes(1);
   });
 
-  it("renders speaking pulse state for avatar fallbacks", () => {
+  it("renders a stable audio-presence ring for avatar fallbacks", () => {
     act(() => {
       root.render(
         <CallMediaAvatarFallback
@@ -100,6 +100,7 @@ describe("CallMediaSurface", () => {
           avatarClassName="avatar"
           pulseClassName="pulse"
           pulseActiveClassName="pulse-active"
+          hasAudio
           isSpeaking
           speakingVariant="primary-stage"
         />
@@ -110,6 +111,7 @@ describe("CallMediaSurface", () => {
     const fallback = container.querySelector(".fallback") as HTMLElement | null;
     expect(pulse).not.toBeNull();
     expect(pulse?.className).toContain("pulse-active");
+    expect(fallback?.getAttribute("data-audio-present")).toBe("true");
     expect(fallback?.getAttribute("data-speaking")).toBe("true");
     expect(fallback?.getAttribute("data-speaking-variant")).toBe("primary-stage");
   });

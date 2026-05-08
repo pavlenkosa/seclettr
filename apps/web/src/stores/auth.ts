@@ -59,7 +59,7 @@ import {
   hasPinSet,
   setPinHash,
   verifyPin,
-} from "@/lib/app-lock-pin";
+} from "@/lib/app-lock-password";
 import { useMessagesStore } from "@/stores/messages";
 import { useGroupsStore } from "@/stores/groups";
 import type { AuthState } from "./auth-types";

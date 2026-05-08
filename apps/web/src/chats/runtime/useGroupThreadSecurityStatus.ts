@@ -42,6 +42,7 @@ export async function resolveGroupThreadSecurityStatus(params: {
       if (devices.length === 0) {
         return "unverified";
       }
+      let hasVerifiedDevice = false;
       for (const peerDevice of devices) {
         const codes = await computeSafetyCodes(
           myKeyB64,
@@ -55,9 +56,13 @@ export async function resolveGroupThreadSecurityStatus(params: {
           member.userId,
           peerDevice.deviceId
         );
-        if (record?.safetyHash !== codes.safetyHash) {
-          return "unverified";
+        if (record?.safetyHash === codes.safetyHash) {
+          hasVerifiedDevice = true;
+          break;
         }
+      }
+      if (!hasVerifiedDevice) {
+        return "unverified";
       }
     } catch {
       return "unverified";

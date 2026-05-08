@@ -10,7 +10,6 @@
   border: 0;
   border-radius: 0;
   background: transparent;
-  animation: conversationListIn var(--motion-duration-slow) var(--motion-ease-emphasized) both;
 }
 
 .empty {
@@ -27,7 +26,6 @@
   border: 0;
   border-radius: 14px;
   background: transparent;
-  animation: conversationListIn var(--motion-duration-slow) var(--motion-ease-emphasized) both;
 }
 
 .emptyMark {
@@ -61,8 +59,6 @@
   transition:
     background-color var(--motion-duration-fast) var(--motion-ease-standard),
     border-color var(--motion-duration-fast) var(--motion-ease-standard);
-  animation: conversationItemIn var(--motion-duration-base) var(--motion-ease-emphasized) both;
-  animation-delay: var(--conversation-enter-delay, 0ms);
 }
 
 .item:hover {
@@ -269,25 +265,5 @@
   .skeletonLine {
     animation: none !important;
     opacity: 0.7;
-  }
-}
-
-@keyframes conversationListIn {
-  0% {
-    opacity: 0;
-  }
-
-  100% {
-    opacity: 1;
-  }
-}
-
-@keyframes conversationItemIn {
-  0% {
-    opacity: 0;
-  }
-
-  100% {
-    opacity: 1;
   }
 }

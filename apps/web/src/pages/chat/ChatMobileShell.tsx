@@ -1,5 +1,7 @@
 import type { ReactNode } from "react";
 import { useAnimatedPresence } from "@/lib/hooks";
+import { MOTION_DURATION_MS } from "@/lib/motion";
+import motionStyles from "@/components/ui/motion/Motion.module.css";
 import styles from "./ChatMobileShell.module.css";
 
 /**
@@ -25,15 +27,15 @@ export function ChatMobileShell({
 }: ChatMobileShellProps) {
   const sidebarPresence = useAnimatedPresence({
     isOpen: !isConversationVisible && !isSettingsVisible,
-    durationMs: 220,
+    durationMs: MOTION_DURATION_MS.base,
   });
   const threadPresence = useAnimatedPresence({
     isOpen: isConversationVisible && !isSettingsVisible,
-    durationMs: 220,
+    durationMs: MOTION_DURATION_MS.base,
   });
   const settingsPresence = useAnimatedPresence({
     isOpen: isSettingsVisible,
-    durationMs: 220,
+    durationMs: MOTION_DURATION_MS.base,
   });
 
   return (
@@ -42,7 +44,7 @@ export function ChatMobileShell({
         <div
           className={[
             styles.sidebarView,
-            sidebarPresence.isClosing ? styles.surfaceClosing : "",
+            sidebarPresence.isClosing ? motionStyles.panelOut : motionStyles.panelIn,
           ].filter(Boolean).join(" ")}
         >
           {sidebar}
@@ -53,7 +55,7 @@ export function ChatMobileShell({
         <div
           className={[
             styles.threadView,
-            threadPresence.isClosing ? styles.surfaceClosing : "",
+            threadPresence.isClosing ? motionStyles.panelOut : motionStyles.panelIn,
           ].filter(Boolean).join(" ")}
         >
           <div className={styles.threadBody}>
@@ -66,7 +68,7 @@ export function ChatMobileShell({
         <div
           className={[
             styles.settingsView,
-            settingsPresence.isClosing ? styles.surfaceClosing : "",
+            settingsPresence.isClosing ? motionStyles.panelOut : motionStyles.panelIn,
           ].filter(Boolean).join(" ")}
         >
           {settings}
@@ -74,7 +76,7 @@ export function ChatMobileShell({
       ) : null}
 
       {sidebarPresence.isMounted ? (
-        <div className={sidebarPresence.isClosing ? styles.surfaceClosing : ""}>
+        <div className={sidebarPresence.isClosing ? motionStyles.fadeOut : motionStyles.fadeIn}>
           {sidebarDock}
         </div>
       ) : null}

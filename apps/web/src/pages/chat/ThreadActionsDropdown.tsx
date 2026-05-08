@@ -1,7 +1,9 @@
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import { useI18n } from "@/i18n";
 import { useAnimatedPresence } from "@/lib/hooks";
+import { MOTION_DURATION_MS } from "@/lib/motion";
 import { IconButton } from "@/components/ui";
+import motionStyles from "@/components/ui/motion/Motion.module.css";
 import actionStyles from "./ChatThreadActions.module.css";
 import styles from "./ThreadActionsDropdown.module.css";
 
@@ -26,7 +28,7 @@ export function ThreadActionsDropdown({ items, disabled }: Props) {
   const menuRef = useRef<HTMLDivElement>(null);
   const { isMounted, isClosing } = useAnimatedPresence({
     isOpen: open,
-    durationMs: 140,
+    durationMs: MOTION_DURATION_MS.fast,
     onHidden: () => {
       triggerRef.current?.focus();
     },
@@ -88,7 +90,10 @@ export function ThreadActionsDropdown({ items, disabled }: Props) {
       {isMounted && (
         <div
           ref={menuRef}
-          className={[styles.menu, isClosing ? styles.menuClosing : ""].join(" ")}
+          className={[
+            styles.menu,
+            isClosing ? motionStyles.popoverOut : motionStyles.popoverIn,
+          ].join(" ")}
           role="menu"
         >
           {items.map((item) => (

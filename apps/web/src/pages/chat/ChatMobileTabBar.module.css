@@ -8,10 +8,6 @@
   border: 0;
 }
 
-.scrimClosing {
-  pointer-events: none;
-}
-
 .menuOpen {
   --bottom-dock-z-index: 61;
 }
@@ -90,8 +86,6 @@
   position: absolute;
   right: 0;
   bottom: calc(100% + 0.7rem);
-  transform-origin: right bottom;
-  opacity: 0;
   width: min(15.2rem, calc(100vw - 2rem));
   display: grid;
   gap: 0.28rem;
@@ -100,12 +94,6 @@
   border: 1px solid color-mix(in srgb, var(--panel-border-soft) 88%, transparent);
   background: color-mix(in srgb, var(--bg-secondary) 98%, var(--bg-primary));
   z-index: 5;
-  animation: mobileCreateMenuIn var(--motion-duration-base) var(--motion-ease-standard) forwards;
-}
-
-.createMenuClosing {
-  pointer-events: none;
-  animation: mobileCreateMenuOut var(--motion-duration-base) var(--motion-ease-exit) forwards;
 }
 
 .createMenuButton {
@@ -122,12 +110,6 @@
   transition:
     background-color var(--motion-duration-fast) var(--motion-ease-standard),
     border-color var(--motion-duration-fast) var(--motion-ease-standard);
-  opacity: 0;
-  animation: mobileCreateMenuItemIn var(--motion-duration-base) var(--motion-ease-standard) forwards;
-}
-
-.createMenuButton:nth-child(2) {
-  animation-delay: 34ms;
 }
 
 .createMenuButton:hover {
@@ -227,16 +209,6 @@
   white-space: nowrap;
 }
 
-@keyframes mobileCreateMenuOut {
-  from {
-    opacity: 1;
-  }
-
-  to {
-    opacity: 0;
-  }
-}
-
 :global(:root[data-theme="light"]) .createMenu,
 :global(:root[data-theme="light"]) .createMenuButton {
   border-color: color-mix(in srgb, var(--panel-border-soft) 92%, transparent);
@@ -257,7 +229,6 @@
   .createMenuButton,
   .createFab,
   .createFabIcon {
-    animation: none !important;
     transition: none !important;
   }
 
@@ -271,30 +242,5 @@
   .createMenu,
   .createFab {
     transform: none !important;
-  }
-
-  .createMenu,
-  .createMenuButton {
-    opacity: 1 !important;
-  }
-}
-
-@keyframes mobileCreateMenuIn {
-  0% {
-    opacity: 0;
-  }
-
-  100% {
-    opacity: 1;
-  }
-}
-
-@keyframes mobileCreateMenuItemIn {
-  0% {
-    opacity: 0;
-  }
-
-  100% {
-    opacity: 1;
   }
 }

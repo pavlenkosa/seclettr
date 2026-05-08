@@ -1,6 +1,7 @@
 import { useCallback, useState } from "react";
 import { createPortal } from "react-dom";
 import { api } from "@/lib/api";
+import motionStyles from "@/components/ui/motion/Motion.module.css";
 import type { RoomCreateResponse } from "@seclettr/protocol";
 import styles from "./CreateRoomDialog.module.css";
 
@@ -39,7 +40,7 @@ export function CreateRoomDialog({ onClose, onRoomCreated }: Props) {
 
   return createPortal(
     <div
-      className={styles.overlay}
+      className={`${styles.overlay} ${motionStyles.fadeIn}`}
       onClick={onClose}
       role="presentation"
     >
@@ -48,7 +49,7 @@ export function CreateRoomDialog({ onClose, onRoomCreated }: Props) {
         open
         aria-modal="true"
         aria-label="Create room call"
-        className={styles.surface}
+        className={`${styles.surface} ${motionStyles.surfaceIn}`}
         onCancel={(e) => { e.preventDefault(); onClose(); }}
         onClick={(e) => e.stopPropagation()}
       >

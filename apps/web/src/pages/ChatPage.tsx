@@ -286,6 +286,7 @@ export function ChatPage() {
       t={t}
       handleBack={handleBack}
       threadChromeActions={threadChromeActions}
+      handleOpenGroupMembers={interactions.handleOpenGroupMembers}
       activeGroupCall={activeGroupCall}
       showGroupCallNotice={showGroupCallNotice}
       activeGroupCallCallerLabel={activeGroupCallCallerLabel}

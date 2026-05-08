@@ -57,15 +57,12 @@
   inset: 0;
   z-index: 50;
   overflow: hidden;
+  --motion-enter-duration: 180ms;
+  --motion-exit-duration: 140ms;
 }
 
 .searchBarPresence {
   flex-shrink: 0;
-}
-
-.searchBarPresenceClosing {
-  pointer-events: none;
-  animation: searchBarPresenceOut var(--motion-duration-fast) var(--motion-ease-exit) both;
 }
 
 .searchBarLazyFallback {
@@ -82,15 +79,10 @@
   z-index: 30;
 }
 
-.mediaPanelPresenceClosing {
-  pointer-events: none;
-  animation: mediaPanelPresenceOut var(--motion-duration-base) var(--motion-ease-exit) both;
-}
-
 .mediaPanelLazyFallback {
   position: absolute;
   inset: 0;
-  border-radius: 20px;
+  border-radius: 0;
   background: color-mix(in srgb, var(--bg-secondary) 94%, var(--bg-primary));
   animation: lazyPanelPulse 900ms ease-in-out infinite;
 }
@@ -142,16 +134,6 @@
   border: 2px solid color-mix(in srgb, var(--accent) 18%, transparent);
   border-top-color: var(--accent);
   animation: modalLazySpin 800ms linear infinite;
-}
-
-@keyframes searchBarPresenceOut {
-  from { opacity: 1; }
-  to   { opacity: 0; }
-}
-
-@keyframes mediaPanelPresenceOut {
-  from { opacity: 1; }
-  to   { opacity: 0; }
 }
 
 @keyframes lazyPanelPulse {
@@ -214,22 +196,6 @@
   font-size: 0.8rem;
   font-weight: 600;
   letter-spacing: 0.01em;
-  animation: bannerIn 200ms cubic-bezier(0.18, 0.9, 0.2, 1) both;
-}
-
-.chatNoticeClosing {
-  pointer-events: none;
-  animation: bannerOut 180ms cubic-bezier(0.4, 0, 1, 1) both;
-}
-
-@keyframes bannerIn {
-  from { opacity: 0; }
-  to   { opacity: 1; }
-}
-
-@keyframes bannerOut {
-  from { opacity: 1; }
-  to   { opacity: 0; }
 }
 
 /* ─── Call notification banners ─────────────────────────────────────────────── */
@@ -242,15 +208,6 @@
   z-index: 390;
   display: flex;
   flex-direction: column;
-}
-
-.callAlertBannersClosing {
-  pointer-events: none;
-  animation: bannerOut 180ms cubic-bezier(0.4, 0, 1, 1) both;
-}
-
-.callAlertBannersClosing .callAlertBanner {
-  animation: none;
 }
 
 .callAlertBannersBelowNotice {
@@ -268,7 +225,6 @@
   color: var(--text-primary);
   font-size: 0.8rem;
   font-weight: 500;
-  animation: bannerIn 200ms cubic-bezier(0.18, 0.9, 0.2, 1) both;
 }
 
 .callAlertBannerMissed {
@@ -358,20 +314,16 @@
 @media (prefers-reduced-motion: reduce) {
   .main,
   .chatNotice,
-  .chatNoticeClosing,
   .callAlertBanners,
-  .callAlertBannersClosing,
   .callAlertBanner {
     transition: none !important;
     transform: none !important;
     animation: none !important;
   }
 
-  .searchBarPresenceClosing,
   .searchBarLazyFallback,
   .composerLazyFallback,
   .composerLazyFallback::before,
-  .mediaPanelPresenceClosing,
   .mediaPanelLazyFallback,
   .modalLazyFallback,
   .modalLazyFallback::after {

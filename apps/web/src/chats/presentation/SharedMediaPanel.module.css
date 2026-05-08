@@ -7,14 +7,8 @@
   /* Keep this full-cover panel opaque so messages do not bleed through. */
   background: color-mix(in srgb, var(--bg-secondary) 96%, var(--bg-primary));
   border-left: 1px solid color-mix(in srgb, var(--panel-border-soft) 80%, transparent);
-  border-radius: 20px;
+  border-radius: 0;
   overflow: hidden;
-  animation: panelIn var(--motion-duration-base, 200ms) var(--motion-ease-emphasized, cubic-bezier(.2,.8,.3,1)) both;
-}
-
-@keyframes panelIn {
-  from { opacity: 0; transform: translateX(24px); }
-  to   { opacity: 1; transform: translateX(0); }
 }
 
 .header {
@@ -204,8 +198,4 @@
 .itemGoBtn:focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: -1px;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .panel { animation: none; }
 }

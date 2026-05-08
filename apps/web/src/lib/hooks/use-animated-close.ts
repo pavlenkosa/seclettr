@@ -1,12 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import { MOTION_DURATION_MS, prefersReducedMotion } from "@/lib/motion";
 
-const DEFAULT_CLOSE_DURATION_MS = 200;
-
-function prefersReducedMotion(): boolean {
-  return globalThis.window !== undefined
-    && typeof globalThis.globalThis.matchMedia === "function"
-    && globalThis.matchMedia("(prefers-reduced-motion: reduce)").matches;
-}
+const DEFAULT_CLOSE_DURATION_MS = MOTION_DURATION_MS.base;
 
 export function useAnimatedClose(onClose: () => void, durationMs = DEFAULT_CLOSE_DURATION_MS) {
   const [isClosing, setIsClosing] = useState(false);

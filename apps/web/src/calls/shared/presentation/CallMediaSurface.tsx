@@ -29,6 +29,7 @@ interface CallMediaAvatarFallbackProps {
   readonly avatarClassName?: string;
   readonly pulseClassName?: string;
   readonly pulseActiveClassName?: string;
+  readonly hasAudio?: boolean;
   readonly isSpeaking?: boolean;
   readonly speakingVariant?: CallMediaSpeakingVariant;
 }
@@ -103,6 +104,7 @@ export function CallMediaAvatarFallback({
   avatarClassName,
   pulseClassName,
   pulseActiveClassName,
+  hasAudio = false,
   isSpeaking = false,
   speakingVariant = "tile",
 }: CallMediaAvatarFallbackProps) {
@@ -110,10 +112,11 @@ export function CallMediaAvatarFallback({
     <div
       className={className}
       aria-hidden="true"
+      data-audio-present={hasAudio ? "true" : "false"}
       data-speaking-variant={speakingVariant}
       data-speaking={isSpeaking ? "true" : "false"}
     >
-      {pulseClassName ? (
+      {hasAudio && pulseClassName ? (
         <span
           className={[
             pulseClassName,

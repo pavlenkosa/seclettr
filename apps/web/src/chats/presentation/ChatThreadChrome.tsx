@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import { GroupCallNotice } from "@/calls/group";
-import { Avatar, IconButton, StatusBadge, SurfacePanel } from "@/components/ui";
+import { Avatar, IconButton, SurfacePanel } from "@/components/ui";
+import { SecurityStatusIndicator } from "./security/SecurityStatusIndicator";
 
 import styles from "./ChatThreadChrome.module.css";
 
@@ -14,25 +15,19 @@ interface ChatThreadChromeCallNotice {
   onJoin: () => void;
 }
 
-function resolveStatusBadgeTone(statusTone: ChatThreadChromeStatusTone): "success" | "danger" | "warning" {
-  if (statusTone === "verified") {
-    return "success";
-  }
-  if (statusTone === "attention") {
-    return "danger";
-  }
-  return "warning";
-}
-
 export interface ChatThreadChromeProps {
   /** Primary thread label shown in the sticky header. */
   readonly title: string;
   /** Secondary status line such as presence or group member count. */
   readonly subtitle: string;
-  /** Text content displayed inside the security badge. */
+  /** Compact text displayed inside the security indicator. */
   readonly statusLabel: string;
-  /** Visual tone applied to the security badge. */
+  /** Full accessible description for the security indicator. */
+  readonly statusAriaLabel: string;
+  /** Visual tone applied to the security indicator. */
   readonly statusTone: ChatThreadChromeStatusTone;
+  /** Optional action opening the matching security details surface. */
+  readonly onStatusClick?: () => void;
   /** Source label used to derive the avatar initials. */
   readonly avatarLabel: string;
   /** Accessible label for the mobile back button. */
@@ -53,7 +48,9 @@ export function ChatThreadChrome({
   title,
   subtitle,
   statusLabel,
+  statusAriaLabel,
   statusTone,
+  onStatusClick,
   avatarLabel,
   backAriaLabel,
   onBack,
@@ -94,17 +91,13 @@ export function ChatThreadChrome({
           </div>
 
           <div className={styles.actions}>
-            <StatusBadge
+            <SecurityStatusIndicator
               className={styles.statusBadge}
-              tone={resolveStatusBadgeTone(statusTone)}
-              size="sm"
-              iconSize={10}
-            >
-              <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
-                <path d="M5 1L8 3V7C8 8.5 5 10 5 10C5 10 2 8.5 2 7V3L5 1Z" fill="currentColor" />
-              </svg>
-              {statusLabel}
-            </StatusBadge>
+              tone={statusTone}
+              label={statusLabel}
+              ariaLabel={statusAriaLabel}
+              onClick={onStatusClick}
+            />
             <span className={styles.actionsDivider} aria-hidden="true" />
             {actions}
           </div>

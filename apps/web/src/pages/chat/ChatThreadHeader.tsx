@@ -3,6 +3,7 @@ import { ChatThreadChrome } from "@/chats/presentation/ChatThreadChrome";
 import type {
   SecurityWorkspaceState,
   TranslateFn,
+  WorkspaceInteractions,
   WorkspaceEntryState,
 } from "./chat-page-types";
 
@@ -17,12 +18,36 @@ const resolveStatusLabel = ({
 }) => {
   if (!isDirectThread) {
     return security.groupSecurityStatus === "verified"
+      ? t("security.badge.verified")
+      : t("security.badge.verify");
+  }
+  if (security.securityStatus === "verified") return t("security.badge.verified");
+  if (security.securityStatus === "reverify_required") return t("security.badge.review");
+  return t("security.badge.verify");
+};
+
+const resolveStatusAriaLabel = ({
+  isDirectThread,
+  security,
+  t,
+}: {
+  isDirectThread: boolean;
+  security: SecurityWorkspaceState;
+  t: TranslateFn;
+}) => {
+  if (!isDirectThread) {
+    const status = security.groupSecurityStatus === "verified"
       ? t("group.security.verified")
       : t("group.security.unverified");
+    return `${status}. ${t("group.security.verifyMembers")}`;
   }
-  if (security.securityStatus === "verified") return t("chat.securityVerified");
-  if (security.securityStatus === "reverify_required") return t("chat.securityReverifyRequired");
-  return t("chat.securityUnverified");
+
+  const status = security.securityStatus === "verified"
+    ? t("chat.securityVerified")
+    : security.securityStatus === "reverify_required"
+      ? t("chat.securityReverifyRequired")
+      : t("chat.securityUnverified");
+  return `${status}. ${t("chat.verifySecurity")}`;
 };
 
 const resolveStatusTone = ({
@@ -45,6 +70,7 @@ export const ChatThreadHeader = memo(function ChatThreadHeader({
   t,
   handleBack,
   threadChromeActions,
+  handleOpenGroupMembers,
   activeGroupCall,
   showGroupCallNotice,
   activeGroupCallCallerLabel,
@@ -59,6 +85,7 @@ export const ChatThreadHeader = memo(function ChatThreadHeader({
   t: TranslateFn;
   handleBack: WorkspaceEntryState["handleBack"];
   threadChromeActions: ReactNode;
+  handleOpenGroupMembers: WorkspaceInteractions["handleOpenGroupMembers"];
   activeGroupCall: WorkspaceEntryState["activeGroupCall"];
   showGroupCallNotice: boolean;
   activeGroupCallCallerLabel: string;
@@ -73,7 +100,9 @@ export const ChatThreadHeader = memo(function ChatThreadHeader({
     ? directPresenceLabel
     : t("group.header.memberCount", { count: activeGroup?.members.length ?? 0 });
   const statusLabel = resolveStatusLabel({ isDirectThread, security, t });
+  const statusAriaLabel = resolveStatusAriaLabel({ isDirectThread, security, t });
   const statusTone = resolveStatusTone({ isDirectThread, security });
+  const handleStatusClick = isDirectThread ? security.openSecurity : handleOpenGroupMembers;
   const callNotice = showGroupCallNotice && activeGroupCall
     ? {
         callType: activeGroupCall.callType,
@@ -89,7 +118,9 @@ export const ChatThreadHeader = memo(function ChatThreadHeader({
       title={title}
       subtitle={subtitle}
       statusLabel={statusLabel}
+      statusAriaLabel={statusAriaLabel}
       statusTone={statusTone}
+      onStatusClick={handleStatusClick}
       avatarLabel={title}
       backAriaLabel={t("chat.back")}
       onBack={handleBack}

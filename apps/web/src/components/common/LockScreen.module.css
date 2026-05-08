@@ -153,98 +153,49 @@
   cursor: default;
 }
 
-/* ── PIN pad ──────────────────────────────────────────────── */
+/* ── Passcode form ────────────────────────────────────────── */
 
-.pinDots {
+.passcodeForm {
   display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 14px;
-  margin: 0.6rem 0 0;
-}
-
-.pinDot {
-  width: 14px;
-  height: 14px;
-  border-radius: 50%;
-  border: 2px solid color-mix(in srgb, var(--accent) 50%, var(--text-secondary) 50%);
-  background: transparent;
-  transition: background 120ms ease, border-color 120ms ease, transform 120ms ease;
-}
-
-.pinDotFilled {
-  background: var(--accent);
-  border-color: var(--accent);
-  transform: scale(1.12);
-}
-
-.pinHint {
-  font-size: 0.78rem;
-  color: var(--text-secondary);
-  margin: 0.2rem 0 0.4rem;
-  min-height: 1.2em;
-  text-align: center;
-}
-
-.pinHintError {
-  color: var(--danger, #e74c3c);
-}
-
-.pinPad {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 10px;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0.6rem;
   width: 100%;
-  max-width: 260px;
-  margin: 0.4rem 0 0.4rem;
+  margin-top: 0.5rem;
 }
 
-.pinKey {
-  all: unset;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  height: 56px;
-  border-radius: 16px;
-  background: color-mix(in srgb, var(--accent) 8%, var(--surface-float) 92%);
+.passcodeInput {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 0.72rem 1rem;
+  border-radius: 14px;
+  border: 1.5px solid var(--border);
+  background: var(--bg-primary);
   color: var(--text-primary);
-  font-size: 1.3rem;
-  font-weight: 500;
-  cursor: pointer;
-  transition: background 110ms ease, transform 90ms ease;
-  user-select: none;
+  font-size: 1rem;
+  text-align: center;
+  outline: none;
+  transition: border-color 140ms ease, box-shadow 140ms ease;
 }
 
-.pinKey:hover:not(:disabled) {
-  background: color-mix(in srgb, var(--accent) 16%, var(--surface-float) 84%);
+.passcodeInput:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 18%, transparent);
 }
 
-.pinKey:active:not(:disabled) {
-  transform: scale(0.92);
-  background: color-mix(in srgb, var(--accent) 26%, var(--surface-float) 74%);
+.passcodeInput:disabled {
+  opacity: 0.6;
 }
 
-.pinKey:disabled {
-  opacity: 0.4;
-  cursor: default;
+.passcodeInputError {
+  border-color: var(--danger, #e74c3c);
 }
 
-.pinKeyDelete {
-  color: var(--text-secondary);
-  background: color-mix(in srgb, var(--surface-float) 60%, transparent);
-}
-
-.pinKeyDelete:hover:not(:disabled) {
-  background: color-mix(in srgb, var(--danger, #e74c3c) 10%, var(--surface-float) 90%);
-  color: var(--danger, #e74c3c);
-}
-
-.pinPadSpacer {
-  display: block;
+.passcodeInputError:focus {
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--danger, #e74c3c) 18%, transparent);
 }
 
 @media (prefers-reduced-motion: reduce) {
   .root, .card { animation: none; }
-  .pinDot { transition: none; }
-  .pinKey { transition: none; }
+  .passcodeInput { transition: none; }
 }

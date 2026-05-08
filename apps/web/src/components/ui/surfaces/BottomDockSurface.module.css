@@ -20,7 +20,6 @@
   transition:
     background-color var(--motion-duration-fast) var(--motion-ease-standard),
     opacity var(--motion-duration-base) var(--motion-ease-standard);
-  animation: bottomDockSurfaceIn var(--motion-duration-base) var(--motion-ease-standard) both;
 }
 
 .inline {
@@ -31,11 +30,6 @@
   width: calc(100% - var(--bottom-dock-inline-width-offset));
   margin-inline: calc(var(--bottom-dock-inline-width-offset) / 2);
   z-index: var(--bottom-dock-inline-z-index, var(--bottom-dock-z-index));
-}
-
-.rootClosing {
-  pointer-events: none;
-  animation: bottomDockSurfaceOut var(--motion-duration-base) var(--motion-ease-exit) both;
 }
 
 :global(:root[data-theme="light"]) .root {
@@ -52,26 +46,5 @@
 @media (prefers-reduced-motion: reduce) {
   .root {
     transition: none !important;
-    animation: none !important;
-  }
-}
-
-@keyframes bottomDockSurfaceIn {
-  0% {
-    opacity: 0;
-  }
-
-  100% {
-    opacity: 1;
-  }
-}
-
-@keyframes bottomDockSurfaceOut {
-  0% {
-    opacity: 1;
-  }
-
-  100% {
-    opacity: 0;
   }
 }

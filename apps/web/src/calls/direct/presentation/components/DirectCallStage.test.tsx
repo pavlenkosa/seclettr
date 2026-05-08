@@ -44,7 +44,7 @@ function DirectCallStageHarness({
       screenViewerDialogAriaLabel="Screen share viewer"
       showCameraOnStageLabel="Show camera on stage"
       showScreenOnStageLabel="Show screen share on stage"
-      peerIsSpeaking={false}
+      peerHasAudio={false}
     />
   );
 }

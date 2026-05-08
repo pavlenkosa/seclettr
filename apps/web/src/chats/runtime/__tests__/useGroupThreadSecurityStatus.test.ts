@@ -101,4 +101,59 @@ describe("resolveGroupThreadSecurityStatus", () => {
       })
     ).resolves.toBe("unverified");
   });
+
+  it("returns verified when each peer member has one verified device among multiple devices", async () => {
+    const { resolveGroupThreadSecurityStatus } = await import(
+      "@/chats/runtime/useGroupThreadSecurityStatus"
+    );
+    const fetchGroupSecurityDevices = vi.fn().mockResolvedValue({
+      "user-a": [
+        { deviceId: "device-a-1", identityKeyPublic: "identity-a-1" },
+        { deviceId: "device-a-2", identityKeyPublic: "identity-a-2" },
+      ],
+      "user-b": [
+        { deviceId: "device-b-1", identityKeyPublic: "identity-b-1" },
+      ],
+    });
+    computeSafetyCodesMock
+      .mockResolvedValueOnce({ safetyHash: "hash-a-1" })
+      .mockResolvedValueOnce({ safetyHash: "hash-a-2" })
+      .mockResolvedValueOnce({ safetyHash: "hash-b-1" });
+    getSafetyVerificationRecordMock
+      .mockResolvedValueOnce(null)
+      .mockResolvedValueOnce({ safetyHash: "hash-a-2" })
+      .mockResolvedValueOnce({ safetyHash: "hash-b-1" });
+
+    await expect(
+      resolveGroupThreadSecurityStatus({
+        activeGroup: {
+          groupId: "group-1",
+          members: [
+            {
+              userId: "user-self",
+              username: "self",
+              role: "member",
+              joinedAt: new Date(0).toISOString(),
+            },
+            {
+              userId: "user-a",
+              username: "A",
+              role: "member",
+              joinedAt: new Date(0).toISOString(),
+            },
+            {
+              userId: "user-b",
+              username: "B",
+              role: "member",
+              joinedAt: new Date(0).toISOString(),
+            },
+          ],
+        },
+        identityDhKeyPair: { publicKey: new Uint8Array(32).fill(1) },
+        userId: "user-self",
+        deviceId: "device-self",
+        fetchGroupSecurityDevices,
+      })
+    ).resolves.toBe("verified");
+  });
 });

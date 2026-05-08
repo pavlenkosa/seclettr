@@ -18,15 +18,17 @@ async function importHmacKey(rawKey: Uint8Array): Promise<CryptoKey> {
 }
 
 /**
- * Compute HMAC-SHA-256(rawKey, label || keyId) encoded as base64url.
- * Called by the key *recipient* when sending the ACK.
+ * Compute HMAC-SHA-256(rawKey, label || keyId || ":" || epoch) encoded as base64url.
+ * Binding epoch makes the proof unique per rotation even if keyId were to repeat
+ * (e.g. after epoch wrap). Called by the key *recipient* when sending the ACK.
  */
 export async function computeMediaKeyAckProof(
   rawKey: Uint8Array,
-  keyId: string
+  keyId: string,
+  epoch: number
 ): Promise<string> {
   const cryptoKey = await importHmacKey(rawKey);
-  const keyIdBytes = new TextEncoder().encode(keyId);
+  const keyIdBytes = new TextEncoder().encode(`${keyId}:${epoch}`);
   const data = new Uint8Array(PROOF_LABEL.length + keyIdBytes.length);
   data.set(PROOF_LABEL, 0);
   data.set(keyIdBytes, PROOF_LABEL.length);
@@ -37,17 +39,19 @@ export async function computeMediaKeyAckProof(
 /**
  * Verify that the ACK proof matches the raw key we sent.
  * Returns true if the proof is valid, false if invalid.
- * Returns true (accept) if proof is absent — backward compat with old clients.
+ * Returns true (accept) if proof is absent — backward compat with old clients
+ * that do not yet send keyProof.
  */
 export async function verifyMediaKeyAckProof(
   rawKey: Uint8Array,
   keyId: string,
+  epoch: number,
   proof: string | undefined
 ): Promise<boolean> {
   if (!proof) return true;
   try {
     const cryptoKey = await importHmacKey(rawKey);
-    const keyIdBytes = new TextEncoder().encode(keyId);
+    const keyIdBytes = new TextEncoder().encode(`${keyId}:${epoch}`);
     const data = new Uint8Array(PROOF_LABEL.length + keyIdBytes.length);
     data.set(PROOF_LABEL, 0);
     data.set(keyIdBytes, PROOF_LABEL.length);

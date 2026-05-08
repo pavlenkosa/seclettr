@@ -389,15 +389,19 @@ function classifyUnexpectedInboundFailure(
     };
   }
 
+  // OperationError from SubtleCrypto means the stored ratchet state is out of sync
+  // with the sender (e.g. after a page reload that interrupted a session persist).
+  // Clear the session unconditionally so the next inbound X3DH message can
+  // re-establish it cleanly. Without this, every subsequent message from the same
+  // sender fails with the same stale key until the user manually resets state.
+  const isDecryptOpError =
+    error instanceof Error && error.name === "OperationError";
+
   return {
     disposition: "retry",
     failureClass: "transient_local_crypto_state",
     errorKind: "decrypt_failed",
-    clearSession: Boolean(
-      message.x3dhHeader &&
-        error instanceof Error &&
-        error.name === "OperationError"
-    ),
+    clearSession: isDecryptOpError,
   };
 }
 

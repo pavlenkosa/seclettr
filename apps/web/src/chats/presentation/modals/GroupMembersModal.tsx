@@ -192,6 +192,8 @@ export function GroupMembersModal({ group, myUserId, onVerifyMember, onClose }: 
       closeAriaLabel={t("group.members.closeAria")}
       closeButtonRef={closeButtonRef}
       overlayClassName={styles.overlay}
+      surfaceClassName={styles.surface}
+      headerClassName={styles.header}
       bodyClassName={styles.body}
       style={{
         "--modal-width": "620px",

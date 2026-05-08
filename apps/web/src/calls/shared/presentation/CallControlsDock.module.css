@@ -1,0 +1,26 @@
+.root {
+  position: var(--call-controls-position, relative);
+  bottom: var(--call-controls-bottom, auto);
+  z-index: var(--call-controls-z-index, 5);
+  width: var(--call-controls-width, min(100%, 1040px));
+  max-width: var(--call-controls-max-width, 100%);
+  margin: var(--call-controls-margin, auto auto 0);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: var(--call-controls-gap, 0.75rem);
+  padding: var(--call-controls-padding, 0.56rem);
+  border-radius: var(--call-controls-radius, 32px);
+  border: 1px solid color-mix(in srgb, var(--panel-border-soft) 76%, transparent);
+  background: color-mix(in srgb, var(--surface-shell) 98%, var(--surface-float));
+}
+
+@media (max-width: 960px) {
+  .root {
+    width: var(--call-controls-width-narrow, min(100%, 440px));
+    flex-direction: var(--call-controls-direction-narrow, column);
+    align-items: var(--call-controls-align-narrow, stretch);
+    border-radius: var(--call-controls-radius-narrow, 26px);
+  }
+}

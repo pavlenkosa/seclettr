@@ -13,16 +13,10 @@
   border-radius: var(--floating-dock-radius, 8px);
   border: 1px solid color-mix(in srgb, var(--accent) 30%, var(--panel-border-soft));
   background: var(--surface-float);
-  animation: floatingDockIn 160ms ease both;
 }
 
 .dragging {
   user-select: none;
-}
-
-.closing {
-  pointer-events: none;
-  animation: floatingDockOut 140ms var(--motion-ease-exit, cubic-bezier(0.4, 0, 1, 1)) both;
 }
 
 .dragHandle {
@@ -94,27 +88,6 @@
 @media (prefers-reduced-motion: reduce) {
   .root,
   .dragHandle {
-    animation: none !important;
     transition: none !important;
-  }
-}
-
-@keyframes floatingDockIn {
-  from {
-    opacity: 0;
-  }
-
-  to {
-    opacity: 1;
-  }
-}
-
-@keyframes floatingDockOut {
-  from {
-    opacity: 1;
-  }
-
-  to {
-    opacity: 0;
   }
 }

@@ -9,22 +9,6 @@
   justify-content: center;
   padding: 1rem;
   background: rgb(0 0 0 / 0.52);
-  animation: overlayIn 160ms ease both;
-}
-
-@keyframes overlayIn {
-  from { opacity: 0; }
-  to   { opacity: 1; }
-}
-
-.overlayOut {
-  animation: overlayOut 200ms ease both;
-  pointer-events: none;
-}
-
-@keyframes overlayOut {
-  from { opacity: 1; }
-  to { opacity: 0; }
 }
 
 /* ─── Dialog surface ─────────────────────────────────────────────────────── */
@@ -37,45 +21,9 @@
   max-height: min(700px, calc(100dvh - 2rem));
   border-radius: 22px;
   border: 1px solid color-mix(in srgb, var(--panel-border-soft) 88%, transparent);
-  background:
-    linear-gradient(
-      180deg,
-      color-mix(in srgb, var(--surface-float) 96%, transparent),
-      color-mix(in srgb, var(--surface-shell) 98%, transparent)
-    );
-  box-shadow:
-    inset 0 1px 0 rgb(255 255 255 / 0.07),
-    0 24px 64px rgb(2 8 20 / 0.42),
-    0 4px 16px rgb(2 8 20 / 0.22);
+  background: color-mix(in srgb, var(--surface-shell) 98%, var(--surface-float));
   overflow: hidden;
   outline: none;
-  animation: surfaceIn 200ms cubic-bezier(0.18, 0.9, 0.2, 1) both;
-}
-
-@keyframes surfaceIn {
-  from {
-    opacity: 0;
-    transform: scale(0.96) translateY(8px);
-  }
-  to {
-    opacity: 1;
-    transform: scale(1) translateY(0);
-  }
-}
-
-.surfaceOut {
-  animation: surfaceOut 200ms cubic-bezier(0.4, 0, 1, 1) both;
-}
-
-@keyframes surfaceOut {
-  from {
-    opacity: 1;
-    transform: scale(1) translateY(0);
-  }
-  to {
-    opacity: 0;
-    transform: scale(0.96) translateY(6px);
-  }
 }
 
 /* ─── Header ─────────────────────────────────────────────────────────────── */
@@ -196,7 +144,7 @@
   background: rgb(0 0 0 / 0.6);
   color: #fff;
   cursor: pointer;
-  transition: background 120ms ease, transform 120ms ease;
+  transition: background 120ms ease;
 }
 
 .thumbRemove:hover {
@@ -304,7 +252,7 @@
   min-height: 40px;
   max-height: 120px;
   overflow-y: auto;
-  transition: border-color 140ms ease, background 140ms ease, box-shadow 140ms ease;
+  transition: border-color 140ms ease, background 140ms ease, outline-color 140ms ease;
 }
 
 .caption::placeholder {
@@ -314,7 +262,8 @@
 .caption:focus {
   border-color: var(--accent);
   background: color-mix(in srgb, var(--surface-shell) 96%, var(--bg-primary));
-  box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 18%, transparent);
+  outline: 2px solid color-mix(in srgb, var(--accent) 22%, transparent);
+  outline-offset: -2px;
 }
 
 /* ─── Quality options ────────────────────────────────────────────────────── */
@@ -370,7 +319,8 @@
 .qualityOptionChecked .qualityDot {
   border-color: var(--accent);
   background: var(--accent);
-  box-shadow: inset 0 0 0 3px color-mix(in srgb, var(--surface-shell) 92%, transparent);
+  outline: 3px solid color-mix(in srgb, var(--surface-shell) 92%, transparent);
+  outline-offset: -4px;
 }
 
 .qualityText {
@@ -438,25 +388,14 @@
 /* ─── Light theme ────────────────────────────────────────────────────────── */
 
 :global(:root[data-theme="light"]) .surface {
-  background:
-    linear-gradient(
-      180deg,
-      color-mix(in srgb, var(--surface-float) 94%, white),
-      color-mix(in srgb, var(--surface-shell-strong) 96%, white)
-    );
-  box-shadow:
-    inset 0 1px 0 rgb(255 255 255 / 0.7),
-    0 24px 64px rgb(2 8 20 / 0.18),
-    0 4px 16px rgb(2 8 20 / 0.1);
+  background: color-mix(in srgb, var(--surface-shell-strong) 96%, white);
 }
 
 /* ─── Reduced motion ─────────────────────────────────────────────────────── */
 
 @media (prefers-reduced-motion: reduce) {
   .overlay,
-  .overlayOut,
   .surface,
-  .surfaceOut,
   .thumbRemove,
   .headerClose,
   .qualityOption,
@@ -464,6 +403,5 @@
   .fileRowRemove {
     animation: none !important;
     transition: none !important;
-    transform: none !important;
   }
 }

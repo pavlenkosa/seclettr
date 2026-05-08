@@ -6,6 +6,7 @@ import {
   type ReactNode,
   type Ref,
 } from "react";
+import motionStyles from "@/components/ui/motion/Motion.module.css";
 import styles from "./ModalShell.module.css";
 
 export interface ModalShellProps {
@@ -76,14 +77,14 @@ function ModalShellInner(
 
   return (
     <div
-      className={`${styles.overlay} ${isClosing ? styles.overlayClosing : ""} ${overlayClassName}`.trim()}
+      className={`${styles.overlay} ${isClosing ? motionStyles.fadeOut : motionStyles.fadeIn} ${overlayClassName}`.trim()}
       onClick={handleOverlayClick}
       onKeyDown={handleOverlayKeyDown}
       aria-hidden={isClosing ? "true" : undefined}
     >
       <section
         ref={ref}
-        className={`${styles.surface} ${isClosing ? styles.surfaceClosing : ""} ${surfaceClassName}`.trim()}
+        className={`${styles.surface} ${isClosing ? motionStyles.surfaceOut : motionStyles.surfaceIn} ${surfaceClassName}`.trim()}
         role={role}
         aria-modal="true"
         aria-label={ariaLabel}

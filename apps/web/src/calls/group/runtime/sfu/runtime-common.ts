@@ -59,7 +59,7 @@ export function mergeRemoteFrameKeyContexts(
     ...(currentKeyContexts ?? [])
       .filter((existing) => !(existing.keyId === next.keyId && existing.epoch === next.epoch))
       .map(cloneKeyContext)
-      .slice(0, 1),
+      .slice(0, 3),
   ];
 }
 

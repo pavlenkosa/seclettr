@@ -14,7 +14,9 @@ import { GroupCallRemoteAudioTargets } from "@/calls/group/presentation/componen
 import { useGroupCallPanelDock } from "@/calls/group/presentation/useGroupCallPanelDock";
 import { useCallInputDevices } from "@/calls/shared/media/input-devices/useCallInputDevices";
 import { CallAudioOutputProvider } from "@/calls/shared/media/audio-output/CallAudioOutputProvider";
+import { CallControlsDock } from "@/calls/shared/presentation/CallControlsDock";
 import { CallDurationText } from "@/calls/shared/presentation/CallDurationText";
+import { CallPanelShell } from "@/calls/shared/presentation/CallPanelShell";
 import { getMemberInitials, resolveGroupCallDockInlineStyle } from "@/calls/group/presentation/display";
 import { PillButton } from "@/components/ui";
 import { DetailsIcon } from "@/calls/group/presentation/components/GroupCallIcons";
@@ -252,7 +254,7 @@ export function RoomCallPanel({ session, onLeave }: Props) {
       } catch (err) {
         if (ac.signal.aborted) return;
         setStatus("error");
-        setErrorMessage(err instanceof Error ? err.message : "Failed to connect");
+        setErrorMessage(err instanceof Error ? err.message : t("room.call.error.connectFailed"));
         stream?.getTracks().forEach((t) => t.stop());
       }
     };
@@ -290,7 +292,7 @@ export function RoomCallPanel({ session, onLeave }: Props) {
   const statusLabel =
     status === "connecting" ? t("group.call.starting")
     : status === "leaving" ? t("group.call.leaving")
-    : status === "error" ? (errorMessage ?? "Error")
+    : status === "error" ? (errorMessage ?? t("room.call.error.connection"))
     : t("group.call.ready");
 
   const muteToggleLabel = isAudioMuted ? t("call.unmute") : t("call.mute");
@@ -372,8 +374,8 @@ export function RoomCallPanel({ session, onLeave }: Props) {
       <CallAudioOutputProvider>
         <GroupCallRemoteAudioTargets remoteMedia={remoteMedia} />
         <GroupCallDock
-          groupName="Room call"
-          groupInitials="RC"
+          groupName={t("room.call.title")}
+          groupInitials={t("room.call.initials")}
           isDragging={isDraggingMinimizedDock}
           dockRef={minimizedDockRef}
           inlineStyle={resolvedDockInlineStyle}
@@ -394,13 +396,15 @@ export function RoomCallPanel({ session, onLeave }: Props) {
 
   // ── Full panel ───────────────────────────────────────────────────────────────
   const panelDialog = (
-    <dialog open className={groupStyles.backdrop} aria-modal="true" aria-label="Room call">
-      <div className={groupStyles.panel}>
-
+    <CallPanelShell
+      ariaLabel={t("room.call.title")}
+      backdropClassName={groupStyles.backdrop}
+      panelClassName={groupStyles.panel}
+    >
         <GroupCallHeader
-          groupName="Room call"
+          groupName={t("room.call.title")}
           memberCount={participants.length}
-          title={isReady ? `${participants.length} ${participants.length === 1 ? "participant" : "participants"}` : statusLabel}
+          title={isReady ? t(participants.length === 1 ? "room.call.status.participants.one" : "room.call.status.participants.other", { count: participants.length }) : statusLabel}
           callDurationSeconds={0}
           callDurationStartedAtMs={callStartMs}
           hasVisibleVideo={isVideoEnabled}
@@ -419,24 +423,24 @@ export function RoomCallPanel({ session, onLeave }: Props) {
 
             {session.isHost && session.inviteUrl && (
               <div className={styles.inviteRow}>
-                <span className={styles.inviteLabel}>Invite link</span>
+                <span className={styles.inviteLabel}>{t("room.call.invite.label")}</span>
                 <PillButton
                   type="button"
                   onClick={() => void handleCopyInvite()}
                   tone={copied ? "accent" : "neutral"}
                   appearance="soft"
                   size="sm"
-                  aria-label={copied ? "Link copied" : "Copy invite link"}
+                  aria-label={copied ? t("room.call.invite.copiedAriaLabel") : t("room.call.invite.copyAriaLabel")}
                   leading={<DetailsIcon />}
                 >
-                  {copied ? "Copied!" : "Copy link"}
+                  {copied ? t("room.call.invite.copied") : t("room.call.invite.copy")}
                 </PillButton>
               </div>
             )}
 
             {status === "error" && (
               <div className={styles.centeredState}>
-                <p className={styles.errorText}>{errorMessage ?? "Connection error"}</p>
+                <p className={styles.errorText}>{errorMessage ?? t("room.call.error.connection")}</p>
                 <button type="button" onClick={handleLeave} className={styles.leaveBtn}>
                   {leaveLabel}
                 </button>
@@ -472,16 +476,30 @@ export function RoomCallPanel({ session, onLeave }: Props) {
             {isParticipantsOpen && (
               <div className={styles.participantsList}>
                 <p className={styles.participantsLabel}>
-                  Participants ({participants.length})
+                  {t("room.call.participants.label", { count: participants.length })}
                 </p>
                 {participants.length === 0 && (
-                  <p className={styles.mutedText}>No participants yet</p>
+                  <p className={styles.mutedText}>{t("room.call.participants.empty")}</p>
                 )}
+                {session.isHost ? (
+                  <div className={styles.hostActions}>
+                    <p className={styles.hostActionHint}>{t("group.call.endForEveryoneHint")}</p>
+                    <PillButton
+                      type="button"
+                      tone="danger"
+                      appearance="soft"
+                      size="md"
+                      onClick={handleEndForEveryone}
+                    >
+                      {endForEveryoneLabel}
+                    </PillButton>
+                  </div>
+                ) : null}
                 {participants.map((p) => (
                   <div key={p.id} className={styles.participantRow}>
                     <span className={styles.participantName}>
                       {p.displayName}
-                      {!p.isGuest && <span className={styles.hostBadge}>host</span>}
+                      {!p.isGuest && <span className={styles.hostBadge}>{t("room.call.participant.host")}</span>}
                     </span>
                     {session.isHost && p.isGuest && (
                       <button
@@ -490,7 +508,7 @@ export function RoomCallPanel({ session, onLeave }: Props) {
                         disabled={kickingId === p.id}
                         className={styles.kickBtn}
                       >
-                        {kickingId === p.id ? "…" : "Remove"}
+                        {kickingId === p.id ? t("room.call.participant.removing") : t("room.call.participant.remove")}
                       </button>
                     )}
                   </div>
@@ -500,7 +518,7 @@ export function RoomCallPanel({ session, onLeave }: Props) {
           </div>
         </div>
 
-        <div className={groupStyles.bottomDock}>
+        <CallControlsDock className={groupStyles.bottomDock}>
           <GroupCallControls
             className={groupStyles.controlRail}
             layout="inline"
@@ -515,8 +533,6 @@ export function RoomCallPanel({ session, onLeave }: Props) {
             videoToggleLabel={videoToggleLabel}
             screenShareToggleLabel={screenShareToggleLabel}
             leaveActionLabel={leaveLabel}
-            endForEveryoneLabel={endForEveryoneLabel}
-            canEndForEveryone={session.isHost}
             micDevices={micDevices}
             cameraDevices={cameraDevices}
             selectedMicId={selectedMicId}
@@ -525,14 +541,11 @@ export function RoomCallPanel({ session, onLeave }: Props) {
             onToggleVideo={() => void handleToggleVideo()}
             onToggleScreenShare={() => void handleToggleScreenShare()}
             onLeave={handleLeave}
-            onEndForEveryone={handleEndForEveryone}
             onSelectMic={(id) => void handleSwitchMic(id)}
             onSelectCamera={(id) => void handleSwitchCamera(id)}
           />
-        </div>
-
-      </div>
-    </dialog>
+        </CallControlsDock>
+    </CallPanelShell>
   );
 
   return createPortal(

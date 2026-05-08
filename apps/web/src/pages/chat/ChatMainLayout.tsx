@@ -1,4 +1,6 @@
 import { memo, type ReactNode } from "react";
+import motionStyles from "@/components/ui/motion/Motion.module.css";
+import { useAnimatedPresence } from "@/lib/hooks";
 import { ChatMobileShell } from "./ChatMobileShell";
 import type { useSidebarResize } from "./useSidebarResize";
 import styles from "../ChatPage.module.css";
@@ -24,6 +26,11 @@ export const ChatMainLayout = memo(function ChatMainLayout({
   startResize: ReturnType<typeof useSidebarResize>["startResize"];
   resetWidth: ReturnType<typeof useSidebarResize>["resetWidth"];
 }) {
+  const settingsPresence = useAnimatedPresence({
+    isOpen: showSettings,
+    durationMs: 180,
+  });
+
   if (isMobileViewport) {
     return (
       <ChatMobileShell
@@ -50,8 +57,10 @@ export const ChatMainLayout = memo(function ChatMainLayout({
       <main className={styles.main}>
         {threadPane}
       </main>
-      {showSettings ? (
-        <div className={styles.settingsOverlay}>{settingsScreen}</div>
+      {settingsPresence.isMounted ? (
+        <div className={`${styles.settingsOverlay} ${settingsPresence.isClosing ? motionStyles.panelOut : motionStyles.panelIn}`}>
+          {settingsScreen}
+        </div>
       ) : null}
     </>
   );

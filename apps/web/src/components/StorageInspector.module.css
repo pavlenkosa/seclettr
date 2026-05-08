@@ -1,0 +1,132 @@
+.root {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-primary);
+}
+
+.tabBar {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 8px;
+  align-items: center;
+}
+
+.tab {
+  background: var(--bg-tertiary);
+  color: var(--text-secondary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 4px 10px;
+  cursor: pointer;
+  font-family: var(--font-mono);
+  font-size: 11px;
+}
+
+.tabActive {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+
+.refreshBtn {
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 4px 8px;
+  cursor: pointer;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  margin-left: auto;
+}
+
+.refreshBtn:disabled {
+  cursor: wait;
+  opacity: 0.5;
+}
+
+.empty {
+  color: var(--text-muted);
+  font-size: 11px;
+}
+
+.tableWrap {
+  overflow-x: auto;
+  max-height: 300px;
+  overflow-y: auto;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 11px;
+  table-layout: fixed;
+}
+
+.th {
+  text-align: left;
+  padding: 4px 6px;
+  background: var(--bg-primary);
+  color: var(--text-muted);
+  font-weight: bold;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  border-bottom: 1px solid var(--border);
+  position: sticky;
+  top: 0;
+}
+
+.td {
+  padding: 4px 6px;
+  border-bottom: 1px solid var(--panel-border-soft, var(--border));
+  vertical-align: top;
+  word-break: break-all;
+}
+
+.rowAlt {
+  background: var(--bg-primary);
+}
+
+.cellDb {
+  color: var(--text-muted);
+  font-size: 10px;
+}
+
+.cellKey {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--text-secondary);
+}
+
+.cellType {
+  color: var(--text-primary);
+}
+
+.cellProtection {
+  color: var(--success);
+  font-size: 10px;
+}
+
+.cellSize {
+  color: var(--text-muted);
+  text-align: right;
+}
+
+.lsValue {
+  color: var(--text-primary);
+}
+
+.lsValueOk {
+  color: var(--success);
+}
+
+.lsValueWarn {
+  color: var(--danger);
+}
+
+.lsValueAbsent {
+  color: var(--text-muted);
+}

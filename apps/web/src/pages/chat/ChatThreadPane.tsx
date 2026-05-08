@@ -128,46 +128,48 @@ export function ChatThreadPane({
           </div>
         ) : null}
         {searchBar}
-        <div className={styles.messages}>
-          <MessageList
-            key={threadKey ?? "chat-thread"}
-            ref={messageListRef}
-            messages={messages}
-            senderLabels={senderLabels}
-            onRetry={onRetry}
-            onReply={onReply}
-            onScrollToMessage={onScrollToMessage}
-            highlightMessageId={highlightMessageId}
-            isTyping={isTyping}
-            onJumpToBottomStateChange={setJumpToBottomState}
-          />
-          {jumpToBottomState.visible ? (
-            <button
-              type="button"
-              className={`${styles.jumpToBottom} ${styles.jumpToBottomVisible}`}
-              onClick={handleJumpToBottom}
-              aria-label={jumpAriaLabel}
-              title={jumpAriaLabel}
-            >
-              <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-                <path d="M8 3v9M3.5 8l4.5 4.5L12.5 8" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" />
-              </svg>
-              <span
-                className={`${styles.jumpToBottomBadge} ${jumpToBottomState.pendingCount > 0 ? styles.jumpToBottomBadgeVisible : ""}`}
-                aria-hidden="true"
+        <div className={styles.contentStack}>
+          <div className={styles.messages}>
+            <MessageList
+              key={threadKey ?? "chat-thread"}
+              ref={messageListRef}
+              messages={messages}
+              senderLabels={senderLabels}
+              onRetry={onRetry}
+              onReply={onReply}
+              onScrollToMessage={onScrollToMessage}
+              highlightMessageId={highlightMessageId}
+              isTyping={isTyping}
+              onJumpToBottomStateChange={setJumpToBottomState}
+            />
+            {jumpToBottomState.visible ? (
+              <button
+                type="button"
+                className={`${styles.jumpToBottom} ${styles.jumpToBottomVisible}`}
+                onClick={handleJumpToBottom}
+                aria-label={jumpAriaLabel}
+                title={jumpAriaLabel}
               >
-                {jumpBadgeLabel}
-              </span>
-            </button>
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                  <path d="M8 3v9M3.5 8l4.5 4.5L12.5 8" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+                <span
+                  className={`${styles.jumpToBottomBadge} ${jumpToBottomState.pendingCount > 0 ? styles.jumpToBottomBadgeVisible : ""}`}
+                  aria-hidden="true"
+                >
+                  {jumpBadgeLabel}
+                </span>
+              </button>
+            ) : null}
+          </div>
+          {composer ? (
+            <div className={styles.composerRail}>
+              {composer}
+            </div>
           ) : null}
           {mediaPanel}
         </div>
       </div>
-      {composer ? (
-        <div className={styles.composerRail}>
-          {composer}
-        </div>
-      ) : null}
     </section>
   );
 }

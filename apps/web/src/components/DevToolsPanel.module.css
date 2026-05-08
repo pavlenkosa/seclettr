@@ -1,0 +1,217 @@
+.root {
+  position: fixed;
+  bottom: 16px;
+  right: 16px;
+  z-index: 9999;
+  font-family: var(--font-mono);
+  font-size: 12px;
+}
+
+.panel {
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 16px;
+  margin-bottom: 8px;
+  min-width: 280px;
+  max-height: 80vh;
+  overflow-y: auto;
+}
+
+.panelWide {
+  min-width: 640px;
+}
+
+.panelTitle {
+  font-weight: bold;
+  margin-bottom: 12px;
+  color: var(--text-muted);
+  letter-spacing: 1px;
+  font-size: 10px;
+  text-transform: uppercase;
+}
+
+.infoBlock {
+  margin-bottom: 12px;
+  line-height: 1.8;
+}
+
+.infoLabel {
+  color: var(--text-muted);
+}
+
+.statusOk {
+  color: var(--success);
+}
+
+.statusErr {
+  color: var(--danger);
+}
+
+.section {
+  margin-bottom: 12px;
+}
+
+.sectionLabel {
+  color: var(--text-muted);
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin-bottom: 6px;
+}
+
+.row {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  margin-bottom: 6px;
+}
+
+.numberInput {
+  width: 52px;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 4px 6px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  text-align: center;
+}
+
+.numberInputLabel {
+  color: var(--text-secondary);
+  font-size: 11px;
+}
+
+.btnGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.btnRow {
+  display: flex;
+  gap: 6px;
+}
+
+/* Base button */
+.btn {
+  padding: 6px 12px;
+  border: none;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: #fff;
+  text-align: left;
+}
+
+.btn:disabled {
+  cursor: wait;
+  opacity: 0.6;
+}
+
+.btnFlex {
+  flex: 1;
+  font-size: 11px;
+  padding: 6px 8px;
+}
+
+.btnFull {
+  width: 100%;
+  font-size: 11px;
+}
+
+/* Semantic variants — use accent/danger/success from theme where possible,
+   fall back to fixed hues for non-semantic dev actions */
+.btnPrimary {
+  background: var(--accent);
+}
+
+.btnPrimary:hover {
+  background: var(--accent-hover);
+}
+
+.btnDanger {
+  background: var(--danger);
+}
+
+.btnDanger:disabled {
+  background: var(--bg-tertiary);
+  color: var(--text-secondary);
+}
+
+.btnSuccess {
+  background: var(--success);
+}
+
+.btnMuted {
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+}
+
+.btnMuted:hover {
+  background: var(--border);
+}
+
+/* Non-semantic dev actions: fixed hues that stay readable on both themes */
+.btnViolet {
+  background: #7c3aed;
+}
+
+.btnTeal {
+  background: #0f766e;
+}
+
+.btnSlate {
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+}
+
+/* Toggle button for storage inspector */
+.btnToggle {
+  width: 100%;
+  font-size: 11px;
+  padding: 6px 8px;
+  text-align: left;
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  font-family: var(--font-mono);
+}
+
+.btnToggleActive {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+
+/* FAB toggle button */
+.fab {
+  width: 36px;
+  height: 36px;
+  border-radius: var(--radius-md);
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  border: 1px solid var(--border);
+  cursor: pointer;
+  font-size: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-left: auto;
+}
+
+.fabActive {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+
+.storageWrap {
+  margin-top: 8px;
+}

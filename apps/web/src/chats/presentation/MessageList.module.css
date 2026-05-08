@@ -80,8 +80,6 @@
   background: var(--timestamp-bg);
   border: 1px solid var(--timestamp-border);
   border-radius: var(--radius-full);
-  animation: messageTimestampIn var(--motion-duration-base) var(--motion-ease-emphasized) both;
-  animation-delay: var(--message-enter-delay, 0ms);
 }
 
 /* ── Typing indicator ─────────────────────────────────────────────────────── */
@@ -130,8 +128,6 @@
   justify-content: center;
   margin: 0.22rem 0 0.16rem;
   padding: 0 0.62rem;
-  animation: messageEntryIn var(--motion-duration-base) var(--motion-ease-emphasized) both;
-  animation-delay: var(--message-enter-delay, 0ms);
 }
 
 .callEventCard {
@@ -171,8 +167,6 @@
   display: flex;
   margin: 0.14rem 0;
   padding: 0 0.62rem;
-  animation: messageEntryIn var(--motion-duration-base) var(--motion-ease-emphasized) both;
-  animation-delay: var(--message-enter-delay, 0ms);
 }
 
 .own {
@@ -966,7 +960,6 @@ button.quotedBubble {
   align-items: center;
   justify-content: center;
   z-index: 4;
-  animation: messagePlayOverlayIn var(--motion-duration-base) var(--motion-ease-emphasized) both;
 }
 
 .videoPlayOverlay :global(svg) {
@@ -1926,7 +1919,6 @@ button.quotedBubble {
   .statusSending,
   .voiceDecryptGhostWave,
   .voiceDecryptPlaceholder,
-  .videoPlayOverlay,
   .bubble,
   .videoCircleButton {
     animation: none !important;
@@ -1937,26 +1929,6 @@ button.quotedBubble {
   .voiceSpeedBtn,
   .fileDecryptBtn {
     transition: none !important;
-  }
-}
-
-@keyframes messageEntryIn {
-  0% {
-    opacity: 0;
-  }
-
-  100% {
-    opacity: 1;
-  }
-}
-
-@keyframes messageTimestampIn {
-  0% {
-    opacity: 0;
-  }
-
-  100% {
-    opacity: 1;
   }
 }
 
@@ -1979,15 +1951,5 @@ button.quotedBubble {
 
   50% {
     opacity: 0.7;
-  }
-}
-
-@keyframes messagePlayOverlayIn {
-  0% {
-    opacity: 0;
-  }
-
-  100% {
-    opacity: 1;
   }
 }

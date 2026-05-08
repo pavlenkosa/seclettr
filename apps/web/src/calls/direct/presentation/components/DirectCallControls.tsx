@@ -1,5 +1,6 @@
 import type { RefObject } from "react";
 import { CallControlButton } from "@/calls/shared/presentation/CallControlButton";
+import { CallControlsDock } from "@/calls/shared/presentation/CallControlsDock";
 import { CallDevicePicker, type VideoResolution } from "@/calls/shared/presentation/CallDevicePicker";
 import type { InputDeviceOption } from "@/calls/shared/media/input-devices/useCallInputDevices";
 import { CameraIcon, HangupIcon, MuteIcon, ScreenShareIcon } from "@/calls/shared/presentation/CallIcons";
@@ -81,7 +82,7 @@ export function DirectCallControls({
   onSelectScreenResolution,
 }: DirectCallControlsProps) {
   return (
-    <div className={styles.controlsDock}>
+    <CallControlsDock className={styles.controlsDock}>
       <CallDevicePicker
         micDevices={micDevices}
         selectedMicId={selectedMicId}
@@ -162,6 +163,6 @@ export function DirectCallControls({
         compactOnNarrow
         aria-label={endAriaLabel}
       />
-    </div>
+    </CallControlsDock>
   );
 }

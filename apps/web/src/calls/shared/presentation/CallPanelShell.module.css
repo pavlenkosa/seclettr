@@ -1,0 +1,58 @@
+.backdrop {
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100dvh;
+  max-width: none;
+  max-height: none;
+  margin: 0;
+  border: 0;
+  outline: 0;
+  box-sizing: border-box;
+  z-index: var(--call-panel-z-index, 255);
+  display: flex;
+  align-items: stretch;
+  justify-content: center;
+  padding: var(--call-panel-backdrop-padding, 0);
+  background: var(--call-panel-backdrop-bg, rgb(3 8 18 / 0.78));
+}
+
+.panel {
+  position: relative;
+  width: var(--call-panel-width, 100%);
+  max-width: var(--call-panel-max-width, none);
+  min-height: var(--call-panel-min-height, 100%);
+  max-height: var(--call-panel-max-height, none);
+  display: flex;
+  flex-direction: column;
+  gap: var(--call-panel-gap, 1.1rem);
+  padding: var(
+    --call-panel-padding,
+    calc(env(safe-area-inset-top, 0px) + 1rem)
+    clamp(0.9rem, 1.4vw, 1.35rem)
+    calc(env(safe-area-inset-bottom, 0px) + 1rem)
+  );
+  border: var(--call-panel-border, 0);
+  border-radius: var(--call-panel-radius, 0);
+  background: var(--call-panel-bg, color-mix(in srgb, var(--bg-primary) 96%, #06101c));
+  overflow: var(--call-panel-overflow, visible);
+}
+
+@media (max-width: 960px) {
+  .panel {
+    padding: var(
+      --call-panel-padding-narrow,
+      calc(env(safe-area-inset-top, 0px) + 0.9rem)
+      0.85rem
+      calc(env(safe-area-inset-bottom, 0px) + 0.95rem)
+    );
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .backdrop,
+  .panel {
+    animation: none !important;
+    transition: none !important;
+  }
+}

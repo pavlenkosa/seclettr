@@ -13,8 +13,6 @@
   inset: 0;
   min-width: 0;
   min-height: 0;
-  will-change: opacity;
-  animation: mobileShellSurfaceIn var(--motion-duration-slow) var(--motion-ease-emphasized) both;
 }
 
 .threadView {
@@ -22,8 +20,6 @@
   inset: 0;
   min-width: 0;
   min-height: 0;
-  will-change: opacity;
-  animation: mobileShellSurfaceIn var(--motion-duration-slow) var(--motion-ease-emphasized) both;
   display: flex;
   flex-direction: column;
   gap: 0.18rem;
@@ -60,37 +56,11 @@
   pointer-events: none;
 }
 
-.surfaceClosing {
-  pointer-events: none;
-  animation: mobileShellSurfaceOut var(--motion-duration-base) var(--motion-ease-exit) both;
-}
-
 @media (prefers-reduced-motion: reduce) {
   .sidebarView,
   .settingsView,
   .threadView,
   .threadDockOverlay {
-    animation: none !important;
     transition: none !important;
-  }
-}
-
-@keyframes mobileShellSurfaceIn {
-  0% {
-    opacity: 0;
-  }
-
-  100% {
-    opacity: 1;
-  }
-}
-
-@keyframes mobileShellSurfaceOut {
-  0% {
-    opacity: 1;
-  }
-
-  100% {
-    opacity: 0;
   }
 }

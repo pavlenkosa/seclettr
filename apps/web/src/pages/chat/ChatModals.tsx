@@ -1,4 +1,5 @@
 import { lazy, memo, Suspense, useCallback } from "react";
+import { SecurityModal } from "@/chats/presentation/modals/SecurityModal";
 import type {
   SecurityWorkspaceState,
   WorkspaceEntryState,
@@ -19,11 +20,6 @@ const NewGroupModal = lazy(() =>
 );
 const GroupMembersModal = lazy(() =>
   import("@/chats/presentation/modals/GroupMembersModal").then(({ GroupMembersModal: Component }) => ({
-    default: Component,
-  }))
-);
-const SecurityModal = lazy(() =>
-  import("@/chats/presentation/modals/SecurityModal").then(({ SecurityModal: Component }) => ({
     default: Component,
   }))
 );
@@ -104,34 +100,30 @@ export const ChatModals = memo(function ChatModals({
         </Suspense>
       )}
       {security.showSecurity && activeConversation && (
-        <Suspense fallback={<div className={styles.modalLazyFallback} aria-hidden="true" />}>
-          <SecurityModal
-            recipientUserId={activeConversation.userId}
-            recipientUsername={activeConversation.username}
-            peerIdentityKey={activeConversation.peerIdentityKey}
-            peerIdentityDeviceId={activeConversation.peerIdentityDeviceId}
-            peerIdentityByDevice={activeConversation.peerIdentityByDevice}
-            peerIdentityAlertsByDevice={activeConversation.peerIdentityAlertsByDevice}
-            onAcceptPeerIdentityChange={handleAcceptDirectIdentityChange}
-            onVerificationChanged={security.onDirectVerificationChanged}
-            onClose={security.closeSecurity}
-          />
-        </Suspense>
+        <SecurityModal
+          recipientUserId={activeConversation.userId}
+          recipientUsername={activeConversation.username}
+          peerIdentityKey={activeConversation.peerIdentityKey}
+          peerIdentityDeviceId={activeConversation.peerIdentityDeviceId}
+          peerIdentityByDevice={activeConversation.peerIdentityByDevice}
+          peerIdentityAlertsByDevice={activeConversation.peerIdentityAlertsByDevice}
+          onAcceptPeerIdentityChange={handleAcceptDirectIdentityChange}
+          onVerificationChanged={security.onDirectVerificationChanged}
+          onClose={security.closeSecurity}
+        />
       )}
       {security.groupSecurityTarget && (
-        <Suspense fallback={<div className={styles.modalLazyFallback} aria-hidden="true" />}>
-          <SecurityModal
-            recipientUserId={security.groupSecurityTarget.recipientUserId}
-            recipientUsername={security.groupSecurityTarget.recipientUsername}
-            peerIdentityKey={security.groupSecurityTarget.preferredDeviceId
-              ? security.groupSecurityTarget.peerIdentityByDevice[security.groupSecurityTarget.preferredDeviceId]
-              : undefined}
-            peerIdentityDeviceId={security.groupSecurityTarget.preferredDeviceId ?? undefined}
-            peerIdentityByDevice={security.groupSecurityTarget.peerIdentityByDevice}
-            onVerificationChanged={security.onGroupVerificationChanged}
-            onClose={security.clearGroupSecurityTarget}
-          />
-        </Suspense>
+        <SecurityModal
+          recipientUserId={security.groupSecurityTarget.recipientUserId}
+          recipientUsername={security.groupSecurityTarget.recipientUsername}
+          peerIdentityKey={security.groupSecurityTarget.preferredDeviceId
+            ? security.groupSecurityTarget.peerIdentityByDevice[security.groupSecurityTarget.preferredDeviceId]
+            : undefined}
+          peerIdentityDeviceId={security.groupSecurityTarget.preferredDeviceId ?? undefined}
+          peerIdentityByDevice={security.groupSecurityTarget.peerIdentityByDevice}
+          onVerificationChanged={security.onGroupVerificationChanged}
+          onClose={security.clearGroupSecurityTarget}
+        />
       )}
     </>
   );

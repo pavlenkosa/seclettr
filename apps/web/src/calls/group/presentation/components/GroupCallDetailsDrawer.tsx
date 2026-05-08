@@ -1,5 +1,5 @@
 import { useI18n } from "@/i18n";
-import { Avatar, EntityRow, FieldSection, InlineNotice, SurfacePanel } from "@/components/ui";
+import { Avatar, EntityRow, FieldSection, InlineNotice, PillButton, SurfacePanel } from "@/components/ui";
 
 import { AudioOutputSelector } from "@/calls/shared/media/audio-output/AudioOutputSelector";
 import { getMemberInitials } from "@/calls/group/presentation/display";
@@ -24,6 +24,9 @@ interface GroupCallDetailsDrawerProps {
   readonly members: GroupCallDetailsMember[];
   readonly activeParticipantSet: Set<string>;
   readonly error: string | null;
+  readonly hostActionLabel?: string;
+  readonly hostActionHint?: string;
+  readonly onHostAction?: () => void;
 }
 
 export function GroupCallDetailsDrawer({
@@ -40,8 +43,12 @@ export function GroupCallDetailsDrawer({
   members,
   activeParticipantSet,
   error,
+  hostActionLabel,
+  hostActionHint,
+  onHostAction,
 }: GroupCallDetailsDrawerProps) {
   const { t } = useI18n();
+  const showHostAction = Boolean(hostActionLabel && onHostAction);
 
   return (
     <SurfacePanel
@@ -133,6 +140,23 @@ export function GroupCallDetailsDrawer({
         <InlineNotice className={styles.errorNotice} tone="error" size="md" role="alert">
           {error}
         </InlineNotice>
+      ) : null}
+
+      {showHostAction ? (
+        <FieldSection className={styles.section} label={t("group.call.hostActions")}>
+          <SurfacePanel className={styles.hostActionCard} padding="md">
+            {hostActionHint ? <p className={styles.hostActionHint}>{hostActionHint}</p> : null}
+            <PillButton
+              type="button"
+              tone="danger"
+              appearance="soft"
+              size="md"
+              onClick={onHostAction}
+            >
+              {hostActionLabel}
+            </PillButton>
+          </SurfacePanel>
+        </FieldSection>
       ) : null}
 
       <SurfacePanel className={styles.contractHint} padding="sm">

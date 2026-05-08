@@ -309,7 +309,7 @@ export function useGroupCallMediaKeyExchange({
             keyId: decrypted.keyId,
           });
 
-          computeMediaKeyAckProof(decrypted.keyBytes, decrypted.keyId)
+          computeMediaKeyAckProof(decrypted.keyBytes, decrypted.keyId, decrypted.epoch)
             .then((keyProof) => {
               if (cancelled) return;
               wsClient.send(
@@ -384,7 +384,7 @@ export function useGroupCallMediaKeyExchange({
       const localKey = localMediaKeyRef.current;
       const rawKey = localKey?.keyId === msg.keyId ? localKey.keyBytes : null;
 
-      verifyMediaKeyAckProof(rawKey ?? new Uint8Array(32), msg.keyId, msg.keyProof)
+      verifyMediaKeyAckProof(rawKey ?? new Uint8Array(32), msg.keyId, msg.epoch, msg.keyProof)
         .then((valid) => {
           if (!active) return;
           if (!valid) {

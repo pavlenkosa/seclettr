@@ -32,7 +32,6 @@
     border-color var(--motion-duration-fast) var(--motion-ease-standard),
     outline-color var(--motion-duration-fast) var(--motion-ease-standard),
     background-color var(--motion-duration-fast) var(--motion-ease-standard);
-  animation: composerSurfaceIn var(--motion-duration-base) var(--motion-ease-emphasized) both;
 }
 
 .inner:focus-within {
@@ -59,7 +58,6 @@
   padding: 1.4rem 1rem calc(8.6rem + var(--safe-bottom));
   background: #020617;
   /* A solid dark background keeps recording mode predictable over messages. */
-  animation: composerOverlayIn var(--motion-duration-base) var(--motion-ease-emphasized) both;
 }
 
 .videoRecordingOverlayChrome {
@@ -68,7 +66,6 @@
   align-items: center;
   gap: 0.3rem;
   text-align: center;
-  animation: composerContentLiftIn var(--motion-duration-slow) var(--motion-ease-emphasized) both;
 }
 
 .videoRecordingOverlayEyebrow {
@@ -93,7 +90,6 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  animation: composerContentLiftIn var(--motion-duration-slow) var(--motion-ease-emphasized) 30ms both;
 }
 
 .videoRecordingOverlayGlow {
@@ -127,7 +123,6 @@
   font-size: 0.82rem;
   line-height: 1.2;
   color: #e2ecf8;
-  animation: composerContentLiftIn var(--motion-duration-slow) var(--motion-ease-emphasized) 60ms both;
 }
 
 .videoRecordingOverlayFooterStrong {
@@ -145,7 +140,6 @@
   justify-content: center;
   gap: 0.72rem;
   pointer-events: auto;
-  animation: composerContentLiftIn var(--motion-duration-slow) var(--motion-ease-emphasized) 90ms both;
 }
 
 .videoRecordingOverlayCancelBtn,
@@ -312,7 +306,6 @@
   text-align: center;
   text-wrap: balance;
   pointer-events: none;
-  animation: composerHintIn var(--motion-duration-base) var(--motion-ease-emphasized) both;
 }
 
 .recordModeChip {
@@ -413,7 +406,6 @@
   border-radius: 20px;
   border: 1px solid color-mix(in srgb, var(--panel-border-soft) 88%, transparent);
   background: color-mix(in srgb, var(--surface-float) 98%, var(--bg-secondary));
-  animation: composerPickerIn var(--motion-duration-base) var(--motion-ease-emphasized) both;
 }
 
 .emojiSearchWrap {
@@ -880,7 +872,6 @@
   border-top: 1px solid color-mix(in srgb, var(--accent) 18%, transparent);
   border-right: 1px solid color-mix(in srgb, var(--accent) 18%, transparent);
   border-bottom: 1px solid color-mix(in srgb, var(--accent) 18%, transparent);
-  animation: replyPreviewIn var(--motion-duration-fast, 140ms) var(--motion-ease-emphasized, cubic-bezier(.2,.8,.3,1)) both;
 }
 
 .replyPreviewContent {
@@ -932,11 +923,6 @@
 .replyPreviewClose:focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 1px;
-}
-
-@keyframes replyPreviewIn {
-  from { opacity: 0; }
-  to   { opacity: 1; }
 }
 
 .error {
@@ -1262,56 +1248,6 @@
 
   .recordingVoicePulse {
     animation: none !important;
-  }
-}
-
-@keyframes composerSurfaceIn {
-  0% {
-    opacity: 0;
-  }
-
-  100% {
-    opacity: 1;
-  }
-}
-
-@keyframes composerOverlayIn {
-  0% {
-    opacity: 0;
-  }
-
-  100% {
-    opacity: 1;
-  }
-}
-
-@keyframes composerContentLiftIn {
-  0% {
-    opacity: 0;
-  }
-
-  100% {
-    opacity: 1;
-  }
-}
-
-@keyframes composerHintIn {
-  0% {
-    opacity: 0;
-  }
-
-  100% {
-    opacity: 1;
-  }
-}
-
-@keyframes composerPickerIn {
-  0% {
-    opacity: 0;
-  }
-
-  100% {
-    opacity: 1;
   }
 }
 

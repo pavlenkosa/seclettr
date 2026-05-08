@@ -33,7 +33,7 @@ interface DirectCallStageProps {
   readonly screenViewerDialogAriaLabel: string;
   readonly showCameraOnStageLabel: string;
   readonly showScreenOnStageLabel: string;
-  readonly peerIsSpeaking: boolean;
+  readonly peerHasAudio: boolean;
 }
 
 type StageSource = DirectCallStageSceneState["stageLayout"]["stageSource"];
@@ -59,13 +59,13 @@ function getStageClassName(stageSource: StageSource): string {
 function StageFallback({
   isAudioOnlyStage,
   peerDisplayName,
+  peerHasAudio,
   peerInitials,
-  peerIsSpeaking,
 }: {
   readonly isAudioOnlyStage: boolean;
   readonly peerDisplayName: string;
+  readonly peerHasAudio: boolean;
   readonly peerInitials: string;
-  readonly peerIsSpeaking: boolean;
 }) {
   if (!isAudioOnlyStage) return null;
   return (
@@ -76,7 +76,8 @@ function StageFallback({
       avatarClassName={styles.audioAvatar}
       pulseClassName={styles.stageAudioPulse}
       pulseActiveClassName={styles.stageAudioPulseActive}
-      isSpeaking={peerIsSpeaking}
+      hasAudio={peerHasAudio}
+      isSpeaking={false}
       speakingVariant="primary-stage"
     />
   );
@@ -254,7 +255,7 @@ export function DirectCallStage({
   screenViewerDialogAriaLabel,
   showCameraOnStageLabel,
   showScreenOnStageLabel,
-  peerIsSpeaking,
+  peerHasAudio,
 }: DirectCallStageProps) {
   const { stageLayout } = scene;
   const isAudioOnlyStage = stageLayout.stageSource === "audio";
@@ -299,8 +300,8 @@ export function DirectCallStage({
           <StageFallback
             isAudioOnlyStage={isAudioOnlyStage}
             peerDisplayName={peerDisplayName}
+            peerHasAudio={peerHasAudio}
             peerInitials={peerInitials}
-            peerIsSpeaking={peerIsSpeaking}
           />
         )}
         overlayTopStart={stageLayout.stageSource === "audio" ? null : (

@@ -20,17 +20,10 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  animation: overlayIn 180ms var(--motion-ease-emphasized, cubic-bezier(0.2, 0, 0, 1)) both;
 }
 
-.overlayClosing {
-  pointer-events: none;
-  animation: overlayOut 180ms var(--motion-ease-exit, cubic-bezier(0.4, 0, 1, 1)) both;
-}
-
-@keyframes overlayIn {
-  from { opacity: 0; }
-  to   { opacity: 1; }
+.overlayWithCaption {
+  --media-lightbox-has-caption: 1;
 }
 
 .backdrop {
@@ -38,10 +31,6 @@
   inset: 0;
   background: rgb(2 6 23 / 0.88);
   cursor: zoom-out;
-}
-
-.backdropClosing {
-  animation: overlayOut 180ms var(--motion-ease-exit, cubic-bezier(0.4, 0, 1, 1)) both;
 }
 
 :global(:root[data-theme="light"]) .backdrop {
@@ -316,10 +305,27 @@
   .captionBar {
     bottom: calc(env(safe-area-inset-bottom, 0px) + 0.85rem);
     width: calc(100vw - 1.7rem);
-    max-height: 28vh;
+    max-height: min(18dvh, 7rem);
     padding: 0.62rem 0.74rem;
     border-radius: 12px;
     font-size: 0.86rem;
+  }
+
+  .overlayWithCaption .content {
+    padding-bottom: calc(9.6rem + env(safe-area-inset-bottom));
+  }
+
+  .overlayWithCaption .navBtn {
+    top: calc(50% - 22px);
+    bottom: auto;
+  }
+
+  .overlayWithCaption .mobileSequenceHint {
+    bottom: calc(env(safe-area-inset-bottom, 0px) + 6.75rem);
+  }
+
+  .overlayWithCaption .mobileSwipeHint {
+    display: none;
   }
 
   .mobileSequenceDots {

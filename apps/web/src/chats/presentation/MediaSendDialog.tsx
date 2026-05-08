@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, type KeyboardEvent, type MouseEvent } f
 import { createPortal } from "react-dom";
 import { useI18n } from "@/i18n";
 import { PillButton } from "@/components/ui";
+import motionStyles from "@/components/ui/motion/Motion.module.css";
 import { formatBytes } from "../composer/compressImage";
 import type { PendingFile, SendQuality, UseMediaSendDialogResult } from "../composer/useMediaSendDialog";
 import styles from "./MediaSendDialog.module.css";
@@ -272,7 +273,7 @@ export function MediaSendDialog({
 
   return createPortal(
     <div
-      className={`${styles.overlay} ${isExiting ? styles.overlayOut : ""}`}
+      className={`${styles.overlay} ${isExiting ? motionStyles.fadeOut : motionStyles.fadeIn}`}
       onClick={onOverlayClick}
       role="presentation"
     >
@@ -281,7 +282,7 @@ export function MediaSendDialog({
         open
         aria-modal="true"
         aria-label={title}
-        className={`${styles.surface} ${isExiting ? styles.surfaceOut : ""}`}
+        className={`${styles.surface} ${isExiting ? motionStyles.surfaceOut : motionStyles.surfaceIn}`}
         onCancel={(e) => { e.preventDefault(); closeDialog(); }}
         tabIndex={-1}
       >

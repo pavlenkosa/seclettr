@@ -120,11 +120,24 @@ async function resolveImportedKey(state: MutableKeyState): Promise<CryptoKey | n
 
   const nextFingerprint = fingerprintKeyBytes(rawKey);
   if (!state.importedKey || state.importedKeyFingerprint !== nextFingerprint) {
-    state.importedKey = importAesKey(rawKey);
+    const promise = importAesKey(rawKey);
+    state.importedKey = promise;
     state.importedKeyFingerprint = nextFingerprint;
+    // Clear the cached promise on rejection so the next frame retries import
+    // rather than re-awaiting the permanently-rejected Promise.
+    promise.catch(() => {
+      if (state.importedKey === promise) {
+        state.importedKey = null;
+        state.importedKeyFingerprint = null;
+      }
+    });
   }
 
-  return state.importedKey;
+  try {
+    return await state.importedKey;
+  } catch {
+    return null;
+  }
 }
 
 function createAnonymousKeyContext(keyBytes: Uint8Array): GroupCallFrameKeyContext {

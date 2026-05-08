@@ -9,6 +9,7 @@ import {
   type PointerEventHandler,
   type ReactNode,
 } from "react";
+import motionStyles from "@/components/ui/motion/Motion.module.css";
 import styles from "./FloatingDock.module.css";
 
 // Tracks the number of mounted FloatingDock instances so the CSS clearance
@@ -122,7 +123,7 @@ export const FloatingDock = forwardRef<HTMLDialogElement, FloatingDockProps>(fun
       className={[
         styles.root,
         isDragging ? styles.dragging : "",
-        isClosing ? styles.closing : "",
+        isClosing ? motionStyles.fadeOut : motionStyles.fadeIn,
         className,
       ]
         .filter(Boolean)

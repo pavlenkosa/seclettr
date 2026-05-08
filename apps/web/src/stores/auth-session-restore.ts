@@ -26,7 +26,7 @@ import {
 import {
   clearLegacyLockSnapshotStorage,
   clearPin,
-} from "@/lib/app-lock-pin";
+} from "@/lib/app-lock-password";
 import { refreshSessionAccessToken } from "@/lib/session";
 import { previewRefreshSession } from "@/lib/session-preview";
 import { requestPersistentStorage, checkStorageQuota } from "@/lib/storage-health";

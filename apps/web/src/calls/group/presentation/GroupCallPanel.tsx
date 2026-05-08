@@ -18,6 +18,7 @@ import {
 } from "@/calls/group/presentation/useGroupCallPanelUiState";
 import { CallAudioOutputProvider } from "@/calls/shared/media/audio-output/CallAudioOutputProvider";
 import { useCallInputDevices } from "@/calls/shared/media/input-devices/useCallInputDevices";
+import { CallControlsDock } from "@/calls/shared/presentation/CallControlsDock";
 import {
   useGroupCallPanelRuntime,
   type UseGroupCallPanelRuntimeResult,
@@ -25,6 +26,7 @@ import {
 import { useGroupCallStageFullscreen } from "@/calls/group/presentation/useGroupCallStageFullscreen";
 import { isGroupCallConnectedLifecycleState } from "@/calls/group/model/group-call-lifecycle";
 import { CallDurationText } from "@/calls/shared/presentation/CallDurationText";
+import { CallPanelShell } from "@/calls/shared/presentation/CallPanelShell";
 import { resolveGroupCallDockInlineStyle } from "@/calls/group/presentation/display";
 import { resolveGroupCallPanelSurface } from "@/calls/group/presentation/group-call-panel-surface";
 import type { GroupCallPanelSession } from "@/calls/group/model/entry";
@@ -297,8 +299,11 @@ export function GroupCallPanel({ session, onClose }: Props) {
   }
 
   const panelDialog = (
-    <dialog open className={styles.backdrop} aria-modal="true" aria-label={t("group.call.dialogAria")}>
-      <div className={styles.panel}>
+    <CallPanelShell
+      ariaLabel={t("group.call.dialogAria")}
+      backdropClassName={styles.backdrop}
+      panelClassName={styles.panel}
+    >
         <GroupCallHeader
           groupName={session.groupName}
           memberCount={session.members.length}
@@ -362,9 +367,12 @@ export function GroupCallPanel({ session, onClose }: Props) {
           members={presentation.sortedMembers}
           activeParticipantSet={presentation.activeParticipantSet}
           error={runtime.error}
+          hostActionLabel={presentation.canEndForEveryone ? presentation.endForEveryoneLabel : undefined}
+          hostActionHint={presentation.canEndForEveryone ? t("group.call.endForEveryoneHint") : undefined}
+          onHostAction={presentation.canEndForEveryone ? runtime.handleEndForEveryone : undefined}
         />
 
-        <div className={styles.bottomDock}>
+        <CallControlsDock className={styles.bottomDock}>
           <GroupCallControls
             className={presentation.controlRailClassName}
             layout="inline"
@@ -379,8 +387,6 @@ export function GroupCallPanel({ session, onClose }: Props) {
             videoToggleLabel={presentation.videoToggleLabel}
             screenShareToggleLabel={presentation.screenShareToggleLabel}
             leaveActionLabel={presentation.leaveActionLabel}
-            endForEveryoneLabel={presentation.endForEveryoneLabel}
-            canEndForEveryone={presentation.canEndForEveryone}
             micDevices={micDevices}
             cameraDevices={cameraDevices}
             selectedMicId={selectedMicId}
@@ -390,17 +396,14 @@ export function GroupCallPanel({ session, onClose }: Props) {
             onToggleVideo={runtime.handleToggleVideo}
             onToggleScreenShare={runtime.handleToggleScreenShare}
             onLeave={runtime.handleLeave}
-            onEndForEveryone={runtime.handleEndForEveryone}
             onSelectMic={runtime.handleSwitchMic}
             onSelectCamera={runtime.handleSwitchCamera}
             onSelectVideoResolution={runtime.handleSelectVideoResolution}
             selectedScreenResolution={runtime.selectedScreenResolution}
             onSelectScreenResolution={runtime.handleSelectScreenResolution}
           />
-        </div>
-
-      </div>
-    </dialog>
+        </CallControlsDock>
+    </CallPanelShell>
   );
 
   const panelContent = (

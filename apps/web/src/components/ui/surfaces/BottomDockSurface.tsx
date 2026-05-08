@@ -1,4 +1,5 @@
 import type { HTMLAttributes, ReactNode } from "react";
+import motionStyles from "@/components/ui/motion/Motion.module.css";
 import styles from "./BottomDockSurface.module.css";
 
 type BottomDockSurfaceTag = "div" | "nav";
@@ -31,7 +32,7 @@ export function BottomDockSurface({
       className={[
         styles.root,
         placement === "inline" ? styles.inline : "",
-        isClosing ? styles.rootClosing : "",
+        isClosing ? motionStyles.fadeOut : motionStyles.fadeIn,
         className,
       ].filter(Boolean).join(" ")}
     >

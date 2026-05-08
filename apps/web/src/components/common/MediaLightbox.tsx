@@ -11,6 +11,7 @@ import {
 import { createPortal } from "react-dom";
 import { useI18n } from "@/i18n";
 import { IconButton } from "@/components/ui";
+import motionStyles from "@/components/ui/motion/Motion.module.css";
 import { useAnimatedPresence } from "@/lib/hooks";
 import { useMediaLightboxInteractions } from "./useMediaLightboxInteractions";
 import styles from "./MediaLightbox.module.css";
@@ -404,7 +405,11 @@ export function MediaLightbox({
     <dialog
       ref={dialogRef}
       open
-      className={[styles.overlay, isClosing ? styles.overlayClosing : ""].join(" ")}
+      className={[
+        styles.overlay,
+        trimmedCaption ? styles.overlayWithCaption : "",
+        isClosing ? motionStyles.fadeOut : motionStyles.fadeIn,
+      ].filter(Boolean).join(" ")}
       aria-modal="true"
       aria-label={t("message.media.lightboxAria")}
       data-testid="media-lightbox"
@@ -412,7 +417,7 @@ export function MediaLightbox({
       onCancel={(e) => { e.preventDefault(); onClose(); }}
     >
       <div
-        className={[styles.backdrop, isClosing ? styles.backdropClosing : ""].join(" ")}
+        className={styles.backdrop}
         onClick={onClose}
         aria-hidden="true"
       />

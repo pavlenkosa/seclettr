@@ -13,15 +13,6 @@
   border-radius: 14px;
   border: 1px solid color-mix(in srgb, var(--panel-border-soft) 90%, transparent);
   background: color-mix(in srgb, var(--surface-float) 96%, transparent);
-  box-shadow:
-    0 8px 24px rgb(2 8 20 / 0.22),
-    inset 0 1px 0 rgb(255 255 255 / 0.06);
-  animation: menuIn var(--motion-duration-fast, 140ms) var(--motion-ease-emphasized, cubic-bezier(.2,.8,.3,1)) both;
-}
-
-.menuClosing {
-  pointer-events: none;
-  animation: menuOut var(--motion-duration-fast, 140ms) var(--motion-ease-exit, cubic-bezier(0.4, 0, 1, 1)) both;
 }
 
 .item {
@@ -51,16 +42,8 @@
   outline-offset: -2px;
 }
 
-@keyframes menuIn {
-  from { opacity: 0; transform: scale(0.92) translateY(-4px); }
-  to   { opacity: 1; transform: scale(1) translateY(0); }
-}
-
-@keyframes menuOut {
-  from { opacity: 1; transform: scale(1) translateY(0); }
-  to   { opacity: 0; transform: scale(0.96) translateY(-2px); }
-}
-
 @media (prefers-reduced-motion: reduce) {
-  .menu { animation: none; }
+  .menu {
+    animation: none !important;
+  }
 }

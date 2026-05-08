@@ -12,12 +12,6 @@
   border-radius: 8px;
   border: 1px solid color-mix(in srgb, var(--panel-border-soft) 90%, transparent);
   background: var(--surface-float);
-  animation: dropdownIn var(--motion-duration-fast, 140ms) var(--motion-ease-emphasized, cubic-bezier(.2,.8,.3,1)) both;
-}
-
-.menuClosing {
-  pointer-events: none;
-  animation: dropdownOut var(--motion-duration-fast, 140ms) var(--motion-ease-exit, cubic-bezier(0.4, 0, 1, 1)) both;
 }
 
 .item {
@@ -72,16 +66,8 @@
   color: var(--accent);
 }
 
-@keyframes dropdownIn {
-  from { opacity: 0; }
-  to   { opacity: 1; }
-}
-
-@keyframes dropdownOut {
-  from { opacity: 1; }
-  to   { opacity: 0; }
-}
-
 @media (prefers-reduced-motion: reduce) {
-  .menu { animation: none; }
+  .menu {
+    animation: none !important;
+  }
 }

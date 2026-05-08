@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { MOTION_DURATION_MS, prefersReducedMotion } from "@/lib/motion";
 
 interface UseAnimatedPresenceOptions {
   isOpen: boolean;
@@ -6,16 +7,9 @@ interface UseAnimatedPresenceOptions {
   onHidden?: () => void;
 }
 
-function prefersReducedMotion(): boolean {
-  if (globalThis.window === undefined || typeof globalThis.matchMedia !== "function") {
-    return false;
-  }
-  return globalThis.matchMedia("(prefers-reduced-motion: reduce)").matches;
-}
-
 export function useAnimatedPresence({
   isOpen,
-  durationMs = 180,
+  durationMs = MOTION_DURATION_MS.base,
   onHidden,
 }: UseAnimatedPresenceOptions) {
   const [isMounted, setIsMounted] = useState(isOpen);

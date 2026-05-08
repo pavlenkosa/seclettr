@@ -139,6 +139,8 @@ const baselineChecks: Record<string, () => Promise<boolean>> = {
   "017_group_crypto_epoch.sql": async () =>
     (await columnExists("groups", "crypto_epoch")) &&
     (await columnExists("group_messages", "crypto_epoch")),
+  "019_room_invite_token_hash.sql": async () =>
+    columnExists("room_invites", "token_hash"),
 };
 
 async function baselineBootstrappedMigrations(files: string[]): Promise<void> {

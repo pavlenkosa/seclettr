@@ -1,6 +1,5 @@
 import { useRef, type ReactNode } from "react";
 import { useMediaElementBinding } from "@/calls/shared/media/useMediaElementBinding";
-import { useGroupCallAudioActivity } from "@/calls/group/runtime/useGroupCallAudioActivity";
 import {
   CallMediaAvatarFallback,
   CallMediaSurface,
@@ -34,6 +33,7 @@ function StreamVideo({
   fallbackInitials,
   isSpeaking,
   speakingVariant,
+  hasAudio,
 }: {
   readonly stream: MediaStream | null;
   readonly className?: string;
@@ -41,6 +41,7 @@ function StreamVideo({
   readonly fallbackInitials: string;
   readonly isSpeaking: boolean;
   readonly speakingVariant: "primary-stage" | "strip";
+  readonly hasAudio: boolean;
 }) {
   const { elementRef, isReady } = useMediaElementBinding<HTMLVideoElement>({
     kind: "video",
@@ -65,6 +66,7 @@ function StreamVideo({
           avatarClassName={styles.mediaAvatarFallback}
           pulseClassName={styles.mediaAudioPulse}
           pulseActiveClassName={styles.mediaAudioPulseActive}
+          hasAudio={hasAudio}
           isSpeaking={isSpeaking}
           speakingVariant={speakingVariant}
         />
@@ -96,13 +98,13 @@ function getTileClassName({
   variant,
   videoSource,
   isAudioOnly,
-  hasVoiceActivity,
+  hasAudioIndicator,
   className,
 }: {
   variant: GroupCallMediaTileProps["variant"];
   videoSource: GroupCallMediaTileProps["videoSource"];
   isAudioOnly: boolean;
-  hasVoiceActivity: boolean;
+  hasAudioIndicator: boolean;
   className?: string;
 }): string {
   return [
@@ -110,7 +112,7 @@ function getTileClassName({
     getVariantClassName(variant),
     videoSource === "screen" ? styles.mediaTileScreen : "",
     isAudioOnly ? styles.mediaTileAudioOnly : "",
-    hasVoiceActivity ? styles.mediaTileAudioActive : "",
+    hasAudioIndicator ? styles.mediaTileAudioPresent : "",
     className ?? "",
   ].join(" ");
 }
@@ -120,6 +122,10 @@ function getVideoClassName(videoSource: GroupCallMediaTileProps["videoSource"]):
     styles.mediaVideo,
     videoSource === "screen" ? styles.mediaVideoScreen : "",
   ].join(" ").trim();
+}
+
+function hasLiveAudioTrack(stream: MediaStream | null): boolean {
+  return Boolean(stream?.getAudioTracks().some((track) => track.readyState === "live"));
 }
 
 export function GroupCallMediaTile({
@@ -140,7 +146,7 @@ export function GroupCallMediaTile({
 }: GroupCallMediaTileProps) {
   const hasVideo = Boolean(stream?.getVideoTracks().length);
   const isAudioOnly = !hasVideo;
-  const hasVoiceActivity = useGroupCallAudioActivity(audioStream, isAudioOnly && !muted);
+  const hasAudioIndicator = hasLiveAudioTrack(audioStream);
   const speakingVariant = variant === "strip" ? "strip" : "primary-stage";
 
   // Visibility-based video virtualization: suspend <video> rendering when
@@ -159,7 +165,7 @@ export function GroupCallMediaTile({
         variant,
         videoSource,
         isAudioOnly,
-        hasVoiceActivity,
+        hasAudioIndicator,
         className,
       })}
       interactiveClassName={styles.mediaTileInteractive}
@@ -169,7 +175,8 @@ export function GroupCallMediaTile({
           className={getVideoClassName(videoSource)}
           label={label}
           fallbackInitials={fallbackInitials}
-          isSpeaking={hasVoiceActivity}
+          hasAudio={hasAudioIndicator}
+          isSpeaking={false}
           speakingVariant={speakingVariant}
         />
       ) : null}
@@ -181,7 +188,8 @@ export function GroupCallMediaTile({
           avatarClassName={styles.mediaAvatarFallback}
           pulseClassName={styles.mediaAudioPulse}
           pulseActiveClassName={styles.mediaAudioPulseActive}
-          isSpeaking={hasVoiceActivity}
+          hasAudio={hasAudioIndicator}
+          isSpeaking={false}
           speakingVariant={speakingVariant}
         />
       ) : null}

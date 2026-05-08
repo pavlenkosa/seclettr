@@ -9,6 +9,8 @@ import {
 } from "react";
 import { useI18n } from "@/i18n";
 import { useAnimatedPresence } from "@/lib/hooks";
+import { MOTION_DURATION_MS } from "@/lib/motion";
+import motionStyles from "@/components/ui/motion/Motion.module.css";
 import styles from "./MessageContextMenu.module.css";
 
 export interface MessageContextMenuAction {
@@ -53,7 +55,7 @@ export const MessageContextMenu = memo(function MessageContextMenu({
   const previousFocusRef = useRef<HTMLElement | null>(null);
   const { isMounted, isClosing } = useAnimatedPresence({
     isOpen: menuPos !== null,
-    durationMs: 140,
+    durationMs: MOTION_DURATION_MS.fast,
     onHidden: () => {
       setMountedMenuPos(null);
       const previousFocus = previousFocusRef.current;
@@ -198,7 +200,10 @@ export const MessageContextMenu = memo(function MessageContextMenu({
         <div
           ref={menuRef}
           role="menu"
-          className={[styles.menu, isClosing ? styles.menuClosing : ""].join(" ")}
+          className={[
+            styles.menu,
+            isClosing ? motionStyles.popoverOut : motionStyles.popoverIn,
+          ].join(" ")}
           style={{ "--menu-x": `${mountedMenuPos.x}px`, "--menu-y": `${mountedMenuPos.y}px` } as CSSProperties}
         >
           {canReply && (

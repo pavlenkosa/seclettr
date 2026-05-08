@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
-  GROUP_CALL_MEDIA_KEY_MAX_EPOCH,
+  GROUP_CALL_MEDIA_KEY_EPOCH_WRAP,
   buildGroupCallParticipantFingerprint,
   decideGroupCallMediaKeyRotation,
 } from "@/calls/group/runtime/group-call/media-key-rotation";
@@ -79,10 +79,10 @@ describe("group-call-media-key-rotation", () => {
     });
   });
 
-  it("does not rotate past max epoch", () => {
+  it("wraps epoch back to 0 when reaching the wrap boundary", () => {
     const decision = decideGroupCallMediaKeyRotation({
       localMediaKey: {
-        epoch: GROUP_CALL_MEDIA_KEY_MAX_EPOCH,
+        epoch: GROUP_CALL_MEDIA_KEY_EPOCH_WRAP - 1,
         keyId: "k-max",
         algorithm: "aes-256-gcm",
         keyBytes: new Uint8Array(32),
@@ -95,9 +95,9 @@ describe("group-call-media-key-rotation", () => {
     });
 
     expect(decision).toEqual({
-      rotate: false,
-      reason: null,
-      nextEpoch: GROUP_CALL_MEDIA_KEY_MAX_EPOCH,
+      rotate: true,
+      reason: "participant-change",
+      nextEpoch: 0,
     });
   });
 });

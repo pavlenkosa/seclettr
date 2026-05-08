@@ -1,7 +1,9 @@
 import type { LocalGroupCallMediaKey } from "./media-key";
 
 export const GROUP_CALL_MEDIA_KEY_ROTATION_INTERVAL_MS = 5 * 60_000;
-export const GROUP_CALL_MEDIA_KEY_MAX_EPOCH = 1_000_000;
+// Epoch wraps at this boundary rather than hard-stopping, so very long calls
+// (or high churn) keep rotating. The value fits safely in a 20-bit field.
+export const GROUP_CALL_MEDIA_KEY_EPOCH_WRAP = 1_000_000;
 
 type GroupCallMediaKeyRotationReason = "participant-change" | "interval";
 
@@ -30,14 +32,6 @@ export function decideGroupCallMediaKeyRotation(
   input: GroupCallMediaKeyRotationInput
 ): GroupCallMediaKeyRotationDecision {
   const currentEpoch = input.localMediaKey.epoch;
-  if (currentEpoch >= GROUP_CALL_MEDIA_KEY_MAX_EPOCH) {
-    return {
-      rotate: false,
-      reason: null,
-      nextEpoch: currentEpoch,
-    };
-  }
-
   const intervalMs = input.intervalMs ?? GROUP_CALL_MEDIA_KEY_ROTATION_INTERVAL_MS;
   const previousFingerprint = input.previousParticipantFingerprint;
   const participantChanged = (
@@ -49,7 +43,7 @@ export function decideGroupCallMediaKeyRotation(
     return {
       rotate: true,
       reason: "participant-change",
-      nextEpoch: Math.min(currentEpoch + 1, GROUP_CALL_MEDIA_KEY_MAX_EPOCH),
+      nextEpoch: (currentEpoch + 1) % GROUP_CALL_MEDIA_KEY_EPOCH_WRAP,
     };
   }
 
@@ -57,7 +51,7 @@ export function decideGroupCallMediaKeyRotation(
     return {
       rotate: true,
       reason: "interval",
-      nextEpoch: Math.min(currentEpoch + 1, GROUP_CALL_MEDIA_KEY_MAX_EPOCH),
+      nextEpoch: (currentEpoch + 1) % GROUP_CALL_MEDIA_KEY_EPOCH_WRAP,
     };
   }
 

@@ -22,10 +22,6 @@ interface SecuritySettingsSectionProps {
   readonly setAutoDecryptMedia: (next: AutoDecryptMedia) => void;
 }
 
-function sanitizePinInput(value: string): string {
-  return value.replaceAll(/\D/g, "").slice(0, 4);
-}
-
 function getPinFeedbackClassName(feedback: PinFeedbackState, bottom = false): string {
   return [
     styles.pinFeedback,
@@ -81,7 +77,7 @@ function AppLockSection() {
   };
 
   const handleSave = async () => {
-    if (newPin.length !== 4 || !/^\d{4}$/.test(newPin)) {
+    if (newPin.length < 4) {
       setFeedback({ kind: "error", msg: t("settings.appLock.pinEntry.tooShort") });
       return;
     }
@@ -129,11 +125,11 @@ function AppLockSection() {
     void handleRemove();
   };
   const handleNewPinChange = (value: string) => {
-    setNewPin(sanitizePinInput(value));
+    setNewPin(value);
     setFeedback(null);
   };
   const handleConfirmPinChange = (value: string) => {
-    setConfirmPin(sanitizePinInput(value));
+    setConfirmPin(value);
     setFeedback(null);
   };
 
@@ -185,9 +181,7 @@ function AppLockSection() {
           <div className={styles.pinInputGroup}>
             <input
               type="password"
-              inputMode="numeric"
-              maxLength={4}
-              pattern="\d{4}"
+              autoComplete="new-password"
               placeholder={t("settings.appLock.pinEntry.new")}
               value={newPin}
               onChange={(event) => handleNewPinChange(event.target.value)}
@@ -196,9 +190,7 @@ function AppLockSection() {
             />
             <input
               type="password"
-              inputMode="numeric"
-              maxLength={4}
-              pattern="\d{4}"
+              autoComplete="new-password"
               placeholder={t("settings.appLock.pinEntry.confirm")}
               value={confirmPin}
               onChange={(event) => handleConfirmPinChange(event.target.value)}

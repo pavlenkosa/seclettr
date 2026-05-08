@@ -1,5 +1,5 @@
 import type { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
-import { randomUUID } from "node:crypto";
+import { randomUUID, createHash } from "node:crypto";
 import { nanoid } from "nanoid";
 import { z } from "zod";
 import {
@@ -25,6 +25,10 @@ const INVITE_TOKEN_LENGTH = 32;
 /** Guest tokens are bounded by the room TTL but never exceed 2 hours. */
 const GUEST_TOKEN_MAX_TTL_SECONDS = 2 * 60 * 60;
 
+function hashInviteToken(token: string): string {
+  return createHash("sha256").update(token, "utf8").digest("hex");
+}
+
 const CreateRoomBodySchema = z.object({
   callType: z.enum(["audio", "video"]),
   expiresInMinutes: z.number().int().min(5).max(10080),
@@ -45,7 +49,6 @@ type ActiveRoom = {
 type RoomInvite = {
   id: string;
   call_session_id: string;
-  token: string;
   expires_at: Date;
 };
 
@@ -61,16 +64,16 @@ async function getActiveRoom(callId: string): Promise<ActiveRoom | null> {
 
 async function getActiveRoomInviteByToken(token: string): Promise<(RoomInvite & { call_type: "audio" | "video"; host_username: string; room_status: string }) | null> {
   const rows = await query<RoomInvite & { call_type: "audio" | "video"; host_username: string; room_status: string }>(
-    `SELECT ri.id, ri.call_session_id, ri.token, ri.expires_at,
+    `SELECT ri.id, ri.call_session_id, ri.expires_at,
             cs.call_type, u.username AS host_username, cs.status AS room_status
      FROM room_invites ri
      INNER JOIN call_sessions cs ON cs.id = ri.call_session_id
      INNER JOIN users u ON u.id = cs.caller_user_id
-     WHERE ri.token = $1
+     WHERE ri.token_hash = $1
        AND ri.expires_at > now()
        AND cs.status IN ('ringing', 'active')
        AND cs.is_room = TRUE`,
-    [token]
+    [hashInviteToken(token)]
   );
   return rows[0] ?? null;
 }
@@ -136,9 +139,9 @@ export async function roomRoutes(fastify: FastifyInstance): Promise<void> {
         if (!newCallId) throw new Error("Failed to create room call session");
 
         await client.query(
-          `INSERT INTO room_invites (call_session_id, token, expires_at)
+          `INSERT INTO room_invites (call_session_id, token_hash, expires_at)
            VALUES ($1, $2, $3)`,
-          [newCallId, inviteToken, expiresAt.toISOString()]
+          [newCallId, hashInviteToken(inviteToken), expiresAt.toISOString()]
         );
         return newCallId;
       });

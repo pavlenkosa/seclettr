@@ -37,6 +37,7 @@ import { callRoutes } from "./routes/calls/index.js";
 import { roomRoutes } from "./routes/rooms/index.js";
 import { pushRoutes } from "./routes/push/index.js";
 import { clientErrorRoutes } from "./routes/client-errors/index.js";
+import { transferRoutes } from "./routes/transfer/index.js";
 
 const LEGACY_WS_CLIENT_PROTOCOL = "qm.v1";
 
@@ -160,6 +161,7 @@ export async function buildApp() {
   await fastify.register(roomRoutes, { prefix: "/rooms" });
   await fastify.register(pushRoutes, { prefix: "/push" });
   await fastify.register(clientErrorRoutes, { prefix: "/client-errors" });
+  await fastify.register(transferRoutes, { prefix: "/transfer" });
 
   await registerWebSocketHandler(fastify);
 

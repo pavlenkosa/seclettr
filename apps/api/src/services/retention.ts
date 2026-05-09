@@ -109,6 +109,11 @@ export async function runRetentionCleanup(
     recordRetentionDeleted("otk_reservations_cleared", r7.rowCount ?? 0);
     recordRetentionDeleted("attachments_orphaned", r8.rowCount ?? 0);
 
+    const r9 = await pool.query(
+      `DELETE FROM transfer_packages WHERE expires_at < now()`
+    );
+    recordRetentionDeleted("transfer_packages_expired", r9.rowCount ?? 0);
+
     const total =
       (r1.rowCount ?? 0) +
       (r2.rowCount ?? 0) +
@@ -118,7 +123,8 @@ export async function runRetentionCleanup(
       (r6a.rowCount ?? 0) +
       (r6.rowCount ?? 0) +
       (r7.rowCount ?? 0) +
-      (r8.rowCount ?? 0);
+      (r8.rowCount ?? 0) +
+      (r9.rowCount ?? 0);
     if (total > 0) {
       _log.info(
         `[retention] cleaned up ${total} rows ` +
@@ -126,7 +132,8 @@ export async function runRetentionCleanup(
         `group-msgs=${r3.rowCount ?? 0}, otks=${r4.rowCount ?? 0}, ` +
         `sessions=${r5.rowCount ?? 0}, stale-ringing=${r6a.rowCount ?? 0}, ` +
         `call-sessions=${r6.rowCount ?? 0}, ` +
-        `otk-reservations-cleared=${r7.rowCount ?? 0}, attachments-orphaned=${r8.rowCount ?? 0})`
+        `otk-reservations-cleared=${r7.rowCount ?? 0}, attachments-orphaned=${r8.rowCount ?? 0}, ` +
+        `transfer-packages=${r9.rowCount ?? 0})`
       );
     }
     await purgeDeletedAttachments(_log);

@@ -201,6 +201,4 @@ MinIO data remain in place.
 - Use strong secrets in `.env`.
 - Use TLS in production.
 - Keep Docker host and OS patched.
-- Read legal notices:
-  - `LEGAL_NOTICE.md`
-  - `LEGAL_NOTICE.ru.md`
+- Read legal notices: `LEGAL_NOTICE.md`

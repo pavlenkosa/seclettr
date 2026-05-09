@@ -1,9 +1,5 @@
 # Seclettr - Full-Stack E2EE Messenger
 
-Language / Язык:
-- English: this file
-- Русский: [README.ru.md](README.ru.md)
-
 Seclettr is a monorepo for an end-to-end encrypted messenger including a web client, API, and SFU calling service.
 
 ## Table of Contents
@@ -187,8 +183,7 @@ Non-interactive modes:
 
 ### Step-by-Step Deployment Guide
 
-- English: [DEPLOYMENT.md](DEPLOYMENT.md)
-- Русский: [DEPLOYMENT.ru.md](DEPLOYMENT.ru.md)
+- [DEPLOYMENT.md](DEPLOYMENT.md)
 
 ## Contributing
 
@@ -210,19 +205,15 @@ pnpm test:e2e -- --project=chromium
 
 ## Legal Notice
 
-- Usage disclaimer and legal notice: [LEGAL_NOTICE.md](LEGAL_NOTICE.md) (English), [LEGAL_NOTICE.ru.md](LEGAL_NOTICE.ru.md) (Русский).
+- Usage disclaimer and legal notice: [LEGAL_NOTICE.md](LEGAL_NOTICE.md).
 - This notice supplements, but does not replace, [LICENSE](LICENSE).
 
 ## License
 
-- Project license: [LICENSE](LICENSE) (Apache-2.0, canonical English text).
-- Russian helper note: [LICENSE.ru.md](LICENSE.ru.md).
-- Legal notice and usage disclaimer:
-  - [LEGAL_NOTICE.md](LEGAL_NOTICE.md)
-  - [LEGAL_NOTICE.ru.md](LEGAL_NOTICE.ru.md)
+- Project license: [LICENSE](LICENSE) (Apache-2.0).
+- Legal notice and usage disclaimer: [LEGAL_NOTICE.md](LEGAL_NOTICE.md).
 - Copyright notice: [NOTICE](NOTICE).
 - Third-party inventory: [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
 - Protocol package licensing:
   - [packages/protocol/LICENSE](packages/protocol/LICENSE)
-  - [packages/protocol/LICENSE.ru.md](packages/protocol/LICENSE.ru.md)
   - [packages/protocol/NOTICE](packages/protocol/NOTICE)

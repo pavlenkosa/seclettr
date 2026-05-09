@@ -249,7 +249,7 @@ export async function buildApp() {
   return fastify;
 }
 
-const EXPECTED_LATEST_MIGRATION = "018_standalone_rooms.sql";
+const EXPECTED_LATEST_MIGRATION = "020_transfer_packages.sql";
 
 async function checkDbSchemaVersion(): Promise<void> {
   const rows = await query<{ filename: string }>(

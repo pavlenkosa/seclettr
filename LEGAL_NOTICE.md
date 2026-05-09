@@ -1,9 +1,5 @@
 # Legal Notice and Usage Disclaimer
 
-Language / Язык:
-- English: this file
-- Русский: [LEGAL_NOTICE.ru.md](LEGAL_NOTICE.ru.md)
-
 This document is an informational notice and does not replace the project license.
 If any statement here conflicts with [LICENSE](LICENSE), the license text prevails.
 

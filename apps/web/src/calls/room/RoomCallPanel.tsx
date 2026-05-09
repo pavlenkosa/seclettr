@@ -31,6 +31,10 @@ interface Props {
 
 type RoomStatus = "connecting" | "ready" | "error" | "leaving";
 
+function hasEnabledLiveAudioTrack(stream: MediaStream | null): boolean {
+  return Boolean(stream?.getAudioTracks().some((track) => track.readyState === "live" && track.enabled));
+}
+
 export function RoomCallPanel({ session, onLeave }: Props) {
   const { t } = useI18n();
 
@@ -317,11 +321,13 @@ export function RoomCallPanel({ session, onLeave }: Props) {
 
   const allTiles = useMemo(() => {
     const localVideoStream = isVideoEnabled ? localStream : null;
+    const localHasAudio = hasEnabledLiveAudioTrack(localStream);
     const localTile = {
       id: "local",
       label: session.displayName,
       stream: localVideoStream,
       audioStream: null,
+      hasAudio: localHasAudio,
       fallbackInitials: displayInitials,
       badge: isAudioMuted ? t("call.mute") : undefined,
       muted: true as const,
@@ -334,6 +340,7 @@ export function RoomCallPanel({ session, onLeave }: Props) {
         label: displayName,
         stream: media.videoStream,
         audioStream: media.audioStream,
+        hasAudio: media.hasAudio,
         fallbackInitials: getMemberInitials(displayName),
         badge: media.hasVideo
           ? media.videoSource === "screen"
@@ -349,6 +356,7 @@ export function RoomCallPanel({ session, onLeave }: Props) {
       label: session.displayName,
       stream: screenShareStream,
       audioStream: null,
+      hasAudio: false,
       fallbackInitials: displayInitials,
       badge: t("group.call.screenSharing"),
       muted: true as const,
@@ -462,6 +470,7 @@ export function RoomCallPanel({ session, onLeave }: Props) {
                     label={tile.label}
                     stream={tile.stream}
                     audioStream={tile.audioStream}
+                    hasAudio={tile.hasAudio}
                     fallbackInitials={tile.fallbackInitials}
                     badge={tile.badge}
                     muted={tile.muted}

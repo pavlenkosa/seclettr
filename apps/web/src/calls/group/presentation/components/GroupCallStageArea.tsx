@@ -112,6 +112,7 @@ export function GroupCallStageArea({
         label={stageTile.label}
         stream={stageTile.stream}
         audioStream={stageTile.audioStream}
+        hasAudio={stageTile.hasAudio}
         fallbackInitials={stageTile.fallbackInitials}
         badge={stageTile.badge}
         muted={stageTile.isLocal}

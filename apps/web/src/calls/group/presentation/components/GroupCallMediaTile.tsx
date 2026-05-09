@@ -13,6 +13,7 @@ export interface GroupCallMediaTileProps {
   readonly label: string;
   readonly stream: MediaStream | null;
   readonly audioStream?: MediaStream | null;
+  readonly hasAudio?: boolean;
   readonly fallbackInitials: string;
   readonly badge?: string;
   readonly muted?: boolean;
@@ -132,6 +133,7 @@ export function GroupCallMediaTile({
   label,
   stream,
   audioStream = null,
+  hasAudio,
   fallbackInitials,
   badge,
   muted = false,
@@ -146,7 +148,7 @@ export function GroupCallMediaTile({
 }: GroupCallMediaTileProps) {
   const hasVideo = Boolean(stream?.getVideoTracks().length);
   const isAudioOnly = !hasVideo;
-  const hasAudioIndicator = hasLiveAudioTrack(audioStream);
+  const hasAudioIndicator = hasAudio ?? hasLiveAudioTrack(audioStream);
   const speakingVariant = variant === "strip" ? "strip" : "primary-stage";
 
   // Visibility-based video virtualization: suspend <video> rendering when

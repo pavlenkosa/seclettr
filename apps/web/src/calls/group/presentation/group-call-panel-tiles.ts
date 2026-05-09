@@ -36,10 +36,19 @@ export function createRemoteCallTile(
     audioStream: participant.audioStream,
     fallbackInitials: getMemberInitials(remoteName),
     badge: resolveRemoteTileBadge(participant, t),
+    hasAudio: participant.hasAudio || hasLiveAudioTrack(participant.audioStream),
     hasVideo: participant.hasVideo,
     videoSource: participant.videoSource,
     isLocal: false,
   };
+}
+
+function hasLiveAudioTrack(stream: MediaStream | null): boolean {
+  return Boolean(stream?.getAudioTracks().some((track) => track.readyState === "live"));
+}
+
+function hasEnabledLiveAudioTrack(stream: MediaStream | null): boolean {
+  return Boolean(stream?.getAudioTracks().some((track) => track.readyState === "live" && track.enabled));
 }
 
 export function createLocalCallTiles(
@@ -52,6 +61,7 @@ export function createLocalCallTiles(
   t: Translate
 ): GroupCallStageTile[] {
   const localFallbackInitials = getMemberInitials(localTileLabel.replace(/^@/, ""));
+  const localHasAudio = hasEnabledLiveAudioTrack(localStream);
   const tiles: GroupCallStageTile[] = [];
 
   if (isLocalVideoEnabled) {
@@ -62,6 +72,7 @@ export function createLocalCallTiles(
       audioStream: null,
       fallbackInitials: localFallbackInitials,
       badge: t("group.call.videoOn"),
+      hasAudio: localHasAudio,
       hasVideo: true,
       videoSource: "camera",
       isLocal: true,
@@ -76,6 +87,7 @@ export function createLocalCallTiles(
       audioStream: null,
       fallbackInitials: localFallbackInitials,
       badge: t("group.call.screenSharing"),
+      hasAudio: false,
       hasVideo: true,
       videoSource: "screen",
       isLocal: true,
@@ -90,6 +102,7 @@ export function createLocalCallTiles(
       audioStream: null,
       fallbackInitials: localFallbackInitials,
       badge: localVideoStatusLabel,
+      hasAudio: localHasAudio,
       hasVideo: false,
       videoSource: null,
       isLocal: true,

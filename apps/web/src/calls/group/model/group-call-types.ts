@@ -66,6 +66,7 @@ export interface GroupCallStageTile {
   audioStream: MediaStream | null;
   fallbackInitials: string;
   badge: string;
+  hasAudio?: boolean;
   hasVideo: boolean;
   videoSource: "camera" | "screen" | null;
   isLocal: boolean;

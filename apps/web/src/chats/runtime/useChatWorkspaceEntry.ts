@@ -529,7 +529,10 @@ export function useChatWorkspaceEntry(options: UseChatWorkspaceEntryOptions) {
     const labels: Record<string, string> = {};
     for (const msg of activePlainGroup.messages) {
       if (!msg.isOwn) {
-        labels[msg.id] = msg.senderName;
+        // Match E2EE formatting (`@username`) so the bubble header looks the
+        // same whether the group is encrypted or cloud-stored.
+        const name = msg.senderName?.trim();
+        labels[msg.id] = name ? `@${name}` : "";
       }
     }
     return labels;

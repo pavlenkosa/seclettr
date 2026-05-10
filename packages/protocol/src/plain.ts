@@ -143,6 +143,11 @@ export const UpdatePlainGroupMemberRoleRequestSchema = wireObject({
 });
 export type UpdatePlainGroupMemberRoleRequest = z.infer<typeof UpdatePlainGroupMemberRoleRequestSchema>;
 
+export const RenamePlainGroupRequestSchema = wireObject({
+  name: z.string().min(1).max(MAX_GROUP_NAME_LENGTH),
+});
+export type RenamePlainGroupRequest = z.infer<typeof RenamePlainGroupRequestSchema>;
+
 // ─── Pinned Chats ─────────────────────────────────────────────────────────────
 
 export const PlainChatPinKindSchema = z.enum(["dm", "group"]);

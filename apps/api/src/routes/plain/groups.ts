@@ -27,6 +27,7 @@ import {
   CreatePlainGroupRequestSchema,
   AddPlainGroupMemberRequestSchema,
   UpdatePlainGroupMemberRoleRequestSchema,
+  RenamePlainGroupRequestSchema,
 } from "@seclettr/protocol";
 
 async function fetchUsername(userId: string): Promise<string | null> {
@@ -345,6 +346,40 @@ export async function plainGroupRoutes(fastify: FastifyInstance): Promise<void> 
         })),
         createdAt: g.created_at,
         updatedAt: g.updated_at,
+      });
+    }
+  );
+
+  /** Rename group (owner / admin). Triggers an `updated_at` bump used by the
+   *  sidebar to re-sort the group entry. */
+  fastify.patch(
+    "/:id",
+    { preHandler: requireAuth },
+    async (request, reply) => {
+      const { sub: userId } = request.auth;
+      const { id } = request.params as { id: string };
+
+      const membership = await getActiveMembership(id, userId);
+      if (!membership) return reply.code(403).send({ error: "Not a member" });
+      if (membership.role === "member") return reply.code(403).send({ error: "Insufficient role" });
+
+      const body = parseOrReply(reply, RenamePlainGroupRequestSchema, request.body);
+      if (!body) return;
+
+      const trimmed = body.name.trim();
+      if (!trimmed) return reply.code(400).send({ error: "Name cannot be empty" });
+
+      const [updated] = await query<{ id: string; name: string; updated_at: string }>(
+        `UPDATE plain_groups SET name = $1 WHERE id = $2
+         RETURNING id, name, to_char(updated_at AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"') AS updated_at`,
+        [trimmed, id]
+      );
+      if (!updated) return reply.code(404).send({ error: "Group not found" });
+
+      return reply.code(200).send({
+        id: updated.id,
+        name: updated.name,
+        updatedAt: updated.updated_at,
       });
     }
   );

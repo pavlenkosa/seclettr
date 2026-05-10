@@ -123,6 +123,10 @@ interface WirePlainMessage {
   senderUsername: string;
   recipientUserId?: string;
   recipientUsername?: string;
+  /** Set when the wire message belongs to a plain group thread. Owned by
+   *  plain-groups-store; this store ignores such messages to avoid duplicating
+   *  them into the sender's DM list. */
+  groupId?: string;
   content: string;
   messageType: string;
   attachment?: {
@@ -907,6 +911,10 @@ export const usePlainMessagesStore = create<PlainMessagesState>((set, get) => {
 
     if (message.type === "plain_message.new") {
       const wire = message.message as WirePlainMessage;
+      // Group messages are routed through the same plain_message.new event but
+      // owned by plain-groups-store. Skip them here so the same message doesn't
+      // also land in the sender's DM thread.
+      if (wire.groupId) return;
       const conversationKey = wire.senderUserId === myUserId
         ? (wire.recipientUserId ?? "")
         : wire.senderUserId;

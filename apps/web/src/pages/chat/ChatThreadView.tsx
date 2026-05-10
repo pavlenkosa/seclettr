@@ -57,7 +57,7 @@ export const ChatThreadView = memo(function ChatThreadView({
         threadKey={activeListId ?? undefined}
         messages={activeMessages}
         isLoadingHistory={activeHistoryLoading ?? false}
-        senderLabels={activeThreadKind === "group" ? groupSenderLabels : undefined}
+        senderLabels={activeThreadKind === "group" || activeThreadKind === "plain-group" ? groupSenderLabels : undefined}
         topChrome={threadChrome}
         composer={threadComposer}
         isTyping={activeThreadKind === "direct" ? activeTyping : undefined}

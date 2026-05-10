@@ -15,7 +15,7 @@ import motionStyles from "@/components/ui/motion/Motion.module.css";
 import styles from "./MessageContextMenu.module.css";
 
 export interface MessageContextMenuAction {
-  kind: "reply" | "copy";
+  kind: "reply" | "copy" | "delete";
 }
 
 interface Props {
@@ -24,6 +24,7 @@ interface Props {
   readonly copyText?: string;
   readonly canReply?: boolean;
   readonly canCopy?: boolean;
+  readonly canDelete?: boolean;
 }
 
 interface MenuPosition {
@@ -43,6 +44,7 @@ export const MessageContextMenu = memo(function MessageContextMenu({
   copyText,
   canReply = true,
   canCopy = true,
+  canDelete = false,
 }: Props) {
   const { t } = useI18n();
   const [menuPos, setMenuPos] = useState<MenuPosition | null>(null);
@@ -268,6 +270,19 @@ export const MessageContextMenu = memo(function MessageContextMenu({
                 </svg>
               )}
               {copied ? t("message.context.copied") : t("message.context.copy")}
+            </button>
+          )}
+          {canDelete && (
+            <button
+              role="menuitem"
+              type="button"
+              className={`${styles.item} ${styles.itemDanger}`}
+              onClick={() => handleAction("delete")}
+            >
+              <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                <path d="M3 4h10M6 4V2.7a.7.7 0 0 1 .7-.7h2.6a.7.7 0 0 1 .7.7V4M5 4l.7 9.3a.7.7 0 0 0 .7.7h3.2a.7.7 0 0 0 .7-.7L11 4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+              {t("message.context.delete")}
             </button>
           )}
         </div>

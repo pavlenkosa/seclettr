@@ -21,6 +21,9 @@ interface Props {
   readonly onActiveMediaChange: (next: string | null) => void;
   readonly onRetry?: (messageId: string) => void;
   readonly onReply?: (messageId: string) => void;
+  /** Optional delete handler. When provided, the row exposes a Delete entry
+   *  in its context menu (own messages only). */
+  readonly onDelete?: (messageId: string) => void;
   readonly onScrollToMessage?: (messageId: string) => void;
   readonly isHighlighted: boolean;
   readonly enterDelayMs: number;
@@ -359,6 +362,7 @@ export const MessageListRow = memo(function MessageListRow({
   onActiveMediaChange,
   onRetry,
   onReply,
+  onDelete,
   onScrollToMessage,
   isHighlighted,
   enterDelayMs,
@@ -368,6 +372,10 @@ export const MessageListRow = memo(function MessageListRow({
   const hasMediaGroup = (presentation.mediaGroupMessages?.length ?? 0) > 1;
   const kind = getMessageBodyKind(message, hasMediaGroup);
   const canCopy = canCopyMessage(message, kind);
+  // Delete is offered when the row owns a delete handler AND the message is
+  // either own (sender) or from a thread without a strict ownership model.
+  // The store / API enforces the actual permission server-side.
+  const canDelete = !!onDelete && message.isOwn;
   const entryStyle = {
     "--message-enter-delay": `${Math.min(enterDelayMs, 160)}ms`,
   } as CSSProperties;
@@ -375,8 +383,10 @@ export const MessageListRow = memo(function MessageListRow({
   const handleContextAction = useCallback((action: MessageContextMenuAction) => {
     if (action.kind === "reply") {
       onReply?.(message.id);
+    } else if (action.kind === "delete") {
+      onDelete?.(message.id);
     }
-  }, [message.id, onReply]);
+  }, [message.id, onDelete, onReply]);
 
   return (
     <div style={entryStyle}>
@@ -388,6 +398,7 @@ export const MessageListRow = memo(function MessageListRow({
         <MessageContextMenu
           onAction={handleContextAction}
           canCopy={canCopy}
+          canDelete={canDelete}
           copyText={canCopy ? (message.content ?? undefined) : undefined}
         >
           <MessageRowFrame presentation={presentation}>
@@ -412,6 +423,7 @@ export const MessageListRow = memo(function MessageListRow({
     prev.activeMediaKey === next.activeMediaKey &&
     prev.onRetry === next.onRetry &&
     prev.onReply === next.onReply &&
+    prev.onDelete === next.onDelete &&
     prev.onScrollToMessage === next.onScrollToMessage &&
     prev.isHighlighted === next.isHighlighted &&
     prev.enterDelayMs === next.enterDelayMs &&

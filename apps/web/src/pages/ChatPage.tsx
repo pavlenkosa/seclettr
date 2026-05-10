@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useShallow } from "zustand/react/shallow";
 import { useAuthStore } from "@/stores/auth";
+import { usePlainMessagesStore, usePlainGroupsStore } from "@/stores/plain";
 import type { DirectCallPanelHandle } from "@/calls/direct/model/direct-call-types";
 import { useDirectMissedCallAlerts } from "@/calls/direct/runtime/useDirectMissedCallAlerts";
 import {
@@ -264,6 +265,27 @@ export function ChatPage() {
     await messageComposerRef.current?.handleDroppedFiles(files);
   }, []);
 
+  // Plain-only delete: dispatches to the right store based on the active
+  // thread kind. E2EE doesn't expose a delete-message store action, so the
+  // bubble's context menu hides the Delete entry there (canDelete falsy).
+  const deletePlainDmMessage = usePlainMessagesStore((state) => state.deleteMessage);
+  const deletePlainGroupMessage = usePlainGroupsStore((state) => state.deleteMessage);
+  const handleDeleteMessage = useCallback((messageId: string) => {
+    if (activeThreadKind === "plain-direct" && activePlainConversation) {
+      void deletePlainDmMessage(activePlainConversation.userId, messageId);
+      return;
+    }
+    if (activeThreadKind === "plain-group" && activePlainGroup) {
+      void deletePlainGroupMessage(activePlainGroup.groupId, messageId);
+    }
+  }, [
+    activeThreadKind,
+    activePlainConversation,
+    activePlainGroup,
+    deletePlainDmMessage,
+    deletePlainGroupMessage,
+  ]);
+
   const directPresenceLabel = useMemo(
     () => resolveDirectPresenceLabel({ activeConversationUserId, activeTyping, activePresence, locale, t }),
     [activeConversationUserId, activeTyping, activePresence, locale, t]
@@ -401,6 +423,7 @@ export function ChatPage() {
       mediaPanelPresence={mediaPanelPresence}
       threadPaneState={threadPaneState}
       handleRetryMessage={handleRetryMessage}
+      handleDeleteMessage={handleDeleteMessage}
       directTrustBlocked={directTrustBlocked}
       handleDropFiles={handleDropFiles}
     />

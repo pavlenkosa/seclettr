@@ -28,6 +28,7 @@ export interface ChatThreadPaneProps {
   readonly isTyping?: boolean;
   readonly onRetry?: (messageId: string) => void;
   readonly onReply?: (messageId: string) => void;
+  readonly onDelete?: (messageId: string) => void;
   readonly onScrollToMessage?: (messageId: string) => void;
   readonly onDropFiles?: (files: File[]) => Promise<void>;
 }
@@ -46,6 +47,7 @@ export function ChatThreadPane({
   isTyping,
   onRetry,
   onReply,
+  onDelete,
   onScrollToMessage,
   onDropFiles,
 }: ChatThreadPaneProps) {
@@ -141,6 +143,7 @@ export function ChatThreadPane({
               senderLabels={senderLabels}
               onRetry={onRetry}
               onReply={onReply}
+              onDelete={onDelete}
               onScrollToMessage={onScrollToMessage}
               highlightMessageId={highlightMessageId}
               isTyping={isTyping}

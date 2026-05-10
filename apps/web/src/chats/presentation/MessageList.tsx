@@ -25,6 +25,7 @@ interface Props {
   readonly senderLabels?: Record<string, string>;
   readonly onRetry?: (messageId: string) => void;
   readonly onReply?: (messageId: string) => void;
+  readonly onDelete?: (messageId: string) => void;
   readonly onScrollToMessage?: (messageId: string) => void;
   readonly highlightMessageId?: string;
   readonly isTyping?: boolean;
@@ -62,6 +63,7 @@ export const MessageList = forwardRef<MessageListHandle, Props>(function Message
   senderLabels,
   onRetry,
   onReply,
+  onDelete,
   onScrollToMessage,
   highlightMessageId,
   isTyping,
@@ -229,6 +231,7 @@ export const MessageList = forwardRef<MessageListHandle, Props>(function Message
                   onActiveMediaChange={timelineState.handleActiveMediaChange}
                   onRetry={onRetry}
                   onReply={onReply}
+                  onDelete={onDelete}
                   onScrollToMessage={onScrollToMessage}
                   isHighlighted={presentation.rowId === highlightedRowId}
                   enterDelayMs={Math.min(virtualRow.index, 8) * 22}
@@ -262,6 +265,7 @@ export const MessageList = forwardRef<MessageListHandle, Props>(function Message
                   onActiveMediaChange={timelineState.handleActiveMediaChange}
                   onRetry={onRetry}
                   onReply={onReply}
+                  onDelete={onDelete}
                   onScrollToMessage={onScrollToMessage}
                   isHighlighted={presentation.rowId === highlightedRowId}
                   enterDelayMs={Math.min(index, 8) * 22}

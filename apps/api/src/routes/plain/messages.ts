@@ -205,7 +205,6 @@ export async function plainMessageRoutes(fastify: FastifyInstance): Promise<void
         senderUserId: userId,
         senderUsername: senderUsername ?? userId,
         recipientUserId,
-        recipientUsername: recipientUsername ?? recipientUserId,
         content: body.content,
         messageType: body.messageType,
         attachment: attMeta

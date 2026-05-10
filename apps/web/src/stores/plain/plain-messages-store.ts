@@ -12,6 +12,109 @@ import type {
   PlainReplyMeta,
 } from "./types";
 
+// ─── Local cache (AES-GCM encrypted localStorage) ────────────────────────────
+
+interface CachedConvEntry {
+  userId: string;
+  username: string;
+  lastMessageAt: number;
+  unreadCount: number;
+  lastMessage?: { id: string; clientId: string; senderId: string; senderName: string; content: string; type: PlainMessageType; timestamp: number; isOwn: boolean };
+}
+
+function cacheStorageKey(myUserId: string): string {
+  return `plain_convs_v2_${myUserId}`;
+}
+
+// Derive a per-user AES-GCM key from userId + deviceId using PBKDF2.
+// This prevents another user on the same browser from reading cached messages.
+async function deriveCacheKey(myUserId: string, deviceId: string): Promise<CryptoKey> {
+  const enc = new TextEncoder();
+  const keyMaterial = await crypto.subtle.importKey(
+    "raw",
+    enc.encode(`${myUserId}:${deviceId}`),
+    "PBKDF2",
+    false,
+    ["deriveKey"]
+  );
+  return crypto.subtle.deriveKey(
+    { name: "PBKDF2", salt: enc.encode("plain_cache_v2"), iterations: 100_000, hash: "SHA-256" },
+    keyMaterial,
+    { name: "AES-GCM", length: 256 },
+    false,
+    ["encrypt", "decrypt"]
+  );
+}
+
+async function saveConversationsCache(
+  myUserId: string,
+  deviceId: string,
+  conversations: Record<string, PlainConversation>
+): Promise<void> {
+  try {
+    const entries: CachedConvEntry[] = Object.values(conversations).map((c) => {
+      const last = c.messages.at(-1);
+      return {
+        userId: c.userId,
+        username: c.username,
+        lastMessageAt: c.lastMessageAt,
+        unreadCount: c.unreadCount,
+        lastMessage: last ? {
+          id: last.id,
+          clientId: last.clientId,
+          senderId: last.senderId,
+          senderName: last.senderName,
+          content: last.content,
+          type: last.type,
+          timestamp: last.timestamp,
+          isOwn: last.isOwn,
+        } : undefined,
+      };
+    });
+    const plaintext = new TextEncoder().encode(JSON.stringify(entries));
+    const key = await deriveCacheKey(myUserId, deviceId);
+    const iv = crypto.getRandomValues(new Uint8Array(12));
+    const ciphertext = await crypto.subtle.encrypt({ name: "AES-GCM", iv }, key, plaintext);
+    const blob = new Uint8Array(iv.byteLength + ciphertext.byteLength);
+    blob.set(iv, 0);
+    blob.set(new Uint8Array(ciphertext), iv.byteLength);
+    localStorage.setItem(cacheStorageKey(myUserId), btoa(String.fromCharCode(...blob)));
+  } catch {
+    // quota exceeded, private mode, or crypto error — ignore
+  }
+}
+
+async function loadConversationsCache(
+  myUserId: string,
+  deviceId: string
+): Promise<Record<string, PlainConversation>> {
+  try {
+    const raw = localStorage.getItem(cacheStorageKey(myUserId));
+    if (!raw) return {};
+    const blob = Uint8Array.from(atob(raw), (c) => c.charCodeAt(0));
+    const iv = blob.slice(0, 12);
+    const ciphertext = blob.slice(12);
+    const key = await deriveCacheKey(myUserId, deviceId);
+    const plaintext = await crypto.subtle.decrypt({ name: "AES-GCM", iv }, key, ciphertext);
+    const entries = JSON.parse(new TextDecoder().decode(plaintext)) as CachedConvEntry[];
+    const result: Record<string, PlainConversation> = {};
+    for (const e of entries) {
+      result[e.userId] = {
+        userId: e.userId,
+        username: e.username,
+        messages: e.lastMessage ? [{ ...e.lastMessage, status: "sent" as const }] : [],
+        lastMessageAt: e.lastMessageAt,
+        unreadCount: e.unreadCount,
+        hasMore: false,
+        historyLoaded: false,
+      };
+    }
+    return result;
+  } catch {
+    return {};
+  }
+}
+
 // ─── Wire shapes from API ─────────────────────────────────────────────────────
 
 interface WirePlainMessage {
@@ -206,14 +309,31 @@ export const usePlainMessagesStore = create<PlainMessagesState>((set, get) => {
   function getMyUsername(): string | null {
     return useAuthStore.getState().username;
   }
+  function getMyDeviceId(): string {
+    return useAuthStore.getState().deviceId ?? "unknown";
+  }
 
   function conversationKeyFor(otherUserId: string): string {
     return otherUserId;
   }
 
   async function loadConversationList(): Promise<void> {
+    // Restore from encrypted cache immediately — visible before API responds
+    const myUserId = getMyUserId() ?? "";
+    const deviceId = getMyDeviceId();
+    if (myUserId && deviceId !== "unknown") {
+      const cached = await loadConversationsCache(myUserId, deviceId);
+      if (Object.keys(cached).length > 0) {
+        set((state) => ({
+          conversations: {
+            ...cached,
+            ...state.conversations, // don't overwrite WS-received data
+          },
+        }));
+      }
+    }
+
     try {
-      const myUserId = getMyUserId() ?? "";
       const data = await api.get<{
         conversations: Array<{
           peerUserId: string;
@@ -222,14 +342,18 @@ export const usePlainMessagesStore = create<PlainMessagesState>((set, get) => {
           lastMessageContent: string;
           lastMessageType: string;
           lastSenderUserId: string;
+          unreadCount: number;
         }>;
       }>("/plain/conversations");
+
+      const peers: Array<{ userId: string; username: string }> = [];
 
       set((state) => {
         const next = { ...state.conversations };
         for (const c of data.conversations) {
           const key = conversationKeyFor(c.peerUserId);
           const lastTs = new Date(c.lastMessageAt).getTime();
+          peers.push({ userId: c.peerUserId, username: c.peerUsername });
           if (!next[key]) {
             const isOwnLast = c.lastSenderUserId === myUserId;
             const stub: PlainMessage = {
@@ -248,16 +372,36 @@ export const usePlainMessagesStore = create<PlainMessagesState>((set, get) => {
               username: c.peerUsername,
               messages: [stub],
               lastMessageAt: lastTs,
-              unreadCount: 0,
+              unreadCount: c.unreadCount,
               hasMore: false,
               historyLoaded: false,
             };
+          } else {
+            // Update unread count from server even if conversation already exists
+            next[key] = { ...next[key]!, unreadCount: c.unreadCount };
           }
         }
         return { conversations: next };
       });
+
+      // Persist updated list to cache
+      void saveConversationsCache(getMyUserId() ?? "", getMyDeviceId(), get().conversations);
+
+      // Load full history for all conversations in background, 3 at a time
+      void loadAllHistoriesBatched(peers);
     } catch (err) {
       logger.error("[PlainMsg] loadConversationList failed", err);
+    }
+  }
+
+  async function loadAllHistoriesBatched(
+    peers: Array<{ userId: string; username: string }>
+  ): Promise<void> {
+    const BATCH = 3;
+    for (let i = 0; i < peers.length; i += BATCH) {
+      await Promise.all(
+        peers.slice(i, i + BATCH).map((p) => loadHistory(p.userId, p.username))
+      );
     }
   }
 
@@ -275,21 +419,25 @@ export const usePlainMessagesStore = create<PlainMessagesState>((set, get) => {
         .reverse()
         .map((w) => wireToPlainMessage(w, myUserId));
 
-      set((state) => ({
-        conversations: {
-          ...state.conversations,
-          [key]: {
-            userId,
-            username,
-            messages,
-            lastMessageAt: messages.at(-1)?.timestamp ?? 0,
-            unreadCount: 0,
-            nextCursor: data.nextCursor,
-            hasMore: data.hasMore,
-            historyLoaded: true,
+      set((state) => {
+        const prev = state.conversations[key];
+        return {
+          conversations: {
+            ...state.conversations,
+            [key]: {
+              userId,
+              username: prev?.username ?? username,
+              messages,
+              lastMessageAt: messages.at(-1)?.timestamp ?? prev?.lastMessageAt ?? 0,
+              unreadCount: prev?.unreadCount ?? 0,
+              nextCursor: data.nextCursor,
+              hasMore: data.hasMore,
+              historyLoaded: true,
+            },
           },
-        },
-      }));
+        };
+      });
+      void saveConversationsCache(getMyUserId() ?? "", getMyDeviceId(), get().conversations);
     } catch (err) {
       logger.error("[PlainMsg] loadHistory failed", err);
     }
@@ -864,6 +1012,10 @@ export const usePlainMessagesStore = create<PlainMessagesState>((set, get) => {
   }
 
   function reset(): void {
+    const myUserId = getMyUserId();
+    if (myUserId) {
+      try { localStorage.removeItem(cacheStorageKey(myUserId)); } catch { /* ignore */ }
+    }
     set({
       conversations: {},
       wsConnected: wsClient.connected,

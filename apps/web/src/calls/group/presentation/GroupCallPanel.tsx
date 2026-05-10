@@ -221,6 +221,11 @@ export function GroupCallPanel({ session, onClose }: Props) {
     : t("group.call.stage.enterFullscreen");
   const stageExpandLabel = isCompactStagePreview ? compactStageLabel : presentation.fullscreenToggleLabel;
   const canToggleStagePresentation = isCompactStagePreview || presentation.canToggleStageFullscreen;
+  const shouldRenderInlineDetails = isDetailsOpen && !isMobileViewport;
+  const bodyClassName = [
+    presentation.bodyClassName,
+    shouldRenderInlineDetails ? styles.bodyWithSidePanel : "",
+  ].filter(Boolean).join(" ");
 
   const devDebugOptions: UseGroupCallDevDebugOptions = {
     session,
@@ -298,6 +303,27 @@ export function GroupCallPanel({ session, onClose }: Props) {
     );
   }
 
+  const detailsDrawer = (
+    <GroupCallDetailsDrawer
+      isOpen={isDetailsOpen}
+      inline={shouldRenderInlineDetails}
+      roomCode={presentation.roomCode}
+      statusLabel={presentation.statusLabel}
+      mediaKeyStatusLabel={presentation.mediaKeyStatusLabel}
+      mediaKeyModeLabel={presentation.mediaKeyModeLabel}
+      mediaModeDowngraded={presentation.mediaModeDowngraded}
+      effectiveFrameEncryptionEnabled={runtime.effectiveFrameEncryptionEnabled}
+      sharedMediaKeyDeviceCount={runtime.sharedMediaKeyDeviceCount}
+      receivedMediaKeyCount={runtime.receivedMediaKeyCount}
+      members={presentation.sortedMembers}
+      activeParticipantSet={presentation.activeParticipantSet}
+      error={runtime.error}
+      hostActionLabel={presentation.canEndForEveryone ? presentation.endForEveryoneLabel : undefined}
+      hostActionHint={presentation.canEndForEveryone ? t("group.call.endForEveryoneHint") : undefined}
+      onHostAction={presentation.canEndForEveryone ? runtime.handleEndForEveryone : undefined}
+    />
+  );
+
   const panelDialog = (
     <CallPanelShell
       ariaLabel={t("group.call.dialogAria")}
@@ -321,7 +347,7 @@ export function GroupCallPanel({ session, onClose }: Props) {
           onMinimize={handleMinimize}
         />
 
-        <div className={presentation.bodyClassName}>
+        <div className={bodyClassName}>
           <div className={styles.mainColumn}>
             <GroupCallMediaSection
               stageShellRef={stageShellRef}
@@ -352,25 +378,10 @@ export function GroupCallPanel({ session, onClose }: Props) {
               onSelectTile={handleSelectTile}
             />
           </div>
+          {shouldRenderInlineDetails ? detailsDrawer : null}
         </div>
 
-        <GroupCallDetailsDrawer
-          isOpen={isDetailsOpen}
-          roomCode={presentation.roomCode}
-          statusLabel={presentation.statusLabel}
-          mediaKeyStatusLabel={presentation.mediaKeyStatusLabel}
-          mediaKeyModeLabel={presentation.mediaKeyModeLabel}
-          mediaModeDowngraded={presentation.mediaModeDowngraded}
-          effectiveFrameEncryptionEnabled={runtime.effectiveFrameEncryptionEnabled}
-          sharedMediaKeyDeviceCount={runtime.sharedMediaKeyDeviceCount}
-          receivedMediaKeyCount={runtime.receivedMediaKeyCount}
-          members={presentation.sortedMembers}
-          activeParticipantSet={presentation.activeParticipantSet}
-          error={runtime.error}
-          hostActionLabel={presentation.canEndForEveryone ? presentation.endForEveryoneLabel : undefined}
-          hostActionHint={presentation.canEndForEveryone ? t("group.call.endForEveryoneHint") : undefined}
-          onHostAction={presentation.canEndForEveryone ? runtime.handleEndForEveryone : undefined}
-        />
+        {shouldRenderInlineDetails ? null : detailsDrawer}
 
         <CallControlsDock className={styles.bottomDock}>
           <GroupCallControls

@@ -5,6 +5,7 @@ import { SeclettrMark } from "@/components/common/SeclettrMark";
 import { useI18n } from "@/i18n";
 import { mapAuthErrorMessage, shouldShowAuthErrorDetails } from "@/lib/auth-errors";
 import { useAuthStore } from "@/stores/auth";
+import { InlineNotice, InputField } from "@/components/ui";
 import styles from "./AuthPage.module.css";
 
 type Mode = "login" | "register";
@@ -91,8 +92,9 @@ export function AuthPage() {
         <form onSubmit={(e) => handleSubmit(e)} className={styles.form}>
           <div className={styles.field}>
             <label htmlFor="username" className={styles.label}>{t("auth.username")}</label>
-            <input
+            <InputField
               id="username"
+              size="lg"
               type="text"
               autoComplete="username"
               autoCapitalize="none"
@@ -105,7 +107,6 @@ export function AuthPage() {
               minLength={3}
               maxLength={32}
               pattern="[a-zA-Z0-9._-]+"
-              className={styles.input}
               aria-invalid={!isUsernamePatternValid}
             />
           </div>
@@ -113,8 +114,9 @@ export function AuthPage() {
           <div className={styles.field}>
             <label htmlFor="password" className={styles.label}>{t("auth.password")}</label>
             <div className={styles.passwordWrapper}>
-              <input
+              <InputField
                 id="password"
+                size="lg"
                 type={showPassword ? "text" : "password"}
                 autoComplete={mode === "login" ? "current-password" : "new-password"}
                 value={password}
@@ -122,7 +124,7 @@ export function AuthPage() {
                 placeholder={t("auth.passwordPlaceholder")}
                 required
                 minLength={8}
-                className={styles.input}
+                wrapperClassName={styles.passwordInputShell}
               />
               <button
                 type="button"
@@ -145,16 +147,13 @@ export function AuthPage() {
           </div>
 
           {error && (
-            <div
-              ref={errorAlertRef}
-              className={styles.error}
-              role="alert"
-              tabIndex={-1}
-            >
-              <p className={styles.errorText}>{friendlyError ?? error}</p>
-              {showTechnicalError ? (
-                <p className={styles.errorDetail}>{error}</p>
-              ) : null}
+            <div ref={errorAlertRef} tabIndex={-1}>
+              <InlineNotice tone="error" size="md" role="alert">
+                <p className={styles.errorText}>{friendlyError ?? error}</p>
+                {showTechnicalError ? (
+                  <p className={styles.errorDetail}>{error}</p>
+                ) : null}
+              </InlineNotice>
             </div>
           )}
 

@@ -1,18 +1,28 @@
 .groupStack {
   display: flex;
   flex-direction: column;
-  gap: 0.9rem;
+  gap: 0.78rem;
+  width: 100%;
 }
 
 .groupPanel {
+  --surface-panel-bg-start: color-mix(in srgb, var(--surface-shell) 92%, var(--bg-primary));
+  --surface-panel-border: color-mix(in srgb, var(--panel-border-soft) 86%, transparent);
   --surface-panel-shadow: none;
+}
+
+.groupPanelAccent {
+  --surface-panel-bg-start: color-mix(in srgb, var(--surface-shell) 88%, var(--accent) 6%);
+  --surface-panel-border: color-mix(in srgb, var(--accent) 22%, var(--panel-border-soft));
 }
 
 .groupHeader {
   display: flex;
   flex-direction: column;
   gap: 0.22rem;
-  margin-bottom: 0.9rem;
+  margin-bottom: 0.76rem;
+  padding-bottom: 0.72rem;
+  border-bottom: 1px solid color-mix(in srgb, var(--panel-border-soft) 70%, transparent);
 }
 
 .groupEyebrow {
@@ -29,7 +39,7 @@
   font-size: 0.98rem;
   line-height: 1.18;
   font-weight: 720;
-  letter-spacing: -0.02em;
+  letter-spacing: 0;
 }
 
 .groupDescription {
@@ -45,6 +55,7 @@
 }
 
 .settingRow {
+  min-height: 42px;
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
@@ -62,8 +73,8 @@
 }
 
 .settingRow + .settingRow {
-  margin-top: 0.82rem;
-  padding-top: 0.82rem;
+  margin-top: 0.72rem;
+  padding-top: 0.72rem;
   border-top: 1px solid color-mix(in srgb, var(--panel-border-soft) 74%, transparent);
 }
 
@@ -96,11 +107,13 @@
 }
 
 .swatchBtn {
-  width: 34px;
-  height: 34px;
+  width: 32px;
+  height: 32px;
   border-radius: 999px;
   border: 2px solid color-mix(in srgb, var(--panel-border-soft) 86%, transparent);
-  transition: border-color 0.16s ease, outline-color 0.16s ease;
+  transition:
+    border-color 0.16s ease,
+    outline-color 0.16s ease;
 }
 
 .swatchBtnActive {

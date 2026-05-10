@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
+import { useIsMobileViewport } from "@/lib/hooks";
 import { useI18n } from "@/i18n";
 import { api } from "@/lib/api";
 import { joinRoomAndStartSfu, type RoomCallSession, type RoomSfuClient } from "./room-call-bootstrap";
@@ -37,6 +38,7 @@ function hasEnabledLiveAudioTrack(stream: MediaStream | null): boolean {
 
 export function RoomCallPanel({ session, onLeave }: Props) {
   const { t } = useI18n();
+  const isMobileViewport = useIsMobileViewport();
 
   const [isMinimized, setIsMinimized] = useState(false);
   const [isParticipantsOpen, setIsParticipantsOpen] = useState(false);
@@ -321,7 +323,7 @@ export function RoomCallPanel({ session, onLeave }: Props) {
 
   const allTiles = useMemo(() => {
     const localVideoStream = isVideoEnabled ? localStream : null;
-    const localHasAudio = hasEnabledLiveAudioTrack(localStream);
+    const localHasAudio = !isAudioMuted && hasEnabledLiveAudioTrack(localStream);
     const localTile = {
       id: "local",
       label: session.displayName,
@@ -375,6 +377,90 @@ export function RoomCallPanel({ session, onLeave }: Props) {
     session.displayName,
     t,
   ]);
+  const shouldRenderRoomSidePanel = isParticipantsOpen && !isMobileViewport;
+  const isSoloTile = allTiles.length === 1;
+  const isSoloVideoTile = isSoloTile && Boolean(allTiles[0]?.stream?.getVideoTracks().length);
+  const mediaGridClassName = [
+    groupStyles.mediaGrid,
+    isSoloTile ? groupStyles.mediaGridSolo : "",
+    isSoloTile ? styles.roomMediaGridSolo : styles.roomMediaGrid,
+  ].filter(Boolean).join(" ");
+  const mediaTileClassName = [
+    styles.roomMediaTile,
+    isSoloVideoTile ? styles.roomMediaTileSoloVideo : "",
+  ].filter(Boolean).join(" ");
+
+  const inviteCard = session.isHost && session.inviteUrl ? (
+    <div className={styles.inviteCard}>
+      <div className={styles.inviteText}>
+        <span className={styles.inviteEyebrow}>{t("room.call.invite.label")}</span>
+        <span className={styles.inviteTitle}>{t("room.call.invite.title")}</span>
+        <span className={styles.inviteHint}>{t("room.call.invite.hint")}</span>
+        <code className={styles.inviteUrl} title={session.inviteUrl}>
+          {session.inviteUrl}
+        </code>
+      </div>
+      <PillButton
+        type="button"
+        onClick={() => void handleCopyInvite()}
+        tone={copied ? "accent" : "neutral"}
+        appearance="soft"
+        size="sm"
+        aria-label={copied ? t("room.call.invite.copiedAriaLabel") : t("room.call.invite.copyAriaLabel")}
+        leading={<DetailsIcon />}
+      >
+        {copied ? t("room.call.invite.copied") : t("room.call.invite.copy")}
+      </PillButton>
+    </div>
+  ) : null;
+
+  const participantsPanel = (
+    <div className={styles.participantsList}>
+      <p className={styles.participantsLabel}>
+        {t("room.call.participants.label", { count: participants.length })}
+      </p>
+      {participants.length === 0 && (
+        <p className={styles.mutedText}>{t("room.call.participants.empty")}</p>
+      )}
+      {session.isHost ? (
+        <div className={styles.hostActions}>
+          <p className={styles.hostActionHint}>{t("group.call.endForEveryoneHint")}</p>
+          <PillButton
+            type="button"
+            tone="danger"
+            appearance="soft"
+            size="md"
+            onClick={handleEndForEveryone}
+          >
+            {endForEveryoneLabel}
+          </PillButton>
+        </div>
+      ) : null}
+      {participants.map((p) => (
+        <div key={p.id} className={styles.participantRow}>
+          <span className={styles.participantName}>
+            {p.displayName}
+            {!p.isGuest && <span className={styles.hostBadge}>{t("room.call.participant.host")}</span>}
+          </span>
+          {session.isHost && p.isGuest && (
+            <button
+              type="button"
+              onClick={() => void handleKickGuest(p.id)}
+              disabled={kickingId === p.id}
+              className={styles.kickBtn}
+            >
+              {kickingId === p.id ? t("room.call.participant.removing") : t("room.call.participant.remove")}
+            </button>
+          )}
+        </div>
+      ))}
+    </div>
+  );
+
+  const bodyClassName = [
+    groupStyles.body,
+    shouldRenderRoomSidePanel ? groupStyles.bodyWithSidePanel : "",
+  ].filter(Boolean).join(" ");
 
   // ── Dock (minimized) ─────────────────────────────────────────────────────────
   if (isMinimized) {
@@ -426,25 +512,9 @@ export function RoomCallPanel({ session, onLeave }: Props) {
           onMinimize={handleMinimize}
         />
 
-        <div className={groupStyles.body}>
+        <div className={bodyClassName}>
           <div className={groupStyles.mainColumn}>
-
-            {session.isHost && session.inviteUrl && (
-              <div className={styles.inviteRow}>
-                <span className={styles.inviteLabel}>{t("room.call.invite.label")}</span>
-                <PillButton
-                  type="button"
-                  onClick={() => void handleCopyInvite()}
-                  tone={copied ? "accent" : "neutral"}
-                  appearance="soft"
-                  size="sm"
-                  aria-label={copied ? t("room.call.invite.copiedAriaLabel") : t("room.call.invite.copyAriaLabel")}
-                  leading={<DetailsIcon />}
-                >
-                  {copied ? t("room.call.invite.copied") : t("room.call.invite.copy")}
-                </PillButton>
-              </div>
-            )}
+            {!shouldRenderRoomSidePanel ? inviteCard : null}
 
             {status === "error" && (
               <div className={styles.centeredState}>
@@ -463,10 +533,11 @@ export function RoomCallPanel({ session, onLeave }: Props) {
 
             {/* Media tiles grid */}
             {isReady && (
-              <div className={allTiles.length === 1 ? groupStyles.mediaGridSolo : groupStyles.mediaGrid}>
+              <div className={mediaGridClassName}>
                 {allTiles.map((tile) => (
                   <GroupCallMediaTile
                     key={tile.id}
+                    className={mediaTileClassName}
                     label={tile.label}
                     stream={tile.stream}
                     audioStream={tile.audioStream}
@@ -482,49 +553,14 @@ export function RoomCallPanel({ session, onLeave }: Props) {
             )}
 
             {/* Participants list */}
-            {isParticipantsOpen && (
-              <div className={styles.participantsList}>
-                <p className={styles.participantsLabel}>
-                  {t("room.call.participants.label", { count: participants.length })}
-                </p>
-                {participants.length === 0 && (
-                  <p className={styles.mutedText}>{t("room.call.participants.empty")}</p>
-                )}
-                {session.isHost ? (
-                  <div className={styles.hostActions}>
-                    <p className={styles.hostActionHint}>{t("group.call.endForEveryoneHint")}</p>
-                    <PillButton
-                      type="button"
-                      tone="danger"
-                      appearance="soft"
-                      size="md"
-                      onClick={handleEndForEveryone}
-                    >
-                      {endForEveryoneLabel}
-                    </PillButton>
-                  </div>
-                ) : null}
-                {participants.map((p) => (
-                  <div key={p.id} className={styles.participantRow}>
-                    <span className={styles.participantName}>
-                      {p.displayName}
-                      {!p.isGuest && <span className={styles.hostBadge}>{t("room.call.participant.host")}</span>}
-                    </span>
-                    {session.isHost && p.isGuest && (
-                      <button
-                        type="button"
-                        onClick={() => void handleKickGuest(p.id)}
-                        disabled={kickingId === p.id}
-                        className={styles.kickBtn}
-                      >
-                        {kickingId === p.id ? t("room.call.participant.removing") : t("room.call.participant.remove")}
-                      </button>
-                    )}
-                  </div>
-                ))}
-              </div>
-            )}
+            {isParticipantsOpen && !shouldRenderRoomSidePanel ? participantsPanel : null}
           </div>
+          {shouldRenderRoomSidePanel ? (
+            <aside className={styles.roomSidePanel}>
+              {inviteCard}
+              {participantsPanel}
+            </aside>
+          ) : null}
         </div>
 
         <CallControlsDock className={groupStyles.bottomDock}>

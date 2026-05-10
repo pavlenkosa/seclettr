@@ -47,11 +47,8 @@ function hasLiveAudioTrack(stream: MediaStream | null): boolean {
   return Boolean(stream?.getAudioTracks().some((track) => track.readyState === "live"));
 }
 
-function hasEnabledLiveAudioTrack(stream: MediaStream | null): boolean {
-  return Boolean(stream?.getAudioTracks().some((track) => track.readyState === "live" && track.enabled));
-}
-
 export function createLocalCallTiles(
+  isLocalAudioMuted: boolean,
   isLocalScreenSharing: boolean,
   isLocalVideoEnabled: boolean,
   localScreenStream: MediaStream | null,
@@ -61,7 +58,7 @@ export function createLocalCallTiles(
   t: Translate
 ): GroupCallStageTile[] {
   const localFallbackInitials = getMemberInitials(localTileLabel.replace(/^@/, ""));
-  const localHasAudio = hasEnabledLiveAudioTrack(localStream);
+  const localHasAudio = !isLocalAudioMuted && hasLiveAudioTrack(localStream);
   const tiles: GroupCallStageTile[] = [];
 
   if (isLocalVideoEnabled) {
@@ -87,7 +84,7 @@ export function createLocalCallTiles(
       audioStream: null,
       fallbackInitials: localFallbackInitials,
       badge: t("group.call.screenSharing"),
-      hasAudio: false,
+      hasAudio: !isLocalVideoEnabled && localHasAudio,
       hasVideo: true,
       videoSource: "screen",
       isLocal: true,

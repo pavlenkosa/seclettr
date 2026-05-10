@@ -243,6 +243,7 @@ export function useGroupCallPanelPresentation({
     }
 
     const localTiles = createLocalCallTiles(
+      isLocalAudioMuted,
       isLocalScreenSharing,
       isLocalVideoEnabled,
       localScreenStream,
@@ -256,6 +257,7 @@ export function useGroupCallPanelPresentation({
     );
     return [...localTiles, ...remoteTiles];
   }, [
+    isLocalAudioMuted,
     isLocalScreenSharing,
     isLocalVideoEnabled,
     localStream,

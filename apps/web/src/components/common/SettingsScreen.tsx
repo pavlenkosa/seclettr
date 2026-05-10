@@ -257,6 +257,7 @@ export function SettingsScreen({
                   <span className={styles.sectionCopy}>
                     <span className={styles.sectionTitle}>{section.title}</span>
                     <span className={styles.sectionDescription}>{section.description}</span>
+                    <span className={styles.sectionSummary}>{section.summary}</span>
                   </span>
                   <span className={styles.sectionChevron}><ChevronIcon /></span>
                 </button>
@@ -275,7 +276,9 @@ export function SettingsScreen({
             </div>
             <div className={styles.detailSummary}>{active.summary}</div>
           </div>
-          {sectionContent}
+          <div className={styles.detailContent}>
+            {sectionContent}
+          </div>
         </main>
       </div>
     </section>

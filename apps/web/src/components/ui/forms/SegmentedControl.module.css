@@ -4,7 +4,7 @@
   gap: 0.42rem;
 }
 
-fieldset{
+fieldset {
   border: none;
 }
 
@@ -44,14 +44,6 @@ fieldset{
   letter-spacing: 0.02em;
 }
 
-.button:hover:not(:disabled) {
-  border-color: color-mix(in srgb, var(--accent) 55%, var(--panel-border-soft));
-}
-
-.grouped .button:hover:not(:disabled) {
-  border-color: transparent;
-}
-
 .active {
   background: color-mix(in srgb, var(--accent) 18%, var(--bg-secondary));
   border-color: color-mix(in srgb, var(--accent) 75%, var(--panel-border-soft));
@@ -68,6 +60,16 @@ fieldset{
   height: 22px;
   min-height: 22px;
   font-size: 0.66rem;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .button:hover:not(:disabled) {
+    border-color: color-mix(in srgb, var(--accent) 55%, var(--panel-border-soft));
+  }
+
+  .grouped .button:hover:not(:disabled) {
+    border-color: transparent;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {

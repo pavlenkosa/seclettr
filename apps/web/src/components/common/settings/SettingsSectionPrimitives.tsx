@@ -59,7 +59,10 @@ export function SettingsGroup({
 }: SettingsGroupProps) {
   return (
     <SurfacePanel
-      className={styles.groupPanel}
+      className={[
+        styles.groupPanel,
+        tone === "accent" ? styles.groupPanelAccent : "",
+      ].filter(Boolean).join(" ")}
       padding="md"
       radius="xl"
       tone={tone}

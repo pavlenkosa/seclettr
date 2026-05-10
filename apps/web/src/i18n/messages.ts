@@ -340,6 +340,9 @@ const enMessages: TranslationMap = {
   "conversation.invalidAttachmentPreview": "[invalid attachment]",
   "conversation.encryptedMessagePreview": "[encrypted message]",
   "conversation.encryptedBadgeAria": "End-to-end encrypted",
+  "conversation.pinnedBadgeAria": "Pinned",
+  "conversation.pin": "Pin",
+  "conversation.unpin": "Unpin",
   "conversation.retrySend": "Tap to retry",
 
   "composer.error.sendFailed": "Message was not sent. Check connection and try again.",
@@ -994,6 +997,9 @@ const ruMessages: TranslationMap = {
   "conversation.invalidAttachmentPreview": "[некорректное вложение]",
   "conversation.encryptedMessagePreview": "[зашифрованное сообщение]",
   "conversation.encryptedBadgeAria": "Сквозное шифрование",
+  "conversation.pinnedBadgeAria": "Закреплено",
+  "conversation.pin": "Закрепить",
+  "conversation.unpin": "Открепить",
   "conversation.retrySend": "Нажмите для повтора",
 
   "composer.error.sendFailed": "Сообщение не отправлено. Проверьте соединение и попробуйте снова.",

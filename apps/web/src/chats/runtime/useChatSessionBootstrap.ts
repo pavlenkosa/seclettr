@@ -4,7 +4,7 @@ import { useI18n } from "@/i18n";
 import { logger } from "@/lib/logger.js";
 import { useMessagesStore } from "@/stores/messages";
 import { useGroupsStore } from "@/stores/groups";
-import { usePlainGroupsStore, usePlainMessagesStore } from "@/stores/plain";
+import { usePlainGroupsStore, usePlainMessagesStore, usePlainPinsStore } from "@/stores/plain";
 
 interface UseChatSessionBootstrapOptions {
   onNotice: (message: string) => void;
@@ -40,6 +40,8 @@ export function useChatSessionBootstrap({ onNotice }: UseChatSessionBootstrapOpt
     loadPlainConversationList: state.loadConversationList,
   })));
 
+  const loadPlainPins = usePlainPinsStore((state) => state.loadPins);
+
   useEffect(() => {
     loadHistory().catch((err) => {
       logger.warn("[ChatPage] loadHistory failed", err);
@@ -55,11 +57,15 @@ export function useChatSessionBootstrap({ onNotice }: UseChatSessionBootstrapOpt
     loadPlainConversationList().catch((err) => {
       logger.warn("[ChatPage] loadPlainConversationList failed", err);
     });
+    loadPlainPins().catch((err) => {
+      logger.warn("[ChatPage] loadPlainPins failed", err);
+    });
   }, [
     loadGroups,
     loadHistory,
     loadPlainGroups,
     loadPlainConversationList,
+    loadPlainPins,
     onNotice,
     t,
   ]);

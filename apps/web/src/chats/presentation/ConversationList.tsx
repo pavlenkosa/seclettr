@@ -1,7 +1,7 @@
-import { memo, useEffect, useMemo, useState, type CSSProperties } from "react";
+import { memo, useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type MouseEvent as ReactMouseEvent, type PointerEvent as ReactPointerEvent } from "react";
 import type { CallMessageMeta, Conversation } from "@/stores/messages";
 import type { GroupChat } from "@/stores/groups";
-import type { PlainConversation, PlainGroup } from "@/stores/plain";
+import { usePlainPinsStore, type PlainConversation, type PlainGroup, type PlainPinKind } from "@/stores/plain";
 import { useI18n } from "@/i18n";
 import { SeclettrMark } from "@/components/common/SeclettrMark";
 import { Avatar, MessageDeliveryStatusIcon, type MessageDeliveryStatus } from "@/components/ui";
@@ -43,6 +43,10 @@ interface ConversationEntry {
   unreadCount: number;
   lastMessage?: EntryLastMessage;
   isEncrypted: boolean;
+  /** Plain-only: pin overlay timestamp (ms). 0/undefined when not pinned. */
+  pinnedAt?: number;
+  /** Plain-only: kind to use when toggling the pin via API. */
+  pinKind?: PlainPinKind;
 }
 
 const CONVERSATION_TIME_REFRESH_MS = 60_000;
@@ -152,8 +156,13 @@ function areConversationEntriesEqual(left: ConversationEntry, right: Conversatio
     && left.lastMessageAt === right.lastMessageAt
     && left.unreadCount === right.unreadCount
     && left.isEncrypted === right.isEncrypted
+    && left.pinnedAt === right.pinnedAt
+    && left.pinKind === right.pinKind
     && areEntryLastMessagesEqual(left.lastMessage, right.lastMessage);
 }
+
+const LONG_PRESS_MS = 450;
+const LONG_PRESS_MOVE_TOLERANCE_PX = 6;
 
 const ConversationListItem = memo(function ConversationListItem({
   entry,
@@ -162,6 +171,7 @@ const ConversationListItem = memo(function ConversationListItem({
   nowMs,
   t,
   onSelect,
+  onTogglePin,
   enterDelayMs,
 }: {
   entry: ConversationEntry;
@@ -170,6 +180,7 @@ const ConversationListItem = memo(function ConversationListItem({
   nowMs: number;
   t: (key: string, params?: Record<string, string | number>) => string;
   onSelect: (selection: { kind: "direct" | "group" | "plain-direct" | "plain-group"; id: string }) => void;
+  onTogglePin: (entry: ConversationEntry) => void;
   enterDelayMs: number;
 }) {
   const last = entry.lastMessage;
@@ -185,12 +196,87 @@ const ConversationListItem = memo(function ConversationListItem({
     "--conversation-enter-delay": `${enterDelayMs}ms`,
   } as CSSProperties;
 
+  const [menuOpen, setMenuOpen] = useState(false);
+  const canPin = !!entry.pinKind;
+
+  // Long-press on touch / right-click on pointer triggers the pin menu. We
+  // skip the menu entirely for E2EE entries until the feature lands there.
+  // Stored in a ref so the timer survives re-renders during the gesture.
+  const pressStateRef = useRef<{ id: ReturnType<typeof setTimeout>; x: number; y: number } | null>(null);
+
+  const cancelPress = useCallback(() => {
+    if (pressStateRef.current) {
+      clearTimeout(pressStateRef.current.id);
+      pressStateRef.current = null;
+    }
+  }, []);
+
+  const startPress = (e: ReactPointerEvent<HTMLButtonElement>) => {
+    if (!canPin || e.pointerType !== "touch") return;
+    cancelPress();
+    pressStateRef.current = {
+      id: setTimeout(() => {
+        setMenuOpen(true);
+        pressStateRef.current = null;
+        // Light haptic so the user knows the long-press fired before they release.
+        if (typeof navigator !== "undefined" && typeof navigator.vibrate === "function") {
+          try { navigator.vibrate(8); } catch { /* ignore */ }
+        }
+      }, LONG_PRESS_MS),
+      x: e.clientX,
+      y: e.clientY,
+    };
+  };
+  const movePress = (e: ReactPointerEvent<HTMLButtonElement>) => {
+    const press = pressStateRef.current;
+    if (!press) return;
+    if (
+      Math.abs(e.clientX - press.x) > LONG_PRESS_MOVE_TOLERANCE_PX ||
+      Math.abs(e.clientY - press.y) > LONG_PRESS_MOVE_TOLERANCE_PX
+    ) {
+      cancelPress();
+    }
+  };
+
+  useEffect(() => () => cancelPress(), [cancelPress]);
+
+  const handleContextMenu = (e: ReactMouseEvent<HTMLButtonElement>) => {
+    if (!canPin) return;
+    e.preventDefault();
+    setMenuOpen(true);
+  };
+
+  const handleTogglePin = (e: ReactMouseEvent<HTMLButtonElement>) => {
+    e.stopPropagation();
+    setMenuOpen(false);
+    onTogglePin(entry);
+  };
+
+  // Close menu on outside click / Escape.
+  useEffect(() => {
+    if (!menuOpen) return;
+    const close = () => setMenuOpen(false);
+    const onKey = (event: KeyboardEvent) => { if (event.key === "Escape") close(); };
+    globalThis.addEventListener("click", close);
+    globalThis.addEventListener("keydown", onKey);
+    return () => {
+      globalThis.removeEventListener("click", close);
+      globalThis.removeEventListener("keydown", onKey);
+    };
+  }, [menuOpen]);
+
   return (
-    <li>
+    <li className={styles.itemWrap}>
       <button
         className={`${styles.item} ${isActive ? styles.active : ""} ${entry.unreadCount > 0 ? styles.itemUnread : ""}`}
         style={itemStyle}
         onClick={() => onSelect({ kind: entry.kind, id: entry.id })}
+        onContextMenu={handleContextMenu}
+        onPointerDown={startPress}
+        onPointerUp={cancelPress}
+        onPointerMove={movePress}
+        onPointerCancel={cancelPress}
+        onPointerLeave={cancelPress}
         data-testid={`conversation-entry:${entry.kind}:${entry.id}`}
         aria-current={isActive ? "true" : undefined}
       >
@@ -213,6 +299,18 @@ const ConversationListItem = memo(function ConversationListItem({
                   <path d="M5 7V5a3 3 0 0 1 6 0v2" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
                 </svg>
               )}
+              {entry.pinnedAt ? (
+                <svg
+                  className={styles.pinBadge}
+                  width="11"
+                  height="11"
+                  viewBox="0 0 16 16"
+                  fill="currentColor"
+                  aria-label={t("conversation.pinnedBadgeAria")}
+                >
+                  <path d="M9.55 1.4a.7.7 0 0 0-1.1 0L7.2 2.95l1.85 1.85L10.6 3.25a.7.7 0 0 0 0-1L9.55 1.4ZM6.5 3.65 3.85 6.3a1 1 0 0 0-.27.51l-.42 2.1 1.92-.38L7.7 5.9 6.5 3.65Zm.55 4.5L4.4 10.8l-2.5.5a.6.6 0 0 1-.7-.7l.5-2.5 2.65-2.65 2.7 2.7Zm.93-1.5L9.65 4.95l1.4 1.4-1.65 1.65-1.42-1.35Z" />
+                </svg>
+              ) : null}
             </span>
             {entry.lastMessageAt > 0 && (
               <span className={styles.time}>{formatTime(entry.lastMessageAt, locale, t, nowMs)}</span>
@@ -237,6 +335,18 @@ const ConversationListItem = memo(function ConversationListItem({
           )}
         </div>
       </button>
+      {menuOpen && canPin ? (
+        <div className={styles.contextMenu} role="menu" onClick={(e) => e.stopPropagation()}>
+          <button
+            type="button"
+            className={styles.contextMenuItem}
+            onClick={handleTogglePin}
+            role="menuitem"
+          >
+            {entry.pinnedAt ? t("conversation.unpin") : t("conversation.pin")}
+          </button>
+        </div>
+      ) : null}
     </li>
   );
 }, (prev, next) => {
@@ -246,6 +356,7 @@ const ConversationListItem = memo(function ConversationListItem({
     && prev.nowMs === next.nowMs
     && prev.t === next.t
     && prev.onSelect === next.onSelect
+    && prev.onTogglePin === next.onTogglePin
     && prev.enterDelayMs === next.enterDelayMs;
 });
 
@@ -345,7 +456,10 @@ function mapPlainLastMessage(last: PlainConversation["messages"][number] | undef
   };
 }
 
-function mapPlainConversation(conv: PlainConversation): ConversationEntry {
+function mapPlainConversation(
+  conv: PlainConversation,
+  pinnedAt: number | undefined
+): ConversationEntry {
   return {
     key: `plain-direct:${conv.userId}`,
     id: conv.userId,
@@ -355,6 +469,8 @@ function mapPlainConversation(conv: PlainConversation): ConversationEntry {
     unreadCount: conv.unreadCount,
     lastMessage: mapPlainLastMessage(conv.messages.at(-1)),
     isEncrypted: false,
+    pinnedAt,
+    pinKind: "dm",
   };
 }
 
@@ -369,7 +485,10 @@ function mapPlainGroupLastMessage(last: PlainGroup["messages"][number] | undefin
   };
 }
 
-function mapPlainGroup(group: PlainGroup): ConversationEntry {
+function mapPlainGroup(
+  group: PlainGroup,
+  pinnedAt: number | undefined
+): ConversationEntry {
   return {
     key: `plain-group:${group.groupId}`,
     id: group.groupId,
@@ -379,6 +498,8 @@ function mapPlainGroup(group: PlainGroup): ConversationEntry {
     unreadCount: group.unreadCount,
     lastMessage: mapPlainGroupLastMessage(group.messages.at(-1)),
     isEncrypted: false,
+    pinnedAt,
+    pinKind: "group",
   };
 }
 
@@ -394,15 +515,38 @@ export function ConversationList({
 }: Props) {
   const { t, locale } = useI18n();
   const [nowMs, setNowMs] = useState(() => Date.now());
+  const pins = usePlainPinsStore((state) => state.pins);
+  const pinChat = usePlainPinsStore((state) => state.pinChat);
+  const unpinChat = usePlainPinsStore((state) => state.unpinChat);
   const sorted = useMemo<ConversationEntry[]>(() => {
     const directEntries = conversations.map(mapDirectConversation);
     const groupEntries = groups.map(mapGroupConversation);
-    const plainDirectEntries = plainConversations.map(mapPlainConversation);
-    const plainGroupEntries = plainGroups.map(mapPlainGroup);
+    const plainDirectEntries = plainConversations.map((c) =>
+      mapPlainConversation(c, pins[`dm:${c.userId}`]?.pinnedAt)
+    );
+    const plainGroupEntries = plainGroups.map((g) =>
+      mapPlainGroup(g, pins[`group:${g.groupId}`]?.pinnedAt)
+    );
 
+    // Pinned entries float to the top, sorted by `pinnedAt DESC`. The rest of
+    // the list keeps the existing recency order.
     return [...directEntries, ...groupEntries, ...plainDirectEntries, ...plainGroupEntries]
-      .sort((a, b) => b.lastMessageAt - a.lastMessageAt);
-  }, [conversations, groups, plainConversations, plainGroups]);
+      .sort((a, b) => {
+        const aPin = a.pinnedAt ?? 0;
+        const bPin = b.pinnedAt ?? 0;
+        if (aPin !== bPin) return bPin - aPin;
+        return b.lastMessageAt - a.lastMessageAt;
+      });
+  }, [conversations, groups, pins, plainConversations, plainGroups]);
+
+  const handleTogglePin = useCallback((entry: ConversationEntry) => {
+    if (!entry.pinKind) return;
+    if (entry.pinnedAt) {
+      void unpinChat(entry.pinKind, entry.id);
+    } else {
+      void pinChat(entry.pinKind, entry.id);
+    }
+  }, [pinChat, unpinChat]);
   const hasRelativeTimeLabels = useMemo(
     () => sorted.some((entry) => entry.lastMessageAt > 0 && nowMs - entry.lastMessageAt < 3_600_000),
     [nowMs, sorted]
@@ -468,6 +612,7 @@ export function ConversationList({
           nowMs={nowMs}
           t={t}
           onSelect={onSelect}
+          onTogglePin={handleTogglePin}
           enterDelayMs={Math.min(index, 10) * 16}
         />
       ))}

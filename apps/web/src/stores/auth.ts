@@ -62,7 +62,7 @@ import {
 } from "@/lib/app-lock-password";
 import { useMessagesStore } from "@/stores/messages";
 import { useGroupsStore } from "@/stores/groups";
-import { usePlainMessagesStore, usePlainGroupsStore } from "@/stores/plain";
+import { usePlainMessagesStore, usePlainGroupsStore, usePlainPinsStore } from "@/stores/plain";
 import type { AuthState } from "./auth-types";
 import {
   buildLockedState,
@@ -91,6 +91,7 @@ function clearEphemeralRuntimeState(): void {
   useGroupsStore.getState().reset();
   usePlainMessagesStore.getState().reset();
   usePlainGroupsStore.getState().reset();
+  usePlainPinsStore.getState().reset();
 }
 
 async function clearLocalSessionSecrets(params: {

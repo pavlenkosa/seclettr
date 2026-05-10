@@ -128,6 +128,60 @@
   margin-top: -1px;
 }
 
+.pinBadge {
+  display: inline-block;
+  flex-shrink: 0;
+  color: var(--text-secondary);
+  opacity: 0.85;
+  vertical-align: middle;
+  margin-top: -1px;
+}
+
+/* Long-press to open the pin menu must not also select text or pop up the
+   iOS share sheet. Applied to the wrap so the inner button still receives
+   pointer events but the OS gestures stay quiet. */
+.itemWrap {
+  position: relative;
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+  touch-action: manipulation;
+}
+
+.contextMenu {
+  position: absolute;
+  top: 100%;
+  right: 0.7rem;
+  z-index: 30;
+  min-width: 9rem;
+  margin-top: -0.4rem;
+  padding: 0.3rem;
+  border-radius: 12px;
+  border: 1px solid color-mix(in srgb, var(--panel-border-soft) 88%, transparent);
+  background: color-mix(in srgb, var(--surface-float) 98%, var(--bg-secondary));
+  box-shadow: 0 8px 24px rgb(0 0 0 / 0.18);
+}
+
+.contextMenuItem {
+  width: 100%;
+  display: block;
+  padding: 0.46rem 0.62rem;
+  border: none;
+  background: transparent;
+  border-radius: 8px;
+  text-align: left;
+  font-size: 0.84rem;
+  color: var(--text-primary);
+  cursor: pointer;
+  transition: background-color var(--motion-duration-fast) var(--motion-ease-standard);
+}
+
+.contextMenuItem:hover,
+.contextMenuItem:focus-visible {
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+  outline: none;
+}
+
 .time {
   font-size: 0.72rem;
   line-height: 1.2;

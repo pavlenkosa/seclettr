@@ -34,7 +34,7 @@ interface UseMessageComposerDraftOptions {
   onFocusChange?: (focused: boolean) => void;
   replyTo?: MessageReplyMeta;
   onClearReply?: () => void;
-  onSendText?: (text: string) => Promise<void>;
+  onSendText?: (text: string, replyTo?: MessageReplyMeta) => Promise<void>;
   onSendFile?: (file: File, mediaGroupId?: string, caption?: string) => Promise<void>;
   onSendVoiceBlob?: (blob: Blob, durationMs: number) => Promise<void>;
   onSendVideoBlob?: (blob: Blob, durationMs: number) => Promise<void>;
@@ -116,7 +116,7 @@ export function useMessageComposerDraft({
   const sendTextMessage = useCallback(
     async (t: string, replyTo?: MessageReplyMeta) => {
       if (onSendTextOverride) {
-        await onSendTextOverride(t);
+        await onSendTextOverride(t, replyTo);
       } else {
         await sendTextMessageStore(t, replyTo);
       }

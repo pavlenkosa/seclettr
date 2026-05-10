@@ -38,7 +38,7 @@ interface Props {
   readonly onFocusChange?: (focused: boolean) => void;
   readonly replyTo?: MessageReplyMeta;
   readonly onClearReply?: () => void;
-  readonly onSendText?: (text: string) => Promise<void>;
+  readonly onSendText?: (text: string, replyTo?: MessageReplyMeta) => Promise<void>;
   readonly onSendFile?: (file: File, mediaGroupId?: string, caption?: string) => Promise<void>;
   readonly onSendVoiceBlob?: (blob: Blob, durationMs: number) => Promise<void>;
   readonly onSendVideoBlob?: (blob: Blob, durationMs: number) => Promise<void>;

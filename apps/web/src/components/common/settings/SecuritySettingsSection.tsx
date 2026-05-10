@@ -66,6 +66,7 @@ function AppLockSection() {
   const pinSetupBlocked = storageKeyVolatile || authLifecycle !== "ready";
 
   const mapPinError = (error: unknown) => {
+    console.error("[AppLock] setPin failed:", error);
     if (error instanceof Error) {
       if (error.message === "pin_requires_active_session") {
         return t("settings.appLock.pinEntry.sessionRequired");

@@ -1,5 +1,6 @@
 import { lazy, memo, Suspense, useCallback, type MutableRefObject } from "react";
 import type { MessageComposerHandle } from "@/chats/presentation/MessageComposer";
+import type { MessageReplyMeta } from "@/stores/messages";
 import { PillButton, StatusBadge, SurfacePanel } from "@/components/ui";
 import type {
   SecurityWorkspaceState,
@@ -51,9 +52,9 @@ export const ChatThreadComposer = memo(function ChatThreadComposer({
   sendPlainGroupAttachment: WorkspaceEntryState["sendPlainGroupAttachment"];
 }) {
   const handlePlainDirectSendText = useCallback(
-    async (content: string) => {
+    async (content: string, replyTo?: MessageReplyMeta) => {
       if (!activePlainConversation) return;
-      await sendPlainText(activePlainConversation.userId, activePlainConversation.username, content);
+      await sendPlainText(activePlainConversation.userId, activePlainConversation.username, content, replyTo);
     },
     [activePlainConversation, sendPlainText]
   );
@@ -97,9 +98,9 @@ export const ChatThreadComposer = memo(function ChatThreadComposer({
   );
 
   const handlePlainGroupSendText = useCallback(
-    async (content: string) => {
+    async (content: string, replyTo?: MessageReplyMeta) => {
       if (!activePlainGroup) return;
-      await sendPlainGroupText(activePlainGroup.groupId, content);
+      await sendPlainGroupText(activePlainGroup.groupId, content, replyTo);
     },
     [activePlainGroup, sendPlainGroupText]
   );

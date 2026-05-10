@@ -384,15 +384,24 @@ export const usePlainGroupsStore = create<PlainGroupsState>((set, get) => {
     role: "owner" | "admin" | "member"
   ): Promise<void> {
     const previous = get().groups[groupId];
+    const myUserId = getMyUserId();
     if (previous) {
+      // Promoting someone else to owner is a transfer — the server demotes the
+      // current owner to admin in the same transaction. Mirror that locally
+      // so the UI doesn't briefly show two owners.
+      const isTransfer = role === "owner" && myUserId !== null && userId !== myUserId;
       set((state) => ({
         groups: {
           ...state.groups,
           [groupId]: {
             ...previous,
-            members: previous.members.map((m) =>
-              m.userId === userId ? { ...m, role } : m
-            ),
+            members: previous.members.map((m) => {
+              if (m.userId === userId) return { ...m, role };
+              if (isTransfer && m.userId === myUserId && m.role === "owner") {
+                return { ...m, role: "admin" as const };
+              }
+              return m;
+            }),
           },
         },
       }));

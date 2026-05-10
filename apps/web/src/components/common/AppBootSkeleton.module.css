@@ -1,0 +1,224 @@
+/* Boot-time skeleton — mirrors ChatPage layout (sidebar header + search +
+   conversation rows + empty thread with brand mark). All colour comes from
+   theme tokens so light/dark/custom-accent palettes work without overrides.
+   Animation is a soft opacity pulse on the existing surface tone — no accent
+   shimmer — so the screen reads as "real chrome, just not yet populated"
+   instead of a flashy loader. */
+
+.shell {
+  display: flex;
+  height: 100%;
+  width: 100%;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  overflow: hidden;
+}
+
+/* Shared bar — every skeleton block gets this and pulses in unison. */
+.bar {
+  display: inline-block;
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--surface-shell-strong) 92%, transparent);
+  animation: appBootPulse 1.5s ease-in-out infinite;
+}
+
+@keyframes appBootPulse {
+  0%, 100% { opacity: 0.55; }
+  50%      { opacity: 0.95; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bar { animation: none; opacity: 0.7; }
+}
+
+/* ─── Sidebar ─────────────────────────────────────────────────────────────── */
+
+.sidebar {
+  display: flex;
+  flex-direction: column;
+  width: clamp(260px, 32%, 360px);
+  flex-shrink: 0;
+  border-right: 1px solid color-mix(in srgb, var(--panel-border) 70%, transparent);
+  background: color-mix(in srgb, var(--surface-shell) 96%, var(--bg-primary));
+  padding: 0.6rem 0.5rem;
+  gap: 0.46rem;
+}
+
+.sidebarHeader {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.42rem 0.5rem;
+}
+
+.brandMark {
+  width: 32px;
+  height: 32px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--accent);
+  flex-shrink: 0;
+  /* Brand mark itself is solid, not a skeleton — it's the one part of the
+     boot screen that always reads as "real" content. */
+  opacity: 0.85;
+}
+
+.brandMark :global(svg) {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.brandStack {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.34rem;
+  min-width: 0;
+}
+
+.brandTitle {
+  height: 12px;
+  width: 50%;
+  border-radius: 6px;
+}
+
+.brandHandle {
+  height: 9px;
+  width: 38%;
+  border-radius: 6px;
+  opacity: 0.7;
+}
+
+.headerActions {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.34rem;
+}
+
+.headerIcon {
+  width: 26px;
+  height: 26px;
+  border-radius: 8px;
+}
+
+/* ─── Search ──────────────────────────────────────────────────────────────── */
+
+.searchBar {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  height: 36px;
+  padding: 0 0.62rem;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--surface-shell-strong) 80%, transparent);
+}
+
+.searchIcon {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  background: color-mix(in srgb, var(--surface-shell-strong) 100%, transparent);
+}
+
+.searchLine {
+  flex: 1;
+  height: 9px;
+  border-radius: 6px;
+  opacity: 0.65;
+}
+
+/* ─── Conversation rows ───────────────────────────────────────────────────── */
+
+.sidebarList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.12rem;
+  overflow: hidden;
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: 0.62rem;
+  padding: 0.5rem 0.6rem;
+  border-radius: 12px;
+}
+
+.avatar {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.rowText {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.36rem;
+  min-width: 0;
+}
+
+.rowName {
+  height: 11px;
+  border-radius: 6px;
+}
+
+.rowPreview {
+  height: 9px;
+  border-radius: 6px;
+  opacity: 0.62;
+}
+
+/* ─── Thread (empty) ──────────────────────────────────────────────────────── */
+
+.thread {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg-primary);
+  position: relative;
+  min-width: 0;
+}
+
+.threadMark {
+  width: 84px;
+  height: 84px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--accent);
+  opacity: 0.55;
+  animation: appBootMarkPulse 2.4s ease-in-out infinite;
+}
+
+.threadMark :global(svg) {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+@keyframes appBootMarkPulse {
+  0%, 100% { opacity: 0.45; transform: scale(1); }
+  50%      { opacity: 0.75; transform: scale(1.04); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .threadMark { animation: none; opacity: 0.55; }
+}
+
+/* ─── Mobile ──────────────────────────────────────────────────────────────── */
+
+@media (max-width: 640px) {
+  /* Single-column on mobile, matching ChatMobileShell where the sidebar is
+     hidden behind the thread until the user navigates back. Showing only
+     the brand mark also reads more honestly as "warming up". */
+  .sidebar { display: none; }
+}

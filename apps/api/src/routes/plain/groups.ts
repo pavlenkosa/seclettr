@@ -458,6 +458,26 @@ export async function plainGroupRoutes(fastify: FastifyInstance): Promise<void> 
         }
       }
 
+      // Promoting another member to owner is interpreted as a *transfer*:
+      // a group must have exactly one owner, so demote the caller (current
+      // owner) to admin in the same transaction. Without this the previous
+      // owner stayed alongside the new one and the group ended up with two.
+      if (body.role === "owner" && memberId !== userId) {
+        await transaction(async (client) => {
+          await client.query(
+            `UPDATE plain_group_members SET role = 'admin'
+             WHERE group_id = $1 AND user_id = $2 AND removed_at IS NULL`,
+            [id, userId]
+          );
+          await client.query(
+            `UPDATE plain_group_members SET role = 'owner'
+             WHERE group_id = $1 AND user_id = $2 AND removed_at IS NULL`,
+            [id, memberId]
+          );
+        });
+        return reply.code(204).send();
+      }
+
       await query(
         `UPDATE plain_group_members SET role = $1
          WHERE group_id = $2 AND user_id = $3 AND removed_at IS NULL`,

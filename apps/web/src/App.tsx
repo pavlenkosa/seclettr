@@ -2,6 +2,7 @@ import { lazy, Suspense, useCallback, useEffect, useRef, useState, type ReactNod
 import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import { useShallow } from "zustand/react/shallow";
 import { AppErrorFallback, ErrorBoundary } from "./components/common/ErrorBoundary";
+import { AppBootSkeleton } from "./components/common/AppBootSkeleton";
 import { LockScreen } from "./components/common/LockScreen";
 import { useI18n } from "./i18n";
 import { useInactivityLock } from "./lib/useInactivityLock";
@@ -137,24 +138,9 @@ export function App() {
 
   const [isDevToolsVisible, setIsDevToolsVisible] = useState(() => readDevToolsVisibility());
   const hasStarted = useRef(false);
-  const loadingFallback = (
-    <div
-      style={{
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        height: "100%",
-        color: "var(--text-secondary)",
-        fontSize: "0.875rem",
-      }}
-      role="status"
-      aria-live="polite"
-      aria-busy="true"
-      aria-atomic="true"
-    >
-      {t("app.loading")}
-    </div>
-  );
+  // Skeleton mirrors the chat layout (sidebar + thread mark) so the boot →
+  // app transition is visually continuous, not a stark text-only screen.
+  const loadingFallback = <AppBootSkeleton />;
 
   const handleLock = useCallback(() => {
     void lock();

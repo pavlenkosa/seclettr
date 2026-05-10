@@ -95,10 +95,14 @@ export interface PlainGroupsState {
 
   /** Create a new plain group */
   createGroup: (name: string, memberUserIds: string[]) => Promise<string>;
+  /** Rename group (owner / admin only). */
+  renameGroup: (groupId: string, name: string) => Promise<void>;
   /** Add a member */
   addMember: (groupId: string, userId: string) => Promise<void>;
   /** Remove a member (or leave) */
   removeMember: (groupId: string, userId: string) => Promise<void>;
+  /** Change a member's role. Owner-only on the server. */
+  updateMemberRole: (groupId: string, userId: string, role: "owner" | "admin" | "member") => Promise<void>;
 
   /** Send a text message */
   sendText: (groupId: string, content: string, replyTo?: PlainReplyMeta) => Promise<void>;
@@ -345,6 +349,66 @@ export const usePlainGroupsStore = create<PlainGroupsState>((set, get) => {
         },
       };
     });
+  }
+
+  async function renameGroup(groupId: string, name: string): Promise<void> {
+    const trimmed = name.trim();
+    if (!trimmed) return;
+    const previous = get().groups[groupId];
+    // Optimistic update so the modal header / sidebar entry feel snappy.
+    if (previous) {
+      set((state) => ({
+        groups: { ...state.groups, [groupId]: { ...previous, name: trimmed } },
+      }));
+    }
+    try {
+      await api.patch<{ id: string; name: string; updatedAt: string }>(
+        `/plain/groups/${encodeURIComponent(groupId)}`,
+        { name: trimmed }
+      );
+    } catch (err) {
+      logger.error("[PlainGroups] renameGroup failed", err);
+      // Roll back on failure.
+      if (previous) {
+        set((state) => ({
+          groups: { ...state.groups, [groupId]: previous },
+        }));
+      }
+      throw err;
+    }
+  }
+
+  async function updateMemberRole(
+    groupId: string,
+    userId: string,
+    role: "owner" | "admin" | "member"
+  ): Promise<void> {
+    const previous = get().groups[groupId];
+    if (previous) {
+      set((state) => ({
+        groups: {
+          ...state.groups,
+          [groupId]: {
+            ...previous,
+            members: previous.members.map((m) =>
+              m.userId === userId ? { ...m, role } : m
+            ),
+          },
+        },
+      }));
+    }
+    try {
+      await api.patch(
+        `/plain/groups/${encodeURIComponent(groupId)}/members/${encodeURIComponent(userId)}`,
+        { role }
+      );
+    } catch (err) {
+      logger.error("[PlainGroups] updateMemberRole failed", err);
+      if (previous) {
+        set((state) => ({ groups: { ...state.groups, [groupId]: previous } }));
+      }
+      throw err;
+    }
   }
 
   async function removeMember(groupId: string, userId: string): Promise<void> {
@@ -758,8 +822,10 @@ export const usePlainGroupsStore = create<PlainGroupsState>((set, get) => {
     loadHistory,
     loadMoreHistory,
     createGroup,
+    renameGroup,
     addMember,
     removeMember,
+    updateMemberRole,
     sendText,
     sendAttachment,
     editMessage,

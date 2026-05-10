@@ -117,7 +117,9 @@ export const ChatThreadHeader = memo(function ChatThreadHeader({
         statusLabel={null}
         statusAriaLabel={null}
         statusTone={null}
-        onStatusClick={null}
+        // Plain groups open the same Telegram-style info modal on title/sub tap;
+        // plain DMs have nothing extra to surface here.
+        onStatusClick={isPlainGroup ? handleOpenGroupMembers : null}
         avatarLabel={plainTitle}
         backAriaLabel={t("chat.back")}
         onBack={handleBack}

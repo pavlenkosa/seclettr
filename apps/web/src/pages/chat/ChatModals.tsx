@@ -1,9 +1,11 @@
-import { memo, useCallback } from "react";
+import { memo, useCallback, useMemo } from "react";
 import { NewChatModal } from "@/chats/presentation/modals/NewChatModal";
 import { NewGroupModal } from "@/chats/presentation/modals/NewGroupModal";
-import { GroupMembersModal } from "@/chats/presentation/modals/GroupMembersModal";
+import { GroupInfoModal, type GroupInfoActions, type GroupInfoMember } from "@/chats/presentation/modals/GroupInfoModal";
 import { SecurityModal } from "@/chats/presentation/modals/SecurityModal";
 import { ChatTypePickerModal } from "@/chats/presentation/modals/ChatTypePickerModal";
+import { useGroupsStore } from "@/stores/groups";
+import { usePlainGroupsStore } from "@/stores/plain";
 import type {
   SecurityWorkspaceState,
   WorkspaceEntryState,
@@ -18,6 +20,7 @@ export const ChatModals = memo(function ChatModals({
   createPlainGroup,
   handleSelectThread,
   activeGroup,
+  activePlainGroup,
   userId,
   security,
   activeConversation,
@@ -29,11 +32,23 @@ export const ChatModals = memo(function ChatModals({
   createPlainGroup: WorkspaceEntryState["createPlainGroup"];
   handleSelectThread: WorkspaceEntryState["handleSelectThread"];
   activeGroup: WorkspaceEntryState["activeGroup"];
+  activePlainGroup: WorkspaceEntryState["activePlainGroup"];
   userId: string | null;
   security: SecurityWorkspaceState;
   activeConversation: WorkspaceEntryState["activeConversation"];
   acceptPeerIdentityChange: WorkspaceEntryState["acceptPeerIdentityChange"];
 }) {
+  // E2EE group store actions used by the info modal.
+  const e2eeAddMembers = useGroupsStore((state) => state.addGroupMembers);
+  const e2eeRemoveMember = useGroupsStore((state) => state.removeGroupMember);
+  const e2eeUpdateRole = useGroupsStore((state) => state.updateGroupMemberRole);
+
+  // Plain group store actions.
+  const plainRename = usePlainGroupsStore((state) => state.renameGroup);
+  const plainAddMember = usePlainGroupsStore((state) => state.addMember);
+  const plainRemoveMember = usePlainGroupsStore((state) => state.removeMember);
+  const plainUpdateRole = usePlainGroupsStore((state) => state.updateMemberRole);
+
   const handleNewGroupCreate = useCallback(
     async ({ name, memberUserIds, kind }: { name: string; memberUserIds: string[]; kind: "e2ee" | "plain" }) => {
       if (kind === "plain") {
@@ -66,6 +81,49 @@ export const ChatModals = memo(function ChatModals({
     [acceptPeerIdentityChange, activeConversation]
   );
 
+  // ── Build the GroupInfoModal contract for the active group (E2EE or plain).
+  // Only one is non-null at a time — selection lives in WorkspaceEntryState.
+  const e2eeGroupInfo = useMemo(() => {
+    if (!activeGroup) return null;
+    const members: GroupInfoMember[] = activeGroup.members.map((m) => ({
+      userId: m.userId,
+      username: m.username,
+      role: m.role ?? "member",
+    }));
+    const actions: GroupInfoActions = {
+      addMember: (id, role) => e2eeAddMembers(activeGroup.groupId, [id], role),
+      removeMember: (id) => e2eeRemoveMember(activeGroup.groupId, id),
+      updateRole: (id, role) => e2eeUpdateRole(activeGroup.groupId, id, role === "owner" ? "admin" : role),
+      verifyMember: (m) => {
+        // Look the original group member up so we keep joinedAt + the strict
+        // role union expected by the security flow.
+        const original = activeGroup.members.find((x) => x.userId === m.userId);
+        if (original) handleVerifyGroupMember(original);
+      },
+      // E2EE store has no rename API yet — the pencil stays hidden.
+    };
+    return { members, actions, groupId: activeGroup.groupId, groupName: activeGroup.name };
+  }, [activeGroup, e2eeAddMembers, e2eeRemoveMember, e2eeUpdateRole, handleVerifyGroupMember]);
+
+  const plainGroupInfo = useMemo(() => {
+    if (!activePlainGroup) return null;
+    const members: GroupInfoMember[] = activePlainGroup.members.map((m) => ({
+      userId: m.userId,
+      username: m.username,
+      role: m.role,
+    }));
+    const actions: GroupInfoActions = {
+      rename: (name) => plainRename(activePlainGroup.groupId, name),
+      addMember: (id) => plainAddMember(activePlainGroup.groupId, id),
+      removeMember: (id) => plainRemoveMember(activePlainGroup.groupId, id),
+      updateRole: (id, role) => plainUpdateRole(activePlainGroup.groupId, id, role),
+    };
+    return { members, actions, groupId: activePlainGroup.groupId, groupName: activePlainGroup.name };
+  }, [activePlainGroup, plainAddMember, plainRemoveMember, plainRename, plainUpdateRole]);
+
+  const activeGroupInfo = e2eeGroupInfo ?? plainGroupInfo;
+  const activeGroupKind: "e2ee" | "plain" = e2eeGroupInfo ? "e2ee" : "plain";
+
   return (
     <>
       {workspaceUiState.showNewChat && (
@@ -89,11 +147,14 @@ export const ChatModals = memo(function ChatModals({
           onCreate={handleNewGroupCreate}
         />
       )}
-      {workspaceUiState.showGroupMembers && activeGroup && userId && (
-        <GroupMembersModal
-          group={activeGroup}
+      {workspaceUiState.showGroupMembers && activeGroupInfo && userId && (
+        <GroupInfoModal
+          groupId={activeGroupInfo.groupId}
+          groupName={activeGroupInfo.groupName}
+          groupKind={activeGroupKind}
+          members={activeGroupInfo.members}
           myUserId={userId}
-          onVerifyMember={handleVerifyGroupMember}
+          actions={activeGroupInfo.actions}
           onClose={workspaceUiState.closeGroupMembers}
         />
       )}

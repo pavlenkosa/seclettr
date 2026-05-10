@@ -1,0 +1,461 @@
+/* Telegram-style group info modal: hero header (avatar + name + meta),
+   inline rename pencil, sectioned member list with role badges, action sheet
+   for per-member operations. Used for both E2EE and plain groups. */
+
+.surface {
+  display: flex;
+  flex-direction: column;
+}
+
+.headerSlot {
+  /* Hide the default modal header — the hero acts as the title. */
+  display: none;
+}
+
+.body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.72rem;
+  padding: 0.6rem 0.94rem 1rem;
+}
+
+/* ─── Hero ───────────────────────────────────────────────────────────────── */
+
+.hero {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 0.5rem;
+  padding: 1.4rem 0 0.6rem;
+}
+
+.heroName {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.42rem;
+  margin: 0;
+  font-size: 1.18rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: var(--text-primary);
+  text-wrap: balance;
+}
+
+.renamePencil {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  border: 1px solid color-mix(in srgb, var(--panel-border-soft) 88%, transparent);
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--surface-shell-strong) 92%, transparent);
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: background var(--motion-duration-fast) var(--motion-ease-standard),
+              color var(--motion-duration-fast) var(--motion-ease-standard);
+}
+
+.renamePencil:hover {
+  background: color-mix(in srgb, var(--accent) 14%, var(--surface-shell-strong));
+  color: var(--text-primary);
+}
+
+.renameForm {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  width: 100%;
+  max-width: 320px;
+}
+
+.renameInput input {
+  text-align: center;
+  font-weight: 600;
+}
+
+.renameActions {
+  display: inline-flex;
+  gap: 0.5rem;
+}
+
+.heroMeta {
+  margin: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.36rem;
+  font-size: 0.84rem;
+  color: var(--text-secondary);
+}
+
+.heroDot {
+  opacity: 0.6;
+}
+
+.heroKind {
+  text-transform: lowercase;
+}
+
+/* ─── Section header ──────────────────────────────────────────────────────── */
+
+.sectionHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.2rem 0.2rem 0;
+}
+
+.sectionTitle {
+  font-size: 0.74rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-secondary);
+}
+
+.addToggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.32rem;
+  padding: 0.34rem 0.62rem;
+  border-radius: 999px;
+  border: 1px solid color-mix(in srgb, var(--accent) 36%, transparent);
+  background: color-mix(in srgb, var(--accent) 14%, transparent);
+  color: var(--accent);
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background var(--motion-duration-fast) var(--motion-ease-standard);
+}
+
+.addToggle:hover {
+  background: color-mix(in srgb, var(--accent) 22%, transparent);
+}
+
+/* ─── Search block ────────────────────────────────────────────────────────── */
+
+.searchBlock {
+  display: flex;
+  flex-direction: column;
+  gap: 0.42rem;
+  padding: 0.5rem 0.4rem 0.2rem;
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--surface-shell-strong) 88%, transparent);
+}
+
+.addingRoleRow {
+  display: inline-flex;
+  gap: 0.34rem;
+  padding: 0 0.2rem;
+}
+
+.rolePill {
+  padding: 0.26rem 0.62rem;
+  border-radius: 999px;
+  border: 1px solid color-mix(in srgb, var(--panel-border-soft) 90%, transparent);
+  background: color-mix(in srgb, var(--surface-shell-strong) 96%, transparent);
+  color: var(--text-secondary);
+  font-size: 0.74rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.rolePillActive {
+  background: color-mix(in srgb, var(--accent) 18%, var(--surface-shell-strong));
+  border-color: color-mix(in srgb, var(--accent) 56%, transparent);
+  color: var(--text-primary);
+}
+
+.searchHint {
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+  padding: 0.4rem 0.5rem 0.2rem;
+}
+
+.searchResults {
+  list-style: none;
+  margin: 0;
+  padding: 0.2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.18rem;
+}
+
+.searchResultRow {
+  display: flex;
+  align-items: center;
+  gap: 0.62rem;
+  width: 100%;
+  padding: 0.42rem 0.54rem;
+  border-radius: 12px;
+  border: none;
+  background: transparent;
+  color: var(--text-primary);
+  cursor: pointer;
+  transition: background var(--motion-duration-fast) var(--motion-ease-standard);
+}
+
+.searchResultRow:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+}
+
+.searchResultRow:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.searchResultName {
+  flex: 1;
+  text-align: left;
+  font-size: 0.86rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.searchResultAdd {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--accent);
+}
+
+/* ─── Member list ─────────────────────────────────────────────────────────── */
+
+.memberList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--surface-shell-strong) 88%, transparent);
+  overflow: hidden;
+}
+
+.memberList li + li {
+  border-top: 1px solid color-mix(in srgb, var(--panel-border-soft) 60%, transparent);
+}
+
+.memberRow {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  width: 100%;
+  padding: 0.62rem 0.74rem;
+  border: none;
+  background: transparent;
+  color: var(--text-primary);
+  cursor: pointer;
+  text-align: left;
+  transition: background var(--motion-duration-fast) var(--motion-ease-standard);
+}
+
+.memberRow:hover:not(:disabled),
+.memberRow:focus-visible {
+  background: color-mix(in srgb, var(--accent) 10%, transparent);
+  outline: none;
+}
+
+.memberRow:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.memberMain {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.16rem;
+  min-width: 0;
+}
+
+.memberName {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.42rem;
+  font-size: 0.92rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.youTag {
+  font-size: 0.7rem;
+  font-weight: 500;
+  color: var(--text-secondary);
+}
+
+.roleBadge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.14rem 0.48rem;
+  border-radius: 999px;
+  font-size: 0.66rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  width: fit-content;
+}
+
+.roleOwner {
+  background: color-mix(in srgb, var(--accent) 22%, transparent);
+  color: color-mix(in srgb, var(--accent) 80%, white 20%);
+}
+
+.roleAdmin {
+  background: color-mix(in srgb, var(--text-secondary) 22%, transparent);
+  color: var(--text-secondary);
+}
+
+.memberChevron {
+  color: var(--text-secondary);
+  flex-shrink: 0;
+}
+
+/* ─── Leave / Error ───────────────────────────────────────────────────────── */
+
+.leaveBtn {
+  margin-top: 0.4rem;
+  padding: 0.7rem;
+  border: none;
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--danger, #ef4444) 14%, transparent);
+  color: var(--danger, #ef4444);
+  font-size: 0.92rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background var(--motion-duration-fast) var(--motion-ease-standard);
+}
+
+.leaveBtn:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--danger, #ef4444) 22%, transparent);
+}
+
+.leaveBtn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.error {
+  margin-top: 0.2rem;
+  padding: 0.5rem 0.7rem;
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--danger, #ef4444) 14%, transparent);
+  color: var(--danger, #ef4444);
+  font-size: 0.82rem;
+}
+
+/* ─── Action sheet ────────────────────────────────────────────────────────── */
+
+.sheetOverlay {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  background: rgb(0 0 0 / 0.36);
+  padding: 0.8rem;
+}
+
+.sheet {
+  width: 100%;
+  max-width: 420px;
+  background: var(--surface-float);
+  border-radius: 18px;
+  padding: 0.7rem;
+  box-shadow: 0 16px 36px rgb(0 0 0 / 0.32);
+  display: flex;
+  flex-direction: column;
+  gap: 0.42rem;
+  animation: sheetIn 180ms var(--motion-ease-standard);
+}
+
+@keyframes sheetIn {
+  from { transform: translateY(16px); opacity: 0; }
+  to   { transform: translateY(0);    opacity: 1; }
+}
+
+.sheetHeader {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  padding: 0.4rem 0.5rem 0.6rem;
+  border-bottom: 1px solid color-mix(in srgb, var(--panel-border-soft) 60%, transparent);
+}
+
+.sheetIdentity {
+  display: flex;
+  flex-direction: column;
+  gap: 0.16rem;
+  min-width: 0;
+}
+
+.sheetName {
+  font-size: 0.96rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sheetRole {
+  font-size: 0.74rem;
+  color: var(--text-secondary);
+  text-transform: capitalize;
+}
+
+.sheetActions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.18rem;
+}
+
+.sheetAction {
+  width: 100%;
+  padding: 0.78rem 0.8rem;
+  border: none;
+  border-radius: 12px;
+  background: transparent;
+  color: var(--text-primary);
+  font-size: 0.92rem;
+  font-weight: 500;
+  text-align: center;
+  cursor: pointer;
+  transition: background var(--motion-duration-fast) var(--motion-ease-standard);
+}
+
+.sheetAction:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--accent) 14%, transparent);
+}
+
+.sheetAction:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.sheetActionDanger {
+  color: var(--danger, #ef4444);
+}
+
+.sheetActionDanger:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--danger, #ef4444) 16%, transparent);
+}
+
+@media (max-width: 640px) {
+  .body {
+    padding: 0.5rem 0.6rem 0.7rem;
+  }
+  .hero {
+    padding-top: 1rem;
+  }
+  .heroName {
+    font-size: 1.08rem;
+  }
+}

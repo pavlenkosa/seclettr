@@ -454,6 +454,7 @@ export function ChatPage() {
         createPlainGroup={createPlainGroup}
         handleSelectThread={handleSelectThread}
         activeGroup={activeGroup}
+        activePlainGroup={activePlainGroup}
         userId={userId}
         security={security}
         activeConversation={activeConversation}

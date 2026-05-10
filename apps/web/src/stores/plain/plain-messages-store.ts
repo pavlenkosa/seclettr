@@ -866,9 +866,11 @@ export const usePlainMessagesStore = create<PlainMessagesState>((set, get) => {
 
   function markRead(userId: string): void {
     const key = conversationKeyFor(userId);
+    let hadUnread = false;
     set((state) => {
       const conv = state.conversations[key];
       if (!conv || conv.unreadCount === 0) return state;
+      hadUnread = true;
       return {
         conversations: {
           ...state.conversations,
@@ -876,8 +878,7 @@ export const usePlainMessagesStore = create<PlainMessagesState>((set, get) => {
         },
       };
     });
-    // Fire-and-forget: notify sender their messages were read
-    void sendReadReceipt(userId);
+    if (hadUnread) void sendReadReceipt(userId);
   }
 
   async function sendReadReceipt(peerUserId: string): Promise<void> {

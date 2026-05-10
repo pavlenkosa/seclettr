@@ -143,6 +143,23 @@ export const UpdatePlainGroupMemberRoleRequestSchema = wireObject({
 });
 export type UpdatePlainGroupMemberRoleRequest = z.infer<typeof UpdatePlainGroupMemberRoleRequestSchema>;
 
+// ─── Pinned Chats ─────────────────────────────────────────────────────────────
+
+export const PlainChatPinKindSchema = z.enum(["dm", "group"]);
+export type PlainChatPinKind = z.infer<typeof PlainChatPinKindSchema>;
+
+export const PlainChatPinSchema = wireObject({
+  peerKind: PlainChatPinKindSchema,
+  peerId: z.string().uuid(),
+  pinnedAt: z.string().datetime(),
+});
+export type PlainChatPin = z.infer<typeof PlainChatPinSchema>;
+
+export const PlainChatPinListResponseSchema = wireObject({
+  pins: z.array(PlainChatPinSchema),
+});
+export type PlainChatPinListResponse = z.infer<typeof PlainChatPinListResponseSchema>;
+
 // ─── Plain Attachments ────────────────────────────────────────────────────────
 
 export const InitPlainUploadRequestSchema = wireObject({

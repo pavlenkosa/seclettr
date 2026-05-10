@@ -42,6 +42,7 @@ import { plainConversationRoutes } from "./routes/plain/conversations.js";
 import { plainMessageRoutes } from "./routes/plain/messages.js";
 import { plainGroupRoutes } from "./routes/plain/groups.js";
 import { plainAttachmentRoutes } from "./routes/plain/attachments.js";
+import { plainPinRoutes } from "./routes/plain/pins.js";
 
 const LEGACY_WS_CLIENT_PROTOCOL = "qm.v1";
 
@@ -170,6 +171,7 @@ export async function buildApp() {
   await fastify.register(plainMessageRoutes, { prefix: "/plain/messages" });
   await fastify.register(plainGroupRoutes, { prefix: "/plain/groups" });
   await fastify.register(plainAttachmentRoutes, { prefix: "/plain/attachments" });
+  await fastify.register(plainPinRoutes, { prefix: "/plain/pins" });
 
   await registerWebSocketHandler(fastify);
 
@@ -257,7 +259,7 @@ export async function buildApp() {
   return fastify;
 }
 
-const EXPECTED_LATEST_MIGRATION = "022_plain_attachment_lifecycle.sql";
+const EXPECTED_LATEST_MIGRATION = "023_plain_chat_pins.sql";
 
 async function checkDbSchemaVersion(): Promise<void> {
   const rows = await query<{ filename: string }>(

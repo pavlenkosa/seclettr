@@ -20,6 +20,7 @@ export const ChatThreadView = memo(function ChatThreadView({
   activeThreadKind,
   activeListId,
   activeMessages,
+  activeHistoryLoading,
   groupSenderLabels,
   threadChrome,
   threadComposer,
@@ -34,6 +35,7 @@ export const ChatThreadView = memo(function ChatThreadView({
   activeThreadKind: WorkspaceEntryState["activeThreadKind"];
   activeListId: WorkspaceEntryState["activeListId"];
   activeMessages: WorkspaceEntryState["activeMessages"];
+  activeHistoryLoading?: boolean;
   groupSenderLabels: WorkspaceEntryState["groupSenderLabels"];
   threadChrome: ReactNode;
   threadComposer: ReactNode;
@@ -54,6 +56,7 @@ export const ChatThreadView = memo(function ChatThreadView({
         hasActiveThread={activeThreadKind !== null}
         threadKey={activeListId ?? undefined}
         messages={activeMessages}
+        isLoadingHistory={activeHistoryLoading ?? false}
         senderLabels={activeThreadKind === "group" ? groupSenderLabels : undefined}
         topChrome={threadChrome}
         composer={threadComposer}

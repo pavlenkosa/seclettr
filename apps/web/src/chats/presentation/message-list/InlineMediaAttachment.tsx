@@ -20,6 +20,8 @@ type InlineMediaPreviewProps = Readonly<{
 type InlineMediaPlaceholderProps = Readonly<{
   isVideo: boolean;
   loading: boolean;
+  /** Plain attachments aren't encrypted — show a shimmer instead of the lock glyph. */
+  isPlain: boolean;
 }>;
 
 type InlineMediaAttachmentProps = Readonly<{
@@ -55,20 +57,27 @@ function InlineMediaPreview({
   );
 }
 
-function InlineMediaPlaceholder({ isVideo, loading }: InlineMediaPlaceholderProps) {
+function InlineMediaPlaceholder({ isVideo, loading, isPlain }: InlineMediaPlaceholderProps) {
+  // Plain media: no decryption gate, so the resting state is a shimmer
+  // skeleton instead of the lock glyph (which previously confused users on
+  // unencrypted chats).
+  const restingGlyph = isPlain
+    ? <span className={styles.inlineMediaShimmer} aria-hidden="true" />
+    : (
+      <span className={styles.inlineMediaLock} aria-hidden="true">
+        <svg viewBox="0 0 20 20" fill="none">
+          <path d="M6.5 9V7a3.5 3.5 0 0 1 7 0v2" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
+          <rect x="4.5" y="9" width="11" height="7.5" rx="2.2" fill="currentColor" fillOpacity="0.18" stroke="currentColor" strokeWidth="1.3" />
+          <circle cx="10" cy="12.8" r="1.1" fill="currentColor" />
+        </svg>
+      </span>
+    );
+
   return (
     <div className={styles.inlineMediaPlaceholder}>
       {loading ? (
         <span className={styles.inlineMediaSpinner} aria-hidden="true" />
-      ) : (
-        <span className={styles.inlineMediaLock} aria-hidden="true">
-          <svg viewBox="0 0 20 20" fill="none">
-            <path d="M6.5 9V7a3.5 3.5 0 0 1 7 0v2" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
-            <rect x="4.5" y="9" width="11" height="7.5" rx="2.2" fill="currentColor" fillOpacity="0.18" stroke="currentColor" strokeWidth="1.3" />
-            <circle cx="10" cy="12.8" r="1.1" fill="currentColor" />
-          </svg>
-        </span>
-      )}
+      ) : restingGlyph}
       {isVideo ? (
         <span className={styles.inlineMediaTypeLabel} aria-hidden="true">
           <svg viewBox="0 0 16 16" fill="none" width="14" height="14">
@@ -161,7 +170,7 @@ export function InlineMediaAttachment({ msg, isOwn }: InlineMediaAttachmentProps
               fileName={msg.attachment?.fileName}
             />
           ) : (
-            <InlineMediaPlaceholder isVideo={isVideo} loading={loading} />
+            <InlineMediaPlaceholder isVideo={isVideo} loading={loading} isPlain={!!msg.attachment?.isPlain} />
           )}
 
           {previewUrl && isVideo ? (

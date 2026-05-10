@@ -126,6 +126,7 @@ export function ChatPage() {
     activeGroup,
     activeGroupCall,
     activeGroupCallParticipantIds,
+    activeHistoryLoading,
     activeListId,
     activeMessages,
     activePresence,
@@ -391,6 +392,7 @@ export function ChatPage() {
       activeThreadKind={activeThreadKind}
       activeListId={activeListId}
       activeMessages={activeMessages}
+      activeHistoryLoading={activeHistoryLoading}
       groupSenderLabels={groupSenderLabels}
       threadChrome={threadChrome}
       threadComposer={threadComposer}

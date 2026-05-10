@@ -538,6 +538,16 @@ export function useChatWorkspaceEntry(options: UseChatWorkspaceEntryOptions) {
   const groupSenderLabels =
     activeGroupProjection?.senderLabels ?? (activePlainGroup ? plainGroupSenderLabels : undefined);
 
+  // Drives the "thread is opening, history not yet hydrated" skeleton in the
+  // message list. Only signal `true` when we have an active thread *and* its
+  // first-page history hasn't been fetched yet — otherwise the skeleton
+  // would stay visible for legitimately empty conversations.
+  const activeHistoryLoading: boolean = (
+    (activePlainConversation && activePlainConversation.historyLoaded === false) ||
+    (activePlainGroup && activePlainGroup.historyLoaded === false) ||
+    false
+  );
+
   return {
     acceptPeerIdentityChange,
     activeConversation,
@@ -548,6 +558,7 @@ export function useChatWorkspaceEntry(options: UseChatWorkspaceEntryOptions) {
     activeGroupCall,
     activeGroupCallParticipantIds,
     activeGroupId,
+    activeHistoryLoading,
     activeListId,
     activeMessages,
     activePresence,

@@ -29,6 +29,9 @@ interface Props {
   readonly highlightMessageId?: string;
   readonly isTyping?: boolean;
   readonly onJumpToBottomStateChange?: (state: MessageListJumpToBottomState) => void;
+  /** When true, renders a placeholder skeleton instead of the empty state
+   *  while the thread's first-page history is being fetched. */
+  readonly isLoadingHistory?: boolean;
 }
 
 export interface MessageListHandle {
@@ -63,6 +66,7 @@ export const MessageList = forwardRef<MessageListHandle, Props>(function Message
   highlightMessageId,
   isTyping,
   onJumpToBottomStateChange,
+  isLoadingHistory,
 }, ref) {
   const { t, locale } = useI18n();
   const containerRef = useRef<HTMLDivElement>(null);
@@ -121,6 +125,42 @@ export const MessageList = forwardRef<MessageListHandle, Props>(function Message
   }), [timelineState.scrollToBottom]);
 
   if (messages.length === 0) {
+    if (isLoadingHistory) {
+      // Hand-crafted skeleton with alternating own/peer bubbles of varying
+      // widths so the thread doesn't pop from "Welcome / start a conversation"
+      // straight to a populated list when history finally arrives.
+      return (
+        <div
+          ref={timelineState.containerRef}
+          className={styles.container}
+          data-testid="chat-message-list-skeleton"
+          aria-busy="true"
+          aria-label={t("message.messagesLoadingAria")}
+        >
+          <div className={styles.skeletonStack} aria-hidden="true">
+            {[
+              { own: false, width: 62 },
+              { own: true, width: 48 },
+              { own: false, width: 78 },
+              { own: false, width: 36 },
+              { own: true, width: 56 },
+              { own: true, width: 70 },
+              { own: false, width: 42 },
+            ].map((item, idx) => (
+              <div
+                key={idx}
+                className={`${styles.skeletonRow} ${item.own ? styles.skeletonRowOwn : styles.skeletonRowPeer}`}
+              >
+                <div
+                  className={styles.skeletonBubble}
+                  style={{ width: `${item.width}%` }}
+                />
+              </div>
+            ))}
+          </div>
+        </div>
+      );
+    }
     return (
       <div
         ref={timelineState.containerRef}

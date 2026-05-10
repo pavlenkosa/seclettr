@@ -17,6 +17,8 @@ export interface ChatThreadPaneProps {
   readonly hasActiveThread: boolean;
   readonly threadKey?: string;
   readonly messages: Message[];
+  /** True while the thread's first-page history is still being fetched. */
+  readonly isLoadingHistory?: boolean;
   readonly senderLabels?: Record<string, string>;
   readonly topChrome?: ReactNode;
   readonly composer?: ReactNode;
@@ -34,6 +36,7 @@ export function ChatThreadPane({
   hasActiveThread,
   threadKey,
   messages,
+  isLoadingHistory,
   senderLabels,
   topChrome,
   composer,
@@ -134,6 +137,7 @@ export function ChatThreadPane({
               key={threadKey ?? "chat-thread"}
               ref={messageListRef}
               messages={messages}
+              isLoadingHistory={isLoadingHistory}
               senderLabels={senderLabels}
               onRetry={onRetry}
               onReply={onReply}

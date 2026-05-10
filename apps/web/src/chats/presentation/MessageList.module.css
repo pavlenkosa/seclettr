@@ -48,6 +48,70 @@
   display: block;
 }
 
+/* Loading skeleton — shown while a thread's first-page history is being
+   fetched. Mirrors the bubble layout (alternating sides, varied widths)
+   so the transition to real content doesn't visually jolt. */
+.skeletonStack {
+  display: flex;
+  flex-direction: column;
+  gap: 0.42rem;
+  padding: 0.74rem 0.72rem 1.2rem;
+  width: 100%;
+  max-width: 100%;
+}
+
+.skeletonRow {
+  display: flex;
+  width: 100%;
+}
+
+.skeletonRowOwn {
+  justify-content: flex-end;
+}
+
+.skeletonRowPeer {
+  justify-content: flex-start;
+}
+
+.skeletonBubble {
+  height: 38px;
+  border-radius: 18px;
+  background: linear-gradient(
+    100deg,
+    color-mix(in srgb, var(--surface-shell-strong) 88%, transparent) 0%,
+    color-mix(in srgb, var(--surface-shell-strong) 76%, var(--accent)) 50%,
+    color-mix(in srgb, var(--surface-shell-strong) 88%, transparent) 100%
+  );
+  background-size: 200% 100%;
+  animation: messageSkeletonShimmer 1.6s ease-in-out infinite;
+  max-width: 78%;
+}
+
+.skeletonRowOwn .skeletonBubble {
+  background: linear-gradient(
+    100deg,
+    color-mix(in srgb, var(--message-out-ui-soft) 80%, transparent) 0%,
+    color-mix(in srgb, var(--message-out-ui-soft) 64%, var(--accent)) 50%,
+    color-mix(in srgb, var(--message-out-ui-soft) 80%, transparent) 100%
+  );
+  background-size: 200% 100%;
+}
+
+@keyframes messageSkeletonShimmer {
+  from { background-position: 100% 0; }
+  to   { background-position: -100% 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .skeletonBubble {
+    animation: none;
+    background: color-mix(in srgb, var(--surface-shell-strong) 88%, transparent);
+  }
+  .skeletonRowOwn .skeletonBubble {
+    background: color-mix(in srgb, var(--message-out-ui-soft) 80%, transparent);
+  }
+}
+
 .dateSeparator {
   display: flex;
   align-items: center;
@@ -1766,6 +1830,34 @@ button.quotedBubble {
 
 @keyframes inlineMediaSpin {
   to { transform: rotate(360deg); }
+}
+
+/* Plain media resting placeholder — pulsing skeleton instead of the lock
+   glyph used for E2EE attachments. */
+.inlineMediaShimmer {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    100deg,
+    color-mix(in srgb, var(--surface-shell-strong) 90%, transparent) 0%,
+    color-mix(in srgb, var(--surface-shell-strong) 78%, var(--accent)) 50%,
+    color-mix(in srgb, var(--surface-shell-strong) 90%, transparent) 100%
+  );
+  background-size: 200% 100%;
+  animation: inlineMediaShimmer 1.6s ease-in-out infinite;
+  border-radius: inherit;
+}
+
+@keyframes inlineMediaShimmer {
+  from { background-position: 100% 0; }
+  to   { background-position: -100% 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .inlineMediaShimmer {
+    animation: none;
+    background: color-mix(in srgb, var(--surface-shell-strong) 90%, transparent);
+  }
 }
 
 /* Play overlay on video thumbnails */

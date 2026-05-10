@@ -201,7 +201,7 @@
 
   .composerRail {
     padding-top: 0.08rem;
-    padding-bottom: 0.62rem;
+    padding-bottom: calc(0.62rem + env(safe-area-inset-bottom, 0px));
     padding-inline: 0.54rem;
   }
 

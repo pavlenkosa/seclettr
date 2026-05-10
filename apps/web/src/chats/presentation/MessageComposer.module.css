@@ -34,10 +34,6 @@
     background-color var(--motion-duration-fast) var(--motion-ease-standard);
 }
 
-.inner:focus-within {
-  border-color: var(--accent);
-  outline-color: color-mix(in srgb, var(--accent) 24%, transparent);
-}
 
 .innerRecording {
   gap: 0.6rem;

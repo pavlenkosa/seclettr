@@ -631,6 +631,11 @@ export const usePlainMessagesStore = create<PlainMessagesState>((set, get) => {
       });
     }
 
+    // Tracked across try/catch so a failure mid-flight can release the
+    // server-side stub via DELETE /plain/attachments/:id instead of leaving
+    // it for the 7-day retention sweep.
+    let initializedAttachmentId: string | null = null;
+
     try {
       // 1. Init upload
       const initResp = await api.post<WireInitUploadResponse>("/plain/attachments/init", {
@@ -639,6 +644,7 @@ export const usePlainMessagesStore = create<PlainMessagesState>((set, get) => {
         fileName: file.name,
       });
       const { attachmentId, uploadUrl, uploadFields } = initResp;
+      initializedAttachmentId = attachmentId;
 
       // 2. Upload to S3
       if (uploadFields && Object.keys(uploadFields).length > 0) {
@@ -733,8 +739,16 @@ export const usePlainMessagesStore = create<PlainMessagesState>((set, get) => {
       });
 
       URL.revokeObjectURL(localUrl);
+      initializedAttachmentId = null;
     } catch (err) {
       logger.error("[PlainMsg] sendAttachment failed", err);
+      if (initializedAttachmentId) {
+        // Best-effort cleanup so the orphan row + S3 object don't wait for
+        // the retention sweep. A failure here is non-fatal — the sweep is
+        // the safety net.
+        api.delete(`/plain/attachments/${encodeURIComponent(initializedAttachmentId)}`)
+          .catch((cleanupErr) => logger.warn("[PlainMsg] cancel orphan attachment failed", cleanupErr));
+      }
       set((state) => {
         const conv = state.conversations[key];
         if (!conv) return state;

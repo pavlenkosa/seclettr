@@ -19,10 +19,22 @@ export interface PushPreferences {
   showSender: boolean;
 }
 
+/**
+ * Optional media descriptor for richer push body text.
+ * Only known on plain (server-readable) messages — E2EE messages stay
+ * with the generic "encrypted message" phrasing.
+ */
+export interface PushMediaSummary {
+  messageType: "text" | "attachment" | "voice_note" | "video_note";
+  mimeType?: string | undefined;
+}
+
 interface BuildDirectMessagePushPayloadArgs {
   senderUserId: string;
   senderUsername: string | null;
   hasAttachment: boolean;
+  /** Plain-only: drives a typed body like "📷 Photo" instead of generic "attachment". */
+  mediaSummary?: PushMediaSummary | null;
   preferences: PushPreferences;
 }
 
@@ -31,7 +43,26 @@ interface BuildGroupMessagePushPayloadArgs {
   senderUsername: string | null;
   groupId: string;
   groupName: string | null;
+  /** Plain-only: drives a typed body like "📷 Photo" instead of generic "attachment". */
+  mediaSummary?: PushMediaSummary | null;
   preferences: PushPreferences;
+}
+
+/**
+ * Returns a short, emoji-prefixed description for a plain message body, or
+ * `null` when the message is text-only and the caller should fall back to
+ * the standard "sent a message" phrasing.
+ */
+function formatMediaSummary(summary: PushMediaSummary | null | undefined): string | null {
+  if (!summary || summary.messageType === "text") return null;
+  if (summary.messageType === "voice_note") return "🎤 Voice message";
+  if (summary.messageType === "video_note") return "🎥 Video message";
+  // Generic attachment — refine by mime when possible.
+  const mime = summary.mimeType ?? "";
+  if (mime.startsWith("image/")) return "📷 Photo";
+  if (mime.startsWith("video/")) return "📹 Video";
+  if (mime.startsWith("audio/")) return "🎵 Audio";
+  return "📎 File";
 }
 
 interface BuildCallInvitePushPayloadArgs {
@@ -53,6 +84,7 @@ export function buildDirectMessagePushPayload({
   senderUserId,
   senderUsername,
   hasAttachment,
+  mediaSummary,
   preferences,
 }: BuildDirectMessagePushPayloadArgs): PushPayload | null {
   if (!preferences.directMessagesEnabled) {
@@ -62,13 +94,21 @@ export function buildDirectMessagePushPayload({
   const title = preferences.showSender && senderUsername
     ? `@${senderUsername}`
     : "Seclettr";
+  const mediaLine = formatMediaSummary(mediaSummary);
   const attachmentBody = preferences.showSender && senderUsername
     ? `@${senderUsername} sent an encrypted attachment`
     : "New encrypted attachment";
   const messageBody = preferences.showSender && senderUsername
     ? `@${senderUsername} sent an encrypted message`
     : "New encrypted message";
-  const body = hasAttachment ? attachmentBody : messageBody;
+  let body: string;
+  if (mediaLine) {
+    body = preferences.showSender && senderUsername
+      ? `@${senderUsername}: ${mediaLine}`
+      : mediaLine;
+  } else {
+    body = hasAttachment ? attachmentBody : messageBody;
+  }
 
   return {
     title,
@@ -91,6 +131,7 @@ export function buildGroupMessagePushPayload({
   senderUsername,
   groupId,
   groupName,
+  mediaSummary,
   preferences,
 }: BuildGroupMessagePushPayloadArgs): PushPayload | null {
   if (!preferences.groupMessagesEnabled) {
@@ -101,9 +142,17 @@ export function buildGroupMessagePushPayload({
   const title = preferences.showSender && senderUsername
     ? `@${senderUsername}`
     : normalizedGroupName;
-  const body = preferences.showSender && senderUsername
-    ? `@${senderUsername} sent a new group message in ${normalizedGroupName}`
-    : "New encrypted group message";
+  const mediaLine = formatMediaSummary(mediaSummary);
+  let body: string;
+  if (mediaLine) {
+    body = preferences.showSender && senderUsername
+      ? `@${senderUsername} in ${normalizedGroupName}: ${mediaLine}`
+      : `${normalizedGroupName}: ${mediaLine}`;
+  } else {
+    body = preferences.showSender && senderUsername
+      ? `@${senderUsername} sent a new group message in ${normalizedGroupName}`
+      : "New encrypted group message";
+  }
 
   return {
     title,

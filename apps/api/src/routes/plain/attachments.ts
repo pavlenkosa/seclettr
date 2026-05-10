@@ -4,9 +4,10 @@
  * Unlike E2EE attachments the server stores the original file and serves it
  * directly — no client-side encryption keys involved.
  *
- * POST /plain/attachments/init      → get presigned upload URL
- * POST /plain/attachments/:id/confirm → mark uploaded, get download URL
- * GET  /plain/attachments/:id       → get fresh download URL
+ * POST   /plain/attachments/init        → get presigned upload URL
+ * POST   /plain/attachments/:id/confirm → mark uploaded, get download URL
+ * GET    /plain/attachments/:id         → get fresh download URL
+ * DELETE /plain/attachments/:id         → cancel an in-flight upload
  */
 import type { FastifyInstance } from "fastify";
 import { randomUUID } from "node:crypto";
@@ -16,6 +17,7 @@ import {
   HeadBucketCommand,
   CreateBucketCommand,
   HeadObjectCommand,
+  DeleteObjectCommand,
 } from "@aws-sdk/client-s3";
 import { createPresignedPost } from "@aws-sdk/s3-presigned-post";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
@@ -272,6 +274,65 @@ export async function plainAttachmentRoutes(fastify: FastifyInstance): Promise<v
 
       const downloadUrl = await buildDownloadUrl(att.storage_key, resolveBrowserOrigin(request.headers));
       return reply.code(200).send({ attachmentId: att.id, downloadUrl });
+    }
+  );
+
+  /**
+   * Cancel an upload that hasn't been confirmed yet — clears the row immediately
+   * instead of waiting for the retention sweep. Allowed only by the original
+   * uploader and only while the row is still in `initialized` or `uploaded`
+   * state. Verified rows are owned by their referencing messages and must be
+   * cleaned up via message deletion.
+   */
+  fastify.delete(
+    "/:id",
+    { preHandler: requireAuth },
+    async (request, reply) => {
+      const { sub: userId } = request.auth;
+      const { id } = request.params as { id: string };
+
+      const [att] = await query<{
+        id: string;
+        storage_key: string;
+        uploader_user_id: string;
+        upload_state: string;
+        deleted_at: string | null;
+      }>(
+        `SELECT id, storage_key, uploader_user_id, upload_state, deleted_at
+         FROM plain_attachments WHERE id = $1`,
+        [id]
+      );
+
+      if (!att || att.deleted_at) {
+        return reply.code(404).send({ error: "Attachment not found" });
+      }
+      if (att.uploader_user_id !== userId) {
+        return reply.code(403).send({ error: "Forbidden" });
+      }
+      if (att.upload_state !== "initialized" && att.upload_state !== "uploaded") {
+        return reply.code(409).send({ error: "Cannot cancel a verified attachment" });
+      }
+
+      // Best-effort S3 cleanup. If the object isn't there yet (presigned POST
+      // never completed) the delete silently succeeds; any other failure is
+      // logged but doesn't block the row soft-delete — the retention purge
+      // will retry the object delete on the next sweep.
+      if (!USE_IN_MEMORY) {
+        try {
+          await s3.send(new DeleteObjectCommand({ Bucket: PLAIN_BUCKET, Key: att.storage_key }));
+        } catch (err) {
+          request.log.warn({ err, attachmentId: id }, "plain attachment cancel: S3 delete failed (will retry on retention sweep)");
+        }
+      } else {
+        inMemoryObjects.delete(att.storage_key);
+      }
+
+      await query(
+        `UPDATE plain_attachments SET deleted_at = now() WHERE id = $1 AND deleted_at IS NULL`,
+        [id]
+      );
+
+      return reply.code(204).send();
     }
   );
 }

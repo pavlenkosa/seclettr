@@ -492,6 +492,8 @@ export const usePlainGroupsStore = create<PlainGroupsState>((set, get) => {
       });
     }
 
+    let initializedAttachmentId: string | null = null;
+
     try {
       const initResp = await api.post<WireInitUploadResponse>("/plain/attachments/init", {
         size: file.size,
@@ -499,6 +501,7 @@ export const usePlainGroupsStore = create<PlainGroupsState>((set, get) => {
         fileName: file.name,
       });
       const { attachmentId, uploadUrl, uploadFields } = initResp;
+      initializedAttachmentId = attachmentId;
 
       if (uploadFields && Object.keys(uploadFields).length > 0) {
         const formData = new FormData();
@@ -574,8 +577,13 @@ export const usePlainGroupsStore = create<PlainGroupsState>((set, get) => {
       });
 
       URL.revokeObjectURL(localUrl);
+      initializedAttachmentId = null;
     } catch (err) {
       logger.error("[PlainGroups] sendAttachment failed", err);
+      if (initializedAttachmentId) {
+        api.delete(`/plain/attachments/${encodeURIComponent(initializedAttachmentId)}`)
+          .catch((cleanupErr) => logger.warn("[PlainGroups] cancel orphan attachment failed", cleanupErr));
+      }
       set((state) => {
         const g = state.groups[groupId];
         if (!g) return state;

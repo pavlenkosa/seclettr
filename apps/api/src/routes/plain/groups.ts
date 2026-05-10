@@ -623,6 +623,10 @@ export async function plainGroupRoutes(fastify: FastifyInstance): Promise<void> 
               senderUsername: senderUsername ?? null,
               groupId,
               groupName: groupRow?.name ?? null,
+              mediaSummary: {
+                messageType: body.messageType,
+                mimeType: attMeta?.content_type,
+              },
               preferences: prefs,
             });
             if (payload) await sendPushToUser(m.user_id, payload);

@@ -175,17 +175,34 @@ export async function plainMessageRoutes(fastify: FastifyInstance): Promise<void
         attMeta = att;
       }
 
-      const msgId = randomUUID();
+      const newMsgId = randomUUID();
       const now = new Date().toISOString();
 
-      await query(
-        `INSERT INTO plain_messages
-           (id, client_id, sender_user_id, recipient_user_id, content, message_type,
-            attachment_id, reply_to_id, media_group_id, duration_ms, created_at)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
-         ON CONFLICT (client_id) DO NOTHING`,
+      // Idempotent insert: if a row with this client_id already exists, the
+      // CTE returns no rows from `ins` and the SELECT below falls through to
+      // the existing row. We use the result to decide whether to fan out WS
+      // events and push notifications — duplicates are silently absorbed.
+      // `to_char(... at time zone 'UTC' ...)` keeps the response shape identical
+      // regardless of whether the row was just inserted (we passed an ISO string)
+      // or fetched from a duplicate (pg returns a Date object) — protocol clients
+      // and downstream WS payloads expect a string.
+      const [persisted] = await query<{ id: string; created_at: string; inserted: boolean }>(
+        `WITH ins AS (
+           INSERT INTO plain_messages
+             (id, client_id, sender_user_id, recipient_user_id, content, message_type,
+              attachment_id, reply_to_id, media_group_id, duration_ms, created_at)
+           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+           ON CONFLICT (client_id) DO NOTHING
+           RETURNING id, to_char(created_at AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"') AS created_at
+         )
+         SELECT id, created_at, true AS inserted FROM ins
+         UNION ALL
+         SELECT id, to_char(created_at AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"') AS created_at, false AS inserted
+           FROM plain_messages
+           WHERE client_id = $2 AND NOT EXISTS (SELECT 1 FROM ins)
+         LIMIT 1`,
         [
-          msgId,
+          newMsgId,
           body.clientId,
           userId,
           recipientUserId,
@@ -198,6 +215,24 @@ export async function plainMessageRoutes(fastify: FastifyInstance): Promise<void
           now,
         ]
       );
+
+      if (!persisted) {
+        return reply.code(500).send({ error: "Failed to persist message" });
+      }
+
+      const msgId = persisted.id;
+      const createdAt = persisted.created_at;
+
+      if (!persisted.inserted) {
+        // Duplicate retry — message is already stored and was already broadcast
+        // on the first attempt. Acknowledge with the original id/createdAt so
+        // the client converges on the canonical row.
+        return reply.code(200).send({
+          id: msgId,
+          clientId: body.clientId,
+          createdAt,
+        });
+      }
 
       const wireMsg = {
         id: msgId,
@@ -217,7 +252,7 @@ export async function plainMessageRoutes(fastify: FastifyInstance): Promise<void
               mediaGroupId: body.mediaGroupId ?? undefined,
             }
           : undefined,
-        createdAt: now,
+        createdAt,
       };
 
       // Push to recipient via WS
@@ -252,7 +287,7 @@ export async function plainMessageRoutes(fastify: FastifyInstance): Promise<void
       return reply.code(201).send({
         id: msgId,
         clientId: body.clientId,
-        createdAt: now,
+        createdAt,
       });
     }
   );
@@ -310,16 +345,20 @@ export async function plainMessageRoutes(fastify: FastifyInstance): Promise<void
       if (unread.length === 0) return reply.code(204).send();
 
       const ids = unread.map((r) => r.id);
-      // Bulk insert read receipts
-      const placeholders = ids.map((_, i) => `($${i * 2 + 1}, $${i * 2 + 2})`).join(", ");
-      const values: string[] = [];
-      for (const id of ids) values.push(id, userId);
-
-      await query(
-        `INSERT INTO plain_message_reads (message_id, user_id) VALUES ${placeholders}
-         ON CONFLICT DO NOTHING`,
-        values
-      );
+      // Bulk insert read receipts in chunks. Postgres caps bound parameters at
+      // 32 767; with 2 params per row we stay well under by chunking at 500.
+      const READ_RECEIPT_CHUNK = 500;
+      for (let offset = 0; offset < ids.length; offset += READ_RECEIPT_CHUNK) {
+        const chunk = ids.slice(offset, offset + READ_RECEIPT_CHUNK);
+        const placeholders = chunk.map((_, i) => `($${i * 2 + 1}, $${i * 2 + 2})`).join(", ");
+        const values: string[] = [];
+        for (const id of chunk) values.push(id, userId);
+        await query(
+          `INSERT INTO plain_message_reads (message_id, user_id) VALUES ${placeholders}
+           ON CONFLICT DO NOTHING`,
+          values
+        );
+      }
 
       const now = new Date().toISOString();
       // Notify the peer that their messages were read
@@ -347,9 +386,13 @@ export async function plainMessageRoutes(fastify: FastifyInstance): Promise<void
       const body = parseOrReply(reply, EditPlainMessageRequestSchema, request.body);
       if (!body) return;
 
+      // Constrain to DM messages only — group messages must use the group endpoint,
+      // otherwise authorization bypasses group-membership checks and broadcast events
+      // are routed to a NULL recipient.
       const [msg] = await query<{ id: string; sender_user_id: string; recipient_user_id: string; message_type: string }>(
         `SELECT id, sender_user_id, recipient_user_id, message_type
-         FROM plain_messages WHERE id = $1 AND deleted_at IS NULL`,
+         FROM plain_messages
+         WHERE id = $1 AND deleted_at IS NULL AND recipient_user_id IS NOT NULL`,
         [id]
       );
       if (!msg) return reply.code(404).send({ error: "Message not found" });
@@ -385,9 +428,11 @@ export async function plainMessageRoutes(fastify: FastifyInstance): Promise<void
       const { sub: userId } = request.auth;
       const { id } = request.params as { id: string };
 
+      // DM-only — see PATCH endpoint comment.
       const [msg] = await query<{ id: string; sender_user_id: string; recipient_user_id: string }>(
         `SELECT id, sender_user_id, recipient_user_id
-         FROM plain_messages WHERE id = $1 AND deleted_at IS NULL`,
+         FROM plain_messages
+         WHERE id = $1 AND deleted_at IS NULL AND recipient_user_id IS NOT NULL`,
         [id]
       );
       if (!msg) return reply.code(404).send({ error: "Message not found" });

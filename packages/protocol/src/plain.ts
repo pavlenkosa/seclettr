@@ -138,6 +138,11 @@ export const AddPlainGroupMemberRequestSchema = wireObject({
 });
 export type AddPlainGroupMemberRequest = z.infer<typeof AddPlainGroupMemberRequestSchema>;
 
+export const UpdatePlainGroupMemberRoleRequestSchema = wireObject({
+  role: PlainGroupMemberRoleSchema,
+});
+export type UpdatePlainGroupMemberRoleRequest = z.infer<typeof UpdatePlainGroupMemberRoleRequestSchema>;
+
 // ─── Plain Attachments ────────────────────────────────────────────────────────
 
 export const InitPlainUploadRequestSchema = wireObject({

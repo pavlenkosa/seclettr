@@ -119,8 +119,8 @@ export async function buildApp() {
         }
       : allowedOrigins,
     credentials: true,
-    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-    allowedHeaders: ["Authorization", "Content-Type", "X-Request-ID"],
+    methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Authorization", "Content-Type", "X-Request-ID", "X-Client-Origin"],
   });
 
   await fastify.register(fastifyRateLimit, {
@@ -257,7 +257,7 @@ export async function buildApp() {
   return fastify;
 }
 
-const EXPECTED_LATEST_MIGRATION = "021_plain_chats.sql";
+const EXPECTED_LATEST_MIGRATION = "022_plain_attachment_lifecycle.sql";
 
 async function checkDbSchemaVersion(): Promise<void> {
   const rows = await query<{ filename: string }>(

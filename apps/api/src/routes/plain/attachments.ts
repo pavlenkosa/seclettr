@@ -24,6 +24,7 @@ import { query } from "../../db/pool.js";
 import { config } from "../../config.js";
 import { parseOrReply } from "../../utils/validation.js";
 import { consumeFixedWindowRateLimit } from "../../utils/fixed-window-rate-limit.js";
+import { resolveBrowserOrigin } from "../../utils/request-origin.js";
 import {
   InitPlainUploadRequestSchema,
 } from "@seclettr/protocol";
@@ -74,11 +75,12 @@ async function ensureBucket(): Promise<boolean> {
   return bucketReady;
 }
 
-function rewriteS3Url(url: string): string {
-  if (!config.S3_PUBLIC_URL) return url;
+function rewriteS3Url(url: string, requestOrigin?: string): string {
+  const base = requestOrigin ?? config.S3_PUBLIC_URL;
+  if (!base) return url;
   try {
     const parsed = new URL(url);
-    const pub = new URL(config.S3_PUBLIC_URL);
+    const pub = new URL(base);
     parsed.protocol = pub.protocol;
     parsed.host = pub.host;
     return parsed.toString();
@@ -87,13 +89,13 @@ function rewriteS3Url(url: string): string {
   }
 }
 
-async function buildDownloadUrl(storageKey: string): Promise<string> {
+async function buildDownloadUrl(storageKey: string, requestOrigin?: string): Promise<string> {
   if (USE_IN_MEMORY) {
     return `https://in-memory.invalid/${encodeURIComponent(storageKey)}`;
   }
   const cmd = new GetObjectCommand({ Bucket: PLAIN_BUCKET, Key: storageKey });
   const url = await getSignedUrl(s3, cmd, { expiresIn: PRESIGNED_DOWNLOAD_TTL_SEC });
-  return rewriteS3Url(url);
+  return rewriteS3Url(url, requestOrigin);
 }
 
 interface PlainAttachmentRow {
@@ -165,7 +167,7 @@ export async function plainAttachmentRoutes(fastify: FastifyInstance): Promise<v
 
       return reply.code(200).send({
         attachmentId,
-        uploadUrl: rewriteS3Url(url),
+        uploadUrl: rewriteS3Url(url, resolveBrowserOrigin(request.headers)),
         uploadFields: fields,
         expiresAt,
       });
@@ -188,7 +190,7 @@ export async function plainAttachmentRoutes(fastify: FastifyInstance): Promise<v
       if (!att) return reply.code(404).send({ error: "Attachment not found" });
       if (att.uploader_user_id !== userId) return reply.code(403).send({ error: "Forbidden" });
       if (att.upload_state === "verified") {
-        const downloadUrl = await buildDownloadUrl(att.storage_key);
+        const downloadUrl = await buildDownloadUrl(att.storage_key, resolveBrowserOrigin(request.headers));
         return reply.code(200).send({ attachmentId: att.id, downloadUrl });
       }
       if (att.upload_state !== "initialized" && att.upload_state !== "uploaded") {
@@ -212,7 +214,7 @@ export async function plainAttachmentRoutes(fastify: FastifyInstance): Promise<v
         [id]
       );
 
-      const downloadUrl = await buildDownloadUrl(att.storage_key);
+      const downloadUrl = await buildDownloadUrl(att.storage_key, resolveBrowserOrigin(request.headers));
       return reply.code(200).send({ attachmentId: att.id, downloadUrl });
     }
   );
@@ -221,18 +223,54 @@ export async function plainAttachmentRoutes(fastify: FastifyInstance): Promise<v
     "/:id",
     { preHandler: requireAuth },
     async (request, reply) => {
+      const { sub: userId } = request.auth;
       const { id } = request.params as { id: string };
 
-      const [att] = await query<PlainAttachmentRow>(
-        `SELECT id, storage_key, upload_state FROM plain_attachments WHERE id = $1`,
-        [id]
+      // Authorize: requester must be the uploader, the DM peer of any
+      // message referencing this attachment, or an active member of any
+      // group whose messages reference it. Returning 404 for unauthorized
+      // requests avoids leaking attachment existence.
+      const [att] = await query<{
+        id: string;
+        storage_key: string;
+        upload_state: string;
+        authorized: boolean;
+      }>(
+        `SELECT
+           pa.id,
+           pa.storage_key,
+           pa.upload_state,
+           (
+             pa.uploader_user_id = $2
+             OR EXISTS (
+               SELECT 1 FROM plain_messages pm
+               WHERE pm.attachment_id = pa.id
+                 AND pm.deleted_at IS NULL
+                 AND (
+                   pm.sender_user_id = $2
+                   OR pm.recipient_user_id = $2
+                   OR (
+                     pm.group_id IS NOT NULL
+                     AND EXISTS (
+                       SELECT 1 FROM plain_group_members pgm
+                       WHERE pgm.group_id = pm.group_id
+                         AND pgm.user_id = $2
+                         AND pgm.removed_at IS NULL
+                     )
+                   )
+                 )
+             )
+           ) AS authorized
+         FROM plain_attachments pa
+         WHERE pa.id = $1 AND pa.deleted_at IS NULL`,
+        [id, userId]
       );
 
-      if (!att || att.upload_state !== "verified") {
+      if (!att || att.upload_state !== "verified" || !att.authorized) {
         return reply.code(404).send({ error: "Attachment not found" });
       }
 
-      const downloadUrl = await buildDownloadUrl(att.storage_key);
+      const downloadUrl = await buildDownloadUrl(att.storage_key, resolveBrowserOrigin(request.headers));
       return reply.code(200).send({ attachmentId: att.id, downloadUrl });
     }
   );

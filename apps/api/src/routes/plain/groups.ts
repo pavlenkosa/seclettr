@@ -26,6 +26,7 @@ import {
   EditPlainMessageRequestSchema,
   CreatePlainGroupRequestSchema,
   AddPlainGroupMemberRequestSchema,
+  UpdatePlainGroupMemberRoleRequestSchema,
 } from "@seclettr/protocol";
 
 async function fetchUsername(userId: string): Promise<string | null> {
@@ -240,41 +241,70 @@ export async function plainGroupRoutes(fastify: FastifyInstance): Promise<void> 
     async (request, reply) => {
       const { sub: userId } = request.auth;
 
-      const groups = await query<GroupRow & { member_count: string }>(
-        `SELECT pg.id, pg.name, pg.creator_id, pg.created_at, pg.updated_at
+      // Single-query fetch: list of groups + their active members. Eliminates the
+      // N+1 round-trip that previously fired one members query per group.
+      const rows = await query<{
+        group_id: string;
+        group_name: string;
+        creator_id: string;
+        created_at: string;
+        updated_at: string;
+        member_user_id: string;
+        member_username: string;
+        member_role: string;
+        member_joined_at: string;
+      }>(
+        `SELECT
+           pg.id              AS group_id,
+           pg.name            AS group_name,
+           pg.creator_id,
+           pg.created_at,
+           pg.updated_at,
+           pgm.user_id        AS member_user_id,
+           u.username         AS member_username,
+           pgm.role           AS member_role,
+           pgm.joined_at      AS member_joined_at
          FROM plain_groups pg
-         JOIN plain_group_members pgm ON pgm.group_id = pg.id
-         WHERE pgm.user_id = $1 AND pgm.removed_at IS NULL
-         ORDER BY pg.updated_at DESC`,
+         JOIN plain_group_members pgm ON pgm.group_id = pg.id AND pgm.removed_at IS NULL
+         JOIN users u ON u.id = pgm.user_id
+         WHERE EXISTS (
+           SELECT 1 FROM plain_group_members me
+           WHERE me.group_id = pg.id AND me.user_id = $1 AND me.removed_at IS NULL
+         )
+         ORDER BY pg.updated_at DESC, pg.id, pgm.joined_at`,
         [userId]
       );
 
-      const result = await Promise.all(
-        groups.map(async (g) => {
-          const members = await query<MemberRow>(
-            `SELECT pgm.user_id, u.username, pgm.role, pgm.joined_at
-             FROM plain_group_members pgm
-             JOIN users u ON u.id = pgm.user_id
-             WHERE pgm.group_id = $1 AND pgm.removed_at IS NULL`,
-            [g.id]
-          );
-          return {
-            id: g.id,
-            name: g.name,
-            creatorId: g.creator_id,
-            members: members.map((m) => ({
-              userId: m.user_id,
-              username: m.username,
-              role: m.role,
-              joinedAt: m.joined_at,
-            })),
-            createdAt: g.created_at,
-            updatedAt: g.updated_at,
+      const grouped = new Map<string, {
+        id: string;
+        name: string;
+        creatorId: string;
+        members: Array<{ userId: string; username: string; role: string; joinedAt: string }>;
+        createdAt: string;
+        updatedAt: string;
+      }>();
+      for (const row of rows) {
+        let group = grouped.get(row.group_id);
+        if (!group) {
+          group = {
+            id: row.group_id,
+            name: row.group_name,
+            creatorId: row.creator_id,
+            members: [],
+            createdAt: row.created_at,
+            updatedAt: row.updated_at,
           };
-        })
-      );
+          grouped.set(row.group_id, group);
+        }
+        group.members.push({
+          userId: row.member_user_id,
+          username: row.member_username,
+          role: row.member_role,
+          joinedAt: row.member_joined_at,
+        });
+      }
 
-      return reply.code(200).send({ groups: result });
+      return reply.code(200).send({ groups: Array.from(grouped.values()) });
     }
   );
 
@@ -362,6 +392,47 @@ export async function plainGroupRoutes(fastify: FastifyInstance): Promise<void> 
     }
   );
 
+  /** Update member role (owner-only). Used for ownership transfer / admin promotion. */
+  fastify.patch(
+    "/:id/members/:memberId",
+    { preHandler: requireAuth },
+    async (request, reply) => {
+      const { sub: userId } = request.auth;
+      const { id, memberId } = request.params as { id: string; memberId: string };
+
+      const membership = await getActiveMembership(id, userId);
+      if (!membership) return reply.code(403).send({ error: "Not a member" });
+      if (membership.role !== "owner") return reply.code(403).send({ error: "Insufficient role" });
+
+      const body = parseOrReply(reply, UpdatePlainGroupMemberRoleRequestSchema, request.body);
+      if (!body) return;
+
+      const targetMembership = await getActiveMembership(id, memberId);
+      if (!targetMembership) return reply.code(404).send({ error: "Member not found" });
+      if (targetMembership.role === body.role) return reply.code(204).send();
+
+      // Prevent demoting the last owner — group would be left without one.
+      if (targetMembership.role === "owner" && body.role !== "owner") {
+        const ownerCountRows = await query<{ count: string }>(
+          `SELECT COUNT(*) AS count FROM plain_group_members
+           WHERE group_id = $1 AND role = 'owner' AND removed_at IS NULL`,
+          [id]
+        );
+        if (Number(ownerCountRows[0]?.count ?? 0) <= 1) {
+          return reply.code(409).send({ error: "Cannot demote the last owner" });
+        }
+      }
+
+      await query(
+        `UPDATE plain_group_members SET role = $1
+         WHERE group_id = $2 AND user_id = $3 AND removed_at IS NULL`,
+        [body.role, id, memberId]
+      );
+
+      return reply.code(204).send();
+    }
+  );
+
   /** Remove member */
   fastify.delete(
     "/:id/members/:memberId",
@@ -376,6 +447,26 @@ export async function plainGroupRoutes(fastify: FastifyInstance): Promise<void> 
       const isSelf = memberId === userId;
       if (!isSelf && membership.role === "member") {
         return reply.code(403).send({ error: "Insufficient role" });
+      }
+
+      const targetMembership = isSelf
+        ? membership
+        : await getActiveMembership(id, memberId);
+      if (!targetMembership) return reply.code(404).send({ error: "Member not found" });
+
+      // Refuse to orphan the group — last owner must transfer the role first
+      // via PATCH /:id/members/:memberId.
+      if (targetMembership.role === "owner") {
+        const ownerCountRows = await query<{ count: string }>(
+          `SELECT COUNT(*) AS count FROM plain_group_members
+           WHERE group_id = $1 AND role = 'owner' AND removed_at IS NULL`,
+          [id]
+        );
+        if (Number(ownerCountRows[0]?.count ?? 0) <= 1) {
+          return reply.code(409).send({
+            error: "Cannot remove the last owner — transfer ownership first",
+          });
+        }
       }
 
       await query(
@@ -434,17 +525,27 @@ export async function plainGroupRoutes(fastify: FastifyInstance): Promise<void> 
         attMeta = att;
       }
 
-      const msgId = randomUUID();
+      const newMsgId = randomUUID();
       const now = new Date().toISOString();
 
-      await query(
-        `INSERT INTO plain_messages
-           (id, client_id, sender_user_id, group_id, content, message_type,
-            attachment_id, reply_to_id, media_group_id, duration_ms, created_at)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
-         ON CONFLICT (client_id) DO NOTHING`,
+      // Idempotent insert — see DM endpoint for the rationale.
+      const [persisted] = await query<{ id: string; created_at: string; inserted: boolean }>(
+        `WITH ins AS (
+           INSERT INTO plain_messages
+             (id, client_id, sender_user_id, group_id, content, message_type,
+              attachment_id, reply_to_id, media_group_id, duration_ms, created_at)
+           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+           ON CONFLICT (client_id) DO NOTHING
+           RETURNING id, to_char(created_at AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"') AS created_at
+         )
+         SELECT id, created_at, true AS inserted FROM ins
+         UNION ALL
+         SELECT id, to_char(created_at AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"') AS created_at, false AS inserted
+           FROM plain_messages
+           WHERE client_id = $2 AND NOT EXISTS (SELECT 1 FROM ins)
+         LIMIT 1`,
         [
-          msgId,
+          newMsgId,
           body.clientId,
           userId,
           groupId,
@@ -457,6 +558,21 @@ export async function plainGroupRoutes(fastify: FastifyInstance): Promise<void> 
           now,
         ]
       );
+
+      if (!persisted) {
+        return reply.code(500).send({ error: "Failed to persist message" });
+      }
+
+      const msgId = persisted.id;
+      const createdAt = persisted.created_at;
+
+      if (!persisted.inserted) {
+        return reply.code(200).send({
+          id: msgId,
+          clientId: body.clientId,
+          createdAt,
+        });
+      }
 
       const wireMsg = {
         id: msgId,
@@ -476,7 +592,7 @@ export async function plainGroupRoutes(fastify: FastifyInstance): Promise<void> 
               mediaGroupId: body.mediaGroupId ?? undefined,
             }
           : undefined,
-        createdAt: now,
+        createdAt,
       };
 
       // Fan-out to all active group members
@@ -519,7 +635,7 @@ export async function plainGroupRoutes(fastify: FastifyInstance): Promise<void> 
       return reply.code(201).send({
         id: msgId,
         clientId: body.clientId,
-        createdAt: now,
+        createdAt,
       });
     }
   );

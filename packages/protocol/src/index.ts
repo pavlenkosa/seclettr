@@ -7,3 +7,4 @@ export * from "./websocket.js";
 export * from "./groups.js";
 export * from "./sfu.js";
 export * from "./rooms.js";
+export * from "./plain.js";

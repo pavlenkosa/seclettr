@@ -9,7 +9,7 @@ import { type DirectCallPanelHandle } from "@/calls/direct";
 import { useI18n } from "@/i18n";
 
 interface ThreadSelection {
-  kind: "direct" | "group";
+  kind: "direct" | "group" | "plain-direct" | "plain-group";
   id: string;
 }
 
@@ -24,11 +24,13 @@ interface ActiveGroupSummary {
 
 interface UseChatWorkspaceInteractionsOptions {
   activeConversation: ActiveConversationSummary | null;
+  activePlainConversation: ActiveConversationSummary | null;
   activeGroup: ActiveGroupSummary | null;
-  activeThreadKind: "direct" | "group" | null;
+  activeThreadKind: "direct" | "group" | "plain-direct" | "plain-group" | null;
   directCallPanelRef: RefObject<DirectCallPanelHandle | null>;
   showChatNotice: (message: string) => void;
   ensureConversation: (userId: string, username: string) => void;
+  ensurePlainConversation: (userId: string, username: string) => void;
   handleSelectThread: (selection: ThreadSelection) => void;
   logout: () => Promise<unknown>;
   lock: () => Promise<void>;
@@ -39,6 +41,8 @@ interface UseChatWorkspaceInteractionsOptions {
   openNewGroup: () => void;
   openGroupMembers: () => void;
   closeGroupMembers: () => void;
+  openChatTypePicker: (user: { userId: string; username: string }) => void;
+  closeChatTypePicker: () => void;
 }
 
 interface UseChatWorkspaceInteractionsResult {
@@ -54,6 +58,8 @@ interface UseChatWorkspaceInteractionsResult {
   handleMobileOpenChats: () => void;
   handleStartCall: (type: "audio" | "video") => void;
   handleNewChatSelect: (selectedUserId: string, selectedUsername: string) => void;
+  handleNewChatSelectE2ee: (selectedUserId: string, selectedUsername: string) => void;
+  handleNewChatSelectPlain: (selectedUserId: string, selectedUsername: string) => void;
   handleComposerFocusChange: (focused: boolean) => void;
 }
 
@@ -63,12 +69,14 @@ export function useChatWorkspaceInteractions(
   const { t } = useI18n();
   const {
     activeConversation,
+    activePlainConversation,
     activeGroup,
     activeThreadKind,
     closeGroupMembers,
     closeNewChat,
     directCallPanelRef,
     ensureConversation,
+    ensurePlainConversation,
     handleSelectThread,
     lock,
     logout,
@@ -76,12 +84,14 @@ export function useChatWorkspaceInteractions(
     openNewChat,
     openNewGroup,
     openSettings,
+    openChatTypePicker,
+    closeChatTypePicker,
     setMobileCreateMenuOpen,
     showChatNotice,
   } = options;
 
   useEffect(() => {
-    if (activeThreadKind !== "group" || !activeGroup) {
+    if (activeThreadKind !== "group" && activeThreadKind !== "plain-group" || !activeGroup) {
       closeGroupMembers();
     }
   }, [activeGroup, activeThreadKind, closeGroupMembers]);
@@ -129,30 +139,42 @@ export function useChatWorkspaceInteractions(
 
   const handleStartCall = useCallback(
     (type: "audio" | "video") => {
-      if (!activeConversation) {
-        return;
-      }
+      const peer = activeThreadKind === "plain-direct" ? activePlainConversation : activeConversation;
+      if (!peer) return;
 
       directCallPanelRef.current
-        ?.startCall(
-          activeConversation.userId,
-          type,
-          activeConversation.username
-        )
+        ?.startCall(peer.userId, type, peer.username)
         .catch(() => {
           showChatNotice(t("call.error.unableStart"));
         });
     },
-    [activeConversation, directCallPanelRef, showChatNotice, t]
+    [activeConversation, activePlainConversation, activeThreadKind, directCallPanelRef, showChatNotice, t]
   );
 
   const handleNewChatSelect = useCallback(
     (selectedUserId: string, selectedUsername: string) => {
       closeNewChat();
+      openChatTypePicker({ userId: selectedUserId, username: selectedUsername });
+    },
+    [closeNewChat, openChatTypePicker]
+  );
+
+  const handleNewChatSelectE2ee = useCallback(
+    (selectedUserId: string, selectedUsername: string) => {
+      closeChatTypePicker();
       ensureConversation(selectedUserId, selectedUsername);
       handleSelectThread({ kind: "direct", id: selectedUserId });
     },
-    [closeNewChat, ensureConversation, handleSelectThread]
+    [closeChatTypePicker, ensureConversation, handleSelectThread]
+  );
+
+  const handleNewChatSelectPlain = useCallback(
+    (selectedUserId: string, selectedUsername: string) => {
+      closeChatTypePicker();
+      ensurePlainConversation(selectedUserId, selectedUsername);
+      handleSelectThread({ kind: "plain-direct", id: selectedUserId });
+    },
+    [closeChatTypePicker, ensurePlainConversation, handleSelectThread]
   );
 
   const handleComposerFocusChange = useCallback(
@@ -177,6 +199,8 @@ export function useChatWorkspaceInteractions(
     handleMobileOpenChats,
     handleStartCall,
     handleNewChatSelect,
+    handleNewChatSelectE2ee,
+    handleNewChatSelectPlain,
     handleComposerFocusChange,
   };
 }

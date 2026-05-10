@@ -15,6 +15,8 @@ interface ChatWorkspaceUiState {
   showNewGroup: boolean;
   showGroupMembers: boolean;
   showSettings: boolean;
+  showChatTypePicker: boolean;
+  pendingChatUser: { userId: string; username: string } | null;
   mobileShowConversation: boolean;
   chatNotice: string | null;
   mobileCreateMenuOpen: boolean;
@@ -34,6 +36,8 @@ interface ChatWorkspaceUiState {
   closeGroupMembers: () => void;
   openSettings: () => void;
   closeSettings: () => void;
+  openChatTypePicker: (user: { userId: string; username: string }) => void;
+  closeChatTypePicker: () => void;
 }
 
 export function useChatWorkspaceUiState(): ChatWorkspaceUiState {
@@ -41,6 +45,8 @@ export function useChatWorkspaceUiState(): ChatWorkspaceUiState {
   const [showNewGroup, setShowNewGroup] = useState(false);
   const [showGroupMembers, setShowGroupMembers] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
+  const [showChatTypePicker, setShowChatTypePicker] = useState(false);
+  const [pendingChatUser, setPendingChatUser] = useState<{ userId: string; username: string } | null>(null);
   const [mobileShowConversation, setMobileShowConversation] = useState(false);
   const [chatNotice, setChatNotice] = useState<string | null>(null);
   const chatNoticeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -52,7 +58,7 @@ export function useChatWorkspaceUiState(): ChatWorkspaceUiState {
     menuId: mobileCreateMenuId,
     handleKeyDown: handleMobileCreateMenuKeyDown,
   } = useMobileCreateMenu({
-    closeWhen: showNewChat || showNewGroup || showSettings,
+    closeWhen: showNewChat || showNewGroup || showSettings || showChatTypePicker,
   });
 
 
@@ -80,12 +86,25 @@ export function useChatWorkspaceUiState(): ChatWorkspaceUiState {
   const closeGroupMembers = useCallback(() => setShowGroupMembers(false), []);
   const openSettings = useCallback(() => setShowSettings(true), []);
   const closeSettings = useCallback(() => setShowSettings(false), []);
+  const openChatTypePicker = useCallback(
+    (user: { userId: string; username: string }) => {
+      setPendingChatUser(user);
+      setShowChatTypePicker(true);
+    },
+    []
+  );
+  const closeChatTypePicker = useCallback(() => {
+    setShowChatTypePicker(false);
+    setPendingChatUser(null);
+  }, []);
 
   return {
     showNewChat,
     showNewGroup,
     showGroupMembers,
     showSettings,
+    showChatTypePicker,
+    pendingChatUser,
     mobileShowConversation,
     chatNotice,
     mobileCreateMenuOpen,
@@ -103,5 +122,7 @@ export function useChatWorkspaceUiState(): ChatWorkspaceUiState {
     closeGroupMembers,
     openSettings,
     closeSettings,
+    openChatTypePicker,
+    closeChatTypePicker,
   };
 }

@@ -11,6 +11,7 @@ import { RoomJoinPage } from "./pages/RoomJoinPage";
 import { useAuthStore } from "./stores/auth";
 import { useMessagesStore } from "./stores/messages";
 import { useGroupsStore } from "./stores/groups";
+import { usePlainMessagesStore, usePlainGroupsStore } from "./stores/plain";
 
 /** 15 minutes — configurable in Settings (future). */
 const LOCK_TIMEOUT_MS = 15 * 60 * 1000;
@@ -169,9 +170,13 @@ export function App() {
   useEffect(() => {
     const stopMessagesListening = useMessagesStore.getState().startListening();
     const stopGroupsListening = useGroupsStore.getState().startListening();
+    const stopPlainMessagesListening = usePlainMessagesStore.getState().subscribe();
+    const stopPlainGroupsListening = usePlainGroupsStore.getState().subscribe();
     return () => {
       stopMessagesListening();
       stopGroupsListening();
+      stopPlainMessagesListening();
+      stopPlainGroupsListening();
     };
   }, []);
 

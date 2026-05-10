@@ -1,4 +1,4 @@
-import { lazy, memo, Suspense, type MutableRefObject } from "react";
+import { lazy, memo, Suspense, useCallback, type MutableRefObject } from "react";
 import type { MessageComposerHandle } from "@/chats/presentation/MessageComposer";
 import { PillButton, StatusBadge, SurfacePanel } from "@/components/ui";
 import type {
@@ -6,7 +6,6 @@ import type {
   ThreadPaneState,
   TranslateFn,
   WorkspaceEntryState,
-  WorkspaceInteractions,
 } from "./chat-page-types";
 import styles from "../ChatPage.module.css";
 
@@ -20,25 +19,127 @@ export const ChatThreadComposer = memo(function ChatThreadComposer({
   activeThreadKind,
   activeConversation,
   activeGroup,
+  activePlainConversation,
+  activePlainGroup,
   directTrustBlocked,
   t,
   security,
   activeListId,
   messageComposerRef,
-  interactions,
+  onComposerFocusChange,
   threadPaneState,
+  sendPlainText,
+  sendPlainAttachment,
+  sendPlainGroupText,
+  sendPlainGroupAttachment,
 }: {
   activeThreadKind: WorkspaceEntryState["activeThreadKind"];
   activeConversation: WorkspaceEntryState["activeConversation"];
   activeGroup: WorkspaceEntryState["activeGroup"];
+  activePlainConversation: WorkspaceEntryState["activePlainConversation"];
+  activePlainGroup: WorkspaceEntryState["activePlainGroup"];
   directTrustBlocked: WorkspaceEntryState["directTrustBlocked"];
   t: TranslateFn;
   security: SecurityWorkspaceState;
   activeListId: WorkspaceEntryState["activeListId"];
   messageComposerRef: MutableRefObject<MessageComposerHandle | null>;
-  interactions: WorkspaceInteractions;
+  onComposerFocusChange: (focused: boolean) => void;
   threadPaneState: ThreadPaneState;
+  sendPlainText: WorkspaceEntryState["sendPlainText"];
+  sendPlainAttachment: WorkspaceEntryState["sendPlainAttachment"];
+  sendPlainGroupText: WorkspaceEntryState["sendPlainGroupText"];
+  sendPlainGroupAttachment: WorkspaceEntryState["sendPlainGroupAttachment"];
 }) {
+  const handlePlainDirectSendText = useCallback(
+    async (content: string) => {
+      if (!activePlainConversation) return;
+      await sendPlainText(activePlainConversation.userId, activePlainConversation.username, content);
+    },
+    [activePlainConversation, sendPlainText]
+  );
+
+  const handlePlainDirectSendFile = useCallback(
+    async (file: File, mediaGroupId?: string, caption?: string) => {
+      if (!activePlainConversation) return;
+      await sendPlainAttachment(activePlainConversation.userId, activePlainConversation.username, file, {
+        kind: "file",
+        mediaGroupId,
+        caption,
+      });
+    },
+    [activePlainConversation, sendPlainAttachment]
+  );
+
+  const handlePlainDirectSendVoice = useCallback(
+    async (blob: Blob, durationMs: number) => {
+      if (!activePlainConversation) return;
+      await sendPlainAttachment(
+        activePlainConversation.userId,
+        activePlainConversation.username,
+        new File([blob], "voice.ogg", { type: blob.type }),
+        { kind: "voice_note", durationMs }
+      );
+    },
+    [activePlainConversation, sendPlainAttachment]
+  );
+
+  const handlePlainDirectSendVideo = useCallback(
+    async (blob: Blob, durationMs: number) => {
+      if (!activePlainConversation) return;
+      await sendPlainAttachment(
+        activePlainConversation.userId,
+        activePlainConversation.username,
+        new File([blob], "video.mp4", { type: blob.type }),
+        { kind: "video_note", durationMs }
+      );
+    },
+    [activePlainConversation, sendPlainAttachment]
+  );
+
+  const handlePlainGroupSendText = useCallback(
+    async (content: string) => {
+      if (!activePlainGroup) return;
+      await sendPlainGroupText(activePlainGroup.groupId, content);
+    },
+    [activePlainGroup, sendPlainGroupText]
+  );
+
+  const handlePlainGroupSendFile = useCallback(
+    async (file: File, mediaGroupId?: string, caption?: string) => {
+      if (!activePlainGroup) return;
+      await sendPlainGroupAttachment(activePlainGroup.groupId, file, {
+        kind: "file",
+        mediaGroupId,
+        caption,
+      });
+    },
+    [activePlainGroup, sendPlainGroupAttachment]
+  );
+
+  const handlePlainGroupSendVoice = useCallback(
+    async (blob: Blob, durationMs: number) => {
+      if (!activePlainGroup) return;
+      await sendPlainGroupAttachment(
+        activePlainGroup.groupId,
+        new File([blob], "voice.ogg", { type: blob.type }),
+        { kind: "voice_note", durationMs }
+      );
+    },
+    [activePlainGroup, sendPlainGroupAttachment]
+  );
+
+  const handlePlainGroupSendVideo = useCallback(
+    async (blob: Blob, durationMs: number) => {
+      if (!activePlainGroup) return;
+      await sendPlainGroupAttachment(
+        activePlainGroup.groupId,
+        new File([blob], "video.mp4", { type: blob.type }),
+        { kind: "video_note", durationMs }
+      );
+    },
+    [activePlainGroup, sendPlainGroupAttachment]
+  );
+
   const isDirectThread = activeThreadKind === "direct" && activeConversation;
   if (isDirectThread && directTrustBlocked) {
     return (
@@ -65,7 +166,7 @@ export const ChatThreadComposer = memo(function ChatThreadComposer({
           key={activeListId ?? "direct:unknown"}
           ref={messageComposerRef}
           recipientUserId={activeConversation.userId}
-          onFocusChange={interactions.handleComposerFocusChange}
+          onFocusChange={onComposerFocusChange}
           replyTo={threadPaneState.replyToMeta}
           onClearReply={threadPaneState.handleClearReply}
         />
@@ -79,9 +180,44 @@ export const ChatThreadComposer = memo(function ChatThreadComposer({
           key={activeListId ?? "group:unknown"}
           ref={messageComposerRef}
           groupId={activeGroup.groupId}
-          onFocusChange={interactions.handleComposerFocusChange}
+          onFocusChange={onComposerFocusChange}
           replyTo={threadPaneState.replyToMeta}
           onClearReply={threadPaneState.handleClearReply}
+        />
+      </Suspense>
+    );
+  }
+  if (activeThreadKind === "plain-direct" && activePlainConversation) {
+    return (
+      <Suspense fallback={<div className={styles.composerLazyFallback} aria-hidden="true" />}>
+        <MessageComposer
+          key={activeListId ?? "plain-direct:unknown"}
+          ref={messageComposerRef}
+          onFocusChange={onComposerFocusChange}
+          replyTo={threadPaneState.replyToMeta}
+          onClearReply={threadPaneState.handleClearReply}
+          onSendText={handlePlainDirectSendText}
+          onSendFile={handlePlainDirectSendFile}
+          onSendVoiceBlob={handlePlainDirectSendVoice}
+          onSendVideoBlob={handlePlainDirectSendVideo}
+        />
+      </Suspense>
+    );
+  }
+  if (activeThreadKind === "plain-group" && activePlainGroup) {
+    return (
+      <Suspense fallback={<div className={styles.composerLazyFallback} aria-hidden="true" />}>
+        <MessageComposer
+          key={activeListId ?? "plain-group:unknown"}
+          ref={messageComposerRef}
+          onFocusChange={onComposerFocusChange}
+          replyTo={threadPaneState.replyToMeta}
+          onClearReply={threadPaneState.handleClearReply}
+          onSendText={handlePlainGroupSendText}
+          onSendFile={handlePlainGroupSendFile}
+          onSendVoiceBlob={handlePlainGroupSendVoice}
+          onSendVideoBlob={handlePlainGroupSendVideo}
+          isGroupComposer
         />
       </Suspense>
     );

@@ -39,7 +39,7 @@ export function VideoNoteAttachment({
     mediaKey,
     activeMediaKey,
     onActiveMediaChange,
-    autoDecrypt: autoDecryptMedia === "on" && uploadProgress === null,
+    autoDecrypt: (autoDecryptMedia === "on" || !!msg.attachment?.isPlain) && uploadProgress === null,
   });
 
   const expectedDurationSeconds = duration > 0

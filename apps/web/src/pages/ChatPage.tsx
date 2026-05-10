@@ -136,6 +136,7 @@ export function ChatPage() {
     createGroup,
     directTrustBlocked,
     ensureConversation,
+    ensurePlainConversation,
     globalGroupCallAlerts,
     groupCallNoticeSurface,
     groupCallSession,
@@ -148,6 +149,16 @@ export function ChatPage() {
     handleSelectThread,
     handleStartGroupCall,
     missedCall,
+    activePlainConversation,
+    activePlainGroup,
+    plainActivePresence,
+    plainConversationEntries,
+    plainGroupEntries,
+    sendPlainText,
+    sendPlainAttachment,
+    createPlainGroup,
+    sendPlainGroupText,
+    sendPlainGroupAttachment,
   } = useChatWorkspaceEntry({
     userId,
     setMobileShowConversation: workspaceUiState.setMobileShowConversation,
@@ -225,11 +236,15 @@ export function ChatPage() {
 
   const interactions = useChatWorkspaceInteractions({
     activeConversation: activeConversationSummary,
+    activePlainConversation: activePlainConversation
+      ? { userId: activePlainConversation.userId, username: activePlainConversation.username }
+      : null,
     activeGroup: activeGroupSummary,
     activeThreadKind,
     directCallPanelRef,
     showChatNotice: workspaceUiState.showChatNotice,
     ensureConversation,
+    ensurePlainConversation,
     handleSelectThread,
     logout,
     lock,
@@ -240,6 +255,8 @@ export function ChatPage() {
     openNewGroup: workspaceUiState.openNewGroup,
     openGroupMembers: workspaceUiState.openGroupMembers,
     closeGroupMembers: workspaceUiState.closeGroupMembers,
+    openChatTypePicker: workspaceUiState.openChatTypePicker,
+    closeChatTypePicker: workspaceUiState.closeChatTypePicker,
   });
 
   const handleDropFiles = useCallback(async (files: File[]) => {
@@ -249,6 +266,17 @@ export function ChatPage() {
   const directPresenceLabel = useMemo(
     () => resolveDirectPresenceLabel({ activeConversationUserId, activeTyping, activePresence, locale, t }),
     [activeConversationUserId, activeTyping, activePresence, locale, t]
+  );
+
+  const plainDirectPresenceLabel = useMemo(
+    () => resolveDirectPresenceLabel({
+      activeConversationUserId: activePlainConversation?.userId ?? null,
+      activeTyping: false,
+      activePresence: plainActivePresence,
+      locale,
+      t,
+    }),
+    [activePlainConversation, plainActivePresence, locale, t]
   );
 
   const activeGroupCallCallerLabel = useMemo(
@@ -281,7 +309,10 @@ export function ChatPage() {
       activeThreadKind={activeThreadKind}
       activeConversation={activeConversation}
       activeGroup={activeGroup}
+      activePlainConversation={activePlainConversation}
+      activePlainGroup={activePlainGroup}
       directPresenceLabel={directPresenceLabel}
+      plainDirectPresenceLabel={plainDirectPresenceLabel}
       security={security}
       t={t}
       handleBack={handleBack}
@@ -300,13 +331,19 @@ export function ChatPage() {
       activeThreadKind={activeThreadKind}
       activeConversation={activeConversation}
       activeGroup={activeGroup}
+      activePlainConversation={activePlainConversation}
+      activePlainGroup={activePlainGroup}
       directTrustBlocked={directTrustBlocked}
       t={t}
       security={security}
       activeListId={activeListId}
       messageComposerRef={messageComposerRef}
-      interactions={interactions}
+      onComposerFocusChange={interactions.handleComposerFocusChange}
       threadPaneState={threadPaneState}
+      sendPlainText={sendPlainText}
+      sendPlainAttachment={sendPlainAttachment}
+      sendPlainGroupText={sendPlainGroupText}
+      sendPlainGroupAttachment={sendPlainGroupAttachment}
     />
   );
 
@@ -317,6 +354,8 @@ export function ChatPage() {
         canLock={pinEnabled}
         conversations={conversationEntries}
         groups={groupEntries}
+        plainConversations={plainConversationEntries}
+        plainGroups={plainGroupEntries}
         activeId={activeListId}
         loading={!historyLoaded || loadingGroups}
         onSelectThread={handleSelectThread}

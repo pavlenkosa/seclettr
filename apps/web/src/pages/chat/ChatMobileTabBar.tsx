@@ -1,4 +1,4 @@
-import { useRef, type KeyboardEvent as ReactKeyboardEvent, type RefObject } from "react";
+import { useCallback, useRef, type KeyboardEvent as ReactKeyboardEvent, type RefObject } from "react";
 import { useI18n } from "@/i18n";
 import { useAnimatedPresence } from "@/lib/hooks";
 import { MOTION_DURATION_MS } from "@/lib/motion";
@@ -47,13 +47,27 @@ export function ChatMobileTabBar({
 }: ChatMobileTabBarProps) {
   const { t } = useI18n();
   const createFabRef = useRef<HTMLButtonElement | null>(null);
+  const pendingCreateActionRef = useRef<(() => void) | null>(null);
   const createMenuPresence = useAnimatedPresence({
     isOpen: isCreateMenuOpen,
     durationMs: MOTION_DURATION_MS.base,
     onHidden: () => {
+      const pendingCreateAction = pendingCreateActionRef.current;
+      pendingCreateActionRef.current = null;
+
+      if (pendingCreateAction) {
+        pendingCreateAction();
+        return;
+      }
+
       createFabRef.current?.focus();
     },
   });
+
+  const queueCreateAction = useCallback((action: () => void) => {
+    pendingCreateActionRef.current = action;
+    onCloseCreateMenu();
+  }, [onCloseCreateMenu]);
 
   const createMenuContent = (className?: string) => (
     <div
@@ -72,8 +86,7 @@ export function ChatMobileTabBar({
         type="button"
         className={styles.createMenuButton}
         onClick={() => {
-          onCloseCreateMenu();
-          onOpenNewChat();
+          queueCreateAction(onOpenNewChat);
         }}
         role="menuitem"
         aria-label={t("chat.newConversation")}
@@ -94,8 +107,7 @@ export function ChatMobileTabBar({
         type="button"
         className={styles.createMenuButton}
         onClick={() => {
-          onCloseCreateMenu();
-          onOpenNewGroup();
+          queueCreateAction(onOpenNewGroup);
         }}
         role="menuitem"
         aria-label={t("group.create.open")}

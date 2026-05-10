@@ -1,0 +1,815 @@
+import { create } from "zustand";
+import { api } from "@/lib/api";
+import { wsClient } from "@/lib/websocket";
+import { useAuthStore } from "@/stores/auth";
+import { logger } from "@/lib/logger";
+import { PLAIN_PROTOCOL_VERSION } from "@seclettr/protocol";
+import type {
+  PlainConversation,
+  PlainMessage,
+  PlainMessageType,
+  PlainAttachmentMeta,
+  PlainReplyMeta,
+} from "./types";
+
+// ─── Wire shapes from API ─────────────────────────────────────────────────────
+
+interface WirePlainMessage {
+  id: string;
+  clientId: string;
+  senderUserId: string;
+  senderUsername: string;
+  recipientUserId?: string;
+  recipientUsername?: string;
+  content: string;
+  messageType: string;
+  attachment?: {
+    attachmentId: string;
+    contentType: string;
+    fileName?: string;
+    size: number;
+    durationMs?: number;
+    mediaGroupId?: string;
+  };
+  replyTo?: { id: string; content: string; senderName?: string };
+  createdAt: string;
+  editedAt?: string;
+}
+
+interface WireHistoryResponse {
+  messages: WirePlainMessage[];
+  hasMore: boolean;
+  nextCursor?: string;
+}
+
+interface WireSendResponse {
+  id: string;
+  clientId: string;
+  createdAt: string;
+}
+
+interface WireInitUploadResponse {
+  attachmentId: string;
+  uploadUrl: string;
+  uploadFields?: Record<string, string>;
+  expiresAt: string;
+}
+
+interface WireConfirmUploadResponse {
+  attachmentId: string;
+  downloadUrl: string;
+}
+
+// ─── Store state / actions ────────────────────────────────────────────────────
+
+export interface PlainMessagesState {
+  conversations: Record<string, PlainConversation>;
+  wsConnected: boolean;
+
+  /** Fetch list of all plain DM peers and seed conversation stubs */
+  loadConversationList: () => Promise<void>;
+  /** Load paginated history for a DM conversation */
+  loadHistory: (userId: string, username: string) => Promise<void>;
+  /** Load next page (older messages) */
+  loadMoreHistory: (userId: string) => Promise<void>;
+
+  /** Send a text message */
+  sendText: (
+    recipientUserId: string,
+    recipientUsername: string,
+    content: string,
+    replyTo?: PlainReplyMeta
+  ) => Promise<void>;
+
+  /** Send a file/voice/video attachment */
+  sendAttachment: (
+    recipientUserId: string,
+    recipientUsername: string,
+    file: File,
+    opts?: {
+      kind?: "voice_note" | "video_note" | "file";
+      durationMs?: number;
+      mediaGroupId?: string;
+      caption?: string;
+      replyTo?: PlainReplyMeta;
+    }
+  ) => Promise<void>;
+
+  /** Edit a sent text message */
+  editMessage: (conversationUserId: string, messageId: string, content: string) => Promise<void>;
+
+  /** Delete a message */
+  deleteMessage: (conversationUserId: string, messageId: string) => Promise<void>;
+
+  /** Record a completed call into the conversation history (local only, not persisted) */
+  recordCallEvent: (params: {
+    userId: string;
+    username: string;
+    mode: "audio" | "video";
+    direction: "inbound" | "outbound";
+    outcome: "ended" | "declined" | "missed";
+    durationSec?: number;
+  }) => void;
+  /** Mark conversation as read (reset unreadCount) */
+  markRead: (userId: string) => void;
+
+  /** Subscribe to WS events and connection changes — call once on mount */
+  subscribe: () => () => void;
+
+  /** Reset on logout */
+  reset: () => void;
+}
+
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+
+function wireToPlainMessage(wire: WirePlainMessage, myUserId: string): PlainMessage {
+  return {
+    id: wire.id,
+    clientId: wire.clientId,
+    senderId: wire.senderUserId,
+    senderName: wire.senderUsername,
+    content: wire.content,
+    type: wire.messageType as PlainMessageType,
+    attachment: wire.attachment
+      ? {
+          attachmentId: wire.attachment.attachmentId,
+          contentType: wire.attachment.contentType,
+          fileName: wire.attachment.fileName,
+          size: wire.attachment.size,
+          durationMs: wire.attachment.durationMs,
+          mediaGroupId: wire.attachment.mediaGroupId,
+        }
+      : undefined,
+    replyTo: wire.replyTo,
+    timestamp: new Date(wire.createdAt).getTime(),
+    editedAt: wire.editedAt ? new Date(wire.editedAt).getTime() : undefined,
+    isOwn: wire.senderUserId === myUserId,
+    status: "sent",
+  };
+}
+
+function mergeIncomingMessage(
+  conversations: Record<string, PlainConversation>,
+  conversationKey: string,
+  msg: PlainMessage,
+  username: string
+): Record<string, PlainConversation> {
+  const existing = conversations[conversationKey];
+  if (existing) {
+    const alreadyExists = existing.messages.some(
+      (m) => m.id === msg.id || m.clientId === msg.clientId
+    );
+    if (alreadyExists) {
+      // Update status of optimistic message to sent
+      const messages = existing.messages.map((m) =>
+        m.clientId === msg.clientId ? { ...m, id: msg.id, status: "sent" as const, uploadProgress: undefined } : m
+      );
+      return {
+        ...conversations,
+        [conversationKey]: {
+          ...existing,
+          messages,
+          lastMessageAt: Math.max(existing.lastMessageAt, msg.timestamp),
+        },
+      };
+    }
+    return {
+      ...conversations,
+      [conversationKey]: {
+        ...existing,
+        messages: [...existing.messages, msg],
+        lastMessageAt: Math.max(existing.lastMessageAt, msg.timestamp),
+        unreadCount: msg.isOwn ? existing.unreadCount : existing.unreadCount + 1,
+      },
+    };
+  }
+  return {
+    ...conversations,
+    [conversationKey]: {
+      userId: conversationKey,
+      username,
+      messages: [msg],
+      lastMessageAt: msg.timestamp,
+      unreadCount: msg.isOwn ? 0 : 1,
+      hasMore: false,
+      historyLoaded: false,
+    },
+  };
+}
+
+// ─── Store ────────────────────────────────────────────────────────────────────
+
+export const usePlainMessagesStore = create<PlainMessagesState>((set, get) => {
+  function getMyUserId(): string | null {
+    return useAuthStore.getState().userId;
+  }
+  function getMyUsername(): string | null {
+    return useAuthStore.getState().username;
+  }
+
+  function conversationKeyFor(otherUserId: string): string {
+    return otherUserId;
+  }
+
+  async function loadConversationList(): Promise<void> {
+    try {
+      const data = await api.get<{
+        conversations: Array<{ peerUserId: string; peerUsername: string; lastMessageAt: string }>;
+      }>("/plain/conversations");
+
+      set((state) => {
+        const next = { ...state.conversations };
+        for (const c of data.conversations) {
+          const key = conversationKeyFor(c.peerUserId);
+          if (!next[key]) {
+            next[key] = {
+              userId: c.peerUserId,
+              username: c.peerUsername,
+              messages: [],
+              lastMessageAt: new Date(c.lastMessageAt).getTime(),
+              unreadCount: 0,
+              hasMore: false,
+              historyLoaded: false,
+            };
+          }
+        }
+        return { conversations: next };
+      });
+    } catch (err) {
+      logger.error("[PlainMsg] loadConversationList failed", err);
+    }
+  }
+
+  async function loadHistory(userId: string, username: string): Promise<void> {
+    const key = conversationKeyFor(userId);
+    const existing = get().conversations[key];
+    if (existing?.historyLoaded) return;
+
+    try {
+      const data = await api.get<WireHistoryResponse>(
+        `/plain/messages/${encodeURIComponent(userId)}?limit=50`
+      );
+      const myUserId = getMyUserId() ?? "";
+      const messages = [...data.messages]
+        .reverse()
+        .map((w) => wireToPlainMessage(w, myUserId));
+
+      set((state) => ({
+        conversations: {
+          ...state.conversations,
+          [key]: {
+            userId,
+            username,
+            messages,
+            lastMessageAt: messages.at(-1)?.timestamp ?? 0,
+            unreadCount: 0,
+            nextCursor: data.nextCursor,
+            hasMore: data.hasMore,
+            historyLoaded: true,
+          },
+        },
+      }));
+    } catch (err) {
+      logger.error("[PlainMsg] loadHistory failed", err);
+    }
+  }
+
+  async function loadMoreHistory(userId: string): Promise<void> {
+    const key = conversationKeyFor(userId);
+    const conv = get().conversations[key];
+    if (!conv?.hasMore || !conv.nextCursor) return;
+
+    try {
+      const data = await api.get<WireHistoryResponse>(
+        `/plain/messages/${encodeURIComponent(userId)}?limit=50&before=${encodeURIComponent(conv.nextCursor)}`
+      );
+      const myUserId = getMyUserId() ?? "";
+      const older = [...data.messages].reverse().map((w) => wireToPlainMessage(w, myUserId));
+
+      set((state) => {
+        const existing = state.conversations[key];
+        if (!existing) return state;
+        return {
+          conversations: {
+            ...state.conversations,
+            [key]: {
+              ...existing,
+              messages: [...older, ...existing.messages],
+              nextCursor: data.nextCursor,
+              hasMore: data.hasMore,
+            },
+          },
+        };
+      });
+    } catch (err) {
+      logger.error("[PlainMsg] loadMoreHistory failed", err);
+    }
+  }
+
+  async function sendText(
+    recipientUserId: string,
+    recipientUsername: string,
+    content: string,
+    replyTo?: PlainReplyMeta
+  ): Promise<void> {
+    const myUserId = getMyUserId();
+    const myUsername = getMyUsername();
+    if (!myUserId || !myUsername) return;
+
+    const clientId = crypto.randomUUID();
+    const key = conversationKeyFor(recipientUserId);
+    const optimistic: PlainMessage = {
+      id: clientId,
+      clientId,
+      senderId: myUserId,
+      senderName: myUsername,
+      content,
+      type: "text",
+      replyTo,
+      timestamp: Date.now(),
+      isOwn: true,
+      status: "sending",
+    };
+
+    set((state) => ({
+      conversations: mergeIncomingMessage(
+        state.conversations,
+        key,
+        optimistic,
+        recipientUsername
+      ),
+    }));
+
+    try {
+      await api.post<WireSendResponse>(
+        `/plain/messages/${encodeURIComponent(recipientUserId)}`,
+        {
+          version: PLAIN_PROTOCOL_VERSION,
+          clientId,
+          content,
+          messageType: "text",
+          replyToId: replyTo?.id,
+        }
+      );
+    } catch (err) {
+      logger.error("[PlainMsg] sendText failed", err);
+      set((state) => {
+        const conv = state.conversations[key];
+        if (!conv) return state;
+        return {
+          conversations: {
+            ...state.conversations,
+            [key]: {
+              ...conv,
+              messages: conv.messages.map((m) =>
+                m.clientId === clientId ? { ...m, status: "error" as const } : m
+              ),
+            },
+          },
+        };
+      });
+    }
+  }
+
+  async function sendAttachment(
+    recipientUserId: string,
+    recipientUsername: string,
+    file: File,
+    opts: {
+      kind?: "voice_note" | "video_note" | "file";
+      durationMs?: number;
+      mediaGroupId?: string;
+      caption?: string;
+      replyTo?: PlainReplyMeta;
+    } = {}
+  ): Promise<void> {
+    const myUserId = getMyUserId();
+    const myUsername = getMyUsername();
+    if (!myUserId || !myUsername) return;
+
+    const kind = opts.kind ?? "file";
+    const messageType: PlainMessageType =
+      kind === "voice_note" ? "voice_note" : kind === "video_note" ? "video_note" : "attachment";
+
+    const clientId = crypto.randomUUID();
+    const key = conversationKeyFor(recipientUserId);
+    const localUrl = URL.createObjectURL(file);
+
+    const optimistic: PlainMessage = {
+      id: clientId,
+      clientId,
+      senderId: myUserId,
+      senderName: myUsername,
+      content: opts.caption ?? "",
+      type: messageType,
+      attachment: {
+        attachmentId: "",
+        contentType: file.type,
+        fileName: file.name,
+        size: file.size,
+        durationMs: opts.durationMs,
+        mediaGroupId: opts.mediaGroupId,
+        localUrl,
+      },
+      replyTo: opts.replyTo,
+      timestamp: Date.now(),
+      isOwn: true,
+      status: "sending",
+      uploadProgress: 0,
+    };
+
+    set((state) => ({
+      conversations: mergeIncomingMessage(
+        state.conversations,
+        key,
+        optimistic,
+        recipientUsername
+      ),
+    }));
+
+    function setProgress(progress: number) {
+      set((state) => {
+        const conv = state.conversations[key];
+        if (!conv) return state;
+        return {
+          conversations: {
+            ...state.conversations,
+            [key]: {
+              ...conv,
+              messages: conv.messages.map((m) =>
+                m.clientId === clientId ? { ...m, uploadProgress: progress } : m
+              ),
+            },
+          },
+        };
+      });
+    }
+
+    try {
+      // 1. Init upload
+      const initResp = await api.post<WireInitUploadResponse>("/plain/attachments/init", {
+        size: file.size,
+        contentType: file.type,
+        fileName: file.name,
+      });
+      const { attachmentId, uploadUrl, uploadFields } = initResp;
+
+      // 2. Upload to S3
+      if (uploadFields && Object.keys(uploadFields).length > 0) {
+        const formData = new FormData();
+        for (const [k, v] of Object.entries(uploadFields)) {
+          formData.append(k, v);
+        }
+        formData.append("file", file);
+        const xhr = new XMLHttpRequest();
+        await new Promise<void>((resolve, reject) => {
+          xhr.upload.onprogress = (e) => {
+            if (e.lengthComputable) setProgress(Math.round((e.loaded / e.total) * 90));
+          };
+          xhr.onload = () => {
+            if (xhr.status >= 200 && xhr.status < 300) resolve();
+            else reject(new Error(`S3 upload failed: ${xhr.status}`));
+          };
+          xhr.onerror = () => reject(new Error("S3 upload network error"));
+          xhr.open("POST", uploadUrl);
+          xhr.send(formData);
+        });
+      } else {
+        // Direct PUT
+        const xhr = new XMLHttpRequest();
+        await new Promise<void>((resolve, reject) => {
+          xhr.upload.onprogress = (e) => {
+            if (e.lengthComputable) setProgress(Math.round((e.loaded / e.total) * 90));
+          };
+          xhr.onload = () => {
+            if (xhr.status >= 200 && xhr.status < 300) resolve();
+            else reject(new Error(`Upload failed: ${xhr.status}`));
+          };
+          xhr.onerror = () => reject(new Error("Upload network error"));
+          xhr.open("PUT", uploadUrl);
+          xhr.setRequestHeader("Content-Type", file.type);
+          xhr.send(file);
+        });
+      }
+
+      setProgress(92);
+
+      // 3. Confirm
+      const confirmResp = await api.post<WireConfirmUploadResponse>(
+        `/plain/attachments/${encodeURIComponent(attachmentId)}/confirm`
+      );
+
+      setProgress(96);
+
+      // 4. Send message
+      await api.post<WireSendResponse>(
+        `/plain/messages/${encodeURIComponent(recipientUserId)}`,
+        {
+          version: PLAIN_PROTOCOL_VERSION,
+          clientId,
+          content: opts.caption ?? "",
+          messageType,
+          attachmentId,
+          durationMs: opts.durationMs,
+          mediaGroupId: opts.mediaGroupId,
+          replyToId: opts.replyTo?.id,
+        }
+      );
+
+      // Update optimistic message with real attachment info and download URL
+      set((state) => {
+        const conv = state.conversations[key];
+        if (!conv) return state;
+        return {
+          conversations: {
+            ...state.conversations,
+            [key]: {
+              ...conv,
+              messages: conv.messages.map((m) =>
+                m.clientId === clientId
+                  ? {
+                      ...m,
+                      status: "sent" as const,
+                      uploadProgress: undefined,
+                      attachment: m.attachment
+                        ? {
+                            ...m.attachment,
+                            attachmentId,
+                            localUrl: confirmResp.downloadUrl,
+                          }
+                        : undefined,
+                    }
+                  : m
+              ),
+            },
+          },
+        };
+      });
+
+      URL.revokeObjectURL(localUrl);
+    } catch (err) {
+      logger.error("[PlainMsg] sendAttachment failed", err);
+      URL.revokeObjectURL(localUrl);
+      set((state) => {
+        const conv = state.conversations[key];
+        if (!conv) return state;
+        return {
+          conversations: {
+            ...state.conversations,
+            [key]: {
+              ...conv,
+              messages: conv.messages.map((m) =>
+                m.clientId === clientId
+                  ? { ...m, status: "error" as const, uploadProgress: undefined }
+                  : m
+              ),
+            },
+          },
+        };
+      });
+    }
+  }
+
+  async function editMessage(conversationUserId: string, messageId: string, content: string): Promise<void> {
+    const key = conversationKeyFor(conversationUserId);
+    try {
+      await api.patch(`/plain/messages/${encodeURIComponent(messageId)}`, { content });
+      // Optimistic update — WS event will confirm with server editedAt
+      const now = Date.now();
+      set((state) => {
+        const conv = state.conversations[key];
+        if (!conv) return state;
+        return {
+          conversations: {
+            ...state.conversations,
+            [key]: {
+              ...conv,
+              messages: conv.messages.map((m) =>
+                m.id === messageId ? { ...m, content, editedAt: now } : m
+              ),
+            },
+          },
+        };
+      });
+    } catch (err) {
+      logger.error("[PlainMsg] editMessage failed", err);
+    }
+  }
+
+  async function deleteMessage(conversationUserId: string, messageId: string): Promise<void> {
+    const key = conversationKeyFor(conversationUserId);
+    try {
+      await api.delete(`/plain/messages/${encodeURIComponent(messageId)}`);
+      set((state) => {
+        const conv = state.conversations[key];
+        if (!conv) return state;
+        return {
+          conversations: {
+            ...state.conversations,
+            [key]: {
+              ...conv,
+              messages: conv.messages.filter((m) => m.id !== messageId),
+            },
+          },
+        };
+      });
+    } catch (err) {
+      logger.error("[PlainMsg] deleteMessage failed", err);
+    }
+  }
+
+  function recordCallEvent({
+    userId,
+    username,
+    mode,
+    direction,
+    outcome,
+    durationSec,
+  }: {
+    userId: string;
+    username: string;
+    mode: "audio" | "video";
+    direction: "inbound" | "outbound";
+    outcome: "ended" | "declined" | "missed";
+    durationSec?: number;
+  }): void {
+    const key = conversationKeyFor(userId);
+    const myUserId = getMyUserId();
+    const callMessage: PlainMessage = {
+      id: `call-${crypto.randomUUID()}`,
+      clientId: crypto.randomUUID(),
+      senderId: direction === "outbound" ? (myUserId ?? userId) : userId,
+      senderName: direction === "outbound" ? (getMyUsername() ?? "") : username,
+      content: "",
+      type: "call",
+      call: {
+        mode,
+        direction,
+        outcome,
+        durationSec: Number.isFinite(durationSec) && (durationSec ?? 0) > 0 ? durationSec : undefined,
+      },
+      timestamp: Date.now(),
+      isOwn: direction === "outbound",
+      status: "sent",
+    };
+
+    set((state) => {
+      const existing = state.conversations[key];
+      const conv: PlainConversation = existing ?? {
+        userId,
+        username,
+        messages: [],
+        lastMessageAt: 0,
+        unreadCount: 0,
+        hasMore: false,
+        historyLoaded: false,
+      };
+      return {
+        conversations: {
+          ...state.conversations,
+          [key]: {
+            ...conv,
+            messages: [...conv.messages, callMessage],
+            lastMessageAt: callMessage.timestamp,
+          },
+        },
+      };
+    });
+  }
+
+  function markRead(userId: string): void {
+    const key = conversationKeyFor(userId);
+    set((state) => {
+      const conv = state.conversations[key];
+      if (!conv || conv.unreadCount === 0) return state;
+      return {
+        conversations: {
+          ...state.conversations,
+          [key]: { ...conv, unreadCount: 0 },
+        },
+      };
+    });
+  }
+
+  function handleIncomingWsEvent(message: { type: string; [k: string]: unknown }): void {
+    const myUserId = getMyUserId();
+    if (!myUserId) return;
+
+    if (message.type === "plain_message.new") {
+      const wire = message.message as WirePlainMessage;
+      const conversationKey = wire.senderUserId === myUserId
+        ? (wire.recipientUserId ?? "")
+        : wire.senderUserId;
+      if (!conversationKey) return;
+
+      const msg = wireToPlainMessage(wire, myUserId);
+      const peerUsername = wire.senderUserId === myUserId
+        ? (get().conversations[conversationKey]?.username ?? wire.recipientUsername ?? conversationKey)
+        : wire.senderUsername;
+
+      set((state) => ({
+        conversations: mergeIncomingMessage(
+          state.conversations,
+          conversationKey,
+          msg,
+          peerUsername
+        ),
+      }));
+      return;
+    }
+
+    if (message.type === "plain_message.edited") {
+      const { messageId, content, editedAt, threadKey, threadKind } = message as unknown as {
+        messageId: string;
+        content: string;
+        editedAt: string;
+        threadKey: string;
+        threadKind: string;
+      };
+      if (threadKind !== "dm") return;
+      const editedAtMs = new Date(editedAt).getTime();
+      set((state) => {
+        const conv = state.conversations[threadKey];
+        if (!conv) return state;
+        return {
+          conversations: {
+            ...state.conversations,
+            [threadKey]: {
+              ...conv,
+              messages: conv.messages.map((m) =>
+                m.id === messageId ? { ...m, content, editedAt: editedAtMs } : m
+              ),
+            },
+          },
+        };
+      });
+      return;
+    }
+
+    if (message.type === "plain_message.deleted") {
+      const { messageId, threadKey, threadKind } = message as unknown as {
+        messageId: string;
+        threadKey: string;
+        threadKind: string;
+      };
+      if (threadKind !== "dm") return;
+      set((state) => {
+        const conv = state.conversations[threadKey];
+        if (!conv) return state;
+        return {
+          conversations: {
+            ...state.conversations,
+            [threadKey]: {
+              ...conv,
+              messages: conv.messages.filter((m) => m.id !== messageId),
+            },
+          },
+        };
+      });
+    }
+  }
+
+  function subscribe(): () => void {
+    const unsubscribeMessages = wsClient.on((message) => {
+      if (
+        message.type === "plain_message.new" ||
+        message.type === "plain_message.edited" ||
+        message.type === "plain_message.deleted"
+      ) {
+        handleIncomingWsEvent(message as unknown as { type: string; [k: string]: unknown });
+      }
+    });
+
+    const unsubscribeConnection = wsClient.onConnectionChange((connected) => {
+      set({ wsConnected: connected });
+    });
+
+    return () => {
+      unsubscribeMessages();
+      unsubscribeConnection();
+    };
+  }
+
+  function reset(): void {
+    set({
+      conversations: {},
+      wsConnected: wsClient.connected,
+    });
+  }
+
+  return {
+    conversations: {},
+    wsConnected: wsClient.connected,
+    loadConversationList,
+    loadHistory,
+    loadMoreHistory,
+    sendText,
+    sendAttachment,
+    editMessage,
+    deleteMessage,
+    recordCallEvent,
+    markRead,
+    subscribe,
+    reset,
+  };
+});

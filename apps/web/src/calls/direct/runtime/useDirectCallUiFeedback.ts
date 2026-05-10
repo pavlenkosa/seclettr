@@ -7,6 +7,7 @@ import {
 } from "react";
 import { shouldHydrateUserLabel } from "@/lib/user-labels";
 import { useMessagesStore } from "@/stores/messages";
+import { usePlainMessagesStore } from "@/stores/plain";
 import {
   formatPeerLabel,
 } from "@/calls/direct/model/direct-call-ui-utils";
@@ -50,14 +51,22 @@ export function useDirectCallUiFeedback({
   }, []);
 
   const recordCallEvent = useCallback((params: RecordCallEventParams) => {
-    useMessagesStore.getState().recordCallEvent({
+    const peerLabel = resolvePeerLabel(params.userId, params.fallbackLabel);
+    const callData = {
       userId: params.userId,
-      username: resolvePeerLabel(params.userId, params.fallbackLabel),
+      username: peerLabel,
       mode: params.mode,
       direction: params.direction,
       outcome: params.outcome,
       durationSec: params.durationSec,
-    });
+    };
+    // Write to plain-chat history if the peer has a plain conversation, E2EE otherwise.
+    const plainConversations = usePlainMessagesStore.getState().conversations;
+    if (plainConversations[params.userId]) {
+      usePlainMessagesStore.getState().recordCallEvent(callData);
+    } else {
+      useMessagesStore.getState().recordCallEvent(callData);
+    }
   }, [resolvePeerLabel]);
 
   const pushNotice = useCallback((next: CallNotice, timeoutMs = 4500) => {

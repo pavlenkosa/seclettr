@@ -157,6 +157,32 @@ export function resolveChatAttachmentErrorCause(
   return fallback;
 }
 
+async function fetchPlainAttachmentBlob(attachment: AttachmentMessageMeta): Promise<Blob> {
+  // If we still have a local blob URL from optimistic sending, use it directly
+  if (attachment.localUrl && !attachment.localUrl.startsWith("https://in-memory")) {
+    try {
+      const resp = await fetch(attachment.localUrl);
+      if (resp.ok) return new Blob([await resp.arrayBuffer()], { type: attachment.mimeType });
+    } catch {
+      // fall through to API fetch
+    }
+  }
+
+  // Fetch a fresh presigned download URL from the plain attachments API
+  const meta = await api.get<{ attachmentId: string; downloadUrl: string }>(
+    `/plain/attachments/${encodeURIComponent(attachment.attachmentId)}`
+  );
+
+  const response = await fetch(meta.downloadUrl);
+  if (!response.ok) {
+    throw createChatAttachmentRuntimeError(
+      "downloadFailed",
+      `Plain attachment download failed (${response.status})`
+    );
+  }
+  return new Blob([await response.arrayBuffer()], { type: attachment.mimeType });
+}
+
 export async function fetchAndDecryptAttachmentBlob(
   attachment: AttachmentMessageMeta,
   options: FetchAndDecryptAttachmentBlobOptions = {}
@@ -166,6 +192,10 @@ export async function fetchAndDecryptAttachmentBlob(
     if (localSourceBlob) {
       return localSourceBlob;
     }
+  }
+
+  if (attachment.isPlain) {
+    return fetchPlainAttachmentBlob(attachment);
   }
 
   const signed = await fetchAttachmentCiphertext(attachment.attachmentId);

@@ -1,0 +1,652 @@
+/**
+ * Plain group routes.
+ *
+ * POST /plain/groups                       → create group
+ * GET  /plain/groups                       → list my groups
+ * GET  /plain/groups/:id                   → get group details
+ * POST /plain/groups/:id/members           → add member
+ * DELETE /plain/groups/:id/members/:userId → remove member
+ * POST /plain/groups/:id/messages          → send group message
+ * GET  /plain/groups/:id/messages          → paginated group history
+ * PATCH /plain/groups/:id/messages/:msgId  → edit group message
+ * DELETE /plain/groups/:id/messages/:msgId → delete group message
+ */
+import type { FastifyInstance } from "fastify";
+import { randomUUID } from "node:crypto";
+import { requireAuth } from "../../middleware/auth.js";
+import { query, transaction } from "../../db/pool.js";
+import { parseOrReply } from "../../utils/validation.js";
+import { consumeFixedWindowRateLimit } from "../../utils/fixed-window-rate-limit.js";
+import { publishPlainMessageToUser } from "../../services/plain-ws.js";
+import { getPushPreferences, sendPushToUser } from "../../services/push.js";
+import { buildGroupMessagePushPayload } from "../../services/push-payloads.js";
+import { hasActiveConnectionForUserAcrossCluster } from "../../services/websocket.js";
+import {
+  SendPlainMessageRequestSchema,
+  EditPlainMessageRequestSchema,
+  CreatePlainGroupRequestSchema,
+  AddPlainGroupMemberRequestSchema,
+} from "@seclettr/protocol";
+
+async function fetchUsername(userId: string): Promise<string | null> {
+  const [row] = await query<{ username: string }>(
+    "SELECT username FROM users WHERE id = $1",
+    [userId]
+  );
+  return row?.username ?? null;
+}
+
+const CREATE_RATE_MAX = 5;
+const CREATE_RATE_WINDOW_SEC = 3600;
+const SEND_RATE_MAX = 60;
+const SEND_RATE_WINDOW_SEC = 60;
+const GROUP_MAX_MEMBERS = 256;
+const USER_MAX_GROUPS = 200;
+const PAGE_LIMIT = 50;
+
+interface GroupRow {
+  id: string;
+  name: string;
+  creator_id: string;
+  created_at: string;
+  updated_at: string;
+}
+
+interface MemberRow {
+  user_id: string;
+  username: string;
+  role: string;
+  joined_at: string;
+}
+
+interface PlainGroupMsgRow {
+  id: string;
+  client_id: string;
+  sender_user_id: string;
+  sender_username: string;
+  group_id: string;
+  content: string;
+  message_type: string;
+  attachment_id: string | null;
+  reply_to_id: string | null;
+  duration_ms: number | null;
+  media_group_id: string | null;
+  created_at: string;
+  edited_at: string | null;
+  att_content_type: string | null;
+  att_file_name: string | null;
+  att_size: string | null;
+  reply_content: string | null;
+  reply_sender_username: string | null;
+}
+
+async function getActiveMembership(
+  groupId: string,
+  userId: string
+): Promise<{ role: string } | null> {
+  const [row] = await query<{ role: string }>(
+    `SELECT role FROM plain_group_members
+     WHERE group_id = $1 AND user_id = $2 AND removed_at IS NULL`,
+    [groupId, userId]
+  );
+  return row ?? null;
+}
+
+function buildGroupMsgWire(row: PlainGroupMsgRow) {
+  return {
+    id: row.id,
+    clientId: row.client_id,
+    senderUserId: row.sender_user_id,
+    senderUsername: row.sender_username,
+    groupId: row.group_id,
+    content: row.content,
+    messageType: row.message_type,
+    attachment: row.attachment_id
+      ? {
+          attachmentId: row.attachment_id,
+          contentType: row.att_content_type ?? "",
+          fileName: row.att_file_name ?? undefined,
+          size: Number(row.att_size ?? 0),
+          durationMs: row.duration_ms ?? undefined,
+          mediaGroupId: row.media_group_id ?? undefined,
+        }
+      : undefined,
+    replyTo: row.reply_to_id
+      ? {
+          id: row.reply_to_id,
+          content: row.reply_content ?? "",
+          senderName: row.reply_sender_username ?? undefined,
+        }
+      : undefined,
+    createdAt: row.created_at,
+    editedAt: row.edited_at ?? undefined,
+  };
+}
+
+const GROUP_HISTORY_SQL = `
+  SELECT
+    pm.id,
+    pm.client_id,
+    pm.sender_user_id,
+    u.username   AS sender_username,
+    pm.group_id,
+    pm.content,
+    pm.message_type,
+    pm.attachment_id,
+    pm.reply_to_id,
+    pm.duration_ms,
+    pm.media_group_id,
+    pm.created_at,
+    pm.edited_at,
+    pa.content_type  AS att_content_type,
+    pa.file_name     AS att_file_name,
+    pa.encrypted_size AS att_size,
+    rp.content       AS reply_content,
+    ru.username      AS reply_sender_username
+  FROM plain_messages pm
+  JOIN users u ON u.id = pm.sender_user_id
+  LEFT JOIN plain_attachments pa ON pa.id = pm.attachment_id
+  LEFT JOIN plain_messages rp ON rp.id = pm.reply_to_id
+  LEFT JOIN users ru ON ru.id = rp.sender_user_id
+  WHERE pm.deleted_at IS NULL
+    AND pm.group_id = $1
+`;
+
+export async function plainGroupRoutes(fastify: FastifyInstance): Promise<void> {
+  /** Create group */
+  fastify.post(
+    "/",
+    { preHandler: requireAuth },
+    async (request, reply) => {
+      const { sub: userId } = request.auth;
+
+      const limited = await consumeFixedWindowRateLimit({
+        key: `plain_group_create:${userId}`,
+        max: CREATE_RATE_MAX,
+        windowSec: CREATE_RATE_WINDOW_SEC,
+      });
+      if (!limited.allowed) return reply.code(429).send({ error: "Rate limit exceeded" });
+
+      const body = parseOrReply(reply, CreatePlainGroupRequestSchema, request.body);
+      if (!body) return;
+
+      const memberIds = [...new Set([userId, ...body.memberUserIds])];
+      if (memberIds.length > GROUP_MAX_MEMBERS) {
+        return reply.code(400).send({ error: `Too many members (max ${GROUP_MAX_MEMBERS})` });
+      }
+
+      // Validate all member IDs exist
+      const existingUsers = await query<{ id: string; username: string }>(
+        "SELECT id, username FROM users WHERE id = ANY($1::uuid[])",
+        [memberIds]
+      );
+      if (existingUsers.length !== memberIds.length) {
+        return reply.code(400).send({ error: "Some member IDs are invalid" });
+      }
+
+      // Check user group limit
+      const countRow = await query<{ count: string }>(
+        `SELECT COUNT(*) AS count FROM plain_group_members
+         WHERE user_id = $1 AND removed_at IS NULL`,
+        [userId]
+      );
+      if (Number(countRow[0]?.count ?? 0) >= USER_MAX_GROUPS) {
+        return reply.code(400).send({ error: "Group limit reached" });
+      }
+
+      const groupId = randomUUID();
+      const now = new Date().toISOString();
+
+      await transaction(async (client) => {
+        await client.query(
+          `INSERT INTO plain_groups (id, name, creator_id, created_at, updated_at)
+           VALUES ($1, $2, $3, $4, $4)`,
+          [groupId, body.name, userId, now]
+        );
+        for (const memberId of memberIds) {
+          const role = memberId === userId ? "owner" : "member";
+          await client.query(
+            `INSERT INTO plain_group_members (group_id, user_id, role, joined_at)
+             VALUES ($1, $2, $3, $4)`,
+            [groupId, memberId, role, now]
+          );
+        }
+      });
+
+      const members = existingUsers.map((u) => ({
+        userId: u.id,
+        username: u.username,
+        role: u.id === userId ? "owner" : "member",
+        joinedAt: now,
+      }));
+
+      const groupWire = {
+        id: groupId,
+        name: body.name,
+        creatorId: userId,
+        members,
+        createdAt: now,
+        updatedAt: now,
+      };
+
+      return reply.code(201).send(groupWire);
+    }
+  );
+
+  /** List my groups */
+  fastify.get(
+    "/",
+    { preHandler: requireAuth },
+    async (request, reply) => {
+      const { sub: userId } = request.auth;
+
+      const groups = await query<GroupRow & { member_count: string }>(
+        `SELECT pg.id, pg.name, pg.creator_id, pg.created_at, pg.updated_at
+         FROM plain_groups pg
+         JOIN plain_group_members pgm ON pgm.group_id = pg.id
+         WHERE pgm.user_id = $1 AND pgm.removed_at IS NULL
+         ORDER BY pg.updated_at DESC`,
+        [userId]
+      );
+
+      const result = await Promise.all(
+        groups.map(async (g) => {
+          const members = await query<MemberRow>(
+            `SELECT pgm.user_id, u.username, pgm.role, pgm.joined_at
+             FROM plain_group_members pgm
+             JOIN users u ON u.id = pgm.user_id
+             WHERE pgm.group_id = $1 AND pgm.removed_at IS NULL`,
+            [g.id]
+          );
+          return {
+            id: g.id,
+            name: g.name,
+            creatorId: g.creator_id,
+            members: members.map((m) => ({
+              userId: m.user_id,
+              username: m.username,
+              role: m.role,
+              joinedAt: m.joined_at,
+            })),
+            createdAt: g.created_at,
+            updatedAt: g.updated_at,
+          };
+        })
+      );
+
+      return reply.code(200).send({ groups: result });
+    }
+  );
+
+  /** Get group details */
+  fastify.get(
+    "/:id",
+    { preHandler: requireAuth },
+    async (request, reply) => {
+      const { sub: userId } = request.auth;
+      const { id } = request.params as { id: string };
+
+      const membership = await getActiveMembership(id, userId);
+      if (!membership) return reply.code(403).send({ error: "Not a member" });
+
+      const [g] = await query<GroupRow>(
+        `SELECT id, name, creator_id, created_at, updated_at FROM plain_groups WHERE id = $1`,
+        [id]
+      );
+      if (!g) return reply.code(404).send({ error: "Group not found" });
+
+      const members = await query<MemberRow>(
+        `SELECT pgm.user_id, u.username, pgm.role, pgm.joined_at
+         FROM plain_group_members pgm
+         JOIN users u ON u.id = pgm.user_id
+         WHERE pgm.group_id = $1 AND pgm.removed_at IS NULL`,
+        [id]
+      );
+
+      return reply.code(200).send({
+        id: g.id,
+        name: g.name,
+        creatorId: g.creator_id,
+        members: members.map((m) => ({
+          userId: m.user_id,
+          username: m.username,
+          role: m.role,
+          joinedAt: m.joined_at,
+        })),
+        createdAt: g.created_at,
+        updatedAt: g.updated_at,
+      });
+    }
+  );
+
+  /** Add member */
+  fastify.post(
+    "/:id/members",
+    { preHandler: requireAuth },
+    async (request, reply) => {
+      const { sub: userId } = request.auth;
+      const { id } = request.params as { id: string };
+
+      const membership = await getActiveMembership(id, userId);
+      if (!membership) return reply.code(403).send({ error: "Not a member" });
+      if (membership.role === "member") return reply.code(403).send({ error: "Insufficient role" });
+
+      const body = parseOrReply(reply, AddPlainGroupMemberRequestSchema, request.body);
+      if (!body) return;
+
+      const [targetUser] = await query<{ id: string; username: string }>(
+        "SELECT id, username FROM users WHERE id = $1",
+        [body.userId]
+      );
+      if (!targetUser) return reply.code(404).send({ error: "User not found" });
+
+      const memberCountRows = await query<{ count: string }>(
+        `SELECT COUNT(*) AS count FROM plain_group_members
+         WHERE group_id = $1 AND removed_at IS NULL`,
+        [id]
+      );
+      if (Number(memberCountRows[0]?.count ?? 0) >= GROUP_MAX_MEMBERS) {
+        return reply.code(400).send({ error: "Group is full" });
+      }
+
+      const now = new Date().toISOString();
+      await query(
+        `INSERT INTO plain_group_members (group_id, user_id, role, joined_at)
+         VALUES ($1, $2, 'member', $3)
+         ON CONFLICT (group_id, user_id) DO UPDATE
+           SET removed_at = NULL, joined_at = $3`,
+        [id, body.userId, now]
+      );
+
+      return reply.code(200).send({ userId: body.userId, joinedAt: now });
+    }
+  );
+
+  /** Remove member */
+  fastify.delete(
+    "/:id/members/:memberId",
+    { preHandler: requireAuth },
+    async (request, reply) => {
+      const { sub: userId } = request.auth;
+      const { id, memberId } = request.params as { id: string; memberId: string };
+
+      const membership = await getActiveMembership(id, userId);
+      if (!membership) return reply.code(403).send({ error: "Not a member" });
+
+      const isSelf = memberId === userId;
+      if (!isSelf && membership.role === "member") {
+        return reply.code(403).send({ error: "Insufficient role" });
+      }
+
+      await query(
+        `UPDATE plain_group_members SET removed_at = now()
+         WHERE group_id = $1 AND user_id = $2 AND removed_at IS NULL`,
+        [id, memberId]
+      );
+
+      return reply.code(204).send();
+    }
+  );
+
+  /** Send group message */
+  fastify.post(
+    "/:id/messages",
+    { preHandler: requireAuth },
+    async (request, reply) => {
+      const { sub: userId } = request.auth;
+      const { id: groupId } = request.params as { id: string };
+
+      const [membership, senderUsername] = await Promise.all([
+        getActiveMembership(groupId, userId),
+        fetchUsername(userId),
+      ]);
+      if (!membership) return reply.code(403).send({ error: "Not a member" });
+
+      const limited = await consumeFixedWindowRateLimit({
+        key: `plain_group_send:${userId}`,
+        max: SEND_RATE_MAX,
+        windowSec: SEND_RATE_WINDOW_SEC,
+      });
+      if (!limited.allowed) return reply.code(429).send({ error: "Rate limit exceeded" });
+
+      const body = parseOrReply(reply, SendPlainMessageRequestSchema, request.body);
+      if (!body) return;
+
+      let attMeta: { id: string; content_type: string; file_name: string | null; encrypted_size: string } | null = null;
+      if (body.attachmentId) {
+        const [att] = await query<{
+          id: string;
+          uploader_user_id: string;
+          upload_state: string;
+          content_type: string;
+          file_name: string | null;
+          encrypted_size: string;
+        }>(
+          "SELECT id, uploader_user_id, upload_state, content_type, file_name, encrypted_size FROM plain_attachments WHERE id = $1",
+          [body.attachmentId]
+        );
+        if (!att || att.upload_state !== "verified") {
+          return reply.code(422).send({ error: "Attachment not ready" });
+        }
+        if (att.uploader_user_id !== userId) {
+          return reply.code(403).send({ error: "Attachment not owned by sender" });
+        }
+        attMeta = att;
+      }
+
+      const msgId = randomUUID();
+      const now = new Date().toISOString();
+
+      await query(
+        `INSERT INTO plain_messages
+           (id, client_id, sender_user_id, group_id, content, message_type,
+            attachment_id, reply_to_id, media_group_id, duration_ms, created_at)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+         ON CONFLICT (client_id) DO NOTHING`,
+        [
+          msgId,
+          body.clientId,
+          userId,
+          groupId,
+          body.content,
+          body.messageType,
+          body.attachmentId ?? null,
+          body.replyToId ?? null,
+          body.mediaGroupId ?? null,
+          body.durationMs ?? null,
+          now,
+        ]
+      );
+
+      const wireMsg = {
+        id: msgId,
+        clientId: body.clientId,
+        senderUserId: userId,
+        senderUsername: senderUsername ?? userId,
+        groupId,
+        content: body.content,
+        messageType: body.messageType,
+        attachment: attMeta
+          ? {
+              attachmentId: attMeta.id,
+              contentType: attMeta.content_type,
+              fileName: attMeta.file_name ?? undefined,
+              size: Number(attMeta.encrypted_size),
+              durationMs: body.durationMs ?? undefined,
+              mediaGroupId: body.mediaGroupId ?? undefined,
+            }
+          : undefined,
+        createdAt: now,
+      };
+
+      // Fan-out to all active group members
+      const members = await query<{ user_id: string }>(
+        `SELECT user_id FROM plain_group_members WHERE group_id = $1 AND removed_at IS NULL`,
+        [groupId]
+      );
+
+      const [groupRow] = await query<{ name: string }>(
+        `SELECT name FROM plain_groups WHERE id = $1`,
+        [groupId]
+      );
+
+      await Promise.all(
+        members.map(async (m) => {
+          await publishPlainMessageToUser(m.user_id, {
+            type: "plain_message.new",
+            message: wireMsg,
+          });
+
+          if (m.user_id === userId) return;
+          if (await hasActiveConnectionForUserAcrossCluster(m.user_id)) return;
+
+          try {
+            const prefs = await getPushPreferences(m.user_id);
+            const payload = buildGroupMessagePushPayload({
+              senderUserId: userId,
+              senderUsername: senderUsername ?? null,
+              groupId,
+              groupName: groupRow?.name ?? null,
+              preferences: prefs,
+            });
+            if (payload) await sendPushToUser(m.user_id, payload);
+          } catch (err) {
+            request.log.warn({ err, userId: m.user_id }, "plain group push failed");
+          }
+        })
+      );
+
+      return reply.code(201).send({
+        id: msgId,
+        clientId: body.clientId,
+        createdAt: now,
+      });
+    }
+  );
+
+  /** Paginated group history */
+  fastify.get(
+    "/:id/messages",
+    { preHandler: requireAuth },
+    async (request, reply) => {
+      const { sub: userId } = request.auth;
+      const { id: groupId } = request.params as { id: string };
+
+      const membership = await getActiveMembership(groupId, userId);
+      if (!membership) return reply.code(403).send({ error: "Not a member" });
+
+      const { before, limit } = request.query as { before?: string; limit?: string };
+      const pageLimit = Math.min(Number(limit ?? PAGE_LIMIT), PAGE_LIMIT);
+      const cursorClause = before ? `AND pm.created_at < $2` : "";
+      const params: unknown[] = [groupId];
+      if (before) params.push(before);
+
+      const rows = await query<PlainGroupMsgRow>(
+        `${GROUP_HISTORY_SQL} ${cursorClause}
+         ORDER BY pm.created_at DESC
+         LIMIT ${pageLimit + 1}`,
+        params
+      );
+
+      const hasMore = rows.length > pageLimit;
+      const messages = rows.slice(0, pageLimit).map(buildGroupMsgWire);
+      const nextCursor = hasMore ? rows[pageLimit - 1]?.created_at : undefined;
+
+      return reply.code(200).send({ messages, hasMore, nextCursor });
+    }
+  );
+
+  /** Edit group message */
+  fastify.patch(
+    "/:id/messages/:msgId",
+    { preHandler: requireAuth },
+    async (request, reply) => {
+      const { sub: userId } = request.auth;
+      const { id: groupId, msgId } = request.params as { id: string; msgId: string };
+
+      const membership = await getActiveMembership(groupId, userId);
+      if (!membership) return reply.code(403).send({ error: "Not a member" });
+
+      const body = parseOrReply(reply, EditPlainMessageRequestSchema, request.body);
+      if (!body) return;
+
+      const [msg] = await query<{ id: string; sender_user_id: string; message_type: string }>(
+        `SELECT id, sender_user_id, message_type
+         FROM plain_messages WHERE id = $1 AND group_id = $2 AND deleted_at IS NULL`,
+        [msgId, groupId]
+      );
+      if (!msg) return reply.code(404).send({ error: "Message not found" });
+      if (msg.sender_user_id !== userId) return reply.code(403).send({ error: "Forbidden" });
+      if (msg.message_type !== "text") return reply.code(400).send({ error: "Only text messages can be edited" });
+
+      const editedAt = new Date().toISOString();
+      await query(
+        `UPDATE plain_messages SET content = $1, edited_at = $2 WHERE id = $3`,
+        [body.content, editedAt, msgId]
+      );
+
+      const members = await query<{ user_id: string }>(
+        `SELECT user_id FROM plain_group_members WHERE group_id = $1 AND removed_at IS NULL`,
+        [groupId]
+      );
+
+      const editEvent = {
+        type: "plain_message.edited" as const,
+        messageId: msgId,
+        content: body.content,
+        editedAt,
+        threadKey: groupId,
+        threadKind: "group" as const,
+      };
+      await Promise.all(members.map((m) => publishPlainMessageToUser(m.user_id, editEvent)));
+
+      return reply.code(200).send({ id: msgId, editedAt });
+    }
+  );
+
+  /** Delete group message */
+  fastify.delete(
+    "/:id/messages/:msgId",
+    { preHandler: requireAuth },
+    async (request, reply) => {
+      const { sub: userId } = request.auth;
+      const { id: groupId, msgId } = request.params as { id: string; msgId: string };
+
+      const membership = await getActiveMembership(groupId, userId);
+      if (!membership) return reply.code(403).send({ error: "Not a member" });
+
+      const [msg] = await query<{ id: string; sender_user_id: string }>(
+        `SELECT id, sender_user_id
+         FROM plain_messages WHERE id = $1 AND group_id = $2 AND deleted_at IS NULL`,
+        [msgId, groupId]
+      );
+      if (!msg) return reply.code(404).send({ error: "Message not found" });
+
+      const canDelete =
+        msg.sender_user_id === userId ||
+        membership.role === "owner" ||
+        membership.role === "admin";
+      if (!canDelete) return reply.code(403).send({ error: "Forbidden" });
+
+      await query(
+        `UPDATE plain_messages SET deleted_at = now() WHERE id = $1`,
+        [msgId]
+      );
+
+      const members = await query<{ user_id: string }>(
+        `SELECT user_id FROM plain_group_members WHERE group_id = $1 AND removed_at IS NULL`,
+        [groupId]
+      );
+
+      const deleteEvent = {
+        type: "plain_message.deleted" as const,
+        messageId: msgId,
+        threadKey: groupId,
+        threadKind: "group" as const,
+      };
+      await Promise.all(members.map((m) => publishPlainMessageToUser(m.user_id, deleteEvent)));
+
+      return reply.code(204).send();
+    }
+  );
+}

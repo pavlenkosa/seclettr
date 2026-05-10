@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { EncryptedMessageSchema, MessageTypeSchema } from "./messages.js";
+import { PlainMessageSchema } from "./plain.js";
 import {
   type StripVersion,
   type VersionedWireParseResult,
@@ -195,6 +196,33 @@ export const WsServerMessageSchema = z.discriminatedUnion("type", [
     messageType: MessageTypeSchema,
     createdAt: z.string().datetime(),
     aeadVersion: z.number().int().min(0).max(1).optional(),
+  }),
+  wsEnvelope({
+    type: z.literal("plain_message.new"),
+    message: PlainMessageSchema,
+  }),
+  wsEnvelope({
+    type: z.literal("plain_message.edited"),
+    messageId: z.string().uuid(),
+    content: z.string(),
+    editedAt: z.string().datetime(),
+    /** Conversation key: recipientUserId (DM) or groupId (group) */
+    threadKey: z.string().uuid(),
+    threadKind: z.enum(["dm", "group"]),
+  }),
+  wsEnvelope({
+    type: z.literal("plain_message.deleted"),
+    messageId: z.string().uuid(),
+    threadKey: z.string().uuid(),
+    threadKind: z.enum(["dm", "group"]),
+  }),
+  wsEnvelope({
+    type: z.literal("plain_message.read"),
+    messageId: z.string().uuid(),
+    readerUserId: z.string().uuid(),
+    threadKey: z.string().uuid(),
+    threadKind: z.enum(["dm", "group"]),
+    readAt: z.string().datetime(),
   }),
   wsEnvelope({
     type: z.literal("call.incoming"),

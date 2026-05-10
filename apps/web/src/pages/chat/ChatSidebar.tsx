@@ -1,6 +1,7 @@
 import { useCallback, useMemo, useState } from "react";
 import type { Conversation } from "@/stores/messages";
 import type { GroupChat } from "@/stores/groups";
+import type { PlainConversation, PlainGroup } from "@/stores/plain";
 import { useI18n } from "@/i18n";
 import { ConversationList } from "@/chats/presentation/ConversationList";
 import { SeclettrMark } from "@/components/common/SeclettrMark";
@@ -16,9 +17,11 @@ export interface ChatSidebarProps {
   readonly canLock?: boolean;
   readonly conversations: Conversation[];
   readonly groups: GroupChat[];
+  readonly plainConversations?: PlainConversation[];
+  readonly plainGroups?: PlainGroup[];
   readonly activeId: string | null;
   readonly loading?: boolean;
-  readonly onSelectThread: (selection: { kind: "direct" | "group"; id: string }) => void;
+  readonly onSelectThread: (selection: { kind: "direct" | "group" | "plain-direct" | "plain-group"; id: string }) => void;
   readonly onOpenSettings: () => void;
   readonly onLock: () => void;
   readonly onLogout: () => void;
@@ -35,6 +38,8 @@ export function ChatSidebar({
   canLock = false,
   conversations,
   groups,
+  plainConversations = [],
+  plainGroups = [],
   activeId,
   loading,
   onSelectThread,
@@ -66,9 +71,26 @@ export function ChatSidebar({
     const q = searchQuery.trim().toLowerCase();
     return groups.filter((g) => g.name.toLowerCase().includes(q));
   }, [groups, searchQuery]);
+
+  const filteredPlainConversations = useMemo(() => {
+    if (!searchQuery.trim()) return plainConversations;
+    const q = searchQuery.trim().toLowerCase();
+    return plainConversations.filter((c) => c.username.toLowerCase().includes(q));
+  }, [plainConversations, searchQuery]);
+
+  const filteredPlainGroups = useMemo(() => {
+    if (!searchQuery.trim()) return plainGroups;
+    const q = searchQuery.trim().toLowerCase();
+    return plainGroups.filter((g) => g.name.toLowerCase().includes(q));
+  }, [plainGroups, searchQuery]);
+
   const loadingPlaceholderCount = useMemo(
-    () => Math.max(filteredConversations.length + filteredGroups.length, 5),
-    [filteredConversations.length, filteredGroups.length]
+    () => Math.max(
+      filteredConversations.length + filteredGroups.length
+        + filteredPlainConversations.length + filteredPlainGroups.length,
+      5
+    ),
+    [filteredConversations.length, filteredGroups.length, filteredPlainConversations.length, filteredPlainGroups.length]
   );
 
   return (
@@ -195,6 +217,8 @@ export function ChatSidebar({
       <ConversationList
         conversations={filteredConversations}
         groups={filteredGroups}
+        plainConversations={filteredPlainConversations}
+        plainGroups={filteredPlainGroups}
         activeId={activeId}
         loading={loading}
         loadingPlaceholderCount={loadingPlaceholderCount}

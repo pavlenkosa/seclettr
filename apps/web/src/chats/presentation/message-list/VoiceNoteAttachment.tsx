@@ -48,7 +48,7 @@ export function VoiceNoteAttachment({
     mediaKey,
     activeMediaKey,
     onActiveMediaChange,
-    autoDecrypt: autoDecryptMedia === "on" && uploadProgress === null,
+    autoDecrypt: (autoDecryptMedia === "on" || !!msg.attachment?.isPlain) && uploadProgress === null,
   });
 
   const totalSeconds = decodedDuration > 0

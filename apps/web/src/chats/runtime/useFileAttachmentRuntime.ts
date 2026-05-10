@@ -63,9 +63,16 @@ export function useFileAttachmentRuntime({
 
   const decryptAndPreview = useCallback(async (): Promise<string | null> => {
     if (!attachment) return null;
-    // Return cached URL if already decrypted.
+    // Return cached URL if already loaded.
     if (previewUrlRef.current) return previewUrlRef.current;
     if (loading) return null;
+
+    // For plain attachments with a local blob URL, use it directly without fetching
+    if (attachment.isPlain && attachment.localUrl) {
+      previewUrlRef.current = attachment.localUrl;
+      setPreviewUrl(attachment.localUrl);
+      return attachment.localUrl;
+    }
 
     setLoading(true);
     setErrorCause(null);

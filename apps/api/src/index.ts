@@ -38,6 +38,10 @@ import { roomRoutes } from "./routes/rooms/index.js";
 import { pushRoutes } from "./routes/push/index.js";
 import { clientErrorRoutes } from "./routes/client-errors/index.js";
 import { transferRoutes } from "./routes/transfer/index.js";
+import { plainConversationRoutes } from "./routes/plain/conversations.js";
+import { plainMessageRoutes } from "./routes/plain/messages.js";
+import { plainGroupRoutes } from "./routes/plain/groups.js";
+import { plainAttachmentRoutes } from "./routes/plain/attachments.js";
 
 const LEGACY_WS_CLIENT_PROTOCOL = "qm.v1";
 
@@ -162,6 +166,10 @@ export async function buildApp() {
   await fastify.register(pushRoutes, { prefix: "/push" });
   await fastify.register(clientErrorRoutes, { prefix: "/client-errors" });
   await fastify.register(transferRoutes, { prefix: "/transfer" });
+  await fastify.register(plainConversationRoutes, { prefix: "/plain/conversations" });
+  await fastify.register(plainMessageRoutes, { prefix: "/plain/messages" });
+  await fastify.register(plainGroupRoutes, { prefix: "/plain/groups" });
+  await fastify.register(plainAttachmentRoutes, { prefix: "/plain/attachments" });
 
   await registerWebSocketHandler(fastify);
 

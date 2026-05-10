@@ -112,6 +112,12 @@ function sendToDeviceConnections(deviceId: string, msg: WsServerMessage): void {
   });
 }
 
+function sendToUserConnections(userId: string, msg: WsServerMessage): void {
+  connections.forEachByUser(userId, (client) => {
+    send(client.ws, msg);
+  });
+}
+
 function decodeTextFrame(rawData: RawData): string | null {
   if (typeof rawData === "string") return rawData;
   if (Buffer.isBuffer(rawData)) return rawData.toString("utf8");
@@ -203,6 +209,8 @@ export async function registerWebSocketHandler(
         connections.forEachByDevice(parsed.deviceId, (client) => {
           client.ws.close(4003, "Session terminated");
         });
+      } else if (parsed.scope === "user") {
+        sendToUserConnections(parsed.recipientUserId, parsed.payload);
       } else {
         sendToDeviceConnections(parsed.recipientDeviceId, parsed.payload);
       }

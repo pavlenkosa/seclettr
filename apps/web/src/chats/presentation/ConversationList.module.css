@@ -105,6 +105,9 @@
 }
 
 .name {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.28rem;
   font-size: 0.96rem;
   font-weight: 650;
   line-height: 1.2;
@@ -114,6 +117,15 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.encryptedBadge {
+  display: inline-block;
+  flex-shrink: 0;
+  color: var(--accent);
+  opacity: 0.7;
+  vertical-align: middle;
+  margin-top: -1px;
 }
 
 .time {

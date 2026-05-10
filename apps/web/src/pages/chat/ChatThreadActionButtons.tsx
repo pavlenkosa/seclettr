@@ -3,7 +3,7 @@ import { IconButton } from "@/components/ui";
 import { ThreadActionsDropdown, type ThreadActionsItem } from "./ThreadActionsDropdown";
 import styles from "./ChatThreadActions.module.css";
 
-type ChatThreadKind = "direct" | "group" | null;
+type ChatThreadKind = "direct" | "group" | "plain-direct" | "plain-group" | null;
 
 /**
  * Props for the thread-level action button cluster displayed in chat chrome.
@@ -94,6 +94,63 @@ export function ChatThreadActionButtons({
       isActive: isMediaPanelOpen,
     },
   ];
+
+  if (activeThreadKind === "plain-direct") {
+    return (
+      <div className={styles.group}>
+        <IconButton
+          onClick={() => onStartDirectCall("audio")}
+          className={styles.iconBtn}
+          size={40}
+          title={t("chat.voiceCall")}
+          aria-label={t("chat.voiceCall")}
+        >
+          <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+            <path
+              d="M3.75 3h3l1.5 3.75-1.875 1.125c.885 1.77 2.25 3.135 4.02 4.02L11.52 10.5 15.27 12v3c0 .828-.672 1.5-1.5 1.5A12.75 12.75 0 0 1 2.25 4.5C2.25 3.672 2.922 3 3.75 3Z"
+              stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"
+            />
+          </svg>
+        </IconButton>
+        <IconButton
+          onClick={() => onStartDirectCall("video")}
+          className={styles.iconBtn}
+          size={40}
+          title={t("chat.videoCall")}
+          aria-label={t("chat.videoCall")}
+        >
+          <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+            <path
+              d="M1.5 5.25A1.5 1.5 0 0 1 3 3.75h9a1.5 1.5 0 0 1 1.5 1.5v7.5A1.5 1.5 0 0 1 12 14.25H3A1.5 1.5 0 0 1 1.5 12.75V5.25Z"
+              stroke="currentColor" strokeWidth="1.5"
+            />
+            <path
+              d="M13.5 7.125l3-1.875v7.5l-3-1.875V7.125Z"
+              stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round"
+            />
+          </svg>
+        </IconButton>
+        <ThreadActionsDropdown items={sharedOverflowItems} disabled={isMediaPanelOpen} />
+      </div>
+    );
+  }
+
+  if (activeThreadKind === "plain-group") {
+    const overflowItems: ThreadActionsItem[] = [
+      {
+        id: "members",
+        labelKey: "group.members.open",
+        icon: MembersIcon,
+        onClick: onOpenGroupMembers,
+      },
+      ...sharedOverflowItems,
+    ];
+    return (
+      <div className={styles.group}>
+        <ThreadActionsDropdown items={overflowItems} disabled={isMediaPanelOpen} />
+      </div>
+    );
+  }
 
   if (activeThreadKind === "direct") {
     const overflowItems: ThreadActionsItem[] = [

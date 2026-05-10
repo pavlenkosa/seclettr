@@ -38,6 +38,11 @@ interface Props {
   readonly onFocusChange?: (focused: boolean) => void;
   readonly replyTo?: MessageReplyMeta;
   readonly onClearReply?: () => void;
+  readonly onSendText?: (text: string) => Promise<void>;
+  readonly onSendFile?: (file: File, mediaGroupId?: string, caption?: string) => Promise<void>;
+  readonly onSendVoiceBlob?: (blob: Blob, durationMs: number) => Promise<void>;
+  readonly onSendVideoBlob?: (blob: Blob, durationMs: number) => Promise<void>;
+  readonly isGroupComposer?: boolean;
 }
 
 export interface MessageComposerHandle {
@@ -164,6 +169,11 @@ const MessageComposerView = forwardRef<MessageComposerHandle, Props>(function Me
   onFocusChange,
   replyTo,
   onClearReply,
+  onSendText,
+  onSendFile,
+  onSendVoiceBlob,
+  onSendVideoBlob,
+  isGroupComposer: isGroupComposerOverride,
 }, ref) {
   const { t } = useI18n();
   const emojiPickerId = useId();
@@ -174,7 +184,13 @@ const MessageComposerView = forwardRef<MessageComposerHandle, Props>(function Me
     onFocusChange,
     replyTo,
     onClearReply,
+    onSendText,
+    onSendFile,
+    onSendVoiceBlob,
+    onSendVideoBlob,
   });
+
+  const isGroupComposer = isGroupComposerOverride ?? draft.isGroupComposer;
 
   const mediaSend = useMediaSendDialog({
     onSendFiles: draft.handleDroppedFiles,
@@ -226,7 +242,7 @@ const MessageComposerView = forwardRef<MessageComposerHandle, Props>(function Me
   const primaryAction = resolvePrimaryComposerAction({
     trimmedText: draft.trimmedText,
     isFocused: draft.isTextFocused,
-    isGroupComposer: draft.isGroupComposer,
+    isGroupComposer,
     preferredRecordMode,
   });
 
@@ -277,16 +293,16 @@ const MessageComposerView = forwardRef<MessageComposerHandle, Props>(function Me
     isRecording,
     primaryAction,
     currentRecordModeLabel,
-    isGroupComposer: draft.isGroupComposer,
+    isGroupComposer,
     t,
   });
 
   const primaryButtonDisabled = isRecording ? false : draft.sending;
   const showRecordModeChip = !isRecording && primaryAction.kind === "record";
-  const composerPlaceholder = draft.isGroupComposer
+  const composerPlaceholder = isGroupComposer
     ? t("group.composer.placeholder")
     : t("composer.placeholder.default");
-  const composerAriaLabel = draft.isGroupComposer
+  const composerAriaLabel = isGroupComposer
     ? t("group.composer.aria.typeMessage")
     : t("composer.aria.typeMessage");
 

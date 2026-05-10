@@ -1,6 +1,7 @@
 import { memo, useEffect, useMemo, useState, type CSSProperties } from "react";
 import type { CallMessageMeta, Conversation } from "@/stores/messages";
 import type { GroupChat } from "@/stores/groups";
+import type { PlainConversation, PlainGroup } from "@/stores/plain";
 import { useI18n } from "@/i18n";
 import { SeclettrMark } from "@/components/common/SeclettrMark";
 import { Avatar, MessageDeliveryStatusIcon, type MessageDeliveryStatus } from "@/components/ui";
@@ -10,10 +11,12 @@ import styles from "./ConversationList.module.css";
 interface Props {
   readonly conversations: Conversation[];
   readonly groups?: GroupChat[];
+  readonly plainConversations?: PlainConversation[];
+  readonly plainGroups?: PlainGroup[];
   readonly activeId: string | null;
   readonly loading?: boolean;
   readonly loadingPlaceholderCount?: number;
-  readonly onSelect: (selection: { kind: "direct" | "group"; id: string }) => void;
+  readonly onSelect: (selection: { kind: "direct" | "group" | "plain-direct" | "plain-group"; id: string }) => void;
 }
 
 type PreviewStatus = "sending" | "sent" | "delivered" | "read" | "error";
@@ -34,11 +37,12 @@ interface EntryLastMessage {
 interface ConversationEntry {
   key: string;
   id: string;
-  kind: "direct" | "group";
+  kind: "direct" | "group" | "plain-direct" | "plain-group";
   name: string;
   lastMessageAt: number;
   unreadCount: number;
   lastMessage?: EntryLastMessage;
+  isEncrypted: boolean;
 }
 
 const CONVERSATION_TIME_REFRESH_MS = 60_000;
@@ -147,6 +151,7 @@ function areConversationEntriesEqual(left: ConversationEntry, right: Conversatio
     && left.name === right.name
     && left.lastMessageAt === right.lastMessageAt
     && left.unreadCount === right.unreadCount
+    && left.isEncrypted === right.isEncrypted
     && areEntryLastMessagesEqual(left.lastMessage, right.lastMessage);
 }
 
@@ -164,14 +169,15 @@ const ConversationListItem = memo(function ConversationListItem({
   locale: string;
   nowMs: number;
   t: (key: string, params?: Record<string, string | number>) => string;
-  onSelect: (selection: { kind: "direct" | "group"; id: string }) => void;
+  onSelect: (selection: { kind: "direct" | "group" | "plain-direct" | "plain-group"; id: string }) => void;
   enterDelayMs: number;
 }) {
   const last = entry.lastMessage;
   const previewText = getPreviewText(last, t);
   const showOwnPrefix = Boolean(last?.isOwn && last.type !== "call");
+  const isGroup = entry.kind === "group" || entry.kind === "plain-group";
   const senderPrefix = (
-    last && !last.isOwn && entry.kind === "group" && last.senderLabel
+    last && !last.isOwn && isGroup && last.senderLabel
       ? `${last.senderLabel}: `
       : ""
   );
@@ -192,7 +198,22 @@ const ConversationListItem = memo(function ConversationListItem({
 
         <div className={styles.content}>
           <div className={styles.row}>
-            <span className={styles.name}>{entry.name}</span>
+            <span className={styles.name}>
+              {entry.name}
+              {entry.isEncrypted && (
+                <svg
+                  className={styles.encryptedBadge}
+                  width="11"
+                  height="11"
+                  viewBox="0 0 16 16"
+                  fill="none"
+                  aria-label={t("conversation.encryptedBadgeAria")}
+                >
+                  <rect x="3" y="7" width="10" height="8" rx="1.5" stroke="currentColor" strokeWidth="1.4" />
+                  <path d="M5 7V5a3 3 0 0 1 6 0v2" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
+                </svg>
+              )}
+            </span>
             {entry.lastMessageAt > 0 && (
               <span className={styles.time}>{formatTime(entry.lastMessageAt, locale, t, nowMs)}</span>
             )}
@@ -285,6 +306,7 @@ function mapDirectConversation(conversation: Conversation): ConversationEntry {
     lastMessageAt: conversation.lastMessageAt,
     unreadCount: conversation.unreadCount,
     lastMessage: mapDirectLastMessage(conversation.messages.at(-1)),
+    isEncrypted: true,
   };
 }
 
@@ -297,12 +319,74 @@ function mapGroupConversation(group: GroupChat): ConversationEntry {
     lastMessageAt: group.lastMessageAt,
     unreadCount: group.unreadCount,
     lastMessage: mapGroupLastMessage(group.messages.at(-1)),
+    isEncrypted: true,
+  };
+}
+
+function mapPlainLastMessage(last: PlainConversation["messages"][number] | undefined): EntryLastMessage | undefined {
+  if (!last) return undefined;
+  if (last.type === "call" && last.call) {
+    return {
+      type: "call",
+      content: "",
+      call: { mode: last.call.mode, direction: last.call.direction, outcome: last.call.outcome, durationSec: last.call.durationSec },
+      isOwn: last.isOwn,
+      status: last.status,
+    };
+  }
+  return {
+    type: last.type === "text" ? "text" : "attachment",
+    content: last.content,
+    attachment: last.attachment
+      ? { kind: (["voice_note", "video_note"].includes(last.type) ? last.type : "file") as "file" | "voice_note" | "video_note", mimeType: last.attachment.contentType }
+      : undefined,
+    isOwn: last.isOwn,
+    status: last.status,
+  };
+}
+
+function mapPlainConversation(conv: PlainConversation): ConversationEntry {
+  return {
+    key: `plain-direct:${conv.userId}`,
+    id: conv.userId,
+    kind: "plain-direct",
+    name: conv.username,
+    lastMessageAt: conv.lastMessageAt,
+    unreadCount: conv.unreadCount,
+    lastMessage: mapPlainLastMessage(conv.messages.at(-1)),
+    isEncrypted: false,
+  };
+}
+
+function mapPlainGroupLastMessage(last: PlainGroup["messages"][number] | undefined): EntryLastMessage | undefined {
+  if (!last) return undefined;
+  return {
+    type: last.type === "text" ? "text" : "attachment",
+    content: last.content,
+    isOwn: last.isOwn,
+    status: last.status,
+    senderLabel: last.isOwn ? undefined : last.senderName,
+  };
+}
+
+function mapPlainGroup(group: PlainGroup): ConversationEntry {
+  return {
+    key: `plain-group:${group.groupId}`,
+    id: group.groupId,
+    kind: "plain-group",
+    name: group.name,
+    lastMessageAt: group.lastMessageAt,
+    unreadCount: group.unreadCount,
+    lastMessage: mapPlainGroupLastMessage(group.messages.at(-1)),
+    isEncrypted: false,
   };
 }
 
 export function ConversationList({
   conversations,
   groups = [],
+  plainConversations = [],
+  plainGroups = [],
   activeId,
   loading,
   loadingPlaceholderCount,
@@ -313,9 +397,12 @@ export function ConversationList({
   const sorted = useMemo<ConversationEntry[]>(() => {
     const directEntries = conversations.map(mapDirectConversation);
     const groupEntries = groups.map(mapGroupConversation);
+    const plainDirectEntries = plainConversations.map(mapPlainConversation);
+    const plainGroupEntries = plainGroups.map(mapPlainGroup);
 
-    return [...directEntries, ...groupEntries].sort((a, b) => b.lastMessageAt - a.lastMessageAt);
-  }, [conversations, groups]);
+    return [...directEntries, ...groupEntries, ...plainDirectEntries, ...plainGroupEntries]
+      .sort((a, b) => b.lastMessageAt - a.lastMessageAt);
+  }, [conversations, groups, plainConversations, plainGroups]);
   const hasRelativeTimeLabels = useMemo(
     () => sorted.some((entry) => entry.lastMessageAt > 0 && nowMs - entry.lastMessageAt < 3_600_000),
     [nowMs, sorted]

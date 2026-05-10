@@ -60,11 +60,13 @@ describe("useChatWorkspaceInteractions", () => {
 
     return {
       activeConversation: { userId: "user-1", username: "alice" },
+      activePlainConversation: null,
       activeGroup: { groupId: "group-1" },
       activeThreadKind: "direct",
       directCallPanelRef,
       showChatNotice: vi.fn(),
       ensureConversation: vi.fn(),
+      ensurePlainConversation: vi.fn(),
       handleSelectThread: vi.fn(),
       logout: vi.fn().mockResolvedValue(undefined),
       lock: vi.fn(),
@@ -75,6 +77,8 @@ describe("useChatWorkspaceInteractions", () => {
       openNewGroup: vi.fn(),
       openGroupMembers: vi.fn(),
       closeGroupMembers: vi.fn(),
+      openChatTypePicker: vi.fn(),
+      closeChatTypePicker: vi.fn(),
       ...overrides,
     };
   }
@@ -104,15 +108,10 @@ describe("useChatWorkspaceInteractions", () => {
     expect(showChatNotice).toHaveBeenCalledWith("call.error.unableStart");
   });
 
-  it("creates and routes new direct chat", () => {
-    const ensureConversation = vi.fn();
-    const handleSelectThread = vi.fn();
+  it("opens chat type picker when a user is selected from new chat modal", () => {
     const closeNewChat = vi.fn();
-    const options = createOptions({
-      ensureConversation,
-      handleSelectThread,
-      closeNewChat,
-    });
+    const openChatTypePicker = vi.fn();
+    const options = createOptions({ closeNewChat, openChatTypePicker });
 
     act(() => {
       root.render(<HookHarness hookRef={hookRef} options={options} />);
@@ -123,10 +122,44 @@ describe("useChatWorkspaceInteractions", () => {
     });
 
     expect(closeNewChat).toHaveBeenCalled();
-    expect(ensureConversation).toHaveBeenCalledWith("user-9", "zoe");
-    expect(handleSelectThread).toHaveBeenCalledWith({
-      kind: "direct",
-      id: "user-9",
+    expect(openChatTypePicker).toHaveBeenCalledWith({ userId: "user-9", username: "zoe" });
+  });
+
+  it("routes E2EE chat when encrypted option is chosen", () => {
+    const ensureConversation = vi.fn();
+    const handleSelectThread = vi.fn();
+    const closeChatTypePicker = vi.fn();
+    const options = createOptions({ ensureConversation, handleSelectThread, closeChatTypePicker });
+
+    act(() => {
+      root.render(<HookHarness hookRef={hookRef} options={options} />);
     });
+
+    act(() => {
+      hookRef.current?.handleNewChatSelectE2ee("user-9", "zoe");
+    });
+
+    expect(closeChatTypePicker).toHaveBeenCalled();
+    expect(ensureConversation).toHaveBeenCalledWith("user-9", "zoe");
+    expect(handleSelectThread).toHaveBeenCalledWith({ kind: "direct", id: "user-9" });
+  });
+
+  it("routes plain chat when regular option is chosen", () => {
+    const ensurePlainConversation = vi.fn();
+    const handleSelectThread = vi.fn();
+    const closeChatTypePicker = vi.fn();
+    const options = createOptions({ ensurePlainConversation, handleSelectThread, closeChatTypePicker });
+
+    act(() => {
+      root.render(<HookHarness hookRef={hookRef} options={options} />);
+    });
+
+    act(() => {
+      hookRef.current?.handleNewChatSelectPlain("user-9", "zoe");
+    });
+
+    expect(closeChatTypePicker).toHaveBeenCalled();
+    expect(ensurePlainConversation).toHaveBeenCalledWith("user-9", "zoe");
+    expect(handleSelectThread).toHaveBeenCalledWith({ kind: "plain-direct", id: "user-9" });
   });
 });

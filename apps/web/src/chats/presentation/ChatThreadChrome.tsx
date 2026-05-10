@@ -20,14 +20,14 @@ export interface ChatThreadChromeProps {
   readonly title: string;
   /** Secondary status line such as presence or group member count. */
   readonly subtitle: string;
-  /** Compact text displayed inside the security indicator. */
-  readonly statusLabel: string;
-  /** Full accessible description for the security indicator. */
-  readonly statusAriaLabel: string;
-  /** Visual tone applied to the security indicator. */
-  readonly statusTone: ChatThreadChromeStatusTone;
+  /** Compact text displayed inside the security indicator. Pass null to hide. */
+  readonly statusLabel: string | null;
+  /** Full accessible description for the security indicator. Pass null to hide. */
+  readonly statusAriaLabel: string | null;
+  /** Visual tone applied to the security indicator. Pass null to hide. */
+  readonly statusTone: ChatThreadChromeStatusTone | null;
   /** Optional action opening the matching security details surface. */
-  readonly onStatusClick?: () => void;
+  readonly onStatusClick?: (() => void) | null;
   /** Source label used to derive the avatar initials. */
   readonly avatarLabel: string;
   /** Accessible label for the mobile back button. */
@@ -91,14 +91,18 @@ export function ChatThreadChrome({
           </div>
 
           <div className={styles.actions}>
-            <SecurityStatusIndicator
-              className={styles.statusBadge}
-              tone={statusTone}
-              label={statusLabel}
-              ariaLabel={statusAriaLabel}
-              onClick={onStatusClick}
-            />
-            <span className={styles.actionsDivider} aria-hidden="true" />
+            {statusLabel !== null && statusTone !== null && statusAriaLabel !== null && (
+              <>
+                <SecurityStatusIndicator
+                  className={styles.statusBadge}
+                  tone={statusTone}
+                  label={statusLabel}
+                  ariaLabel={statusAriaLabel}
+                  onClick={onStatusClick ?? undefined}
+                />
+                <span className={styles.actionsDivider} aria-hidden="true" />
+              </>
+            )}
             {actions}
           </div>
         </div>

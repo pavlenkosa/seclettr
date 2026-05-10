@@ -34,6 +34,10 @@ interface UseMessageComposerDraftOptions {
   onFocusChange?: (focused: boolean) => void;
   replyTo?: MessageReplyMeta;
   onClearReply?: () => void;
+  onSendText?: (text: string) => Promise<void>;
+  onSendFile?: (file: File, mediaGroupId?: string, caption?: string) => Promise<void>;
+  onSendVoiceBlob?: (blob: Blob, durationMs: number) => Promise<void>;
+  onSendVideoBlob?: (blob: Blob, durationMs: number) => Promise<void>;
 }
 
 export interface UseMessageComposerDraftResult {
@@ -79,6 +83,10 @@ export function useMessageComposerDraft({
   onFocusChange,
   replyTo,
   onClearReply,
+  onSendText: onSendTextOverride,
+  onSendFile: onSendFileOverride,
+  onSendVoiceBlob: onSendVoiceBlobOverride,
+  onSendVideoBlob: onSendVideoBlobOverride,
 }: UseMessageComposerDraftOptions): UseMessageComposerDraftResult {
   const isGroupComposer = typeof groupId === "string" && groupId.length > 0;
   const [text, setText] = useState("");
@@ -91,19 +99,63 @@ export function useMessageComposerDraft({
   const trimmedText = text.trim();
 
   const { handleTypingState, stopTyping, cleanupTypingSignal } = useChatComposerTypingSignal({
-    recipientUserId,
-    groupId,
+    recipientUserId: onSendTextOverride ? undefined : recipientUserId,
+    groupId: onSendTextOverride ? undefined : groupId,
   });
-  const { sendTextMessage, sendFileAttachment: sendFileAttachmentAction } =
+  const { sendTextMessage: sendTextMessageStore, sendFileAttachment: sendFileAttachmentStore } =
     useChatComposerMessageActions({
-      recipientUserId,
-      groupId,
+      recipientUserId: onSendTextOverride ? undefined : recipientUserId,
+      groupId: onSendTextOverride ? undefined : groupId,
     });
-  const { sendVoiceBlob: sendVoiceBlobAction, sendVideoBlob: sendVideoBlobAction } =
+  const { sendVoiceBlob: sendVoiceBlobStore, sendVideoBlob: sendVideoBlobStore } =
     useChatComposerMediaActions({
-      recipientUserId,
-      groupId,
+      recipientUserId: onSendVoiceBlobOverride ? undefined : recipientUserId,
+      groupId: onSendVoiceBlobOverride ? undefined : groupId,
     });
+
+  const sendTextMessage = useCallback(
+    async (t: string, replyTo?: MessageReplyMeta) => {
+      if (onSendTextOverride) {
+        await onSendTextOverride(t);
+      } else {
+        await sendTextMessageStore(t, replyTo);
+      }
+    },
+    [onSendTextOverride, sendTextMessageStore]
+  );
+
+  const sendFileAttachmentAction = useCallback(
+    async (file: File, mediaGroupId?: string, caption?: string) => {
+      if (onSendFileOverride) {
+        await onSendFileOverride(file, mediaGroupId, caption);
+      } else {
+        await sendFileAttachmentStore(file, mediaGroupId, caption);
+      }
+    },
+    [onSendFileOverride, sendFileAttachmentStore]
+  );
+
+  const sendVoiceBlobAction = useCallback(
+    async (blob: Blob, durationMs: number) => {
+      if (onSendVoiceBlobOverride) {
+        await onSendVoiceBlobOverride(blob, durationMs);
+      } else {
+        await sendVoiceBlobStore(blob, durationMs);
+      }
+    },
+    [onSendVoiceBlobOverride, sendVoiceBlobStore]
+  );
+
+  const sendVideoBlobAction = useCallback(
+    async (blob: Blob, durationMs: number) => {
+      if (onSendVideoBlobOverride) {
+        await onSendVideoBlobOverride(blob, durationMs);
+      } else {
+        await sendVideoBlobStore(blob, durationMs);
+      }
+    },
+    [onSendVideoBlobOverride, sendVideoBlobStore]
+  );
 
   const resizeTextAreaToContent = useCallback(() => {
     if (!textareaRef.current) return;

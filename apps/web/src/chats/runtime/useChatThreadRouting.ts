@@ -9,12 +9,16 @@ import { useLocation, useNavigate } from "react-router-dom";
 import {
   buildSearchWithConversation,
   buildSearchWithGroup,
+  buildSearchWithPlainConversation,
+  buildSearchWithPlainGroup,
   getConversationIdFromSearch,
   getGroupIdFromSearch,
+  getPlainConversationIdFromSearch,
+  getPlainGroupIdFromSearch,
 } from "@/lib/chat-route";
 
 export interface ChatThreadSelection {
-  kind: "direct" | "group";
+  kind: "direct" | "group" | "plain-direct" | "plain-group";
   id: string;
 }
 
@@ -29,6 +33,12 @@ interface UseChatThreadRoutingOptions {
     groups: Record<string, unknown>;
     activeGroupId: string | null;
   };
+  plainConversations: Record<string, unknown>;
+  activePlainConversationId: string | null;
+  activePlainGroupId: string | null;
+  setActivePlainConversation: (userId: string | null) => void;
+  setActivePlainGroup: (groupId: string | null) => void;
+  loadPlainGroupMessages: (groupId: string) => Promise<void>;
   setMobileShowConversation: Dispatch<SetStateAction<boolean>>;
   setMobileCreateMenuOpen: Dispatch<SetStateAction<boolean>>;
 }
@@ -120,6 +130,12 @@ export function useChatThreadRouting(options: UseChatThreadRoutingOptions) {
     setActiveGroup,
     loadGroupMessages,
     getGroupsState,
+    plainConversations,
+    activePlainConversationId,
+    activePlainGroupId,
+    setActivePlainConversation,
+    setActivePlainGroup,
+    loadPlainGroupMessages,
     setMobileShowConversation,
     setMobileCreateMenuOpen,
   } = options;
@@ -127,6 +143,8 @@ export function useChatThreadRouting(options: UseChatThreadRoutingOptions) {
   const location = useLocation();
   const routeConversationId = getConversationIdFromSearch(location.search);
   const routeGroupId = getGroupIdFromSearch(location.search);
+  const routePlainConversationId = getPlainConversationIdFromSearch(location.search);
+  const routePlainGroupId = getPlainGroupIdFromSearch(location.search);
   const activeThreadState = useMemo<ActiveThreadState>(() => ({
     activeConversationId,
     activeGroupId,
@@ -149,41 +167,69 @@ export function useChatThreadRouting(options: UseChatThreadRoutingOptions) {
         loadGroupMessages,
         getGroupsState,
       });
+      if (activePlainConversationId !== null) setActivePlainConversation(null);
+      if (activePlainGroupId !== null) setActivePlainGroup(null);
       return;
     }
 
-    if (!routeConversationId || !conversations[routeConversationId]) {
-      clearActiveThreadState(activeThreadState);
+    if (routeConversationId && conversations[routeConversationId]) {
+      activateDirectRoute({ ...activeThreadState, routeConversationId });
+      if (activePlainConversationId !== null) setActivePlainConversation(null);
+      if (activePlainGroupId !== null) setActivePlainGroup(null);
       return;
     }
 
-    activateDirectRoute({
-      ...activeThreadState,
-      routeConversationId,
-    });
+    if (routePlainGroupId) {
+      if (activeConversationId !== null) setActiveConversation(null);
+      if (activeGroupId !== null) setActiveGroup(null);
+      if (activePlainConversationId !== null) setActivePlainConversation(null);
+      if (activePlainGroupId !== routePlainGroupId) setActivePlainGroup(routePlainGroupId);
+      setMobileShowConversation(true);
+      loadPlainGroupMessages(routePlainGroupId).catch(() => {});
+      return;
+    }
+
+    if (routePlainConversationId && plainConversations[routePlainConversationId]) {
+      if (activeConversationId !== null) setActiveConversation(null);
+      if (activeGroupId !== null) setActiveGroup(null);
+      if (activePlainGroupId !== null) setActivePlainGroup(null);
+      if (activePlainConversationId !== routePlainConversationId) {
+        setActivePlainConversation(routePlainConversationId);
+      }
+      setMobileShowConversation(true);
+      return;
+    }
+
+    clearActiveThreadState(activeThreadState);
+    if (activePlainConversationId !== null) setActivePlainConversation(null);
+    if (activePlainGroupId !== null) setActivePlainGroup(null);
   }, [
     routeConversationId,
     routeGroupId,
+    routePlainConversationId,
+    routePlainGroupId,
     conversations,
+    plainConversations,
     activeThreadState,
     loadGroupMessages,
     getGroupsState,
+    loadPlainGroupMessages,
+    activeConversationId,
+    activeGroupId,
+    activePlainConversationId,
+    activePlainGroupId,
+    setActiveConversation,
+    setActiveGroup,
+    setActivePlainConversation,
+    setActivePlainGroup,
+    setMobileShowConversation,
   ]);
 
   const updateConversationRoute = useCallback(
     (nextConversationId: string | null) => {
-      const nextSearch = buildSearchWithConversation(
-        location.search,
-        nextConversationId
-      );
+      const nextSearch = buildSearchWithConversation(location.search, nextConversationId);
       if (nextSearch === location.search) return;
-      navigate(
-        {
-          pathname: location.pathname,
-          search: nextSearch,
-        },
-        { replace: false }
-      );
+      navigate({ pathname: location.pathname, search: nextSearch }, { replace: false });
     },
     [location.pathname, location.search, navigate]
   );
@@ -192,28 +238,36 @@ export function useChatThreadRouting(options: UseChatThreadRoutingOptions) {
     (nextGroupId: string | null) => {
       const nextSearch = buildSearchWithGroup(location.search, nextGroupId);
       if (nextSearch === location.search) return;
-      navigate(
-        {
-          pathname: location.pathname,
-          search: nextSearch,
-        },
-        { replace: false }
-      );
+      navigate({ pathname: location.pathname, search: nextSearch }, { replace: false });
+    },
+    [location.pathname, location.search, navigate]
+  );
+
+  const updatePlainConversationRoute = useCallback(
+    (nextId: string | null) => {
+      const nextSearch = buildSearchWithPlainConversation(location.search, nextId);
+      if (nextSearch === location.search) return;
+      navigate({ pathname: location.pathname, search: nextSearch }, { replace: false });
+    },
+    [location.pathname, location.search, navigate]
+  );
+
+  const updatePlainGroupRoute = useCallback(
+    (nextId: string | null) => {
+      const nextSearch = buildSearchWithPlainGroup(location.search, nextId);
+      if (nextSearch === location.search) return;
+      navigate({ pathname: location.pathname, search: nextSearch }, { replace: false });
     },
     [location.pathname, location.search, navigate]
   );
 
   const clearThreadRoute = useCallback(() => {
-    const withoutConversation = buildSearchWithConversation(location.search, null);
-    const nextSearch = buildSearchWithGroup(withoutConversation, null);
+    const s1 = buildSearchWithConversation(location.search, null);
+    const s2 = buildSearchWithGroup(s1, null);
+    const s3 = buildSearchWithPlainConversation(s2, null);
+    const nextSearch = buildSearchWithPlainGroup(s3, null);
     if (nextSearch === location.search) return;
-    navigate(
-      {
-        pathname: location.pathname,
-        search: nextSearch,
-      },
-      { replace: false }
-    );
+    navigate({ pathname: location.pathname, search: nextSearch }, { replace: false });
   }, [location.pathname, location.search, navigate]);
 
   const handleBack = useCallback(() => {
@@ -228,43 +282,71 @@ export function useChatThreadRouting(options: UseChatThreadRoutingOptions) {
       setMobileShowConversation(true);
 
       if (selection.kind === "direct") {
-        if (activeGroupId !== null) {
-          setActiveGroup(null);
-        }
-        if (activeConversationId !== selection.id) {
-          setActiveConversation(selection.id);
-        }
+        if (activeGroupId !== null) setActiveGroup(null);
+        if (activePlainConversationId !== null) setActivePlainConversation(null);
+        if (activePlainGroupId !== null) setActivePlainGroup(null);
+        if (activeConversationId !== selection.id) setActiveConversation(selection.id);
         updateConversationRoute(selection.id);
         return;
       }
 
-      if (activeConversationId !== null) {
-        setActiveConversation(null);
+      if (selection.kind === "group") {
+        if (activeConversationId !== null) setActiveConversation(null);
+        if (activePlainConversationId !== null) setActivePlainConversation(null);
+        if (activePlainGroupId !== null) setActivePlainGroup(null);
+        if (activeGroupId !== selection.id) setActiveGroup(selection.id);
+        loadGroupMessages(selection.id).catch(() => {});
+        updateGroupRoute(selection.id);
+        return;
       }
-      if (activeGroupId !== selection.id) {
-        setActiveGroup(selection.id);
+
+      if (selection.kind === "plain-direct") {
+        if (activeConversationId !== null) setActiveConversation(null);
+        if (activeGroupId !== null) setActiveGroup(null);
+        if (activePlainGroupId !== null) setActivePlainGroup(null);
+        if (activePlainConversationId !== selection.id) setActivePlainConversation(selection.id);
+        updatePlainConversationRoute(selection.id);
+        return;
       }
-      loadGroupMessages(selection.id).catch(() => {});
-      updateGroupRoute(selection.id);
+
+      if (selection.kind === "plain-group") {
+        if (activeConversationId !== null) setActiveConversation(null);
+        if (activeGroupId !== null) setActiveGroup(null);
+        if (activePlainConversationId !== null) setActivePlainConversation(null);
+        if (activePlainGroupId !== selection.id) setActivePlainGroup(selection.id);
+        loadPlainGroupMessages(selection.id).catch(() => {});
+        updatePlainGroupRoute(selection.id);
+      }
     },
     [
       activeConversationId,
       activeGroupId,
+      activePlainConversationId,
+      activePlainGroupId,
       loadGroupMessages,
+      loadPlainGroupMessages,
       setActiveConversation,
       setActiveGroup,
+      setActivePlainConversation,
+      setActivePlainGroup,
       setMobileCreateMenuOpen,
       setMobileShowConversation,
       updateConversationRoute,
       updateGroupRoute,
+      updatePlainConversationRoute,
+      updatePlainGroupRoute,
     ]
   );
 
   return {
     routeConversationId,
     routeGroupId,
+    routePlainConversationId,
+    routePlainGroupId,
     updateConversationRoute,
     updateGroupRoute,
+    updatePlainConversationRoute,
+    updatePlainGroupRoute,
     clearThreadRoute,
     handleBack,
     handleSelectThread,

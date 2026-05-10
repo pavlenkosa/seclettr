@@ -1,28 +1,15 @@
-import { lazy, memo, Suspense, useCallback } from "react";
+import { memo, useCallback } from "react";
+import { NewChatModal } from "@/chats/presentation/modals/NewChatModal";
+import { NewGroupModal } from "@/chats/presentation/modals/NewGroupModal";
+import { GroupMembersModal } from "@/chats/presentation/modals/GroupMembersModal";
 import { SecurityModal } from "@/chats/presentation/modals/SecurityModal";
+import { ChatTypePickerModal } from "@/chats/presentation/modals/ChatTypePickerModal";
 import type {
   SecurityWorkspaceState,
   WorkspaceEntryState,
   WorkspaceInteractions,
   WorkspaceUiState,
 } from "./chat-page-types";
-import styles from "../ChatPage.module.css";
-
-const NewChatModal = lazy(() =>
-  import("@/chats/presentation/modals/NewChatModal").then(({ NewChatModal: Component }) => ({
-    default: Component,
-  }))
-);
-const NewGroupModal = lazy(() =>
-  import("@/chats/presentation/modals/NewGroupModal").then(({ NewGroupModal: Component }) => ({
-    default: Component,
-  }))
-);
-const GroupMembersModal = lazy(() =>
-  import("@/chats/presentation/modals/GroupMembersModal").then(({ GroupMembersModal: Component }) => ({
-    default: Component,
-  }))
-);
 
 export const ChatModals = memo(function ChatModals({
   workspaceUiState,
@@ -74,30 +61,33 @@ export const ChatModals = memo(function ChatModals({
   return (
     <>
       {workspaceUiState.showNewChat && (
-        <Suspense fallback={<div className={styles.modalLazyFallback} aria-hidden="true" />}>
-          <NewChatModal
-            onClose={workspaceUiState.closeNewChat}
-            onSelect={interactions.handleNewChatSelect}
-          />
-        </Suspense>
+        <NewChatModal
+          onClose={workspaceUiState.closeNewChat}
+          onSelect={interactions.handleNewChatSelect}
+        />
+      )}
+      {workspaceUiState.showChatTypePicker && workspaceUiState.pendingChatUser && (
+        <ChatTypePickerModal
+          userId={workspaceUiState.pendingChatUser.userId}
+          username={workspaceUiState.pendingChatUser.username}
+          onClose={workspaceUiState.closeChatTypePicker}
+          onSelectE2ee={interactions.handleNewChatSelectE2ee}
+          onSelectPlain={interactions.handleNewChatSelectPlain}
+        />
       )}
       {workspaceUiState.showNewGroup && (
-        <Suspense fallback={<div className={styles.modalLazyFallback} aria-hidden="true" />}>
-          <NewGroupModal
-            onClose={workspaceUiState.closeNewGroup}
-            onCreate={handleNewGroupCreate}
-          />
-        </Suspense>
+        <NewGroupModal
+          onClose={workspaceUiState.closeNewGroup}
+          onCreate={handleNewGroupCreate}
+        />
       )}
       {workspaceUiState.showGroupMembers && activeGroup && userId && (
-        <Suspense fallback={<div className={styles.modalLazyFallback} aria-hidden="true" />}>
-          <GroupMembersModal
-            group={activeGroup}
-            myUserId={userId}
-            onVerifyMember={handleVerifyGroupMember}
-            onClose={workspaceUiState.closeGroupMembers}
-          />
-        </Suspense>
+        <GroupMembersModal
+          group={activeGroup}
+          myUserId={userId}
+          onVerifyMember={handleVerifyGroupMember}
+          onClose={workspaceUiState.closeGroupMembers}
+        />
       )}
       {security.showSecurity && activeConversation && (
         <SecurityModal

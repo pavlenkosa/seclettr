@@ -65,7 +65,10 @@ export const ChatThreadHeader = memo(function ChatThreadHeader({
   activeThreadKind,
   activeConversation,
   activeGroup,
+  activePlainConversation,
+  activePlainGroup,
   directPresenceLabel,
+  plainDirectPresenceLabel,
   security,
   t,
   handleBack,
@@ -80,7 +83,10 @@ export const ChatThreadHeader = memo(function ChatThreadHeader({
   activeThreadKind: WorkspaceEntryState["activeThreadKind"];
   activeConversation: WorkspaceEntryState["activeConversation"];
   activeGroup: WorkspaceEntryState["activeGroup"];
+  activePlainConversation: WorkspaceEntryState["activePlainConversation"];
+  activePlainGroup: WorkspaceEntryState["activePlainGroup"];
   directPresenceLabel: string;
+  plainDirectPresenceLabel: string;
   security: SecurityWorkspaceState;
   t: TranslateFn;
   handleBack: WorkspaceEntryState["handleBack"];
@@ -93,6 +99,33 @@ export const ChatThreadHeader = memo(function ChatThreadHeader({
   handleJoinActiveGroupCall: WorkspaceEntryState["handleJoinActiveGroupCall"];
 }) {
   if (!activeThreadKind) return null;
+
+  const isPlainDirect = activeThreadKind === "plain-direct";
+  const isPlainGroup = activeThreadKind === "plain-group";
+
+  if (isPlainDirect || isPlainGroup) {
+    const plainTitle = isPlainDirect
+      ? activePlainConversation?.username ?? ""
+      : activePlainGroup?.name ?? "";
+    const plainSubtitle = isPlainGroup
+      ? t("group.header.memberCount", { count: activePlainGroup?.members.length ?? 0 })
+      : plainDirectPresenceLabel;
+    return (
+      <ChatThreadChrome
+        title={plainTitle}
+        subtitle={plainSubtitle}
+        statusLabel={null}
+        statusAriaLabel={null}
+        statusTone={null}
+        onStatusClick={null}
+        avatarLabel={plainTitle}
+        backAriaLabel={t("chat.back")}
+        onBack={handleBack}
+        actions={threadChromeActions}
+        callNotice={null}
+      />
+    );
+  }
 
   const isDirectThread = activeThreadKind === "direct";
   const title = isDirectThread ? activeConversation?.username ?? "" : activeGroup?.name ?? "";

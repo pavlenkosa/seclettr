@@ -73,6 +73,14 @@ export function useMediaNoteBase<T extends HTMLMediaElement = HTMLMediaElement>(
     async (autoPlay = false) => {
       if (loading || mediaUrl || !attachment) return;
 
+      // For plain attachments with a local blob URL still valid, use it directly
+      if (attachment.isPlain && attachment.localUrl) {
+        shouldAutoplayRef.current = autoPlay;
+        setMediaUrl(attachment.localUrl);
+        setCurrentTime(0);
+        return;
+      }
+
       setLoading(true);
       setErrorCause(null);
 

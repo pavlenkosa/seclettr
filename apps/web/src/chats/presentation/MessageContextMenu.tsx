@@ -2,6 +2,7 @@ import {
   memo,
   useCallback,
   useEffect,
+  useLayoutEffect,
   useRef,
   useState,
   type CSSProperties,
@@ -151,6 +152,36 @@ export const MessageContextMenu = memo(function MessageContextMenu({
     }
     setMountedMenuPos(menuPos);
   }, [menuPos]);
+
+  // After the menu actually renders, measure it and clamp the position so it
+  // doesn't escape the viewport — the previous fixed positioning placed the
+  // menu's top-left corner at the click coordinate, which left it half-off
+  // screen for clicks near the right/bottom edge.
+  useLayoutEffect(() => {
+    if (!isMounted || !mountedMenuPos) return;
+    const node = menuRef.current;
+    if (!node) return;
+    const rect = node.getBoundingClientRect();
+    const margin = 8;
+    const viewportWidth = globalThis.innerWidth || document.documentElement.clientWidth;
+    const viewportHeight = globalThis.innerHeight || document.documentElement.clientHeight;
+
+    let x = mountedMenuPos.x;
+    let y = mountedMenuPos.y;
+    if (x + rect.width + margin > viewportWidth) {
+      x = Math.max(margin, viewportWidth - rect.width - margin);
+    }
+    if (y + rect.height + margin > viewportHeight) {
+      // Prefer flipping above the click point so the user's finger / cursor
+      // doesn't sit on top of the first action.
+      y = Math.max(margin, mountedMenuPos.y - rect.height);
+    }
+    if (x !== mountedMenuPos.x || y !== mountedMenuPos.y) {
+      setMountedMenuPos({ x, y });
+    }
+  // mountedMenuPos.x/.y changes drive the re-measure; isMounted guards initial open.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isMounted, mountedMenuPos?.x, mountedMenuPos?.y]);
 
   useEffect(() => {
     return () => {

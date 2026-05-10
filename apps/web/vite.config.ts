@@ -253,6 +253,10 @@ export default defineConfig(({ command }) => ({
         target: devMinioOrigin,
         changeOrigin: true,
       },
+      [`/${devMinioBucket}-plain/`]: {
+        target: devMinioOrigin,
+        changeOrigin: true,
+      },
     },
   },
   define: {

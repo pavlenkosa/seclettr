@@ -60,9 +60,12 @@ export function useDirectCallUiFeedback({
       outcome: params.outcome,
       durationSec: params.durationSec,
     };
-    // Write to plain-chat history if the peer has a plain conversation, E2EE otherwise.
+    // Prefer E2EE thread; only use plain if no E2EE conversation exists with this peer.
+    const e2eeConversations = useMessagesStore.getState().conversations;
     const plainConversations = usePlainMessagesStore.getState().conversations;
-    if (plainConversations[params.userId]) {
+    if (e2eeConversations[params.userId]) {
+      useMessagesStore.getState().recordCallEvent(callData);
+    } else if (plainConversations[params.userId]) {
       usePlainMessagesStore.getState().recordCallEvent(callData);
     } else {
       useMessagesStore.getState().recordCallEvent(callData);

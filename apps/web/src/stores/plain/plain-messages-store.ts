@@ -213,20 +213,41 @@ export const usePlainMessagesStore = create<PlainMessagesState>((set, get) => {
 
   async function loadConversationList(): Promise<void> {
     try {
+      const myUserId = getMyUserId() ?? "";
       const data = await api.get<{
-        conversations: Array<{ peerUserId: string; peerUsername: string; lastMessageAt: string }>;
+        conversations: Array<{
+          peerUserId: string;
+          peerUsername: string;
+          lastMessageAt: string;
+          lastMessageContent: string;
+          lastMessageType: string;
+          lastSenderUserId: string;
+        }>;
       }>("/plain/conversations");
 
       set((state) => {
         const next = { ...state.conversations };
         for (const c of data.conversations) {
           const key = conversationKeyFor(c.peerUserId);
+          const lastTs = new Date(c.lastMessageAt).getTime();
           if (!next[key]) {
+            const isOwnLast = c.lastSenderUserId === myUserId;
+            const stub: PlainMessage = {
+              id: `stub-${c.peerUserId}`,
+              clientId: `stub-${c.peerUserId}`,
+              senderId: c.lastSenderUserId,
+              senderName: isOwnLast ? (getMyUsername() ?? "") : c.peerUsername,
+              content: c.lastMessageContent,
+              type: c.lastMessageType as PlainMessageType,
+              timestamp: lastTs,
+              isOwn: isOwnLast,
+              status: "sent",
+            };
             next[key] = {
               userId: c.peerUserId,
               username: c.peerUsername,
-              messages: [],
-              lastMessageAt: new Date(c.lastMessageAt).getTime(),
+              messages: [stub],
+              lastMessageAt: lastTs,
               unreadCount: 0,
               hasMore: false,
               historyLoaded: false,
@@ -341,7 +362,7 @@ export const usePlainMessagesStore = create<PlainMessagesState>((set, get) => {
     }));
 
     try {
-      await api.post<WireSendResponse>(
+      const res = await api.post<WireSendResponse>(
         `/plain/messages/${encodeURIComponent(recipientUserId)}`,
         {
           version: PLAIN_PROTOCOL_VERSION,
@@ -351,6 +372,24 @@ export const usePlainMessagesStore = create<PlainMessagesState>((set, get) => {
           replyToId: replyTo?.id,
         }
       );
+      // Update optimistic message immediately; WS echo will arrive later and be deduped
+      set((state) => {
+        const conv = state.conversations[key];
+        if (!conv) return state;
+        return {
+          conversations: {
+            ...state.conversations,
+            [key]: {
+              ...conv,
+              messages: conv.messages.map((m) =>
+                m.clientId === clientId
+                  ? { ...m, id: res.id, status: "sent" as const }
+                  : m
+              ),
+            },
+          },
+        };
+      });
     } catch (err) {
       logger.error("[PlainMsg] sendText failed", err);
       set((state) => {
@@ -689,6 +728,16 @@ export const usePlainMessagesStore = create<PlainMessagesState>((set, get) => {
         },
       };
     });
+    // Fire-and-forget: notify sender their messages were read
+    void sendReadReceipt(userId);
+  }
+
+  async function sendReadReceipt(peerUserId: string): Promise<void> {
+    try {
+      await api.post(`/plain/messages/${encodeURIComponent(peerUserId)}/read`, {});
+    } catch (err) {
+      logger.warn("[PlainMsg] sendReadReceipt failed", err);
+    }
   }
 
   function handleIncomingWsEvent(message: { type: string; [k: string]: unknown }): void {
@@ -766,6 +815,29 @@ export const usePlainMessagesStore = create<PlainMessagesState>((set, get) => {
           },
         };
       });
+      return;
+    }
+
+    if (message.type === "plain_message.read") {
+      // Peer read our messages — update status to "read" for the affected thread
+      const { messageIds, threadKey } = message as unknown as {
+        messageIds: string[];
+        threadKey: string;
+      };
+      const idSet = new Set(messageIds);
+      set((state) => {
+        const conv = state.conversations[threadKey];
+        if (!conv) return state;
+        const messages: PlainMessage[] = conv.messages.map((m) =>
+          m.isOwn && idSet.has(m.id) ? { ...m, status: "read" as PlainMessage["status"] } : m
+        );
+        return {
+          conversations: {
+            ...state.conversations,
+            [threadKey]: { ...conv, messages },
+          },
+        };
+      });
     }
   }
 
@@ -774,7 +846,8 @@ export const usePlainMessagesStore = create<PlainMessagesState>((set, get) => {
       if (
         message.type === "plain_message.new" ||
         message.type === "plain_message.edited" ||
-        message.type === "plain_message.deleted"
+        message.type === "plain_message.deleted" ||
+        message.type === "plain_message.read"
       ) {
         handleIncomingWsEvent(message as unknown as { type: string; [k: string]: unknown });
       }

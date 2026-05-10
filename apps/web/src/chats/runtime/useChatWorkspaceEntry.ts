@@ -335,6 +335,13 @@ export function useChatWorkspaceEntry(options: UseChatWorkspaceEntryOptions) {
     void loadPlainHistory(activePlainConversation.userId, activePlainConversation.username);
   }, [activePlainConversation?.userId, activePlainConversation?.historyLoaded, loadPlainHistory]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // Send read receipt when opening a plain-direct thread (or when history finishes loading).
+  useEffect(() => {
+    if (!activePlainConversation?.historyLoaded) return;
+    if (activePlainConversation.unreadCount === 0) return;
+    usePlainMessagesStore.getState().markRead(activePlainConversation.userId);
+  }, [activePlainConversation?.userId, activePlainConversation?.historyLoaded, activePlainConversation?.unreadCount]); // eslint-disable-line react-hooks/exhaustive-deps
+
   const activeThreadKind: "direct" | "group" | "plain-direct" | "plain-group" | null =
     activeConversation
       ? "direct"

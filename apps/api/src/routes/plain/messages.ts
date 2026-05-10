@@ -1,10 +1,11 @@
 /**
  * Plain (cloud-stored) direct message routes.
  *
- * POST /plain/messages/:recipientUserId    → send DM
- * GET  /plain/messages/:recipientUserId    → paginated history
- * PATCH /plain/messages/:id               → edit
- * DELETE /plain/messages/:id              → soft-delete
+ * POST /plain/messages/:recipientUserId          → send DM
+ * GET  /plain/messages/:recipientUserId          → paginated history
+ * POST /plain/messages/:recipientUserId/read     → mark thread as read
+ * PATCH /plain/messages/:id                      → edit
+ * DELETE /plain/messages/:id                     → soft-delete
  */
 import type { FastifyInstance } from "fastify";
 import { randomUUID } from "node:crypto";
@@ -283,6 +284,56 @@ export async function plainMessageRoutes(fastify: FastifyInstance): Promise<void
       const nextCursor = hasMore ? rows[pageLimit - 1]?.created_at : undefined;
 
       return reply.code(200).send({ messages, hasMore, nextCursor });
+    }
+  );
+
+  /** Mark thread as read — inserts read receipts for all unread inbound messages */
+  fastify.post(
+    "/:peerUserId/read",
+    { preHandler: requireAuth },
+    async (request, reply) => {
+      const { sub: userId } = request.auth;
+      const { peerUserId } = request.params as { peerUserId: string };
+
+      // Find all messages sent by peer to us that we haven't marked read yet
+      const unread = await query<{ id: string }>(
+        `SELECT pm.id FROM plain_messages pm
+         WHERE pm.sender_user_id = $1
+           AND pm.recipient_user_id = $2
+           AND pm.deleted_at IS NULL
+           AND NOT EXISTS (
+             SELECT 1 FROM plain_message_reads pmr
+             WHERE pmr.message_id = pm.id AND pmr.user_id = $2
+           )`,
+        [peerUserId, userId]
+      );
+
+      if (unread.length === 0) return reply.code(204).send();
+
+      const ids = unread.map((r) => r.id);
+      // Bulk insert read receipts
+      const placeholders = ids.map((_, i) => `($${i * 2 + 1}, $${i * 2 + 2})`).join(", ");
+      const values: string[] = [];
+      for (const id of ids) values.push(id, userId);
+
+      await query(
+        `INSERT INTO plain_message_reads (message_id, user_id) VALUES ${placeholders}
+         ON CONFLICT DO NOTHING`,
+        values
+      );
+
+      const now = new Date().toISOString();
+      // Notify the peer that their messages were read
+      await publishPlainMessageToUser(peerUserId, {
+        type: "plain_message.read",
+        messageIds: ids,
+        readerUserId: userId,
+        threadKey: userId,
+        threadKind: "dm",
+        readAt: now,
+      });
+
+      return reply.code(204).send();
     }
   );
 

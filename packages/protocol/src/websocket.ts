@@ -218,7 +218,7 @@ export const WsServerMessageSchema = z.discriminatedUnion("type", [
   }),
   wsEnvelope({
     type: z.literal("plain_message.read"),
-    messageId: z.string().uuid(),
+    messageIds: z.array(z.string().uuid()),
     readerUserId: z.string().uuid(),
     threadKey: z.string().uuid(),
     threadKind: z.enum(["dm", "group"]),

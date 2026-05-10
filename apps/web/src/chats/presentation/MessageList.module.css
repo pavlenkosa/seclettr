@@ -1782,17 +1782,27 @@ button.quotedBubble {
   object-fit: contain;
 }
 
-/* Placeholder shown before decryption — fixed size so the bubble has
-   a reasonable footprint before we know the media dimensions. */
+/* Placeholder shown before the actual media resolves. We don't know the
+   real aspect ratio yet, so default to 4:3 — close to the typical phone
+   photo and balanced for landscape video stills. The frame swaps out
+   for the real <img>/<video> element once the blob URL is ready and the
+   bubble reflows to the natural ratio. */
 .inlineMediaPlaceholder {
+  position: relative;
   width: min(260px, 72vw);
-  height: 160px;
+  aspect-ratio: 4 / 3;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   gap: 0.56rem;
   background: color-mix(in srgb, var(--surface-shell-strong) 90%, transparent);
+  border-radius: inherit;
+  overflow: hidden;
+}
+
+.inlineMediaPlaceholderVideo {
+  aspect-ratio: 16 / 9;
 }
 
 .inlineMediaLock {

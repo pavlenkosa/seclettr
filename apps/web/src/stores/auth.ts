@@ -63,6 +63,7 @@ import {
 import { useMessagesStore } from "@/stores/messages";
 import { useGroupsStore } from "@/stores/groups";
 import { usePlainMessagesStore, usePlainGroupsStore, usePlainPinsStore } from "@/stores/plain";
+import { clearPlainAttachmentBlobCache } from "@/chats/runtime/plain-attachment-blob-cache";
 import type { AuthState } from "./auth-types";
 import {
   buildLockedState,
@@ -92,6 +93,7 @@ function clearEphemeralRuntimeState(): void {
   usePlainMessagesStore.getState().reset();
   usePlainGroupsStore.getState().reset();
   usePlainPinsStore.getState().reset();
+  clearPlainAttachmentBlobCache();
 }
 
 async function clearLocalSessionSecrets(params: {

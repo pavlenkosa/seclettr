@@ -73,8 +73,12 @@ function InlineMediaPlaceholder({ isVideo, loading, isPlain }: InlineMediaPlaceh
       </span>
     );
 
+  const placeholderClass = isVideo
+    ? `${styles.inlineMediaPlaceholder} ${styles.inlineMediaPlaceholderVideo}`
+    : styles.inlineMediaPlaceholder;
+
   return (
-    <div className={styles.inlineMediaPlaceholder}>
+    <div className={placeholderClass}>
       {loading ? (
         <span className={styles.inlineMediaSpinner} aria-hidden="true" />
       ) : restingGlyph}

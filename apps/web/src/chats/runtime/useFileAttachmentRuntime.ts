@@ -61,6 +61,15 @@ export function useFileAttachmentRuntime({
     setPreviewUrl(null);
   }, [attachment?.attachmentId]);
 
+  // For plain attachments, the localUrl is the preview directly — no decryption
+  // needed. Surface it eagerly so the UI doesn't show a "tap to decrypt" lock.
+  useEffect(() => {
+    if (attachment?.isPlain && attachment.localUrl) {
+      previewUrlRef.current = attachment.localUrl;
+      setPreviewUrl(attachment.localUrl);
+    }
+  }, [attachment?.isPlain, attachment?.localUrl]);
+
   const decryptAndPreview = useCallback(async (): Promise<string | null> => {
     if (!attachment) return null;
     // Return cached URL if already loaded.

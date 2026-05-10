@@ -91,7 +91,7 @@ export function InlineMediaAttachment({ msg, isOwn }: InlineMediaAttachmentProps
   const { autoDecryptMedia } = useSecuritySettings();
   const {
     loading,
-    previewUrl,
+    previewUrl: hookPreviewUrl,
     errorCause,
     decryptAndPreview,
     decryptAndDownload,
@@ -102,9 +102,14 @@ export function InlineMediaAttachment({ msg, isOwn }: InlineMediaAttachmentProps
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const { progress: uploadProgress, cancel: cancelUpload } = useUploadProgress(msg.id);
 
+  // Plain attachments use the local blob URL directly — no decryption needed,
+  // no "tap to unlock" gate. Bypass the hook's previewUrl gating completely.
+  const plainLocalUrl = msg.attachment?.isPlain ? msg.attachment.localUrl ?? null : null;
+  const previewUrl = plainLocalUrl ?? hookPreviewUrl;
+
   const isVideo = msg.attachment?.mimeType.startsWith("video/") ?? false;
   const messageTimeLabel = formatTime(msg.timestamp, locale);
-  const error = resolveAttachmentErrorMessage("file", errorCause, t);
+  const error = resolveAttachmentErrorMessage("file", errorCause, t, !!msg.attachment?.isPlain);
   const mediaMetaOverlay = previewUrl ? (
     <div className={styles.inlineMediaMeta} aria-hidden="true">
       <span>{messageTimeLabel}</span>
@@ -113,15 +118,21 @@ export function InlineMediaAttachment({ msg, isOwn }: InlineMediaAttachmentProps
   ) : null;
 
   useEffect(() => {
+    // Plain attachments resolve their preview synchronously inside the runtime
+    // hook; for E2EE we kick off decrypt-on-mount when the user opted in.
+    // `errorCause` guard prevents an infinite retry loop when the fetch fails
+    // (the effect would otherwise re-fire on the next render and hammer the
+    // attachment endpoint until rate-limited).
     if (
-      autoDecryptMedia === "on" &&
+      (autoDecryptMedia === "on" || !!msg.attachment?.isPlain) &&
       uploadProgress === null &&
       !previewUrl &&
-      !loading
+      !loading &&
+      !errorCause
     ) {
       void decryptAndPreview();
     }
-  }, [autoDecryptMedia, decryptAndPreview, loading, msg.attachment?.attachmentId, previewUrl, uploadProgress]);
+  }, [autoDecryptMedia, decryptAndPreview, errorCause, loading, msg.attachment?.attachmentId, msg.attachment?.isPlain, previewUrl, uploadProgress]);
 
   const handleTap = async () => {
     if (uploadProgress !== null) return;

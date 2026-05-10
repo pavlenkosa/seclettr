@@ -61,13 +61,14 @@ export function useDirectCallSetupControlRuntime(options: DirectCallSetupRuntime
     ensureConversationUsername,
     resolvePeerLabel,
     pushNotice,
+    callChatKindRef,
     debugCallMedia,
     finishCallSession,
     recordCallEvent,
     t,
   } = options;
 
-  const startCall = useCallback(async (peerUserId: string, callType: CallType, peerLabel?: string) => {
+  const startCall = useCallback(async (peerUserId: string, callType: CallType, peerLabel?: string, chatKind?: "plain" | "e2ee") => {
     await runStartCallFlow(peerUserId, callType, peerLabel, {
       activeRef,
       incomingRef,
@@ -104,6 +105,8 @@ export function useDirectCallSetupControlRuntime(options: DirectCallSetupRuntime
       ensureConversationUsername,
       resolvePeerLabel,
       pushNotice,
+      callChatKindRef,
+      chatKind,
       debugCallMedia,
       finishCallSession,
       recordCallEvent,
@@ -112,6 +115,7 @@ export function useDirectCallSetupControlRuntime(options: DirectCallSetupRuntime
   }, [
     activeRef,
     attachLocalTracksToPeer,
+    callChatKindRef,
     callSecurityMode,
     clearNotice,
     closeDirectCallFrameCrypto,
@@ -252,10 +256,12 @@ export function useDirectCallSetupControlRuntime(options: DirectCallSetupRuntime
           mode: currentIncoming.callType,
           direction: "inbound",
           outcome: "declined",
+          chatKind: callChatKindRef.current ?? undefined,
         });
       },
     });
   }, [
+    callChatKindRef,
     incomingRef,
     recordCallEvent,
     t,
@@ -279,10 +285,11 @@ export function useDirectCallSetupControlRuntime(options: DirectCallSetupRuntime
           direction: currentActive.direction,
           outcome: "ended",
           durationSec: resolveDirectCallDurationSeconds(currentActive),
+          chatKind: callChatKindRef.current ?? undefined,
         });
       },
     });
-  }, [activeRef, recordCallEvent, t, finishCallSession]);
+  }, [activeRef, callChatKindRef, recordCallEvent, t, finishCallSession]);
 
   return {
     startCall,

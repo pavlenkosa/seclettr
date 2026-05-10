@@ -21,13 +21,16 @@ export function FileAttachment({ msg }: { readonly msg: Message }) {
   });
   const { progress, cancel } = useUploadProgress(msg.id);
 
-  const error = resolveAttachmentErrorMessage("file", errorCause, t);
+  const isPlain = !!msg.attachment?.isPlain;
+  const error = resolveAttachmentErrorMessage("file", errorCause, t, isPlain);
   const isUploading = progress !== null;
-  const downloadedLabel = downloaded ? t("message.file.downloadAgain") : t("message.file.decryptAndDownload");
+  const initialActionLabel = isPlain ? t("message.file.download") : t("message.file.decryptAndDownload");
+  const downloadedLabel = downloaded ? t("message.file.downloadAgain") : initialActionLabel;
+  const fallbackName = isPlain ? t("message.file.unnamedPlain") : t("message.file.unnamed");
 
   return (
     <div className={styles.fileAttachment}>
-      <div className={styles.fileTitle}>{msg.attachment?.fileName || t("message.file.unnamed")}</div>
+      <div className={styles.fileTitle}>{msg.attachment?.fileName || fallbackName}</div>
       <div className={styles.fileMeta}>
         <span>{formatAttachmentSize(msg.attachment?.size, t)}</span>
         {msg.attachment?.mimeType ? <span>{msg.attachment.mimeType}</span> : null}
@@ -58,10 +61,10 @@ export function FileAttachment({ msg }: { readonly msg: Message }) {
             onClick={() => void decryptAndDownload()}
             disabled={loading || msg.status === "sending"}
             className={styles.fileDecryptBtn}
-            aria-label={t("message.file.decryptAria")}
+            aria-label={t(isPlain ? "message.file.downloadAria" : "message.file.decryptAria")}
           >
             {loading
-              ? t("message.file.decrypting")
+              ? t(isPlain ? "message.file.downloading" : "message.file.decrypting")
               : downloadedLabel}
           </button>
           {error ? <div className={styles.voiceError}>{error}</div> : null}

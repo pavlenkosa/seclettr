@@ -80,6 +80,14 @@ function buildRequestHeaders(options: RequestInit = {}): Headers {
   if (accessToken) {
     headers.set("Authorization", `Bearer ${accessToken}`);
   }
+  // Browser strips Origin/Referer for same-origin GET (and we set
+  // referrer-policy=no-referrer globally), so the API can't recover the
+  // browser-facing origin from standard headers when rewriting presigned S3
+  // URLs. We pass it explicitly so the rewritten URL matches the page origin
+  // and the browser trusts the cert / honors CORS.
+  if (typeof globalThis.location !== "undefined" && globalThis.location.origin) {
+    headers.set("X-Client-Origin", globalThis.location.origin);
+  }
   return headers;
 }
 

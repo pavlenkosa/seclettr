@@ -52,7 +52,8 @@ export function VideoNoteAttachment({
   } as CSSProperties;
   const messageTimeLabel = formatTime(msg.timestamp, locale);
   const durationLabel = msg.attachment?.durationMs ? formatClock(Math.round(msg.attachment.durationMs / 1000)) : "";
-  const error = resolveAttachmentErrorMessage("video", errorCause, t);
+  const isPlain = !!msg.attachment?.isPlain;
+  const error = resolveAttachmentErrorMessage("video", errorCause, t, isPlain);
 
   const videoNoteControl = videoUrl ? (
     <button
@@ -89,7 +90,7 @@ export function VideoNoteAttachment({
       onClick={() => void loadAndMaybePlay(true)}
       disabled={loading}
       className={`${styles.fileDecryptBtn} ${styles.videoDecryptBtn}`}
-      aria-label={t("message.video.decryptAria")}
+      aria-label={t(isPlain ? "message.video.loadAria" : "message.video.decryptAria")}
     >
       <span className={styles.videoDecryptCircle} aria-hidden="true">
         <span className={styles.videoDecryptBlur} />
@@ -117,7 +118,9 @@ export function VideoNoteAttachment({
         </span>
       </span>
       <span className={styles.videoDecryptLabel}>
-        {loading ? t("message.video.decrypting") : t("message.video.decryptAndPlay")}
+        {loading
+          ? t(isPlain ? "message.video.loading" : "message.video.decrypting")
+          : t(isPlain ? "message.video.tapToPlay" : "message.video.decryptAndPlay")}
       </span>
     </button>
   );

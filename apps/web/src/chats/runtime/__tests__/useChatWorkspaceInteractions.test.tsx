@@ -104,7 +104,7 @@ describe("useChatWorkspaceInteractions", () => {
       await Promise.resolve();
     });
 
-    expect(startCall).toHaveBeenCalledWith("user-1", "audio", "alice");
+    expect(startCall).toHaveBeenCalledWith("user-1", "audio", "alice", "e2ee");
     expect(showChatNotice).toHaveBeenCalledWith("call.error.unableStart");
   });
 

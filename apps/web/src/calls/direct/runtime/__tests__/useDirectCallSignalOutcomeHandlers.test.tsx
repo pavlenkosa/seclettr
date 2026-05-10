@@ -59,6 +59,7 @@ function HookHarness(props: {
     supportsPeerRenegotiationV1Ref: props.supportsPeerRenegotiationV1Ref,
     lastSignalingErrorRef: props.lastSignalingErrorRef,
     lastRenegotiationAttemptRef: props.lastRenegotiationAttemptRef,
+    callChatKindRef: { current: null },
     setActive: props.setActive,
     finishCallSession: props.finishCallSession ?? vi.fn((opts: DirectCallFinishSessionOptions) => {
       opts.onBeforeReset?.();

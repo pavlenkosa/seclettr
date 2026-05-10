@@ -83,6 +83,7 @@ function HookHarness(props: {
     resetMinimizedDockState: vi.fn(),
     resolvePeerLabel: (userId: string, fallbackLabel?: string) => fallbackLabel ?? userId,
     pushNotice: vi.fn(),
+    callChatKindRef: { current: null },
     recordCallEvent: vi.fn(),
     rejectIncomingCall: props.rejectIncomingCall ?? vi.fn(),
     finishCallSession: props.finishCallSession ?? vi.fn((opts: DirectCallFinishSessionOptions) => {

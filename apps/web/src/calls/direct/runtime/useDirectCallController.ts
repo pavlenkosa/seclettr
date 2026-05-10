@@ -19,6 +19,7 @@ import {
   useCallback,
   useEffect,
   useMemo,
+  useRef,
 } from "react";
 import { useI18n } from "@/i18n";
 import { api } from "@/lib/api";
@@ -179,6 +180,8 @@ export function useDirectCallController() {
     recordLastRenegotiationAttempt,
     shouldIgnoreUnexpectedPeerSignal,
   } = diagnosticsState;
+
+  const callChatKindRef = useRef<"plain" | "e2ee" | null>(null);
 
   const activeCallId = active?.callId ?? null;
   const {
@@ -627,6 +630,7 @@ export function useDirectCallController() {
     ensureConversationUsername,
     resolvePeerLabel,
     pushNotice,
+    callChatKindRef,
     recordCallEvent,
     debugCallMedia,
     createPeerConnection,
@@ -747,6 +751,7 @@ export function useDirectCallController() {
     resetMinimizedDockState,
     resolvePeerLabel,
     pushNotice,
+    callChatKindRef,
     recordCallEvent,
     rejectIncomingCall: (callId) => {
       void sendAuthoritativeDirectCallReject(callId);

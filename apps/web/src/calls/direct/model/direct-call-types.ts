@@ -110,7 +110,7 @@ export interface RemoteInboundVideoProgress {
 }
 
 export interface DirectCallPanelHandle {
-  startCall: (peerUserId: string, callType: CallType, peerLabel?: string) => Promise<void>;
+  startCall: (peerUserId: string, callType: CallType, peerLabel?: string, chatKind?: "plain" | "e2ee") => Promise<void>;
 }
 
 export interface DirectCallOutgoingIceBatchState {

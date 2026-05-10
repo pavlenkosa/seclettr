@@ -139,11 +139,12 @@ export function useChatWorkspaceInteractions(
 
   const handleStartCall = useCallback(
     (type: "audio" | "video") => {
-      const peer = activeThreadKind === "plain-direct" ? activePlainConversation : activeConversation;
+      const isPlain = activeThreadKind === "plain-direct";
+      const peer = isPlain ? activePlainConversation : activeConversation;
       if (!peer) return;
 
       directCallPanelRef.current
-        ?.startCall(peer.userId, type, peer.username)
+        ?.startCall(peer.userId, type, peer.username, isPlain ? "plain" : "e2ee")
         .catch(() => {
           showChatNotice(t("call.error.unableStart"));
         });

@@ -66,7 +66,8 @@ export function VoiceNoteAttachment({
     : totalDurationLabel;
   const sizeLabel = formatAttachmentSize(msg.attachment?.size, t);
   const messageTimeLabel = formatTime(msg.timestamp, locale);
-  const error = resolveAttachmentErrorMessage("voice", errorCause, t);
+  const isPlain = !!msg.attachment?.isPlain;
+  const error = resolveAttachmentErrorMessage("voice", errorCause, t, isPlain);
 
   const handlePlaybackRateToggle = () => {
     setPlaybackRate((previous) => {
@@ -136,7 +137,7 @@ export function VoiceNoteAttachment({
     </div>
   ) : (
     <>
-      <VoiceDecryptButton loading={loading} onDecrypt={() => void loadAndMaybePlay(true)} />
+      <VoiceDecryptButton loading={loading} onDecrypt={() => void loadAndMaybePlay(true)} isPlain={isPlain} />
       <div className={styles.voiceFooter}>
         <div className={styles.voiceInfoLeft}>
           <span>{totalDurationLabel}</span>

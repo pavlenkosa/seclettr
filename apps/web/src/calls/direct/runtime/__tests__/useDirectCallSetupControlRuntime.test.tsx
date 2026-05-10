@@ -173,6 +173,7 @@ function HookHarness(props: {
     ensureConversationUsername: props.ensureConversationUsername,
     resolvePeerLabel: props.resolvePeerLabel,
     pushNotice: props.pushNotice as (next: any, timeoutMs?: number) => void,
+    callChatKindRef: { current: null },
     recordCallEvent: props.recordCallEvent as (event: any) => void,
     debugCallMedia: props.debugCallMedia,
     createPeerConnection: props.createPeerConnection,

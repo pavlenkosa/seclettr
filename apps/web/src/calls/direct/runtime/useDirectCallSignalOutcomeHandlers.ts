@@ -26,6 +26,7 @@ type RecordCallEvent = (params: {
   direction: "inbound" | "outbound";
   outcome: CallEventOutcome;
   durationSec?: number;
+  chatKind?: "plain" | "e2ee";
 }) => void;
 
 type PushNotice = (next: CallNotice, timeoutMs?: number) => void;
@@ -40,6 +41,7 @@ type UseDirectCallSignalOutcomeHandlersOptions = {
   supportsPeerRenegotiationV1Ref: MutableRefObject<boolean>;
   lastSignalingErrorRef: MutableRefObject<Record<string, unknown> | null>;
   lastRenegotiationAttemptRef: MutableRefObject<Record<string, unknown> | null>;
+  callChatKindRef: MutableRefObject<"plain" | "e2ee" | null>;
   setActive: Dispatch<SetStateAction<ActiveCall | null>>;
   finishCallSession: DirectCallFinishSession;
   pushNotice: PushNotice;
@@ -86,6 +88,7 @@ export function useDirectCallSignalOutcomeHandlers({
   supportsPeerRenegotiationV1Ref,
   lastSignalingErrorRef,
   lastRenegotiationAttemptRef,
+  callChatKindRef,
   setActive,
   finishCallSession,
   pushNotice,
@@ -111,6 +114,7 @@ export function useDirectCallSignalOutcomeHandlers({
             direction: currentActive.direction,
             outcome: "ended",
             durationSec: resolveDirectCallDurationSeconds(currentActive),
+            chatKind: callChatKindRef.current ?? undefined,
           });
         },
       });
@@ -142,6 +146,7 @@ export function useDirectCallSignalOutcomeHandlers({
             mode: currentIncoming.callType,
             direction: "inbound",
             outcome: "missed",
+            chatKind: callChatKindRef.current ?? undefined,
           });
         },
       });
@@ -149,6 +154,7 @@ export function useDirectCallSignalOutcomeHandlers({
   }, [
     acceptingIncomingCallRef,
     activeRef,
+    callChatKindRef,
     incomingRef,
     recordCallEvent,
     t,
@@ -268,12 +274,14 @@ export function useDirectCallSignalOutcomeHandlers({
           mode: currentActive.callType,
           direction: currentActive.direction,
           outcome: "declined",
+          chatKind: callChatKindRef.current ?? undefined,
         });
       },
     });
   }, [
     acceptingIncomingCallRef,
     activeRef,
+    callChatKindRef,
     finishCallSession,
     recordCallEvent,
     t,

@@ -28,6 +28,7 @@ type RecordCallEventParams = {
   direction: "inbound" | "outbound";
   outcome: "ended" | "declined" | "missed";
   durationSec?: number;
+  chatKind?: "plain" | "e2ee";
 };
 
 export function useDirectCallUiFeedback({
@@ -60,7 +61,15 @@ export function useDirectCallUiFeedback({
       outcome: params.outcome,
       durationSec: params.durationSec,
     };
-    // Prefer E2EE thread; only use plain if no E2EE conversation exists with this peer.
+    if (params.chatKind === "plain") {
+      usePlainMessagesStore.getState().recordCallEvent(callData);
+      return;
+    }
+    if (params.chatKind === "e2ee") {
+      useMessagesStore.getState().recordCallEvent(callData);
+      return;
+    }
+    // Fallback heuristic when chatKind is unknown: prefer E2EE, then plain.
     const e2eeConversations = useMessagesStore.getState().conversations;
     const plainConversations = usePlainMessagesStore.getState().conversations;
     if (e2eeConversations[params.userId]) {

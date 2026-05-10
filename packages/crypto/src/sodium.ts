@@ -1,4 +1,4 @@
-import _sodium from "libsodium-wrappers";
+import _sodium from "libsodium-wrappers-sumo";
 
 let initialised = false;
 

@@ -121,6 +121,7 @@ export interface DirectCallSetupCallbackContext {
   ensureConversationUsername: (userId: string, fallbackLabel?: string) => Promise<string | null>;
   resolvePeerLabel: (userId: string, fallbackLabel?: string) => string;
   pushNotice: PushNotice;
+  callChatKindRef: MutableRefObject<"plain" | "e2ee" | null>;
   recordCallEvent: (event: {
     userId: string;
     fallbackLabel?: string;
@@ -128,6 +129,7 @@ export interface DirectCallSetupCallbackContext {
     direction: "inbound" | "outbound";
     outcome: "declined" | "ended";
     durationSec?: number;
+    chatKind?: "plain" | "e2ee";
   }) => void;
   debugCallMedia: (event: string, payload: Record<string, unknown>) => void;
   finishCallSession: DirectCallFinishSession;

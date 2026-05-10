@@ -35,7 +35,6 @@
   border-radius: 20px;
   border: 1px solid var(--panel-border-soft);
   background: var(--surface-float);
-  box-shadow: 0 8px 32px rgb(0 0 0 / 0.18);
   text-align: center;
   animation: cardIn var(--motion-duration-base, 200ms) var(--motion-ease-emphasized, cubic-bezier(.2,.8,.3,1)) both;
 }
@@ -99,48 +98,47 @@
 }
 
 .unlockBtn {
-  all: unset;
   display: flex;
   align-items: center;
   justify-content: center;
   width: 100%;
-  padding: 0.72rem 1.2rem;
-  border-radius: 14px;
+  min-height: 44px;
+  padding: 0 1.2rem;
+  border-radius: 999px;
   background: var(--accent);
   color: #fff;
   font-size: 0.9rem;
   font-weight: 600;
   cursor: pointer;
   margin-top: 0.4rem;
-  transition: opacity 140ms ease, transform 140ms ease;
+  border: none;
+  transition: opacity var(--motion-duration-fast) ease;
 }
 
 .unlockBtn:hover:not(:disabled) {
-  opacity: 0.9;
-}
-
-.unlockBtn:active:not(:disabled) {
-  transform: scale(0.98);
+  opacity: 0.88;
 }
 
 .unlockBtn:disabled {
   opacity: 0.55;
-  cursor: default;
+  cursor: not-allowed;
 }
 
 .logoutBtn {
-  all: unset;
   display: flex;
   align-items: center;
   justify-content: center;
   width: 100%;
-  padding: 0.56rem 1.2rem;
-  border-radius: 12px;
+  min-height: 36px;
+  padding: 0 1.2rem;
+  border-radius: 999px;
+  background: transparent;
+  border: none;
   color: var(--text-secondary);
   font-size: 0.82rem;
   font-weight: 500;
   cursor: pointer;
-  transition: color 140ms ease, background 140ms ease;
+  transition: color var(--motion-duration-fast) ease, background var(--motion-duration-fast) ease;
 }
 
 .logoutBtn:hover:not(:disabled) {
@@ -150,7 +148,7 @@
 
 .logoutBtn:disabled {
   opacity: 0.4;
-  cursor: default;
+  cursor: not-allowed;
 }
 
 /* ── Passcode form ────────────────────────────────────────── */
@@ -167,20 +165,22 @@
 .passcodeInput {
   width: 100%;
   box-sizing: border-box;
-  padding: 0.72rem 1rem;
-  border-radius: 14px;
-  border: 1.5px solid var(--border);
-  background: var(--bg-primary);
+  min-height: 44px;
+  padding: 0 1rem;
+  border-radius: 16px;
+  border: 1px solid color-mix(in srgb, var(--panel-border-soft) 92%, transparent);
+  background: color-mix(in srgb, var(--surface-shell) 88%, transparent);
   color: var(--text-primary);
-  font-size: 1rem;
+  font-size: 0.9rem;
   text-align: center;
   outline: none;
-  transition: border-color 140ms ease, box-shadow 140ms ease;
+  transition: border-color var(--motion-duration-fast) ease, outline-color var(--motion-duration-fast) ease;
 }
 
 .passcodeInput:focus {
   border-color: var(--accent);
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 18%, transparent);
+  outline: 2px solid color-mix(in srgb, var(--accent) 22%, transparent);
+  outline-offset: -2px;
 }
 
 .passcodeInput:disabled {
@@ -188,11 +188,11 @@
 }
 
 .passcodeInputError {
-  border-color: var(--danger, #e74c3c);
+  border-color: var(--danger);
 }
 
 .passcodeInputError:focus {
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--danger, #e74c3c) 18%, transparent);
+  outline-color: color-mix(in srgb, var(--danger) 22%, transparent);
 }
 
 @media (prefers-reduced-motion: reduce) {

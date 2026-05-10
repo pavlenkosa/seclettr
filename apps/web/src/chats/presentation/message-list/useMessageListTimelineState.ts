@@ -129,6 +129,22 @@ export function useMessageListTimelineState({
     };
   }, [containerRef, syncJumpStateFromDistance]);
 
+  // When the virtual keyboard opens (visualViewport shrinks), scroll to bottom
+  // if already near the bottom so the last message stays visible.
+  useEffect(() => {
+    const vv = globalThis.visualViewport;
+    if (!vv) return;
+
+    const onVvResize = () => {
+      if (readDistanceFromBottom() <= JUMP_TO_BOTTOM_THRESHOLD_PX) {
+        scrollToBottomWithBehavior("instant");
+      }
+    };
+
+    vv.addEventListener("resize", onVvResize);
+    return () => vv.removeEventListener("resize", onVvResize);
+  }, [readDistanceFromBottom, scrollToBottomWithBehavior]);
+
   useEffect(() => {
     const container = containerRef.current;
     if (!container) return;

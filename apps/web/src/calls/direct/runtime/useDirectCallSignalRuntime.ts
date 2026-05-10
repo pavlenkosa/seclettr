@@ -22,6 +22,8 @@ import {
 } from "react";
 import { resolveLegacyDirectCallMediaEncryptionOffer } from "@/calls/direct/model/call-media-encryption-negotiation";
 import { useAuthStore } from "@/stores/auth";
+import { useMessagesStore } from "@/stores/messages";
+import { usePlainMessagesStore } from "@/stores/plain";
 import {
   toIncomingMediaStateHint,
   shouldApplyIncomingMediaState,
@@ -51,6 +53,14 @@ import type {
   DirectCallTranslate,
 } from "./direct-call-runtime-types";
 
+function resolveInboundCallChatKind(callerUserId: string): "plain" | "e2ee" | null {
+  const hasE2ee = !!useMessagesStore.getState().conversations[callerUserId];
+  const hasPlain = !!usePlainMessagesStore.getState().conversations[callerUserId];
+  if (hasPlain && !hasE2ee) return "plain";
+  if (hasE2ee) return "e2ee";
+  return null;
+}
+
 type RecordCallEvent = (params: {
   userId: string;
   fallbackLabel?: string;
@@ -58,6 +68,7 @@ type RecordCallEvent = (params: {
   direction: "inbound" | "outbound";
   outcome: "ended" | "declined" | "missed";
   durationSec?: number;
+  chatKind?: "plain" | "e2ee";
 }) => void;
 
 type EnsureConversationUsername = (
@@ -89,6 +100,7 @@ interface UseDirectCallSignalRuntimeOptions {
   resetMinimizedDockState: () => void;
   resolvePeerLabel: (userId: string, fallbackLabel?: string) => string;
   pushNotice: DirectCallPushNotice;
+  callChatKindRef: MutableRefObject<"plain" | "e2ee" | null>;
   recordCallEvent: RecordCallEvent;
   rejectIncomingCall: (callId: string) => void;
   finishCallSession: DirectCallFinishSession;
@@ -142,6 +154,7 @@ export function useDirectCallSignalRuntime({
   resetMinimizedDockState,
   resolvePeerLabel,
   pushNotice,
+  callChatKindRef,
   recordCallEvent,
   rejectIncomingCall,
   finishCallSession,
@@ -404,11 +417,15 @@ export function useDirectCallSignalRuntime({
       mediaEncryptionOffer: message.mediaEncryption ?? resolveLegacyDirectCallMediaEncryptionOffer(),
       supportsRenegotiationV1: !!(message.features?.renegotiationV1),
     });
+    // Tag this call with the chat kind so call-history records land in the right store.
+    // For inbound calls, infer from which store has a conversation with the caller.
+    callChatKindRef.current = resolveInboundCallChatKind(message.callerUserId);
     setIsMinimized(false);
     resetMinimizedDockState();
   }, [
     acceptingIncomingCallRef,
     activeRef,
+    callChatKindRef,
     debugCallMedia,
     ensureConversationUsername,
     incomingRef,
@@ -432,6 +449,7 @@ export function useDirectCallSignalRuntime({
     supportsPeerRenegotiationV1Ref,
     lastSignalingErrorRef,
     lastRenegotiationAttemptRef,
+    callChatKindRef,
     setActive,
     finishCallSession,
     pushNotice,

@@ -8,7 +8,6 @@ import type {
   PlainConversation,
   PlainMessage,
   PlainMessageType,
-  PlainAttachmentMeta,
   PlainReplyMeta,
 } from "./types";
 
@@ -736,7 +735,6 @@ export const usePlainMessagesStore = create<PlainMessagesState>((set, get) => {
       URL.revokeObjectURL(localUrl);
     } catch (err) {
       logger.error("[PlainMsg] sendAttachment failed", err);
-      URL.revokeObjectURL(localUrl);
       set((state) => {
         const conv = state.conversations[key];
         if (!conv) return state;

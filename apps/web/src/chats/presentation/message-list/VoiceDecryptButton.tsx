@@ -9,14 +9,18 @@ const GHOST_WAVE_BAR_KEYS = Array.from({ length: 12 }, (_, i) => `ghost-bar-${i}
 interface VoiceDecryptButtonProps {
   readonly loading: boolean;
   readonly onDecrypt: () => void;
+  readonly isPlain?: boolean;
 }
 
 /**
- * Button shown before a voice note is decrypted locally.
+ * Button shown before a voice note is decrypted (E2EE) or fetched (plain).
  */
-export function VoiceDecryptButton({ loading, onDecrypt }: VoiceDecryptButtonProps) {
+export function VoiceDecryptButton({ loading, onDecrypt, isPlain = false }: VoiceDecryptButtonProps) {
   const { t } = useI18n();
-  const title = loading ? t("message.voice.decrypting") : t("message.voice.decryptAndPlay");
+  const title = loading
+    ? t(isPlain ? "message.voice.loading" : "message.voice.decrypting")
+    : t(isPlain ? "message.voice.tapToPlay" : "message.voice.decryptAndPlay");
+  const ariaLabel = t(isPlain ? "message.voice.loadAria" : "message.voice.decryptAria");
 
   return (
     <button
@@ -24,7 +28,7 @@ export function VoiceDecryptButton({ loading, onDecrypt }: VoiceDecryptButtonPro
       onClick={onDecrypt}
       disabled={loading}
       className={styles.voiceDecryptBtn}
-      aria-label={t("message.voice.decryptAria")}
+      aria-label={ariaLabel}
     >
       <span className={styles.voiceDecryptPreview} aria-hidden="true">
         <span className={styles.voiceDecryptGhostWave}>

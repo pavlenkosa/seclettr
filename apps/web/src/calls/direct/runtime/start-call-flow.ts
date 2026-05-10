@@ -93,6 +93,7 @@ const scheduleOutgoingRingingTimeout = (params: {
   callId: string;
   finishCallSession: DirectCallSetupRuntimeOptions["finishCallSession"];
   recordCallEvent: DirectCallSetupRuntimeOptions["recordCallEvent"];
+  callChatKindRef: DirectCallSetupRuntimeOptions["callChatKindRef"];
   resolvePeerLabel: DirectCallSetupRuntimeOptions["resolvePeerLabel"];
   peerUserId: string;
   peerLabel?: string;
@@ -116,6 +117,7 @@ const scheduleOutgoingRingingTimeout = (params: {
           direction: "outbound",
           outcome: "ended",
           durationSec: 0,
+          chatKind: params.callChatKindRef.current ?? undefined,
         });
       },
     });
@@ -170,11 +172,14 @@ export interface StartCallFlowOptions
     | "ensureConversationUsername"
     | "resolvePeerLabel"
     | "pushNotice"
+    | "callChatKindRef"
     | "debugCallMedia"
     | "finishCallSession"
     | "recordCallEvent"
     | "t"
-  > {}
+  > {
+  chatKind?: "plain" | "e2ee";
+}
 
 // ---------------------------------------------------------------------------
 // runStartCallFlow
@@ -222,6 +227,8 @@ export async function runStartCallFlow(
     ensureConversationUsername,
     resolvePeerLabel,
     pushNotice,
+    callChatKindRef,
+    chatKind,
     debugCallMedia,
     finishCallSession,
     recordCallEvent,
@@ -235,6 +242,7 @@ export async function runStartCallFlow(
     clearTimeout(outgoingRingingTimeoutRef.current);
     outgoingRingingTimeoutRef.current = null;
   }
+  callChatKindRef.current = chatKind ?? null;
   let callId: string | null = null;
   const lifecycleToken = beginDirectCallLifecycleToken(directCallLifecycleTokenRef.current);
   directCallLifecycleTokenRef.current = lifecycleToken;
@@ -374,6 +382,7 @@ export async function runStartCallFlow(
       callId,
       finishCallSession,
       recordCallEvent,
+      callChatKindRef,
       resolvePeerLabel,
       peerUserId,
       peerLabel,

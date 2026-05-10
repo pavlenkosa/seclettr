@@ -576,7 +576,6 @@ export const usePlainGroupsStore = create<PlainGroupsState>((set, get) => {
       URL.revokeObjectURL(localUrl);
     } catch (err) {
       logger.error("[PlainGroups] sendAttachment failed", err);
-      URL.revokeObjectURL(localUrl);
       set((state) => {
         const g = state.groups[groupId];
         if (!g) return state;

@@ -176,8 +176,8 @@ importers:
       '@seclettr/protocol':
         specifier: workspace:*
         version: link:../../packages/protocol
-      libsodium-wrappers:
-        specifier: ^0.7.13
+      libsodium-wrappers-sumo:
+        specifier: 0.7.13
         version: 0.7.13
       mediasoup-client:
         specifier: ^3.7.17
@@ -198,9 +198,9 @@ importers:
         specifier: ^4.5.0
         version: 4.5.7(@types/react@18.3.28)(react@18.3.1)
     devDependencies:
-      '@types/libsodium-wrappers':
-        specifier: ^0.7.14
-        version: 0.7.14
+      '@types/libsodium-wrappers-sumo':
+        specifier: ^0.7.8
+        version: 0.7.8
       '@types/node':
         specifier: ^20.11.0
         version: 20.19.33
@@ -252,13 +252,13 @@ importers:
 
   packages/crypto:
     dependencies:
-      libsodium-wrappers:
-        specifier: ^0.7.13
+      libsodium-wrappers-sumo:
+        specifier: 0.7.13
         version: 0.7.13
     devDependencies:
-      '@types/libsodium-wrappers':
-        specifier: ^0.7.14
-        version: 0.7.14
+      '@types/libsodium-wrappers-sumo':
+        specifier: ^0.7.8
+        version: 0.7.8
       '@vitest/coverage-v8':
         specifier: 1.6.1
         version: 1.6.1(vitest@1.6.1)
@@ -3790,6 +3790,12 @@ packages:
     resolution: {integrity: sha512-5+fP8P8MFNC+AyZCDxrB2pkZFPGzqQWUzpSeuuVLvm8VMcorNYavBqoFcxK8bQz4Qsbn4oUEEem4wDLfcysGHA==}
     dev: true
 
+  /@types/libsodium-wrappers-sumo@0.7.8:
+    resolution: {integrity: sha512-N2+df4MB/A+W0RAcTw7A5oxKgzD+Vh6Ye7lfjWIi5SdTzVLfHPzxUjhwPqHLO5Ev9fv/+VHl+sUaUuTg4fUPqw==}
+    dependencies:
+      '@types/libsodium-wrappers': 0.7.14
+    dev: true
+
   /@types/libsodium-wrappers@0.7.14:
     resolution: {integrity: sha512-5Kv68fXuXK0iDuUir1WPGw2R9fOZUlYlSAa0ztMcL0s0BfIDTqg9GXz8K30VJpPP3sxWhbolnQma2x+/TfkzDQ==}
     dev: true
@@ -6167,14 +6173,14 @@ packages:
       type-check: 0.4.0
     dev: true
 
-  /libsodium-wrappers@0.7.13:
-    resolution: {integrity: sha512-kasvDsEi/r1fMzKouIDv7B8I6vNmknXwGiYodErGuESoFTohGSKZplFtVxZqHaoQ217AynyIFgnOVRitpHs0Qw==}
-    dependencies:
-      libsodium: 0.7.16
+  /libsodium-sumo@0.7.16:
+    resolution: {integrity: sha512-x6atrz2AdXCJg6G709x9W9TTJRI6/0NcL5dD0l5GGVqNE48UJmDsjO4RUWYTeyXXUpg+NXZ2SHECaZnFRYzwGA==}
     dev: false
 
-  /libsodium@0.7.16:
-    resolution: {integrity: sha512-3HrzSPuzm6Yt9aTYCDxYEG8x8/6C0+ag655Y7rhhWZM9PT4NpdnbqlzXhGZlDnkgR6MeSTnOt/VIyHLs9aSf+Q==}
+  /libsodium-wrappers-sumo@0.7.13:
+    resolution: {integrity: sha512-lz4YdplzDRh6AhnLGF2Dj2IUj94xRN6Bh8T0HLNwzYGwPehQJX6c7iYVrFUPZ3QqxE0bqC+K0IIqqZJYWumwSQ==}
+    dependencies:
+      libsodium-sumo: 0.7.16
     dev: false
 
   /light-my-request@5.14.0:

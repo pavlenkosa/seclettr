@@ -9,9 +9,7 @@ import { createRequire } from "node:module";
 const pkg = JSON.parse(fs.readFileSync(new URL("./package.json", import.meta.url), "utf-8")) as { version: string };
 
 const require = createRequire(import.meta.url);
-const libsodiumWrappersPath = require.resolve(
-  "libsodium-wrappers/dist/modules/libsodium-wrappers.js"
-);
+const libsodiumWrappersPath = require.resolve("libsodium-wrappers-sumo");
 const mediasoupClientPath = require.resolve("mediasoup-client");
 const devApiHost = process.env["VITE_DEV_API_HOST"] ?? "127.0.0.1";
 const devApiPort = Number(process.env["VITE_DEV_API_PORT"] ?? "3001");
@@ -117,7 +115,7 @@ function resolveManualChunk(id: string): string | undefined {
 
   if (
     id.includes("/packages/crypto/")
-    || id.includes("libsodium-wrappers")
+    || id.includes("libsodium-wrappers-sumo")
     || normalizedId.includes("sodium")
   ) {
     return "vendor-crypto";
@@ -199,7 +197,7 @@ export default defineConfig(({ command }) => ({
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
-      "libsodium-wrappers": libsodiumWrappersPath,
+      "libsodium-wrappers-sumo": libsodiumWrappersPath,
       "mediasoup-client": mediasoupClientPath,
     },
   },
@@ -249,11 +247,11 @@ export default defineConfig(({ command }) => ({
       // origin (Vite dev server) rather than hitting MinIO over plain HTTP.
       // S3_PUBLIC_URL in the API must be set to the Vite dev server origin so
       // the API rewrites presigned upload URLs to this prefix.
-      [`/${devMinioBucket}/`]: {
+      [`/${devMinioBucket}`]: {
         target: devMinioOrigin,
         changeOrigin: true,
       },
-      [`/${devMinioBucket}-plain/`]: {
+      [`/${devMinioBucket}-plain`]: {
         target: devMinioOrigin,
         changeOrigin: true,
       },
@@ -283,6 +281,6 @@ export default defineConfig(({ command }) => ({
     },
   },
   optimizeDeps: {
-    include: ["libsodium-wrappers"],
+    include: ["libsodium-wrappers-sumo"],
   },
 }));

@@ -253,24 +253,14 @@
   }
 
   .navBtn {
-    top: auto;
-    bottom: 1rem;
-    transform: none;
-  }
-
-  .navBtnPrev {
-    left: max(1rem, env(safe-area-inset-left));
-  }
-
-  .navBtnNext {
-    right: max(1rem, env(safe-area-inset-right));
+    display: none;
   }
 
   .content {
     padding:
       calc(3.5rem + env(safe-area-inset-top))
       0.85rem
-      calc(7.5rem + env(safe-area-inset-bottom))
+      calc(4rem + env(safe-area-inset-bottom))
       0.85rem;
   }
 
@@ -312,12 +302,7 @@
   }
 
   .overlayWithCaption .content {
-    padding-bottom: calc(9.6rem + env(safe-area-inset-bottom));
-  }
-
-  .overlayWithCaption .navBtn {
-    top: calc(50% - 22px);
-    bottom: auto;
+    padding-bottom: calc(6.5rem + env(safe-area-inset-bottom));
   }
 
   .overlayWithCaption .mobileSequenceHint {

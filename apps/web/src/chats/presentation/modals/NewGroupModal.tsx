@@ -9,9 +9,11 @@ import styles from "./NewGroupModal.module.css";
 
 type UserResult = UserSearchResult;
 
+export type NewGroupKind = "e2ee" | "plain";
+
 interface Props {
   readonly onClose: () => void;
-  readonly onCreate: (payload: { name: string; memberUserIds: string[] }) => Promise<void> | void;
+  readonly onCreate: (payload: { name: string; memberUserIds: string[]; kind: NewGroupKind }) => Promise<void> | void;
 }
 
 export function NewGroupModal({ onClose, onCreate }: Props) {
@@ -19,6 +21,7 @@ export function NewGroupModal({ onClose, onCreate }: Props) {
   const { isClosing, requestClose } = useAnimatedClose(onClose);
   const [name, setName] = useState("");
   const [selected, setSelected] = useState<UserResult[]>([]);
+  const [kind, setKind] = useState<NewGroupKind>("e2ee");
   const [creating, setCreating] = useState(false);
   const [createError, setCreateError] = useState<string | null>(null);
   const createFormId = useId();
@@ -55,6 +58,7 @@ export function NewGroupModal({ onClose, onCreate }: Props) {
       await onCreate({
         name: trimmedName,
         memberUserIds: selected.map((user) => user.userId),
+        kind,
       });
     } catch {
       setCreateError(t("group.create.error.failed"));
@@ -132,6 +136,33 @@ export function NewGroupModal({ onClose, onCreate }: Props) {
             aria-label={t("group.create.nameLabel")}
             autoFocus
           />
+        </FieldSection>
+
+        <FieldSection label={t("group.create.kindLabel")} className={styles.fieldSection}>
+          <div className={styles.kindToggle} role="radiogroup" aria-label={t("group.create.kindLabel")}>
+            <button
+              type="button"
+              role="radio"
+              aria-checked={kind === "e2ee"}
+              className={`${styles.kindOption} ${kind === "e2ee" ? styles.kindOptionActive : ""}`}
+              onClick={() => setKind("e2ee")}
+              disabled={creating}
+            >
+              <span className={styles.kindOptionTitle}>{t("group.create.kind.e2ee.title")}</span>
+              <span className={styles.kindOptionSub}>{t("group.create.kind.e2ee.sub")}</span>
+            </button>
+            <button
+              type="button"
+              role="radio"
+              aria-checked={kind === "plain"}
+              className={`${styles.kindOption} ${kind === "plain" ? styles.kindOptionActive : ""}`}
+              onClick={() => setKind("plain")}
+              disabled={creating}
+            >
+              <span className={styles.kindOptionTitle}>{t("group.create.kind.plain.title")}</span>
+              <span className={styles.kindOptionSub}>{t("group.create.kind.plain.sub")}</span>
+            </button>
+          </div>
         </FieldSection>
 
         <FieldSection label={t("group.create.membersLabel")} className={styles.fieldSection}>

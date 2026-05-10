@@ -451,6 +451,7 @@ export function ChatPage() {
         workspaceUiState={workspaceUiState}
         interactions={interactions}
         createGroup={createGroup}
+        createPlainGroup={createPlainGroup}
         handleSelectThread={handleSelectThread}
         activeGroup={activeGroup}
         userId={userId}

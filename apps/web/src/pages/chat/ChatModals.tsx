@@ -15,6 +15,7 @@ export const ChatModals = memo(function ChatModals({
   workspaceUiState,
   interactions,
   createGroup,
+  createPlainGroup,
   handleSelectThread,
   activeGroup,
   userId,
@@ -25,6 +26,7 @@ export const ChatModals = memo(function ChatModals({
   workspaceUiState: WorkspaceUiState;
   interactions: WorkspaceInteractions;
   createGroup: WorkspaceEntryState["createGroup"];
+  createPlainGroup: WorkspaceEntryState["createPlainGroup"];
   handleSelectThread: WorkspaceEntryState["handleSelectThread"];
   activeGroup: WorkspaceEntryState["activeGroup"];
   userId: string | null;
@@ -33,12 +35,18 @@ export const ChatModals = memo(function ChatModals({
   acceptPeerIdentityChange: WorkspaceEntryState["acceptPeerIdentityChange"];
 }) {
   const handleNewGroupCreate = useCallback(
-    async ({ name, memberUserIds }: { name: string; memberUserIds: string[] }) => {
+    async ({ name, memberUserIds, kind }: { name: string; memberUserIds: string[]; kind: "e2ee" | "plain" }) => {
+      if (kind === "plain") {
+        const createdGroupId = await createPlainGroup(name, memberUserIds);
+        workspaceUiState.closeNewGroup();
+        handleSelectThread({ kind: "plain-group", id: createdGroupId });
+        return;
+      }
       const created = await createGroup(name, memberUserIds);
       workspaceUiState.closeNewGroup();
       handleSelectThread({ kind: "group", id: created.groupId });
     },
-    [createGroup, handleSelectThread, workspaceUiState]
+    [createGroup, createPlainGroup, handleSelectThread, workspaceUiState]
   );
 
   const handleVerifyGroupMember = useCallback(

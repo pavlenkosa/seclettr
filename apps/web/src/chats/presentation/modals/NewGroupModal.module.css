@@ -14,6 +14,56 @@
   gap: 0.42rem;
 }
 
+.kindToggle {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.5rem;
+}
+
+.kindOption {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.18rem;
+  padding: 0.62rem 0.74rem;
+  border-radius: 14px;
+  border: 1px solid color-mix(in srgb, var(--panel-border-soft) 90%, transparent);
+  background: color-mix(in srgb, var(--surface-shell-strong) 96%, transparent);
+  text-align: left;
+  cursor: pointer;
+  color: var(--text-primary);
+  transition:
+    background var(--motion-duration-fast) var(--motion-ease-standard),
+    border-color var(--motion-duration-fast) var(--motion-ease-standard);
+}
+
+.kindOption:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--accent) 10%, var(--surface-shell-strong));
+  border-color: color-mix(in srgb, var(--accent) 28%, transparent);
+}
+
+.kindOption:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.kindOptionActive {
+  background: color-mix(in srgb, var(--accent) 16%, var(--surface-shell-strong));
+  border-color: color-mix(in srgb, var(--accent) 56%, transparent);
+}
+
+.kindOptionTitle {
+  font-size: 0.86rem;
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+.kindOptionSub {
+  font-size: 0.72rem;
+  line-height: 1.25;
+  color: var(--text-secondary);
+}
+
 .nameLabelRow {
   display: flex;
   align-items: center;

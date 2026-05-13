@@ -7,6 +7,7 @@ COMPOSE_FILE="$BUNDLE_DIR/docker-compose.yml"
 HTTP_OVERRIDE_FILE="$BUNDLE_DIR/docker-compose.http.yml"
 ENV_FILE="$BUNDLE_DIR/.env"
 ENV_TEMPLATE="$BUNDLE_DIR/.env.example"
+RELEASE_ENV_FILE="$BUNDLE_DIR/release.env"
 IMAGE_ARCHIVE="$BUNDLE_DIR/prebuilt-images.tar.gz"
 RUNTIME_CONFIG_FILE="$BUNDLE_DIR/nginx/runtime-config.js"
 PROJECT_NAME="seclettr"
@@ -78,8 +79,11 @@ run_quiet() {
     spin_idx=$(( (spin_idx + 1) % ${#spin_chars[@]} ))
     sleep 0.12
   done
+  local rc=0
+  set +e
   wait "$pid"
-  local rc=$?
+  rc=$?
+  set -e
   if [[ $rc -eq 0 ]]; then
     printf "\r       ${GRN}✓${RST} %s\n" "$label"
   else
@@ -108,8 +112,14 @@ usage() {
 Usage: ./install.sh [install|update] [options]
 
 Loads a Seclettr release bundle and starts one of the supported deployment modes.
-Use `./install.sh --update ./new-release.tar.gz` from the current release directory
-for the simplest upgrade flow.
+
+Recommended update flows:
+  # From the currently running/old release directory:
+  ./install.sh update /opt/seclettr-release-NEW.tar.gz
+  ./install.sh update /opt/seclettr-release-NEW
+
+  # From an already unpacked new release directory:
+  ./install.sh update --from /opt/seclettr-release-OLD
 
 Deployment modes:
   full      Web + backend + infra services
@@ -133,8 +143,8 @@ Options:
   --compose-file <path>               Path to compose file (default: ./docker-compose.yml)
   --image-archive <path>              Path to image archive (default: ./prebuilt-images.tar.gz)
   --project-name <name>               Docker Compose project name (default: seclettr)
-  --update [archive.tar.gz]           Update. With an archive, unpack it and hand off to the new installer
-  --from <path>                       Previous release bundle directory for update mode
+  --update [archive-or-dir]           Update. Accepts a new release .tar.gz or unpacked release directory
+  --from <path>                       Previous release bundle directory when running from the new bundle
   --skip-load                         Skip `docker load`
   --skip-migrate                      Skip migration step
   --skip-backup                       Skip update backup step
@@ -784,6 +794,111 @@ set_env_value() {
   export "${key}=${value}"
 }
 
+read_release_env_value() {
+  local key="$1"
+  [[ -f "$RELEASE_ENV_FILE" ]] || return 1
+  awk -F= -v key="$key" '$1 == key { sub(/^[^=]*=/, ""); print; exit }' "$RELEASE_ENV_FILE"
+}
+
+apply_bundle_image_refs() {
+  if [[ ! -f "$RELEASE_ENV_FILE" ]]; then
+    log_warn "No release.env found in this bundle — keeping SECLETTR_* image refs from $ENV_FILE"
+    return 0
+  fi
+
+  if [[ "${SECLETTR_PRESERVE_IMAGE_REFS:-false}" == "true" ]]; then
+    log_warn "Keeping image refs from $ENV_FILE because SECLETTR_PRESERVE_IMAGE_REFS=true"
+    return
+  fi
+
+  local bundle_tag bundle_api bundle_web bundle_sfu
+  bundle_tag="$(read_release_env_value SECLETTR_IMAGE_TAG || true)"
+  bundle_api="$(read_release_env_value SECLETTR_API_IMAGE || true)"
+  bundle_web="$(read_release_env_value SECLETTR_WEB_IMAGE || true)"
+  bundle_sfu="$(read_release_env_value SECLETTR_SFU_IMAGE || true)"
+
+  [[ -n "$bundle_tag" ]] || die "release.env is missing SECLETTR_IMAGE_TAG"
+  [[ -n "$bundle_api" ]] || bundle_api="seclettr/api"
+  [[ -n "$bundle_web" ]] || bundle_web="seclettr/web"
+  [[ -n "$bundle_sfu" ]] || bundle_sfu="seclettr/sfu"
+
+  set_env_value SECLETTR_IMAGE_TAG "$bundle_tag"
+  set_env_value SECLETTR_API_IMAGE "$bundle_api"
+  set_env_value SECLETTR_WEB_IMAGE "$bundle_web"
+  set_env_value SECLETTR_SFU_IMAGE "$bundle_sfu"
+
+  log_ok "Using bundled Docker image tag: $bundle_tag"
+}
+
+sync_s3_public_url() {
+  if ! is_mode_with_backend; then
+    return 0
+  fi
+
+  local public_url="${S3_PUBLIC_URL:-}"
+  if [[ -z "$public_url" ]]; then
+    public_url="${CORS_ORIGIN:-}"
+    # If multiple origins are configured, use the first one as the browser-facing
+    # MinIO URL. Advanced deployments can set S3_PUBLIC_URL explicitly.
+    public_url="${public_url%%,*}"
+  fi
+
+  public_url="$(trim_string "$public_url")"
+  if [[ -n "$public_url" ]]; then
+    set_env_value S3_PUBLIC_URL "$public_url"
+    log_ok "Browser-facing S3 URL: $public_url"
+  else
+    log_warn "S3_PUBLIC_URL is empty — presigned media URLs may point to the internal MinIO endpoint"
+  fi
+}
+
+runtime_image_for_service() {
+  case "$1" in
+    postgres) printf '%s' "postgres:16-alpine" ;;
+    redis) printf '%s' "redis:7-alpine" ;;
+    minio) printf '%s' "minio/minio:latest" ;;
+    minio-init) printf '%s' "minio/mc:latest" ;;
+    coturn) printf '%s' "coturn/coturn:latest" ;;
+    api|migrate) printf '%s:%s' "${SECLETTR_API_IMAGE:-seclettr/api}" "${SECLETTR_IMAGE_TAG:-release}" ;;
+    sfu) printf '%s:%s' "${SECLETTR_SFU_IMAGE:-seclettr/sfu}" "${SECLETTR_IMAGE_TAG:-release}" ;;
+    web) printf '%s:%s' "${SECLETTR_WEB_IMAGE:-seclettr/web}" "${SECLETTR_IMAGE_TAG:-release}" ;;
+    *) return 1 ;;
+  esac
+}
+
+validate_runtime_images_available() {
+  local images=()
+  local service image_ref existing
+
+  for service in "${SELECTED_SERVICES[@]}"; do
+    image_ref="$(runtime_image_for_service "$service")" || continue
+    images+=("$image_ref")
+  done
+
+  if is_mode_with_backend && [[ "$SKIP_MIGRATE" == "false" ]]; then
+    images+=("$(runtime_image_for_service migrate)")
+  fi
+
+  local unique_images=()
+  for image_ref in "${images[@]}"; do
+    existing=false
+    local current
+    for current in "${unique_images[@]}"; do
+      [[ "$current" == "$image_ref" ]] && existing=true && break
+    done
+    [[ "$existing" == "false" ]] && unique_images+=("$image_ref")
+  done
+
+  local missing=()
+  for image_ref in "${unique_images[@]}"; do
+    "${DOCKER_CMD[@]}" image inspect "$image_ref" >/dev/null 2>&1 || missing+=("$image_ref")
+  done
+
+  if [[ ${#missing[@]} -gt 0 ]]; then
+    die "Required Docker image(s) are not available after loading $IMAGE_ARCHIVE: ${missing[*]}. Rebuild the release bundle or rerun without --skip-load."
+  fi
+}
+
 absolute_path() {
   local path="$1"
   if [[ "$path" == /* ]]; then
@@ -1347,32 +1462,53 @@ env_has_placeholders() {
   grep -q "CHANGE_ME" "$ENV_FILE" 2>/dev/null
 }
 
-handoff_update_archive() {
-  local archive_abs
-  archive_abs="$(absolute_path "$CLI_UPDATE_ARCHIVE")"
-  [[ -f "$archive_abs" ]] || die "Update archive not found: $CLI_UPDATE_ARCHIVE"
-  require_command tar
+handoff_update_target() {
+  local update_target_abs
+  update_target_abs="$(absolute_path "$CLI_UPDATE_ARCHIVE")"
 
   local parent_dir
   parent_dir="$(cd "$BUNDLE_DIR/.." && pwd)"
 
-  local top_level
-  top_level="$(tar -tzf "$archive_abs" 2>/dev/null | awk -F/ 'NF && $1 != "." { print $1; exit }')" \
-    || die "Could not inspect archive: $archive_abs"
-  [[ -n "$top_level" ]] || die "Archive has no top-level directory: $archive_abs"
-  [[ "$top_level" != *".."* && "$top_level" != /* ]] || die "Unsafe top-level directory in archive: $top_level"
+  local new_bundle_dir=""
 
-  local new_bundle_dir="$parent_dir/$top_level"
-  if [[ -e "$new_bundle_dir" ]]; then
-    [[ -d "$new_bundle_dir" && -f "$new_bundle_dir/install.sh" ]] \
-      || die "Target update directory already exists but is not a Seclettr bundle: $new_bundle_dir"
-    log_warn "Update bundle already unpacked — using $new_bundle_dir"
+  if [[ -d "$update_target_abs" ]]; then
+    new_bundle_dir="$(cd "$update_target_abs" && pwd)"
+    [[ -f "$new_bundle_dir/install.sh" ]] \
+      || die "Update directory is not a Seclettr release bundle: $new_bundle_dir"
+    log_ok "Using unpacked update bundle: $new_bundle_dir"
   else
-    log_step "Unpacking update archive"
-    tar -xzf "$archive_abs" -C "$parent_dir"
-    log_ok "Unpacked update bundle to $new_bundle_dir"
+    [[ -f "$update_target_abs" ]] || die "Update archive or directory not found: $CLI_UPDATE_ARCHIVE"
+    require_command tar
+
+    local top_level=""
+    if ! top_level="$(tar -tzf "$update_target_abs" 2>/dev/null | awk -F/ 'NF && $1 != "." { print $1; exit }')"; then
+      local file_kind="unknown"
+      if command -v file >/dev/null 2>&1; then
+        file_kind="$(file -b "$update_target_abs" 2>/dev/null || printf 'unknown')"
+      fi
+      die "Could not inspect update archive: $update_target_abs
+  File type: $file_kind
+  Expected: gzip-compressed tar archive created by scripts/release-build.sh
+  Check it with: tar -tzf '$update_target_abs' | head
+  Or pass an unpacked bundle directory instead: ./install.sh update /opt/seclettr-release-NEW"
+    fi
+
+    [[ -n "$top_level" ]] || die "Archive has no top-level directory: $update_target_abs"
+    [[ "$top_level" != *".."* && "$top_level" != /* ]] || die "Unsafe top-level directory in archive: $top_level"
+
+    new_bundle_dir="$parent_dir/$top_level"
+    if [[ -e "$new_bundle_dir" ]]; then
+      [[ -d "$new_bundle_dir" && -f "$new_bundle_dir/install.sh" ]] \
+        || die "Target update directory already exists but is not a Seclettr bundle: $new_bundle_dir"
+      log_warn "Update bundle already unpacked — using $new_bundle_dir"
+    else
+      log_step "Unpacking update archive"
+      tar -xzf "$update_target_abs" -C "$parent_dir"
+      log_ok "Unpacked update bundle to $new_bundle_dir"
+    fi
   fi
 
+  [[ "$new_bundle_dir" != "$BUNDLE_DIR" ]] || die "Update target points to the current bundle"
   [[ -f "$new_bundle_dir/install.sh" ]] || die "New bundle has no install.sh: $new_bundle_dir"
   chmod +x "$new_bundle_dir/install.sh" 2>/dev/null || true
 
@@ -1392,7 +1528,8 @@ handoff_update_archive() {
 
   echo ""
   echo -e "${CYN}${BLD}Handing off update to:${RST} $new_bundle_dir/install.sh"
-  echo -e "${DIM}Old bundle remains available for rollback/reference: $BUNDLE_DIR${RST}"
+  echo -e "${DIM}Previous release: $BUNDLE_DIR${RST}"
+  echo -e "${DIM}Command: ./install.sh ${handoff_args[*]}${RST}"
   echo ""
 
   cd "$new_bundle_dir"
@@ -1682,7 +1819,7 @@ if [[ "$ACTION" == "update" && -z "$CLI_UPDATE_ARCHIVE" && -z "$CLI_UPDATE_FROM"
 fi
 
 if [[ -n "$CLI_UPDATE_ARCHIVE" ]]; then
-  handoff_update_archive
+  handoff_update_target
 fi
 
 ensure_system_deps
@@ -1714,7 +1851,10 @@ fi
 
 # Run the interactive setup early (before secrets generation) so the user's
 # domain and mode choices are available to fill_env_secrets.
-if [[ "$GENERATED_ENV" == "true" || "$ENV_NEEDS_GENERATION" == "true" ]] && is_interactive_enabled; then
+# Update mode must reuse the previous release configuration. Do not launch the
+# fresh-install quickstart there, otherwise an upgrade can silently rewrite
+# deployment mode/cert choices or look like it only prepared .env.
+if [[ "$ACTION" != "update" && ( "$GENERATED_ENV" == "true" || "$ENV_NEEDS_GENERATION" == "true" ) ]] && is_interactive_enabled; then
   configure_interactive_inputs
   _CONFIGURE_DONE=true
 fi
@@ -1752,8 +1892,14 @@ if [[ "$GENERATED_ENV" == "true" || "$ENV_NEEDS_GENERATION" == "true" ]]; then
   set +a
 
   log_ok "Secrets written to $ENV_FILE"
-  log_warn "Review $ENV_FILE before production use, especially CORS_ORIGIN, TURN_DOMAIN, and COOKIE_SECURE"
+  if [[ "$ACTION" == "update" ]]; then
+    log_ok "Continuing update after filling missing .env values"
+  else
+    log_warn "Review $ENV_FILE before production use, especially CORS_ORIGIN, TURN_DOMAIN, and COOKIE_SECURE"
+  fi
 fi
+
+apply_bundle_image_refs
 
 DEPLOY_MODE="${CLI_DEPLOY_MODE:-${DEPLOY_MODE:-full}}"
 if [[ -n "${CLI_NETWORK_MODE:-}" ]]; then
@@ -1783,8 +1929,9 @@ WEB_RUNTIME_SFU_URL="$(normalize_runtime_url "$WEB_RUNTIME_SFU_URL")"
 validate_mode "$DEPLOY_MODE"
 validate_network_mode "$NETWORK_MODE"
 
-# Skip if already called early (quickstart path during secret generation)
-if [[ "${_CONFIGURE_DONE:-false}" != "true" ]]; then
+# Skip if already called early (quickstart path during secret generation).
+# Update mode reuses the previous .env and must not show first-install prompts.
+if [[ "$ACTION" != "update" && "${_CONFIGURE_DONE:-false}" != "true" ]]; then
   configure_interactive_inputs
 fi
 
@@ -1821,6 +1968,7 @@ fi
 
 step "Preparing configuration"
 configure_network_mode
+sync_s3_public_url
 set_selected_services
 
 if is_mode_with_backend; then
@@ -1849,6 +1997,8 @@ if [[ "$SKIP_LOAD" == "false" ]]; then
   run_quiet "Importing prebuilt-images.tar.gz (this may take a minute…)" \
     "${DOCKER_CMD[@]}" load -i "$IMAGE_ARCHIVE"
 fi
+
+validate_runtime_images_available
 
 if [[ "$SKIP_MIGRATE" == "false" ]]; then
   step "Running database migrations"

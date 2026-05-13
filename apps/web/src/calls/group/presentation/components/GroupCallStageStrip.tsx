@@ -34,6 +34,7 @@ export function GroupCallStageStrip({
             label={tile.label}
             stream={tile.stream}
             audioStream={tile.audioStream}
+            activityStream={tile.activityStream}
             hasAudio={tile.hasAudio}
             fallbackInitials={tile.fallbackInitials}
             badge={tile.badge}

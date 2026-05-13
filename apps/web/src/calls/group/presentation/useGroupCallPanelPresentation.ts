@@ -186,6 +186,7 @@ export function useGroupCallPanelPresentation({
 
   const memberNameByUserId = useMemo(() => buildMemberNameMap(session), [session]);
 
+  const localIdentityLabel = username?.trim() ? username.trim() : t("group.call.localPreview");
   const localTileLabel = useMemo(() => {
     if (username?.trim()) {
       return `${t("group.call.localPreview")} / @${username}`;
@@ -249,6 +250,7 @@ export function useGroupCallPanelPresentation({
       localScreenStream,
       localStream,
       localTileLabel,
+      localIdentityLabel,
       localVideoStatusLabel,
       t
     );
@@ -263,6 +265,7 @@ export function useGroupCallPanelPresentation({
     localStream,
     localScreenStream,
     localTileLabel,
+    localIdentityLabel,
     localVideoStatusLabel,
     memberNameByUserId,
     remoteMedia,

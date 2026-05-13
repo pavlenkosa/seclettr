@@ -1,4 +1,4 @@
-import { type ChangeEvent, type KeyboardEvent } from "react";
+import { lazy, Suspense, type ChangeEvent, type KeyboardEvent } from "react";
 import { IconButton } from "@/components/ui";
 import type { MessageReplyMeta } from "@/stores/messages";
 import {
@@ -8,8 +8,14 @@ import {
 import type { UseMessageComposerDraftResult } from "../../composer/useMessageComposerDraft";
 import type { UseMessageComposerEmojiStateResult } from "../../composer/useMessageComposerEmojiState";
 import type { UseMediaSendDialogResult } from "../../composer/useMediaSendDialog";
-import { MediaSendDialog } from "../MediaSendDialog";
+import type { MediaSendDialogProps } from "../MediaSendDialog";
 import styles from "../MessageComposer.module.css";
+
+const MediaSendDialog = lazy(() =>
+  import("../MediaSendDialog").then(({ MediaSendDialog: Component }) => ({
+    default: Component,
+  }))
+);
 
 export type DialogState = "closed" | "open" | "closing";
 
@@ -310,22 +316,26 @@ export function MountedMediaSendDialog({
     return null;
   }
 
+  const dialogProps: MediaSendDialogProps = {
+    pendingFiles: mediaSend.pendingFiles,
+    caption: mediaSend.caption,
+    quality: mediaSend.quality,
+    isSending: mediaSend.isSending,
+    totalOriginalSize: mediaSend.totalOriginalSize,
+    totalCompressedSize: mediaSend.totalCompressedSize,
+    hasCompressible: mediaSend.hasCompressible,
+    canConfirmSend: mediaSend.canConfirmSend,
+    removeFile: mediaSend.removeFile,
+    setCaption: mediaSend.setCaption,
+    setQuality: mediaSend.setQuality,
+    confirmSend: mediaSend.confirmSend,
+    closeDialog: mediaSend.closeDialog,
+    isExiting: dialogState === "closing",
+  };
+
   return (
-    <MediaSendDialog
-      pendingFiles={mediaSend.pendingFiles}
-      caption={mediaSend.caption}
-      quality={mediaSend.quality}
-      isSending={mediaSend.isSending}
-      totalOriginalSize={mediaSend.totalOriginalSize}
-      totalCompressedSize={mediaSend.totalCompressedSize}
-      hasCompressible={mediaSend.hasCompressible}
-      canConfirmSend={mediaSend.canConfirmSend}
-      removeFile={mediaSend.removeFile}
-      setCaption={mediaSend.setCaption}
-      setQuality={mediaSend.setQuality}
-      confirmSend={mediaSend.confirmSend}
-      closeDialog={mediaSend.closeDialog}
-      isExiting={dialogState === "closing"}
-    />
+    <Suspense fallback={null}>
+      <MediaSendDialog {...dialogProps} />
+    </Suspense>
   );
 }

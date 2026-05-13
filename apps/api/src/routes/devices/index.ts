@@ -54,6 +54,8 @@ type UserMetadataAccessBasis =
   | "direct_relationship"
   | "shared_group"
   | "prior_direct_message"
+  | "prior_plain_direct_message"
+  | "shared_plain_group"
   | "active_direct_call"
   | "contact_grant"
   | "none";

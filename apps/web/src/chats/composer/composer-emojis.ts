@@ -1,5 +1,3 @@
-import { GENERATED_COMPOSER_EMOJI_GROUPS } from "./composer-emoji-data.generated";
-
 export interface ComposerEmojiEntry {
   emoji: string;
   name: string;
@@ -21,6 +19,31 @@ export interface ComposerEmojiGroup {
   labelKey: string;
   fallbackLabel: string;
   subgroups: readonly ComposerEmojiSubgroup[];
+}
+
+export interface ComposerEmojiCatalog {
+  groups: readonly ComposerEmojiGroup[];
+  defaultGroupId: string;
+  allEmojis: readonly ComposerEmojiEntry[];
+  lookup: ReadonlyMap<string, ComposerEmojiEntry>;
+}
+
+interface GeneratedComposerEmojiTupleLike extends ReadonlyArray<string> {
+  readonly 0: string;
+  readonly 1: string;
+  readonly length: 2;
+}
+
+interface GeneratedComposerEmojiSubgroupLike {
+  readonly id: string;
+  readonly label: string;
+  readonly items: readonly GeneratedComposerEmojiTupleLike[];
+}
+
+interface GeneratedComposerEmojiGroupLike {
+  readonly id: string;
+  readonly label: string;
+  readonly subgroups: readonly GeneratedComposerEmojiSubgroupLike[];
 }
 
 export const COMPOSER_RECENT_EMOJI_STORAGE_KEY = "seclettr.composer.recent-emoji.v1";
@@ -258,40 +281,47 @@ const GROUP_LABEL_KEYS: Record<string, string> = {
   flags: "composer.emojiGroup.flags",
 };
 
-export const COMPOSER_EMOJI_GROUPS: readonly ComposerEmojiGroup[] = GENERATED_COMPOSER_EMOJI_GROUPS.map((group) => ({
-  id: group.id,
-  labelKey: GROUP_LABEL_KEYS[group.id] ?? "composer.emojiGroup.unknown",
-  fallbackLabel: group.label,
-  subgroups: group.subgroups.map((subgroup) => ({
-    id: subgroup.id,
-    label: subgroup.label,
-    items: subgroup.items.map(([emoji, name]) => ({
-      emoji,
-      name,
-      groupId: group.id,
-      groupLabel: group.label,
-      subgroupId: subgroup.id,
-      subgroupLabel: subgroup.label,
-      searchText: buildComposerEmojiSearchText({
+export const DEFAULT_COMPOSER_EMOJI_GROUP_ID = "smileys-and-emotion";
+
+export function createComposerEmojiCatalog(
+  generatedGroups: readonly GeneratedComposerEmojiGroupLike[]
+): ComposerEmojiCatalog {
+  const groups: readonly ComposerEmojiGroup[] = generatedGroups.map((group) => ({
+    id: group.id,
+    labelKey: GROUP_LABEL_KEYS[group.id] ?? "composer.emojiGroup.unknown",
+    fallbackLabel: group.label,
+    subgroups: group.subgroups.map((subgroup) => ({
+      id: subgroup.id,
+      label: subgroup.label,
+      items: subgroup.items.map(([emoji, name]) => ({
+        emoji,
         name,
         groupId: group.id,
         groupLabel: group.label,
         subgroupId: subgroup.id,
         subgroupLabel: subgroup.label,
-      }),
+        searchText: buildComposerEmojiSearchText({
+          name,
+          groupId: group.id,
+          groupLabel: group.label,
+          subgroupId: subgroup.id,
+          subgroupLabel: subgroup.label,
+        }),
+      })),
     })),
-  })),
-}));
+  }));
 
-export const DEFAULT_COMPOSER_EMOJI_GROUP_ID = COMPOSER_EMOJI_GROUPS[0]?.id ?? "";
+  const allEmojis = groups.flatMap((group) => (
+    group.subgroups.flatMap((subgroup) => subgroup.items)
+  ));
 
-const COMPOSER_ALL_EMOJIS = COMPOSER_EMOJI_GROUPS.flatMap((group) => (
-  group.subgroups.flatMap((subgroup) => subgroup.items)
-));
-
-const COMPOSER_EMOJI_LOOKUP = new Map(
-  COMPOSER_ALL_EMOJIS.map((item) => [item.emoji, item] as const)
-);
+  return {
+    groups,
+    defaultGroupId: groups[0]?.id ?? DEFAULT_COMPOSER_EMOJI_GROUP_ID,
+    allEmojis,
+    lookup: new Map(allEmojis.map((item) => [item.emoji, item] as const)),
+  };
+}
 
 function normalizeComposerEmojiSearch(value: string): string {
   return value
@@ -343,21 +373,30 @@ function buildComposerEmojiSearchText(input: {
   return Array.from(searchTerms).join(" ");
 }
 
-export function getComposerEmojiEntry(emojiValue: string): ComposerEmojiEntry | null {
-  return COMPOSER_EMOJI_LOOKUP.get(emojiValue) ?? null;
+export function getComposerEmojiEntry(
+  catalog: ComposerEmojiCatalog | null,
+  emojiValue: string
+): ComposerEmojiEntry | null {
+  return catalog?.lookup.get(emojiValue) ?? null;
 }
 
-export function filterComposerEmojiEntries(query: string): ComposerEmojiEntry[] {
+export function filterComposerEmojiEntries(
+  catalog: ComposerEmojiCatalog | null,
+  query: string
+): ComposerEmojiEntry[] {
   const normalizedQuery = normalizeComposerEmojiSearch(query);
-  if (!normalizedQuery) return [];
+  if (!catalog || !normalizedQuery) return [];
 
-  return COMPOSER_ALL_EMOJIS.filter((item) => {
+  return catalog.allEmojis.filter((item) => {
     if (item.emoji.includes(normalizedQuery)) return true;
     return item.searchText.includes(normalizedQuery);
   });
 }
 
-export function loadRecentComposerEmojis(rawValue: string | null): string[] {
+export function loadRecentComposerEmojis(
+  rawValue: string | null,
+  catalog?: ComposerEmojiCatalog | null
+): string[] {
   if (!rawValue) return [];
 
   try {
@@ -367,7 +406,7 @@ export function loadRecentComposerEmojis(rawValue: string | null): string[] {
     const uniqueItems: string[] = [];
     for (const item of parsed) {
       if (typeof item !== "string") continue;
-      if (!COMPOSER_EMOJI_LOOKUP.has(item)) continue;
+      if (catalog && !catalog.lookup.has(item)) continue;
       if (uniqueItems.includes(item)) continue;
       uniqueItems.push(item);
       if (uniqueItems.length >= COMPOSER_RECENT_EMOJI_LIMIT) {
@@ -381,8 +420,12 @@ export function loadRecentComposerEmojis(rawValue: string | null): string[] {
   }
 }
 
-export function recordRecentComposerEmoji(currentItems: readonly string[], emojiValue: string): string[] {
-  if (!COMPOSER_EMOJI_LOOKUP.has(emojiValue)) {
+export function recordRecentComposerEmoji(
+  currentItems: readonly string[],
+  emojiValue: string,
+  catalog: ComposerEmojiCatalog | null
+): string[] {
+  if (!catalog?.lookup.has(emojiValue)) {
     return [...currentItems];
   }
 

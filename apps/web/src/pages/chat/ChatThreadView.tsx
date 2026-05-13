@@ -25,6 +25,7 @@ export const ChatThreadView = memo(function ChatThreadView({
   threadChrome,
   threadComposer,
   activeTyping,
+  plainActiveTyping,
   searchBarPresence,
   mediaPanelPresence,
   threadPaneState,
@@ -41,6 +42,7 @@ export const ChatThreadView = memo(function ChatThreadView({
   threadChrome: ReactNode;
   threadComposer: ReactNode;
   activeTyping: WorkspaceEntryState["activeTyping"];
+  plainActiveTyping: WorkspaceEntryState["plainActiveTyping"];
   searchBarPresence: ChatPresence;
   mediaPanelPresence: ChatPresence;
   threadPaneState: ThreadPaneState;
@@ -62,7 +64,11 @@ export const ChatThreadView = memo(function ChatThreadView({
         senderLabels={activeThreadKind === "group" || activeThreadKind === "plain-group" ? groupSenderLabels : undefined}
         topChrome={threadChrome}
         composer={threadComposer}
-        isTyping={activeThreadKind === "direct" ? activeTyping : undefined}
+        isTyping={activeThreadKind === "direct"
+          ? activeTyping
+          : activeThreadKind === "plain-direct"
+            ? plainActiveTyping
+            : undefined}
         searchBar={searchBarPresence.isMounted ? (
           <div className={`${styles.searchBarPresence} ${searchBarPresence.isClosing ? motionStyles.panelOut : motionStyles.panelIn}`}>
             <Suspense fallback={<div className={styles.searchBarLazyFallback} aria-hidden="true" />}>

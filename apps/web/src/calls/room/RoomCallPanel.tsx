@@ -328,7 +328,7 @@ export function RoomCallPanel({ session, onLeave }: Props) {
       id: "local",
       label: session.displayName,
       stream: localVideoStream,
-      audioStream: null,
+      audioStream: localStream,
       hasAudio: localHasAudio,
       fallbackInitials: displayInitials,
       badge: isAudioMuted ? t("call.mute") : undefined,

@@ -167,6 +167,8 @@ The current installer will:
 - copy `.env` and TLS certificates from the current release
 - create a backup
 - load new Docker images
+- force `.env` to use the image tag bundled with the new release
+- verify that all required images are available locally after loading
 - run database migrations
 - restart containers without deleting Docker volumes
 

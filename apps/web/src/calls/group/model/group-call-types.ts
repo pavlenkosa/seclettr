@@ -64,6 +64,8 @@ export interface GroupCallStageTile {
   label: string;
   stream: MediaStream | null;
   audioStream: MediaStream | null;
+  /** Stream used only for local/remote voice activity detection. It is never played back. */
+  activityStream?: MediaStream | null;
   fallbackInitials: string;
   badge: string;
   hasAudio?: boolean;

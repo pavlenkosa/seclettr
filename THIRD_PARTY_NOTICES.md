@@ -1,13 +1,12 @@
-# Third-Party Notices / Уведомления о сторонних лицензиях
+# Third-Party Notices
 
 This file is auto-generated from workspace production dependencies.
-Этот файл автоматически генерируется из production-зависимостей workspace.
-Source / Источник: `pnpm licenses list --prod --json`.
+Source: `pnpm licenses list --prod --json`.
 
-- Total production packages / Всего production-пакетов: 305
-- Packages without detected local license file / Пакеты без обнаруженного локального файла лицензии: 30
+- Total production packages: 305
+- Packages without detected local license file: 30
 
-## License Summary / Сводка по лицензиям
+## License Summary
 
 | License | Packages |
 | --- | ---: |
@@ -19,7 +18,7 @@ Source / Источник: `pnpm licenses list --prod --json`.
 | MIT | 165 |
 | MPL-2.0 | 1 |
 
-## Package Inventory / Перечень пакетов
+## Package Inventory
 
 | Package | Version | License | Homepage | License File | Author |
 | --- | --- | --- | --- | --- | --- |
@@ -227,8 +226,8 @@ Source / Источник: `pnpm licenses list --prod --json`.
 | json-schema-traverse | 1.0.0 | MIT | https://github.com/epoberezkin/json-schema-traverse#readme | node_modules/.pnpm/json-schema-traverse@1.0.0/node_modules/json-schema-traverse/LICENSE | Evgeny Poberezkin |
 | jwa | 2.0.1 | MIT | https://github.com/brianloveswords/node-jwa#readme | node_modules/.pnpm/jwa@2.0.1/node_modules/jwa/LICENSE | Brian J. Brennan |
 | jws | 4.0.1 | MIT | https://github.com/brianloveswords/node-jws#readme | node_modules/.pnpm/jws@4.0.1/node_modules/jws/LICENSE | Brian J Brennan |
-| libsodium | 0.7.16 | ISC | https://github.com/jedisct1/libsodium.js | node_modules/.pnpm/libsodium@0.7.16/node_modules/libsodium/LICENSE | Ahmad Ben Mrad |
-| libsodium-wrappers | 0.7.13 | ISC | https://github.com/jedisct1/libsodium.js | node_modules/.pnpm/libsodium-wrappers@0.7.13/node_modules/libsodium-wrappers/LICENSE | Ahmad Ben Mrad |
+| libsodium-sumo | 0.7.16 | ISC | https://github.com/jedisct1/libsodium.js | node_modules/.pnpm/libsodium-sumo@0.7.16/node_modules/libsodium-sumo/LICENSE | Ahmad Ben Mrad |
+| libsodium-wrappers-sumo | 0.7.13 | ISC | https://github.com/jedisct1/libsodium.js | node_modules/.pnpm/libsodium-wrappers-sumo@0.7.13/node_modules/libsodium-wrappers-sumo/LICENSE | Ahmad Ben Mrad |
 | light-my-request | 5.14.0 | BSD-3-Clause | https://github.com/fastify/light-my-request/blob/master/README.md | node_modules/.pnpm/light-my-request@5.14.0/node_modules/light-my-request/LICENSE | Tomas Della Vedova - @delvedor |
 | lodash.defaults | 4.2.0 | MIT | https://lodash.com/ | node_modules/.pnpm/lodash.defaults@4.2.0/node_modules/lodash.defaults/LICENSE | John-David Dalton |
 | lodash.isarguments | 3.1.0 | MIT | https://lodash.com/ | node_modules/.pnpm/lodash.isarguments@3.1.0/node_modules/lodash.isarguments/LICENSE | John-David Dalton |
@@ -329,13 +328,10 @@ Source / Источник: `pnpm licenses list --prod --json`.
 | zod | 3.25.76 | MIT | https://zod.dev | node_modules/.pnpm/zod@3.25.76/node_modules/zod/LICENSE | Colin McDonnell |
 | zustand | 4.5.7 | MIT | https://github.com/pmndrs/zustand | node_modules/.pnpm/zustand@4.5.7_@types+react@18.3.28_react@18.3.1/node_modules/zustand/LICENSE | Paul Henschel |
 
-## Compliance Notes / Примечания по соответствию
+## Compliance Notes
 
 - For releases, distribute this file together with `LICENSE` and `NOTICE`.
-- Для релизов распространяйте этот файл вместе с `LICENSE` и `NOTICE`.
 - Dependencies with `UNKNOWN`/`UNLICENSED` metadata require manual legal review before publication.
-- Если у зависимости лицензия `UNKNOWN`/`UNLICENSED`, требуется ручная юридическая проверка перед публикацией.
 - Packages without a detected local license file in `node_modules` require manual upstream verification.
-- Пакеты без обнаруженного файла лицензии в `node_modules` требуют ручной проверки по upstream-репозиторию.
-- Strict check command / Команда strict-проверки: `node scripts/generate-third-party-notices.mjs --strict`.
+- Strict check command: `node scripts/generate-third-party-notices.mjs --strict`.
 

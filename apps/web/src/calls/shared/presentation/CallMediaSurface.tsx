@@ -116,7 +116,7 @@ export function CallMediaAvatarFallback({
       data-speaking-variant={speakingVariant}
       data-speaking={isSpeaking ? "true" : "false"}
     >
-      {hasAudio && pulseClassName ? (
+      {isSpeaking && pulseClassName ? (
         <span
           className={[
             pulseClassName,

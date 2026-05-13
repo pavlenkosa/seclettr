@@ -194,6 +194,7 @@ export const ChatThreadComposer = memo(function ChatThreadComposer({
         <MessageComposer
           key={activeListId ?? "plain-direct:unknown"}
           ref={messageComposerRef}
+          recipientUserId={activePlainConversation.userId}
           onFocusChange={onComposerFocusChange}
           replyTo={threadPaneState.replyToMeta}
           onClearReply={threadPaneState.handleClearReply}
@@ -211,6 +212,7 @@ export const ChatThreadComposer = memo(function ChatThreadComposer({
         <MessageComposer
           key={activeListId ?? "plain-group:unknown"}
           ref={messageComposerRef}
+          groupId={activePlainGroup.groupId}
           onFocusChange={onComposerFocusChange}
           replyTo={threadPaneState.replyToMeta}
           onClearReply={threadPaneState.handleClearReply}

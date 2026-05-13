@@ -99,8 +99,8 @@ export function useMessageComposerDraft({
   const trimmedText = text.trim();
 
   const { handleTypingState, stopTyping, cleanupTypingSignal } = useChatComposerTypingSignal({
-    recipientUserId: onSendTextOverride ? undefined : recipientUserId,
-    groupId: onSendTextOverride ? undefined : groupId,
+    recipientUserId,
+    groupId,
   });
   const { sendTextMessage: sendTextMessageStore, sendFileAttachment: sendFileAttachmentStore } =
     useChatComposerMessageActions({

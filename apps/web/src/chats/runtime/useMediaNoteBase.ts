@@ -107,6 +107,35 @@ export function useMediaNoteBase<T extends HTMLMediaElement = HTMLMediaElement>(
     void loadAndMaybePlay(false);
   }, [autoDecrypt, attachment, loadAndMaybePlay]);
 
+  useEffect(() => {
+    if (!attachment?.isPlain || !attachment.localUrl || !mediaUrl) return;
+    if (attachment.localUrl === mediaUrl) return;
+
+    // Plain outgoing media starts life as an optimistic object URL and is later
+    // replaced with a confirmed server download URL. If autoplay/tap-to-play
+    // loaded the optimistic blob before confirmation, the component can keep
+    // pointing at a blob URL that the sender flow has already revoked. Switch
+    // the mounted media element to the confirmed URL as soon as the store does.
+    const shouldReplaceRevokedOptimisticBlob =
+      mediaUrl.startsWith("blob:") && !attachment.localUrl.startsWith("blob:");
+
+    if (!shouldReplaceRevokedOptimisticBlob) return;
+
+    const el = mediaRef.current;
+    if (el) {
+      el.pause();
+      el.removeAttribute("src");
+      el.load();
+    }
+
+    revokeAttachmentObjectUrl(mediaUrl);
+    setMediaUrl(attachment.localUrl);
+    setCurrentTime(0);
+    setDuration(0);
+    setIsPlaying(false);
+    setErrorCause(null);
+  }, [attachment?.isPlain, attachment?.localUrl, mediaUrl]);
+
   const togglePlayback = useCallback(async () => {
     if (!mediaUrl) {
       await loadAndMaybePlay(true);

@@ -73,18 +73,14 @@ import {
   MessageComposer,
   type MessageComposerHandle,
 } from "../MessageComposer";
-import {
-  COMPOSER_RECENT_EMOJI_STORAGE_KEY,
-  filterComposerEmojiEntries,
-  getComposerEmojiEntry,
-} from "../../composer";
+import { COMPOSER_RECENT_EMOJI_STORAGE_KEY, filterComposerEmojiEntries, getComposerEmojiEntry } from "../../composer";
+import { loadComposerEmojiCatalog } from "../../composer/composer-emoji-catalog";
+import type { ComposerEmojiCatalog } from "../../composer/composer-emojis";
 
 const smileyEmoji = "\u{1F600}";
 const heartEmoji = "\u{2764}\u{FE0F}";
 
-if (!getComposerEmojiEntry(smileyEmoji) || !getComposerEmojiEntry(heartEmoji)) {
-  throw new Error("Composer emoji fixtures are incomplete");
-}
+let emojiCatalog: ComposerEmojiCatalog;
 
 class MockMediaRecorder {
   static isTypeSupported = vi.fn(() => true);
@@ -157,13 +153,28 @@ function findEmojiButton(container: HTMLElement, emoji: string): HTMLButtonEleme
     .find((button) => button.getAttribute("aria-label") === `Insert emoji ${emoji}`) ?? null;
 }
 
+async function waitForComposerEmojiCatalog(container: HTMLElement): Promise<void> {
+  for (let attempt = 0; attempt < 20; attempt += 1) {
+    await act(async () => {
+      await Promise.resolve();
+    });
+    if (container.querySelector<HTMLButtonElement>("[aria-label^='Insert emoji']")) {
+      return;
+    }
+  }
+}
+
 describe("MessageComposer emoji picker", () => {
   let container: HTMLDivElement;
   let root: Root;
   let storage: Map<string, string>;
 
-  beforeEach(() => {
+  beforeEach(async () => {
     (globalThis as typeof globalThis & { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
+    emojiCatalog = await loadComposerEmojiCatalog();
+    if (!getComposerEmojiEntry(emojiCatalog, smileyEmoji) || !getComposerEmojiEntry(emojiCatalog, heartEmoji)) {
+      throw new Error("Composer emoji fixtures are incomplete");
+    }
     storage = new Map([["seclettr.locale.v1", "en"]]);
     vi.stubGlobal("localStorage", {
       getItem: vi.fn((key: string) => storage.get(key) ?? null),
@@ -226,6 +237,7 @@ describe("MessageComposer emoji picker", () => {
     });
 
     expect(container.querySelector("[aria-label='Emoji picker']")).not.toBeNull();
+    await waitForComposerEmojiCatalog(container);
 
     const emojiButton = container.querySelector<HTMLButtonElement>("[aria-label^='Insert emoji']");
     expect(emojiButton).not.toBeNull();
@@ -252,6 +264,7 @@ describe("MessageComposer emoji picker", () => {
     });
 
     expect(container.querySelector("[aria-label='Emoji picker']")).not.toBeNull();
+    await waitForComposerEmojiCatalog(container);
 
     const searchInput = container.querySelector<HTMLInputElement>("[aria-label='Search emoji']");
     expect(searchInput).not.toBeNull();
@@ -286,9 +299,9 @@ describe("MessageComposer emoji picker", () => {
   });
 
   it("matches common russian aliases in emoji search", () => {
-    const heartResults = filterComposerEmojiEntries("сердце");
-    const smileResults = filterComposerEmojiEntries("улыбка");
-    const flagResults = filterComposerEmojiEntries("флаг");
+    const heartResults = filterComposerEmojiEntries(emojiCatalog, "сердце");
+    const smileResults = filterComposerEmojiEntries(emojiCatalog, "улыбка");
+    const flagResults = filterComposerEmojiEntries(emojiCatalog, "флаг");
 
     expect(heartResults.some((entry) => entry.emoji === heartEmoji)).toBe(true);
     expect(smileResults.some((entry) => entry.emoji === smileyEmoji)).toBe(true);

@@ -177,7 +177,7 @@ function QualityOption({
 
 // ─── Dialog ───────────────────────────────────────────────────────────────────
 
-interface MediaSendDialogProps
+export interface MediaSendDialogProps
   extends Pick<
     UseMediaSendDialogResult,
     | "pendingFiles"

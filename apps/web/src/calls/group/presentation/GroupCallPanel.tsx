@@ -221,11 +221,8 @@ export function GroupCallPanel({ session, onClose }: Props) {
     : t("group.call.stage.enterFullscreen");
   const stageExpandLabel = isCompactStagePreview ? compactStageLabel : presentation.fullscreenToggleLabel;
   const canToggleStagePresentation = isCompactStagePreview || presentation.canToggleStageFullscreen;
-  const shouldRenderInlineDetails = isDetailsOpen && !isMobileViewport;
-  const bodyClassName = [
-    presentation.bodyClassName,
-    shouldRenderInlineDetails ? styles.bodyWithSidePanel : "",
-  ].filter(Boolean).join(" ");
+  const shouldRenderInlineDetails = false;
+  const bodyClassName = presentation.bodyClassName;
 
   const devDebugOptions: UseGroupCallDevDebugOptions = {
     session,
@@ -378,10 +375,9 @@ export function GroupCallPanel({ session, onClose }: Props) {
               onSelectTile={handleSelectTile}
             />
           </div>
-          {shouldRenderInlineDetails ? detailsDrawer : null}
         </div>
 
-        {shouldRenderInlineDetails ? null : detailsDrawer}
+        {detailsDrawer}
 
         <CallControlsDock className={styles.bottomDock}>
           <GroupCallControls

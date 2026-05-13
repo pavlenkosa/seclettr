@@ -8,7 +8,6 @@ import {
   type RefObject,
 } from "react";
 import {
-  COMPOSER_EMOJI_GROUPS,
   COMPOSER_RECENT_EMOJI_STORAGE_KEY,
   DEFAULT_COMPOSER_EMOJI_GROUP_ID,
   filterComposerEmojiEntries,
@@ -18,6 +17,7 @@ import {
   type MessageComposerEmojiTab,
 } from "./index";
 import type {
+  ComposerEmojiCatalog,
   ComposerEmojiEntry,
   ComposerEmojiGroup,
   ComposerEmojiSubgroup,
@@ -62,6 +62,13 @@ function persistRecentEmojis(nextRecentEmojis: readonly string[]) {
   }
 }
 
+let emojiCatalogPromise: Promise<ComposerEmojiCatalog> | null = null;
+
+function loadComposerEmojiCatalogLazy(): Promise<ComposerEmojiCatalog> {
+  emojiCatalogPromise ??= import("./composer-emoji-catalog").then((module) => module.loadComposerEmojiCatalog());
+  return emojiCatalogPromise;
+}
+
 export function useMessageComposerEmojiState({
   sending,
   isRecording,
@@ -73,6 +80,7 @@ export function useMessageComposerEmojiState({
   const [isEmojiPickerOpen, setIsEmojiPickerOpen] = useState(false);
   const [emojiSearchQuery, setEmojiSearchQuery] = useState("");
   const [recentEmojis, setRecentEmojis] = useState<string[]>([]);
+  const [emojiCatalog, setEmojiCatalog] = useState<ComposerEmojiCatalog | null>(null);
   const [activeEmojiGroupId, setActiveEmojiGroupId] = useState(DEFAULT_COMPOSER_EMOJI_GROUP_ID);
   const [activeEmojiSubgroupId, setActiveEmojiSubgroupId] = useState<string | null>(null);
   const emojiToggleButtonRef = useRef<HTMLButtonElement>(null);
@@ -82,6 +90,24 @@ export function useMessageComposerEmojiState({
   const closeEmojiPicker = useCallback(() => {
     setIsEmojiPickerOpen(false);
   }, []);
+
+  useEffect(() => {
+    if (!isEmojiPickerOpen || emojiCatalog) return;
+
+    let cancelled = false;
+    loadComposerEmojiCatalogLazy().then((catalog) => {
+      if (cancelled) return;
+      setEmojiCatalog(catalog);
+      setActiveEmojiGroupId((current) => current || catalog.defaultGroupId);
+      setRecentEmojis((current) => current.filter((emoji) => catalog.lookup.has(emoji)));
+    }).catch(() => {
+      if (!cancelled) setEmojiCatalog(null);
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [emojiCatalog, isEmojiPickerOpen]);
 
   const applyEmojiSearchQuery = useCallback((nextValue: string) => {
     setEmojiSearchQuery(nextValue);
@@ -116,12 +142,12 @@ export function useMessageComposerEmojiState({
 
     insertTextAtSelection(emoji);
     setRecentEmojis((current) => {
-      const next = recordRecentComposerEmoji(current, emoji);
+      const next = recordRecentComposerEmoji(current, emoji, emojiCatalog);
       persistRecentEmojis(next);
       return next;
     });
     setIsEmojiPickerOpen(false);
-  }, [insertTextAtSelection, isRecording, sending]);
+  }, [emojiCatalog, insertTextAtSelection, isRecording, sending]);
 
   useEffect(() => {
     try {
@@ -171,8 +197,8 @@ export function useMessageComposerEmojiState({
       return;
     }
 
-    const activeGroup = COMPOSER_EMOJI_GROUPS.find((group) => group.id === activeEmojiGroupId)
-      ?? COMPOSER_EMOJI_GROUPS[0]
+    const activeGroup = emojiCatalog?.groups.find((group) => group.id === activeEmojiGroupId)
+      ?? emojiCatalog?.groups[0]
       ?? null;
     if (!activeGroup) {
       if (activeEmojiSubgroupId !== null) setActiveEmojiSubgroupId(null);
@@ -186,7 +212,7 @@ export function useMessageComposerEmojiState({
     if (!isCurrentSubgroupValid && nextSubgroupId !== activeEmojiSubgroupId) {
       setActiveEmojiSubgroupId(nextSubgroupId);
     }
-  }, [activeEmojiGroupId, activeEmojiSubgroupId, setActiveEmojiSubgroupId]);
+  }, [activeEmojiGroupId, activeEmojiSubgroupId, emojiCatalog, setActiveEmojiSubgroupId]);
 
   useEffect(() => {
     if (isRecording) {
@@ -201,31 +227,31 @@ export function useMessageComposerEmojiState({
 
   const isEmojiSearchActive = emojiSearchQuery.trim().length > 0;
   const filteredEmojiItems = useMemo(
-    () => filterComposerEmojiEntries(emojiSearchQuery),
-    [emojiSearchQuery]
+    () => filterComposerEmojiEntries(emojiCatalog, emojiSearchQuery),
+    [emojiCatalog, emojiSearchQuery]
   );
   const recentEmojiItems = useMemo(
     () => emojiSearchQuery.trim().length === 0
       ? recentEmojis
-          .map((emoji) => getComposerEmojiEntry(emoji))
+          .map((emoji) => getComposerEmojiEntry(emojiCatalog, emoji))
           .filter((entry): entry is NonNullable<typeof entry> => entry !== null)
       : [],
-    [emojiSearchQuery, recentEmojis]
+    [emojiCatalog, emojiSearchQuery, recentEmojis]
   );
   const emojiTabs: readonly MessageComposerEmojiTab[] = useMemo(
     () => [
       ...(recentEmojiItems.length > 0
         ? [{ id: "recent", labelKey: "composer.emojiGroup.recent", fallbackLabel: "Recent" }]
         : []),
-      ...COMPOSER_EMOJI_GROUPS,
+      ...(emojiCatalog?.groups ?? []),
     ],
-    [recentEmojiItems.length]
+    [emojiCatalog, recentEmojiItems.length]
   );
   const activeEmojiGroup = useMemo(
-    () => COMPOSER_EMOJI_GROUPS.find((group) => group.id === activeEmojiGroupId)
-      ?? COMPOSER_EMOJI_GROUPS[0]
+    () => emojiCatalog?.groups.find((group) => group.id === activeEmojiGroupId)
+      ?? emojiCatalog?.groups[0]
       ?? null,
-    [activeEmojiGroupId]
+    [activeEmojiGroupId, emojiCatalog]
   );
   const activeEmojiSubgroup = useMemo(
     () => activeEmojiGroup?.subgroups.find((subgroup) => subgroup.id === activeEmojiSubgroupId)

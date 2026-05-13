@@ -252,6 +252,7 @@
   position: relative;
   flex-shrink: 0;
   align-self: center;
+  min-inline-size: 0;
 }
 
 .secondaryBtn {
@@ -398,6 +399,12 @@
   bottom: calc(100% + 0.5rem);
   z-index: 20;
   width: min(17rem, calc(100vw - 1.5rem));
+  inline-size: min(17rem, calc(100vw - 1.5rem));
+  max-inline-size: calc(100vw - 1.5rem);
+  min-width: 0;
+  min-inline-size: 0;
+  margin: 0;
+  overflow: hidden;
   padding: 0.64rem;
   border-radius: 20px;
   border: 1px solid color-mix(in srgb, var(--panel-border-soft) 88%, transparent);
@@ -405,11 +412,15 @@
 }
 
 .emojiSearchWrap {
+  min-inline-size: 0;
+  max-inline-size: 100%;
   margin-bottom: 0.48rem;
 }
 
 .emojiSearchInput {
   width: 100%;
+  min-width: 0;
+  min-inline-size: 0;
   min-height: 2.3rem;
   padding: 0.48rem 0.72rem;
   border-radius: 999px;
@@ -434,8 +445,11 @@
 
 .emojiGroupTabs {
   display: flex;
+  max-inline-size: 100%;
+  min-inline-size: 0;
   gap: 0.32rem;
   overflow-x: auto;
+  overscroll-behavior-x: contain;
   margin-bottom: 0.58rem;
   padding-bottom: 0.12rem;
 }
@@ -469,11 +483,15 @@
 }
 
 .emojiSubgroupRow {
+  min-inline-size: 0;
+  max-inline-size: 100%;
   margin-bottom: 0.74rem;
 }
 
 .emojiSubgroupSelect {
   width: 100%;
+  min-width: 0;
+  min-inline-size: 0;
   min-height: 2.2rem;
   padding: 0.45rem 0.72rem;
   border-radius: 14px;
@@ -490,12 +508,16 @@
 }
 
 .emojiSearchSummary {
+  min-inline-size: 0;
+  max-inline-size: 100%;
   margin-bottom: 0.74rem;
   font-size: 0.7rem;
   color: var(--text-secondary);
 }
 
 .emojiViewport {
+  max-inline-size: 100%;
+  min-inline-size: 0;
   height: min(18rem, calc(100vh - 12rem));
   min-height: 9.5rem;
   overflow-y: auto;
@@ -507,12 +529,16 @@
 
 .emojiGrid {
   display: grid;
+  max-inline-size: 100%;
+  min-inline-size: 0;
   grid-template-columns: repeat(6, minmax(0, 1fr));
   gap: 0.28rem;
 }
 
 .emojiButton {
   width: 100%;
+  min-width: 0;
+  min-inline-size: 0;
   min-height: 2.1rem;
   display: inline-flex;
   align-items: center;
@@ -1037,6 +1063,8 @@
 
   .emojiPicker {
     width: min(15rem, calc(100vw - 1rem));
+    inline-size: min(15rem, calc(100vw - 1rem));
+    max-inline-size: calc(100vw - 1rem);
     bottom: calc(100% + 0.42rem);
     padding: 0.52rem;
     border-radius: 18px;

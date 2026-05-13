@@ -78,14 +78,17 @@ async function ensureBucket(): Promise<boolean> {
 }
 
 function rewriteS3Url(url: string, requestOrigin?: string): string {
-  const base = requestOrigin ?? config.S3_PUBLIC_URL;
+  const base = config.S3_PUBLIC_URL ?? requestOrigin;
   if (!base) return url;
   try {
     const parsed = new URL(url);
     const pub = new URL(base);
-    parsed.protocol = pub.protocol;
-    parsed.host = pub.host;
-    return parsed.toString();
+
+    // Build a fresh URL from the browser-facing origin instead of mutating the
+    // presigned endpoint in place. This guarantees that internal MinIO ports
+    // such as :9000 cannot leak into the upload/download URL returned to the
+    // browser, while preserving the bucket path and signed query string.
+    return new URL(`${parsed.pathname}${parsed.search}`, pub.origin).toString();
   } catch {
     return url;
   }

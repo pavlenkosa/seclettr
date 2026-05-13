@@ -2,8 +2,8 @@
   width: var(--avatar-size, 42px);
   height: var(--avatar-size, 42px);
   border-radius: 999px;
-  background: var(--accent);
-  color: var(--avatar-text);
+  background: var(--avatar-bg, var(--accent));
+  color: var(--avatar-fg, var(--avatar-text));
   display: inline-flex;
   align-items: center;
   justify-content: center;

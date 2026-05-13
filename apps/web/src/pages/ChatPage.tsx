@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useShallow } from "zustand/react/shallow";
 import { useAuthStore } from "@/stores/auth";
 import { usePlainMessagesStore, usePlainGroupsStore } from "@/stores/plain";
@@ -33,10 +33,15 @@ import { ChatCallPanels } from "./chat/ChatCallPanels";
 import { ChatMainLayout } from "./chat/ChatMainLayout";
 import { ChatModals } from "./chat/ChatModals";
 import { CreateRoomDialog } from "./chat/CreateRoomDialog";
-import { RoomCallPanel } from "@/calls/room/RoomCallPanel";
 import type { RoomCallSession } from "@/calls/room/room-call-bootstrap";
 import type { WorkspaceEntryState } from "./chat/chat-page-types";
 import styles from "./ChatPage.module.css";
+
+const RoomCallPanel = lazy(() =>
+  import("@/calls/room/RoomCallPanel").then(({ RoomCallPanel: Component }) => ({
+    default: Component,
+  }))
+);
 
 const groupSecurityDirectory = createGroupSecurityDirectory({
   fetchMemberDevices: (groupId) => api.getGroupMemberDevices(groupId),
@@ -154,6 +159,7 @@ export function ChatPage() {
     activePlainConversation,
     activePlainGroup,
     plainActivePresence,
+    plainActiveTyping,
     plainConversationEntries,
     plainGroupEntries,
     sendPlainText,
@@ -294,12 +300,12 @@ export function ChatPage() {
   const plainDirectPresenceLabel = useMemo(
     () => resolveDirectPresenceLabel({
       activeConversationUserId: activePlainConversation?.userId ?? null,
-      activeTyping: false,
+      activeTyping: plainActiveTyping,
       activePresence: plainActivePresence,
       locale,
       t,
     }),
-    [activePlainConversation, plainActivePresence, locale, t]
+    [activePlainConversation, plainActiveTyping, plainActivePresence, locale, t]
   );
 
   const activeGroupCallCallerLabel = useMemo(
@@ -419,6 +425,7 @@ export function ChatPage() {
       threadChrome={threadChrome}
       threadComposer={threadComposer}
       activeTyping={activeTyping}
+      plainActiveTyping={plainActiveTyping}
       searchBarPresence={searchBarPresence}
       mediaPanelPresence={mediaPanelPresence}
       threadPaneState={threadPaneState}
@@ -505,7 +512,9 @@ export function ChatPage() {
         />
       )}
       {activeRoomSession && (
-        <RoomCallPanel session={activeRoomSession} onLeave={handleLeaveRoom} />
+        <Suspense fallback={<div className={styles.modalLazyFallback} aria-hidden="true" />}>
+          <RoomCallPanel session={activeRoomSession} onLeave={handleLeaveRoom} />
+        </Suspense>
       )}
     </div>
   );

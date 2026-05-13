@@ -5,6 +5,8 @@ export type UserRelationshipBasis =
   | "direct_relationship"
   | "shared_group"
   | "prior_direct_message"
+  | "prior_plain_direct_message"
+  | "shared_plain_group"
   | "active_direct_call"
   | "none";
 
@@ -62,6 +64,28 @@ export async function resolveUserRelationshipAccess(
              OR (sender_device.user_id = $2 AND recipient_device.user_id = $1)
           LIMIT 1
         ) THEN 'prior_direct_message'
+        WHEN EXISTS (
+          SELECT 1
+          FROM plain_messages pm
+          WHERE pm.recipient_user_id IS NOT NULL
+            AND pm.deleted_at IS NULL
+            AND (
+              (pm.sender_user_id = $1 AND pm.recipient_user_id = $2)
+              OR (pm.sender_user_id = $2 AND pm.recipient_user_id = $1)
+            )
+          LIMIT 1
+        ) THEN 'prior_plain_direct_message'
+        WHEN EXISTS (
+          SELECT 1
+          FROM plain_group_members pgm_self
+          INNER JOIN plain_group_members pgm_target
+            ON pgm_target.group_id = pgm_self.group_id
+          WHERE pgm_self.user_id = $1
+            AND pgm_target.user_id = $2
+            AND pgm_self.removed_at IS NULL
+            AND pgm_target.removed_at IS NULL
+          LIMIT 1
+        ) THEN 'shared_plain_group'
         WHEN EXISTS (
           SELECT 1
           FROM call_sessions c

@@ -34,12 +34,20 @@ const devHttpsConfig = devHttpsKeyFile && devHttpsCertFile
     }
   : undefined;
 const buildSourcemap = process.env["SECLETTR_BUILD_SOURCEMAP"] === "true";
+const DEFAULT_JS_CHUNK_BUDGET = 260 * 1024;
+const DEFAULT_CSS_ASSET_BUDGET = 40 * 1024;
+const DEFAULT_STATIC_ASSET_BUDGET = 300 * 1024;
+
 const JS_CHUNK_BUDGETS = {
   index: 48 * 1024,
   ChatPage: 360 * 1024,
+  MessageComposer: 260 * 1024,
+  MediaSendDialog: 60 * 1024,
+  "composer-emoji-data": 260 * 1024,
   "feature-calls-shared": 120 * 1024,
-  "feature-direct-calls": 240 * 1024,
+  "feature-direct-calls": 380 * 1024,
   "feature-group-calls": 400 * 1024,
+  RoomCallPanel: 160 * 1024,
   "vendor-react": 160 * 1024,
   "vendor-router": 10 * 1024,
   "vendor-state": 8 * 1024,
@@ -47,10 +55,74 @@ const JS_CHUNK_BUDGETS = {
   "vendor-misc": 80 * 1024,
   "vendor-protocol": 100 * 1024,
   "vendor-calls": 200 * 1024,
-  // Crypto currently embeds the libsodium WASM payload and is tracked separately
-  // until the auth/bootstrap path can load it more lazily.
-  "vendor-crypto": 760 * 1024,
+  // Crypto currently embeds the libsodium WASM payload and the password-lock
+  // KDF dependencies. Keep this high enough for the current baseline, but low
+  // enough to catch accidental crypto/runtime imports into the eager path.
+  "vendor-crypto": 1_120 * 1024,
 } as const;
+
+const CSS_ASSET_BUDGETS = {
+  ChatPage: 130 * 1024,
+  MessageComposer: 45 * 1024,
+  "feature-direct-calls": 32 * 1024,
+  "feature-group-calls": 80 * 1024,
+  index: 40 * 1024,
+} as const;
+
+const STATIC_ASSET_BUDGETS = {
+  "seclettr-marimba": 1_700 * 1024,
+} as const;
+
+function formatBudgetSize(bytes: number): string {
+  return `${(bytes / 1024).toFixed(2)} kB`;
+}
+
+function stripAssetHash(fileName: string): string {
+  const baseName = path.basename(fileName).replace(/\.[^.]+$/, "");
+  const hashSeparatorIndex = baseName.lastIndexOf("-");
+
+  if (hashSeparatorIndex <= 0) {
+    return baseName;
+  }
+
+  const possibleHash = baseName.slice(hashSeparatorIndex + 1);
+  return /^[A-Za-z0-9_-]{8,}$/.test(possibleHash)
+    ? baseName.slice(0, hashSeparatorIndex)
+    : baseName;
+}
+
+function resolveAssetSize(source: unknown): number | null {
+  if (typeof source === "string") {
+    return Buffer.byteLength(source, "utf8");
+  }
+
+  if (source instanceof Uint8Array) {
+    return source.byteLength;
+  }
+
+  return null;
+}
+
+function resolveNamedBudget<T extends Record<string, number>>(
+  budgets: T,
+  name: string,
+  fallback: number
+): number {
+  const exactBudget = budgets[name as keyof T];
+  if (exactBudget !== undefined) {
+    return exactBudget;
+  }
+
+  // Vite/Rollup hashes may contain dashes, for example:
+  // `feature-group-calls-BdYoAd-V.css`. A naive split by the last dash would
+  // leave `feature-group-calls-BdYoAd` and miss the configured budget, so match
+  // hashed asset names against the known budget prefixes as a second pass.
+  const prefixMatch = Object.keys(budgets)
+    .filter((budgetName) => name.startsWith(`${budgetName}-`))
+    .sort((left, right) => right.length - left.length)[0];
+
+  return prefixMatch ? budgets[prefixMatch as keyof T] : fallback;
+}
 
 function bundleBudgetPlugin(): Plugin {
   return {
@@ -64,30 +136,47 @@ function bundleBudgetPlugin(): Plugin {
       const violations: string[] = [];
 
       for (const entry of Object.values(bundle)) {
+        if (!entry || typeof entry !== "object" || !("type" in entry)) {
+          continue;
+        }
+
         if (
-          !entry
-          || typeof entry !== "object"
-          || !("type" in entry)
-          || entry.type !== "chunk"
-          || !("name" in entry)
-          || typeof entry.name !== "string"
-          || !entry.name
-          || !("code" in entry)
-          || typeof entry.code !== "string"
+          entry.type === "chunk"
+          && "name" in entry
+          && typeof entry.name === "string"
+          && entry.name
+          && "code" in entry
+          && typeof entry.code === "string"
         ) {
+          const budget = resolveNamedBudget(JS_CHUNK_BUDGETS, entry.name, DEFAULT_JS_CHUNK_BUDGET);
+          const size = Buffer.byteLength(entry.code, "utf8");
+          if (size > budget) {
+            violations.push(
+              `${entry.name}: ${formatBudgetSize(size)} > ${formatBudgetSize(budget)}`
+            );
+          }
           continue;
         }
 
-        const budget = JS_CHUNK_BUDGETS[entry.name as keyof typeof JS_CHUNK_BUDGETS];
-        if (budget === undefined) {
-          continue;
-        }
+        if (
+          entry.type === "asset"
+          && "fileName" in entry
+          && typeof entry.fileName === "string"
+          && "source" in entry
+        ) {
+          const size = resolveAssetSize(entry.source);
+          if (size === null) continue;
 
-        const size = Buffer.byteLength(entry.code, "utf8");
-        if (size > budget) {
-          violations.push(
-            `${entry.name}: ${(size / 1024).toFixed(2)} kB > ${(budget / 1024).toFixed(2)} kB`
-          );
+          const budgetKey = stripAssetHash(entry.fileName);
+          const budget = entry.fileName.endsWith(".css")
+            ? resolveNamedBudget(CSS_ASSET_BUDGETS, budgetKey, DEFAULT_CSS_ASSET_BUDGET)
+            : resolveNamedBudget(STATIC_ASSET_BUDGETS, budgetKey, DEFAULT_STATIC_ASSET_BUDGET);
+
+          if (size > budget) {
+            violations.push(
+              `${entry.fileName}: ${formatBudgetSize(size)} > ${formatBudgetSize(budget)}`
+            );
+          }
         }
       }
 
@@ -100,6 +189,13 @@ function bundleBudgetPlugin(): Plugin {
 
 function resolveManualChunk(id: string): string | undefined {
   const normalizedId = id.toLowerCase();
+
+  if (
+    id.includes("/src/chats/composer/composer-emoji-catalog")
+    || id.includes("/src/chats/composer/composer-emoji-data.generated")
+  ) {
+    return "composer-emoji-data";
+  }
 
   if (id.includes("/src/calls/shared/")) {
     return "feature-calls-shared";

@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { GroupCallNotice } from "@/calls/group";
+import { GroupCallNotice } from "@/calls/group/presentation/GroupCallNotice";
 import { Avatar, IconButton, SurfacePanel } from "@/components/ui";
 import { SecurityStatusIndicator } from "./security/SecurityStatusIndicator";
 

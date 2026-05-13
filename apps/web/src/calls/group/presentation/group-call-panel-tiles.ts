@@ -54,10 +54,11 @@ export function createLocalCallTiles(
   localScreenStream: MediaStream | null,
   localStream: MediaStream | null,
   localTileLabel: string,
+  localIdentityLabel: string,
   localVideoStatusLabel: string,
   t: Translate
 ): GroupCallStageTile[] {
-  const localFallbackInitials = getMemberInitials(localTileLabel.replace(/^@/, ""));
+  const localFallbackInitials = getMemberInitials(localIdentityLabel.replace(/^@/, ""));
   const localHasAudio = !isLocalAudioMuted && hasLiveAudioTrack(localStream);
   const tiles: GroupCallStageTile[] = [];
 
@@ -66,7 +67,7 @@ export function createLocalCallTiles(
       id: "local:camera",
       label: localTileLabel,
       stream: localStream,
-      audioStream: null,
+      audioStream: localStream,
       fallbackInitials: localFallbackInitials,
       badge: t("group.call.videoOn"),
       hasAudio: localHasAudio,
@@ -81,7 +82,7 @@ export function createLocalCallTiles(
       id: "local:screen",
       label: localTileLabel,
       stream: localScreenStream,
-      audioStream: null,
+      audioStream: !isLocalVideoEnabled ? localStream : null,
       fallbackInitials: localFallbackInitials,
       badge: t("group.call.screenSharing"),
       hasAudio: !isLocalVideoEnabled && localHasAudio,
@@ -96,7 +97,7 @@ export function createLocalCallTiles(
       id: "local:audio",
       label: localTileLabel,
       stream: null,
-      audioStream: null,
+      audioStream: localStream,
       fallbackInitials: localFallbackInitials,
       badge: localVideoStatusLabel,
       hasAudio: localHasAudio,

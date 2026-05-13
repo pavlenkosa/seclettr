@@ -76,3 +76,25 @@ package-lock.json
 
 # Guardrail: transpiled JS should never be committed inside TS source tree
 apps/web/src/**/*.js
+.seclettr-brain/ARCHITECTURE.md
+.seclettr-brain/areas/attachments.md
+.seclettr-brain/areas/calls.md
+.seclettr-brain/areas/chats.md
+.seclettr-brain/areas/crypto.md
+.seclettr-brain/areas/deployment.md
+.seclettr-brain/areas/ui-performance.md
+.seclettr-brain/CODE_STYLE.md
+.seclettr-brain/CURRENT_STATE.md
+.seclettr-brain/decisions/TEMPLATE.md
+.seclettr-brain/KNOWN_ISSUES.md
+.seclettr-brain/obsidian/OBSIDIAN_USAGE.md
+.seclettr-brain/prompts/PROMPT_EXECUTE_TASK.md
+.seclettr-brain/prompts/PROMPT_IMPLEMENT_FIX.md
+.seclettr-brain/prompts/PROMPT_REVIEW.md
+.seclettr-brain/README.md
+.seclettr-brain/REVIEW_RULES.md
+.seclettr-brain/SECURITY_MODEL.md
+.seclettr-brain/tasks/2026-05-chat-runtime-review.md
+.seclettr-brain/tasks/2026-05-fix-sender-audio-preview.md
+.seclettr-brain/tasks/TEMPLATE.md
+.seclettr-brain/TESTING.md

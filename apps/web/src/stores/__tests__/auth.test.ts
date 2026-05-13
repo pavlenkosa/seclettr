@@ -118,7 +118,7 @@ vi.mock("@/lib/current-device-crypto-material", () => ({
     mockMarkCurrentDeviceCryptoMaterialSynced,
 }));
 
-vi.mock("@/lib/app-lock-pin", () => ({
+vi.mock("@/lib/app-lock-password", () => ({
   clearLegacyLockSnapshotStorage: mockClearLegacyLockSnapshotStorage,
   clearPin: mockClearPin,
   hasPinSet: mockHasPinSet,

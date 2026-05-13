@@ -23,6 +23,22 @@ interface PasscodeRecord {
   verifier: number[];
 }
 
+/**
+ * Legacy app-lock verifier written by app-lock-pin.ts.
+ *
+ * Older builds stored the PIN verifier without an explicit algorithm marker.
+ * Treating that record as "no PIN" is dangerous: a browser with a PIN-wrapped
+ * storage key would restore into recovery_required instead of locked, leaving
+ * the user only the destructive local reset path. Keep read/verify support and
+ * opportunistically migrate after a successful unlock.
+ */
+interface LegacyPinRecord {
+  salt: number[];
+  verifier: number[];
+}
+
+const LEGACY_PBKDF2_ITERATIONS = 600_000;
+
 function openDb(): Promise<IDBDatabase> {
   return new Promise((resolve, reject) => {
     const req = indexedDB.open(DB_NAME, 1);
@@ -47,6 +63,34 @@ async function deriveVerifier(passcode: string, salt: Uint8Array): Promise<Uint8
   );
 }
 
+function toStandaloneArrayBuffer(bytes: Uint8Array): ArrayBuffer {
+  const buffer = new ArrayBuffer(bytes.byteLength);
+  new Uint8Array(buffer).set(bytes);
+  return buffer;
+}
+
+async function deriveLegacyPinVerifier(passcode: string, salt: Uint8Array): Promise<Uint8Array> {
+  const passcodeBytes = new TextEncoder().encode(passcode);
+  const keyMaterial = await crypto.subtle.importKey(
+    "raw",
+    toStandaloneArrayBuffer(passcodeBytes),
+    "PBKDF2",
+    false,
+    ["deriveBits"]
+  );
+  const bits = await crypto.subtle.deriveBits(
+    {
+      name: "PBKDF2",
+      hash: "SHA-256",
+      salt: toStandaloneArrayBuffer(salt),
+      iterations: LEGACY_PBKDF2_ITERATIONS,
+    },
+    keyMaterial,
+    HASH_BYTES * 8
+  );
+  return new Uint8Array(bits);
+}
+
 async function loadRecord(): Promise<unknown> {
   const db = await openDb();
   return new Promise((resolve, reject) => {
@@ -69,9 +113,24 @@ function isPasscodeRecord(value: unknown): value is PasscodeRecord {
   return r.algo === "argon2id-v1" && Array.isArray(r.salt) && Array.isArray(r.verifier);
 }
 
+function isLegacyPinRecord(value: unknown): value is LegacyPinRecord {
+  if (!value || typeof value !== "object") return false;
+  const r = value as Partial<PasscodeRecord>;
+  return r.algo === undefined && Array.isArray(r.salt) && Array.isArray(r.verifier);
+}
+
+function constantTimeEqual(actual: Uint8Array, expected: Uint8Array): boolean {
+  if (actual.length !== expected.length) return false;
+  let diff = 0;
+  for (let i = 0; i < actual.length; i++) {
+    diff |= (actual[i] ?? 0) ^ (expected[i] ?? 0);
+  }
+  return diff === 0;
+}
+
 export async function hasPinSet(): Promise<boolean> {
   const record = await loadRecord();
-  return isPasscodeRecord(record);
+  return isPasscodeRecord(record) || isLegacyPinRecord(record);
 }
 
 export async function setPinHash(passcode: string): Promise<void> {
@@ -94,16 +153,26 @@ export async function setPinHash(passcode: string): Promise<void> {
 
 export async function verifyPin(passcode: string): Promise<boolean> {
   const raw = await loadRecord();
-  if (!isPasscodeRecord(raw)) return false;
-  const salt = new Uint8Array(raw.salt);
-  const expected = new Uint8Array(raw.verifier);
-  const actual = await deriveVerifier(passcode, salt);
-  if (actual.length !== expected.length) return false;
-  let diff = 0;
-  for (let i = 0; i < actual.length; i++) {
-    diff |= (actual[i] ?? 0) ^ (expected[i] ?? 0);
+
+  if (isPasscodeRecord(raw)) {
+    const salt = new Uint8Array(raw.salt);
+    const expected = new Uint8Array(raw.verifier);
+    const actual = await deriveVerifier(passcode, salt);
+    return constantTimeEqual(actual, expected);
   }
-  return diff === 0;
+
+  if (isLegacyPinRecord(raw)) {
+    const salt = new Uint8Array(raw.salt);
+    const expected = new Uint8Array(raw.verifier);
+    const actual = await deriveLegacyPinVerifier(passcode, salt);
+    const matches = constantTimeEqual(actual, expected);
+    if (matches) {
+      await setPinHash(passcode);
+    }
+    return matches;
+  }
+
+  return false;
 }
 
 export async function clearPin(): Promise<void> {

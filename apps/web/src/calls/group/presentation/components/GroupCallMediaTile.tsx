@@ -1,4 +1,5 @@
 import { useRef, type ReactNode } from "react";
+import { useCallAudioActivity } from "@/calls/shared/media/useCallAudioActivity";
 import { useMediaElementBinding } from "@/calls/shared/media/useMediaElementBinding";
 import {
   CallMediaAvatarFallback,
@@ -13,6 +14,8 @@ export interface GroupCallMediaTileProps {
   readonly label: string;
   readonly stream: MediaStream | null;
   readonly audioStream?: MediaStream | null;
+  /** Stream used only for voice activity detection; never played back. */
+  readonly activityStream?: MediaStream | null;
   readonly hasAudio?: boolean;
   readonly fallbackInitials: string;
   readonly badge?: string;
@@ -99,13 +102,13 @@ function getTileClassName({
   variant,
   videoSource,
   isAudioOnly,
-  hasAudioIndicator,
+  isAudioActive,
   className,
 }: {
   variant: GroupCallMediaTileProps["variant"];
   videoSource: GroupCallMediaTileProps["videoSource"];
   isAudioOnly: boolean;
-  hasAudioIndicator: boolean;
+  isAudioActive: boolean;
   className?: string;
 }): string {
   return [
@@ -113,7 +116,7 @@ function getTileClassName({
     getVariantClassName(variant),
     videoSource === "screen" ? styles.mediaTileScreen : "",
     isAudioOnly ? styles.mediaTileAudioOnly : "",
-    hasAudioIndicator ? styles.mediaTileAudioPresent : "",
+    isAudioActive ? styles.mediaTileAudioActive : "",
     className ?? "",
   ].join(" ");
 }
@@ -129,10 +132,31 @@ function hasLiveAudioTrack(stream: MediaStream | null): boolean {
   return Boolean(stream?.getAudioTracks().some((track) => track.readyState === "live"));
 }
 
+function resolveAudioActivityStream({
+  stream,
+  audioStream,
+  activityStream,
+}: {
+  readonly stream: MediaStream | null;
+  readonly audioStream: MediaStream | null;
+  readonly activityStream: MediaStream | null;
+}): MediaStream | null {
+  if (hasLiveAudioTrack(activityStream)) {
+    return activityStream;
+  }
+
+  if (hasLiveAudioTrack(audioStream)) {
+    return audioStream;
+  }
+
+  return hasLiveAudioTrack(stream) ? stream : null;
+}
+
 export function GroupCallMediaTile({
   label,
   stream,
   audioStream = null,
+  activityStream = null,
   hasAudio,
   fallbackInitials,
   badge,
@@ -148,7 +172,13 @@ export function GroupCallMediaTile({
 }: GroupCallMediaTileProps) {
   const hasVideo = Boolean(stream?.getVideoTracks().length);
   const isAudioOnly = !hasVideo;
-  const hasAudioIndicator = hasAudio ?? hasLiveAudioTrack(audioStream);
+  const audioActivityStream = resolveAudioActivityStream({
+    stream,
+    audioStream,
+    activityStream,
+  });
+  const hasAudioIndicator = hasAudio ?? hasLiveAudioTrack(audioActivityStream);
+  const isAudioActive = useCallAudioActivity(audioActivityStream, hasAudioIndicator);
   const speakingVariant = variant === "strip" ? "strip" : "primary-stage";
 
   // Visibility-based video virtualization: suspend <video> rendering when
@@ -167,7 +197,7 @@ export function GroupCallMediaTile({
         variant,
         videoSource,
         isAudioOnly,
-        hasAudioIndicator,
+        isAudioActive,
         className,
       })}
       interactiveClassName={styles.mediaTileInteractive}
@@ -177,8 +207,8 @@ export function GroupCallMediaTile({
           className={getVideoClassName(videoSource)}
           label={label}
           fallbackInitials={fallbackInitials}
-          hasAudio={hasAudioIndicator}
-          isSpeaking={false}
+          hasAudio={false}
+          isSpeaking={isAudioActive}
           speakingVariant={speakingVariant}
         />
       ) : null}
@@ -190,8 +220,8 @@ export function GroupCallMediaTile({
           avatarClassName={styles.mediaAvatarFallback}
           pulseClassName={styles.mediaAudioPulse}
           pulseActiveClassName={styles.mediaAudioPulseActive}
-          hasAudio={hasAudioIndicator}
-          isSpeaking={false}
+          hasAudio={false}
+          isSpeaking={isAudioActive}
           speakingVariant={speakingVariant}
         />
       ) : null}

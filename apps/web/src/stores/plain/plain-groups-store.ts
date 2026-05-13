@@ -649,7 +649,11 @@ export const usePlainGroupsStore = create<PlainGroupsState>((set, get) => {
         };
       });
 
-      URL.revokeObjectURL(localUrl);
+      // Keep the optimistic object URL alive briefly after the message becomes
+      // sent. The sender-side player may already have loaded it before the
+      // store swaps `localUrl` to the confirmed download URL; revoking it
+      // synchronously makes Chrome fail with ERR_FILE_NOT_FOUND until reload.
+      window.setTimeout(() => URL.revokeObjectURL(localUrl), 30_000);
       initializedAttachmentId = null;
     } catch (err) {
       logger.error("[PlainGroups] sendAttachment failed", err);

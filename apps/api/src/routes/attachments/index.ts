@@ -85,17 +85,17 @@ function buildInMemoryAttachmentUrl(storageKey: string): string {
  * presigned signatures remain valid.
  */
 function rewriteS3Url(url: string, requestOrigin?: string): string {
-  // Prefer the request Origin header so the returned URL always matches the
-  // origin the browser is on (avoids cert/mixed-content errors in dev when
-  // the page is served from localhost but S3_PUBLIC_URL points to a LAN IP).
-  const base = requestOrigin ?? config.S3_PUBLIC_URL;
+  const base = config.S3_PUBLIC_URL ?? requestOrigin;
   if (!base) return url;
   try {
     const parsed = new URL(url);
     const pub = new URL(base);
-    parsed.protocol = pub.protocol;
-    parsed.host = pub.host;
-    return parsed.toString();
+
+    // Build a fresh URL from the browser-facing origin instead of mutating the
+    // presigned endpoint in place. This guarantees that internal MinIO ports
+    // such as :9000 cannot leak into the upload/download URL returned to the
+    // browser, while preserving the bucket path and signed query string.
+    return new URL(`${parsed.pathname}${parsed.search}`, pub.origin).toString();
   } catch {
     return url;
   }

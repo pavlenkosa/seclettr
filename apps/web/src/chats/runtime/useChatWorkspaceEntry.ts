@@ -11,7 +11,8 @@ import { useShallow } from "zustand/react/shallow";
 import { api } from "@/lib/api";
 import { sanitizeDisplayTextOrFallback } from "@/lib/display-text";
 import { logger } from "@/lib/logger.js";
-import { useGroupCallChatEntry, useGlobalGroupCallAlerts } from "@/calls/group";
+import { useGroupCallChatEntry } from "@/calls/group/runtime/useGroupCallChatEntry";
+import { useGlobalGroupCallAlerts } from "@/calls/group/runtime/useGlobalGroupCallAlerts";
 import { useMessagesStore, type Message } from "@/stores/messages";
 import { useGroupsStore, type GroupChatMessage } from "@/stores/groups";
 import { usePlainMessagesStore, usePlainGroupsStore, type PlainMessage } from "@/stores/plain";
@@ -414,6 +415,12 @@ export function useChatWorkspaceEntry(options: UseChatWorkspaceEntryOptions) {
       [plainPeerUserId]
     )
   );
+  const plainActiveTyping = useMessagesStore(
+    useCallback(
+      (state) => (plainPeerUserId ? state.typingByUser[plainPeerUserId]?.typing : false),
+      [plainPeerUserId]
+    )
+  );
 
   useEffect(() => {
     if (!plainPeerUserId) return;
@@ -589,6 +596,7 @@ export function useChatWorkspaceEntry(options: UseChatWorkspaceEntryOptions) {
     activePlainGroup,
     activePlainGroupId,
     plainActivePresence,
+    plainActiveTyping,
     plainConversationEntries,
     plainGroupEntries,
     sendPlainText,

@@ -1,3 +1,26 @@
+/* ─────────────────────────────────────────────────────────────────────────
+ * SettingsSections.module.css — settings section visual language.
+ *
+ * Ownership map (top → bottom):
+ *   - group panels         feature-local (settings group shell)
+ *   - settings rows        feature-local (row + field + control layout)
+ *   - swatches             feature-local; palette-option previews
+ *                          (hex values are intentional accent samples,
+ *                          not theme tokens — keep as-is)
+ *   - helper panels        feature-local
+ *   - skeleton loading     Reusable: lift later when a shared
+ *                          Skeleton/SkeletonRow primitive lands
+ *   - copy and feedback    feature-local
+ *   - notification devices feature-local
+ *   - security pin         feature-local
+ *   - light theme adj.     feature-local
+ *   - motion + responsive  feature-local
+ *
+ * Banned-pattern check (synced 2026-05-14): clean per
+ * apps/web/scripts/check-ui-style.mjs ruleset (no banned chrome).
+ * ─────────────────────────────────────────────────────────────────────────
+ */
+
 /* === group panels === */
 
 .groupStack {
@@ -126,6 +149,9 @@
   outline-offset: 2px;
 }
 
+/* Swatch backgrounds are intentional accent palette samples that always
+ * render the same chip regardless of the active `--accent` token, so they
+ * stay as raw hex values (not theme tokens). */
 .swatchBlue {
   background: #2563eb;
 }
@@ -150,6 +176,9 @@
 }
 
 /* === skeleton loading === */
+/* Reusable: lift later. Skeleton group/row/line/control pattern is a
+ * generic loading affordance. Promote into a shared Skeleton primitive
+ * once at least one other slice needs the same shape. */
 
 .sectionSkeletonStack {
   display: flex;
@@ -354,11 +383,11 @@
 }
 
 .pinFeedbackError {
-  color: var(--danger, #e74c3c);
+  color: var(--danger);
 }
 
 .pinFeedbackSuccess {
-  color: var(--success, #27ae60);
+  color: var(--success);
 }
 
 /* === light theme adjustments === */

@@ -5,7 +5,7 @@ import type { PlainConversation, PlainGroup } from "@/stores/plain";
 import { useI18n } from "@/i18n";
 import { ConversationList } from "@/chats/presentation/ConversationList";
 import { SeclettrMark } from "@/components/common/SeclettrMark";
-import { IconButton } from "@/components/ui";
+import { IconButton, InputField } from "@/components/ui";
 
 import styles from "./ChatSidebar.module.css";
 
@@ -188,21 +188,26 @@ export function ChatSidebar({
       </div>
 
       <div className={styles.search}>
-        <svg className={styles.searchIcon} width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-          <circle cx="6.5" cy="6.5" r="4.5" stroke="currentColor" strokeWidth="1.5" />
-          <path d="M10.5 10.5L14 14" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
-        </svg>
-        <input
+        <InputField
           type="search"
-          className={styles.searchInput}
           value={searchQuery}
           onChange={handleSearchChange}
           placeholder={t("chat.search.placeholder")}
           aria-label={t("chat.search.placeholder")}
+          wrapperClassName={styles.searchField}
+          className={styles.searchInput}
+          size="pill"
+          leading={(
+            <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+              <circle cx="6.5" cy="6.5" r="4.5" stroke="currentColor" strokeWidth="1.5" />
+              <path d="M10.5 10.5L14 14" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+            </svg>
+          )}
         />
         {searchQuery && (
-          <button
-            type="button"
+          <IconButton
+            size={18}
+            variant="ghost"
             className={styles.searchClear}
             onClick={handleSearchClear}
             aria-label={t("chat.search.clear")}
@@ -210,7 +215,7 @@ export function ChatSidebar({
             <svg width="10" height="10" viewBox="0 0 10 10" fill="none" aria-hidden="true">
               <path d="M1 1l8 8M9 1L1 9" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
             </svg>
-          </button>
+          </IconButton>
         )}
       </div>
 

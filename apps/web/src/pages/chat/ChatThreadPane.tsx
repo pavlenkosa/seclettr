@@ -7,6 +7,7 @@ import {
   type MessageListJumpToBottomState,
 } from "@/chats/presentation/MessageList";
 import { SeclettrMark } from "@/components/common/SeclettrMark";
+import { IconButton, SurfacePanel } from "@/components/ui";
 import styles from "./ChatThreadPane.module.css";
 
 /**
@@ -102,12 +103,12 @@ export function ChatThreadPane({
   if (!hasActiveThread) {
     return (
       <div className={styles.thread} data-testid="chat-thread-pane">
-        <div className={styles.empty}>
+        <SurfacePanel className={styles.empty} padding="lg" radius="md">
           <span className={styles.emptyMark} aria-hidden="true">
             <SeclettrMark decorative />
           </span>
           <p>{t("chat.emptyState")}</p>
-        </div>
+        </SurfacePanel>
       </div>
     );
   }
@@ -150,8 +151,8 @@ export function ChatThreadPane({
               onJumpToBottomStateChange={setJumpToBottomState}
             />
             {jumpToBottomState.visible ? (
-              <button
-                type="button"
+              <IconButton
+                size={38}
                 className={`${styles.jumpToBottom} ${styles.jumpToBottomVisible}`}
                 onClick={handleJumpToBottom}
                 aria-label={jumpAriaLabel}
@@ -166,7 +167,7 @@ export function ChatThreadPane({
                 >
                   {jumpBadgeLabel}
                 </span>
-              </button>
+              </IconButton>
             ) : null}
           </div>
           {composer ? (

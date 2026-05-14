@@ -1,4 +1,5 @@
 import { type ReactNode } from "react";
+import { SurfacePanel } from "@/components/ui";
 import styles from "./CallControlsDock.module.css";
 
 interface CallControlsDockProps {
@@ -12,8 +13,13 @@ interface CallControlsDockProps {
  */
 export function CallControlsDock({ children, className = "" }: CallControlsDockProps) {
   return (
-    <div className={`${styles.root} ${className}`.trim()}>
+    <SurfacePanel
+      tone="strong"
+      padding="none"
+      radius="pill"
+      className={`${styles.root} ${className}`.trim()}
+    >
       {children}
-    </div>
+    </SurfacePanel>
   );
 }

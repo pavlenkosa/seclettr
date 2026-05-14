@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState, type ReactNode } from "react"
 import { useI18n } from "@/i18n";
 import { useAnimatedPresence } from "@/lib/hooks";
 import { MOTION_DURATION_MS } from "@/lib/motion";
-import { IconButton } from "@/components/ui";
+import { IconButton, SurfacePanel } from "@/components/ui";
 import motionStyles from "@/components/ui/motion/Motion.module.css";
 import actionStyles from "./ChatThreadActions.module.css";
 import styles from "./ThreadActionsDropdown.module.css";
@@ -88,34 +88,43 @@ export function ThreadActionsDropdown({ items, disabled }: Props) {
       </IconButton>
 
       {isMounted && (
-        <div
-          ref={menuRef}
-          className={[
-            styles.menu,
-            isClosing ? motionStyles.popoverOut : motionStyles.popoverIn,
-          ].join(" ")}
-          role="menu"
+        <SurfacePanel
+          padding="none"
+          radius="md"
+          className={styles.menuSurface}
         >
-          {items.map((item) => (
-            <button
-              key={item.id}
-              type="button"
-              role="menuitem"
-              className={`${styles.item} ${item.isActive ? styles.itemActive : ""}`}
-              onClick={() => { closeMenu(); item.onClick(); }}
-            >
-              <span className={styles.itemIcon} aria-hidden="true">{item.icon}</span>
-              <span className={styles.itemLabel}>{t(item.labelKey)}</span>
-              {item.isActive && (
-                <span className={styles.itemCheck} aria-hidden="true">
-                  <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
-                    <path d="M2 6l3 3 5-5" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" />
-                  </svg>
-                </span>
-              )}
-            </button>
-          ))}
-        </div>
+          <div
+            ref={menuRef}
+            className={[
+              styles.menu,
+              isClosing ? motionStyles.popoverOut : motionStyles.popoverIn,
+            ].join(" ")}
+            role="menu"
+          >
+            {items.map((item) => (
+              <button
+                key={item.id}
+                type="button"
+                role="menuitem"
+                className={`${styles.item} ${item.isActive ? styles.itemActive : ""}`}
+                onClick={() => {
+                  closeMenu();
+                  item.onClick();
+                }}
+              >
+                <span className={styles.itemIcon} aria-hidden="true">{item.icon}</span>
+                <span className={styles.itemLabel}>{t(item.labelKey)}</span>
+                {item.isActive && (
+                  <span className={styles.itemCheck} aria-hidden="true">
+                    <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+                      <path d="M2 6l3 3 5-5" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" />
+                    </svg>
+                  </span>
+                )}
+              </button>
+            ))}
+          </div>
+        </SurfacePanel>
       )}
     </div>
   );

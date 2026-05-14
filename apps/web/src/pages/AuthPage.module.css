@@ -1,3 +1,5 @@
+/* === shell === */
+
 .container {
   display: flex;
   align-items: center;
@@ -10,13 +12,16 @@
 .card {
   width: 100%;
   max-width: 420px;
-  background: color-mix(in srgb, var(--panel-header-bg) 76%, var(--bg-secondary));
-  border: 1px solid var(--panel-border-soft);
-  border-radius: 20px;
-  padding: clamp(1.25rem, 3vw, 2rem);
   display: flex;
   flex-direction: column;
   gap: 1.125rem;
+}
+
+.cardFooter {
+  display: flex;
+  flex-direction: column;
+  gap: 0.875rem;
+  margin-top: auto;
 }
 
 .cardTop {
@@ -71,6 +76,8 @@
   margin: -0.35rem 0 0;
 }
 
+/* === form === */
+
 .form {
   display: flex;
   flex-direction: column;
@@ -91,47 +98,30 @@
   color: var(--text-secondary);
 }
 
-.input {
-  /* Inherits from global */
-}
-
 .passwordWrapper {
   position: relative;
   display: flex;
   align-items: center;
 }
 
-.passwordWrapper .input {
-  flex: 1;
+.passwordInputShell {
+  width: 100%;
+}
+
+.passwordInputShell :global(input) {
   padding-right: 2.75rem;
 }
 
 .passwordToggle {
   position: absolute;
   right: 0.625rem;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 32px;
-  height: 32px;
-  border-radius: 8px;
-  border: none;
-  background: transparent;
-  color: var(--text-secondary);
-  cursor: pointer;
-  transition: color var(--motion-duration-fast) var(--motion-ease-standard);
-}
-
-.passwordToggle:hover {
-  color: var(--text-primary);
-}
-
-.error {
-  background: var(--danger-soft-bg);
-  border: 1px solid var(--danger-soft-border);
-  border-radius: 14px;
-  color: var(--danger-contrast);
-  padding: 0.7rem 0.85rem;
+  --icon-button-size: 32px;
+  --icon-button-bg-base: transparent;
+  --icon-button-border-base: transparent;
+  --icon-button-bg-hover-base: color-mix(in srgb, var(--accent) 8%, transparent);
+  --icon-button-border-hover-base: transparent;
+  --icon-button-color-base: var(--text-secondary);
+  --icon-button-color-hover-base: var(--text-primary);
 }
 
 .errorText {
@@ -148,17 +138,10 @@
 }
 
 .submit {
-  min-height: 48px;
-  background: var(--accent);
-  color: white;
-  padding: 0 1.25rem;
-  font-weight: 650;
-  border-radius: 999px;
-  width: 100%;
   margin-top: 0.35rem;
-  border: none;
-  transition: opacity var(--motion-duration-fast) ease;
 }
+
+/* === footer === */
 
 .helpRow {
   display: flex;
@@ -176,10 +159,6 @@
 .helpLink:hover {
   color: var(--accent-hover);
   text-decoration: underline;
-}
-
-.submit:hover:not(:disabled) {
-  opacity: 0.88;
 }
 
 .toggle {
@@ -203,28 +182,14 @@
   color: var(--accent-hover);
 }
 
-.e2eeBadge {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.375rem;
-  min-height: 34px;
-  padding: 0 0.8rem;
+.versionBadge {
   width: fit-content;
   margin: 0 auto;
-  border-radius: 999px;
-  background: color-mix(in srgb, var(--bg-secondary) 82%, var(--panel-header-bg));
-  border: 1px solid color-mix(in srgb, var(--panel-border-soft) 84%, transparent);
-  font-size: 0.75rem;
-  color: var(--text-secondary);
-  margin-top: auto;
 }
 
 @media (max-width: 640px) {
   .card {
     max-width: 100%;
-    border-radius: 16px;
-    padding: 1.1rem;
     gap: 1rem;
   }
 

@@ -195,13 +195,14 @@
 }
 
 .callEventCard {
+  --surface-panel-border: color-mix(in srgb, var(--panel-border-soft) 84%, transparent);
+  --surface-panel-bg-start: color-mix(in srgb, var(--surface-shell) 78%, transparent);
+  --surface-panel-bg-end: color-mix(in srgb, var(--surface-shell) 78%, transparent);
   width: min(100%, min(460px, 82vw));
   min-width: min(220px, 54vw);
   max-width: min(460px, 82vw);
   padding: 0.56rem 0.86rem;
   border-radius: 16px;
-  border: 1px solid color-mix(in srgb, var(--panel-border-soft) 84%, transparent);
-  background: color-mix(in srgb, var(--surface-shell) 78%, transparent);
   display: flex;
   flex-direction: column;
   gap: 0.2rem;
@@ -567,8 +568,9 @@ button.quotedBubble {
 }
 
 :global(:root[data-theme="light"]) .callEventCard {
-  border-color: color-mix(in srgb, var(--panel-border-soft) 92%, transparent);
-  background: color-mix(in srgb, var(--surface-shell-strong) 88%, white);
+  --surface-panel-border: color-mix(in srgb, var(--panel-border-soft) 92%, transparent);
+  --surface-panel-bg-start: color-mix(in srgb, var(--surface-shell-strong) 88%, white);
+  --surface-panel-bg-end: color-mix(in srgb, var(--surface-shell-strong) 88%, white);
 }
 
 :global(:root[data-theme="light"]) .voiceDecryptBtn {
@@ -949,10 +951,9 @@ button.quotedBubble {
   border-color: color-mix(in srgb, var(--message-ui-accent) 34%, transparent);
 }
 
-.voiceError {
-  font-size: 0.7rem;
-  color: var(--danger-contrast);
-  opacity: 0.85;
+.attachmentErrorNotice {
+  margin-top: 0.18rem;
+  align-self: stretch;
 }
 
 .voiceAudio {

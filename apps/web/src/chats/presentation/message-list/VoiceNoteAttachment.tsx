@@ -2,6 +2,7 @@ import { useI18n } from "@/i18n";
 import { useSecuritySettings } from "@/ui-settings";
 import { useVoiceNoteAttachmentRuntime } from "@/chats/runtime/useVoiceNoteAttachmentRuntime";
 import { useUploadProgress } from "@/chats/runtime/useUploadProgress";
+import { InlineNotice } from "@/components/ui";
 import type { Message } from "@/stores/messages";
 import { AttachmentUploadRing } from "./AttachmentUploadProgress";
 import { MessageStatusIcon } from "./MessageStatusIcon";
@@ -184,7 +185,16 @@ export function VoiceNoteAttachment({
         </div>
       )}
 
-      {error ? <div className={styles.voiceError}>{error}</div> : null}
+      {error ? (
+        <InlineNotice
+          tone="error"
+          size="sm"
+          role="alert"
+          className={styles.attachmentErrorNotice}
+        >
+          {error}
+        </InlineNotice>
+      ) : null}
     </div>
   );
 }

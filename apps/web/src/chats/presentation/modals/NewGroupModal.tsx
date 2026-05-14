@@ -3,7 +3,7 @@ import { useI18n } from "@/i18n";
 import { useAnimatedClose, useModalSurfaceA11y } from "@/lib/hooks";
 import { USER_SEARCH_MIN_QUERY_LENGTH, type UserSearchResult } from "@/lib/user-search";
 import { useUserSearch } from "@/chats/runtime/useUserSearch";
-import { Avatar, EntityRow, FieldSection, InputField, ModalShell, PillButton, SurfacePanel } from "@/components/ui";
+import { Avatar, EntityRow, FieldSection, InlineNotice, InputField, ModalShell, PillButton, SurfacePanel } from "@/components/ui";
 
 import styles from "./NewGroupModal.module.css";
 
@@ -93,14 +93,17 @@ export function NewGroupModal({ onClose, onCreate }: Props) {
           <PillButton type="button" className={styles.cancelBtn} tone="neutral" size="md" onClick={requestClose} disabled={creating}>
             {t("group.create.cancel")}
           </PillButton>
-          <button
+          <PillButton
             type="submit"
             form={createFormId}
+            tone="accent"
+            appearance="strong"
+            size="md"
             className={styles.createBtn}
             disabled={creating || name.trim().length === 0 || selected.length === 0}
           >
             {creating ? t("group.create.creating") : t("group.create.submit")}
-          </button>
+          </PillButton>
         </div>
       )}
     >
@@ -222,9 +225,9 @@ export function NewGroupModal({ onClose, onCreate }: Props) {
         </SurfacePanel>
 
         {displayError ? (
-          <div className={styles.error} role="alert">
+          <InlineNotice tone="error" size="sm" className={styles.errorNotice} role="alert">
             {displayError}
-          </div>
+          </InlineNotice>
         ) : null}
       </form>
     </ModalShell>

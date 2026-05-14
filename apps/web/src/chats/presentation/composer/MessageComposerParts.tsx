@@ -1,5 +1,5 @@
 import { lazy, Suspense, type ChangeEvent, type KeyboardEvent } from "react";
-import { IconButton } from "@/components/ui";
+import { IconButton, InlineNotice } from "@/components/ui";
 import type { MessageReplyMeta } from "@/stores/messages";
 import {
   MessageComposerEmojiPicker,
@@ -9,6 +9,7 @@ import type { UseMessageComposerDraftResult } from "../../composer/useMessageCom
 import type { UseMessageComposerEmojiStateResult } from "../../composer/useMessageComposerEmojiState";
 import type { UseMediaSendDialogResult } from "../../composer/useMediaSendDialog";
 import type { MediaSendDialogProps } from "../MediaSendDialog";
+import type { DialogState, RecordingCopy } from "./message-composer-view-model";
 import styles from "../MessageComposer.module.css";
 
 const MediaSendDialog = lazy(() =>
@@ -16,15 +17,6 @@ const MediaSendDialog = lazy(() =>
     default: Component,
   }))
 );
-
-export type DialogState = "closed" | "open" | "closing";
-
-export interface RecordingCopy {
-  elapsedLabel: string;
-  stageTitle: string;
-  stageStatus: string;
-  stageHint: string;
-}
 
 type ReplyPreviewProps = Readonly<{
   replyTo?: MessageReplyMeta;
@@ -104,8 +96,9 @@ export function ReplyPreview({
         ) : null}
         <span className={styles.replyPreviewText}>{replyTo.content}</span>
       </div>
-      <button
-        type="button"
+      <IconButton
+        size={22}
+        variant="ghost"
         className={styles.replyPreviewClose}
         onClick={onClearReply}
         aria-label={clearLabel}
@@ -118,7 +111,7 @@ export function ReplyPreview({
             strokeLinecap="round"
           />
         </svg>
-      </button>
+      </IconButton>
     </div>
   );
 }
@@ -302,9 +295,9 @@ export function ComposerBody({
 
 export function ComposerErrorMessage({ message }: ComposerErrorMessageProps) {
   return message ? (
-    <div className={styles.error} role="alert">
+    <InlineNotice tone="error" size="sm" className={styles.errorNotice} role="alert">
       {message}
-    </div>
+    </InlineNotice>
   ) : null;
 }
 

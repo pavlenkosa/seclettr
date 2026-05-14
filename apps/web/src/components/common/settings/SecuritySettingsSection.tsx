@@ -3,7 +3,7 @@ import { useShallow } from "zustand/react/shallow";
 import { useI18n } from "@/i18n";
 import type { AutoDecryptMedia, CallSecurityMode } from "@/ui-settings";
 import { useAuthStore } from "@/stores/auth";
-import { PillButton, SegmentedControl } from "@/components/ui";
+import { InputField, PillButton, SegmentedControl } from "@/components/ui";
 import { exportChatHistory, importChatHistory } from "@/lib/chat-transfer";
 import { ApiError } from "@/lib/api";
 import { SettingsGroup, SettingsRow } from "./SettingsSectionPrimitives";
@@ -182,23 +182,25 @@ function AppLockSection() {
           </div>
         ) : (
           <div className={styles.pinInputGroup}>
-            <input
+            <InputField
               type="password"
               autoComplete="new-password"
               placeholder={t("settings.appLock.pinEntry.new")}
+              aria-label={t("settings.appLock.pinEntry.new")}
               value={newPin}
               onChange={(event) => handleNewPinChange(event.target.value)}
               disabled={busy}
-              className={styles.pinInput}
+              wrapperClassName={styles.pinInput}
             />
-            <input
+            <InputField
               type="password"
               autoComplete="new-password"
               placeholder={t("settings.appLock.pinEntry.confirm")}
+              aria-label={t("settings.appLock.pinEntry.confirm")}
               value={confirmPin}
               onChange={(event) => handleConfirmPinChange(event.target.value)}
               disabled={busy}
-              className={styles.pinInput}
+              wrapperClassName={styles.pinInput}
             />
             {feedback ? (
               <PinFeedbackMessage feedback={feedback} />
@@ -357,14 +359,15 @@ function TransferSection() {
           </div>
         ) : (
           <div className={styles.pinInputGroup}>
-            <input
+            <InputField
               type="password"
               autoComplete="new-password"
               placeholder={t("settings.transfer.export.passwordPlaceholder")}
+              aria-label={t("settings.transfer.export.passwordPlaceholder")}
               value={password}
               onChange={(e) => { setPassword(e.target.value); setError(null); }}
               disabled={exportBusy}
-              className={styles.pinInput}
+              wrapperClassName={styles.pinInput}
             />
             {error ? <p className={`${styles.pinFeedback} ${styles.pinFeedbackError}`}>{error}</p> : null}
             <div className={styles.pinButtonRow}>
@@ -403,23 +406,25 @@ function TransferSection() {
           </div>
         ) : (
           <div className={styles.pinInputGroup}>
-            <input
+            <InputField
               type="text"
               autoComplete="off"
               placeholder={t("settings.transfer.import.codePlaceholder")}
+              aria-label={t("settings.transfer.import.codePlaceholder")}
               value={transferCode}
               onChange={(e) => { setTransferCode(e.target.value); setError(null); }}
               disabled={importBusy}
-              className={styles.pinInput}
+              wrapperClassName={styles.pinInput}
             />
-            <input
+            <InputField
               type="password"
               autoComplete="current-password"
               placeholder={t("settings.transfer.import.passwordPlaceholder")}
+              aria-label={t("settings.transfer.import.passwordPlaceholder")}
               value={password}
               onChange={(e) => { setPassword(e.target.value); setError(null); }}
               disabled={importBusy}
-              className={styles.pinInput}
+              wrapperClassName={styles.pinInput}
             />
             {error ? <p className={`${styles.pinFeedback} ${styles.pinFeedbackError}`}>{error}</p> : null}
             <div className={styles.pinButtonRow}>

@@ -1,7 +1,7 @@
 import { useMemo } from "react";
 import { useI18n } from "@/i18n";
 import type { PushPreferencesDto, PushSubscriptionDto } from "@/lib/api";
-import { PillButton, SegmentedControl, StatusBadge } from "@/components/ui";
+import { EntityRow, PillButton, SegmentedControl, StatusBadge } from "@/components/ui";
 import { SettingsGroup, SettingsRow } from "./SettingsSectionPrimitives";
 import styles from "../SettingsSections.module.css";
 
@@ -176,38 +176,45 @@ export function NotificationsSettingsSection({
               }
 
               return (
-                <div key={subscription.id} className={styles.deviceCard}>
-                  <div className={styles.deviceMeta}>
-                    <div className={styles.deviceTitleRow}>
-                      <span className={styles.deviceTitle}>
-                        {formatPushSubscriptionLabel(
-                          subscription,
-                          t("settings.push.devices.currentBrowser"),
-                          t("settings.push.devices.browser")
-                        )}
-                      </span>
+                <EntityRow
+                  key={subscription.id}
+                  as="div"
+                  size="md"
+                  align="start"
+                  className={styles.deviceCard}
+                  mainClassName={styles.deviceMeta}
+                  titleClassName={styles.deviceTitle}
+                  title={formatPushSubscriptionLabel(
+                    subscription,
+                    t("settings.push.devices.currentBrowser"),
+                    t("settings.push.devices.browser")
+                  )}
+                  subtitle={(
+                    <span className={styles.deviceStatusRow}>
+                      <span className={styles.deviceStatus}>{statusLabel}</span>
                       {subscription.currentDevice ? (
                         <StatusBadge tone="accent" size="sm">
                           {t("settings.push.devices.current")}
                         </StatusBadge>
                       ) : null}
-                    </div>
-                    <p className={styles.deviceStatus}>{statusLabel}</p>
-                  </div>
-                  <PillButton
-                    type="button"
-                    className={styles.deviceAction}
-                    tone="danger"
-                    appearance="soft"
-                    size="sm"
-                    onClick={() => {
-                      void onDeletePushSubscription(subscription.id);
-                    }}
-                    disabled={pushBusy}
-                  >
-                    {t("settings.push.devices.revoke")}
-                  </PillButton>
-                </div>
+                    </span>
+                  )}
+                  trailing={(
+                    <PillButton
+                      type="button"
+                      className={styles.deviceAction}
+                      tone="danger"
+                      appearance="soft"
+                      size="sm"
+                      onClick={() => {
+                        void onDeletePushSubscription(subscription.id);
+                      }}
+                      disabled={pushBusy}
+                    >
+                      {t("settings.push.devices.revoke")}
+                    </PillButton>
+                  )}
+                />
               );
             })}
           </div>

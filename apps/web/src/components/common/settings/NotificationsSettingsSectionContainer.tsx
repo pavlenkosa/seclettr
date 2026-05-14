@@ -1,5 +1,5 @@
 import { useI18n } from "@/i18n";
-import { SurfacePanel, type StatusBadgeTone } from "@/components/ui";
+import { InlineNotice, type StatusBadgeTone } from "@/components/ui";
 import { resolvePushStatusLabel, type UsePushSettingsResult } from "../usePushSettings";
 import { NotificationsSettingsSection } from "./NotificationsSettingsSection";
 import styles from "../SettingsSections.module.css";
@@ -40,14 +40,9 @@ export function NotificationsSettingsSectionContainer({
       />
 
       {pushError ? (
-        <SurfacePanel
-          className={styles.feedbackPanel}
-          tone="strong"
-          padding="md"
-          radius="lg"
-        >
-          <p className={styles.error}>{pushError}</p>
-        </SurfacePanel>
+        <InlineNotice className={styles.feedbackPanel} tone="error" size="md">
+          {pushError}
+        </InlineNotice>
       ) : null}
     </>
   );

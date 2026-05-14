@@ -2,7 +2,7 @@ import { useCallback, useRef, type KeyboardEvent as ReactKeyboardEvent, type Ref
 import { useI18n } from "@/i18n";
 import { useAnimatedPresence } from "@/lib/hooks";
 import { MOTION_DURATION_MS } from "@/lib/motion";
-import { BottomDockSurface } from "@/components/ui";
+import { BottomDockSurface, SurfacePanel } from "@/components/ui";
 import motionStyles from "@/components/ui/motion/Motion.module.css";
 
 import styles from "./ChatMobileTabBar.module.css";
@@ -73,59 +73,61 @@ export function ChatMobileTabBar({
     <div
       id={createMenuId}
       ref={createMenuRef}
-        className={[
-          className,
-          createMenuPresence.isClosing ? motionStyles.popoverOut : motionStyles.popoverIn,
+      className={[
+        className,
+        createMenuPresence.isClosing ? motionStyles.popoverOut : motionStyles.popoverIn,
       ].filter(Boolean).join(" ")}
       role="menu"
       tabIndex={-1}
       aria-label={t("chat.createMenu")}
       onKeyDown={onCreateMenuKeyDown}
     >
-      <button
-        type="button"
-        className={styles.createMenuButton}
-        onClick={() => {
-          queueCreateAction(onOpenNewChat);
-        }}
-        role="menuitem"
-        aria-label={t("chat.newConversation")}
-        data-mobile-create-item="true"
-      >
-        <span className={styles.createMenuIcon} aria-hidden="true">
-          <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
-            <path d="M9 3v12M3 9h12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-          </svg>
-        </span>
-        <span className={styles.createMenuText}>
-          <span className={styles.createMenuTitle}>{t("chat.newConversation")}</span>
-          <span className={styles.createMenuSubtitle}>{t("chat.createMenu.chatHint")}</span>
-        </span>
-      </button>
+      <SurfacePanel className={styles.createMenuSurface} padding="none" radius="md">
+        <button
+          type="button"
+          className={styles.createMenuButton}
+          onClick={() => {
+            queueCreateAction(onOpenNewChat);
+          }}
+          role="menuitem"
+          aria-label={t("chat.newConversation")}
+          data-mobile-create-item="true"
+        >
+          <span className={styles.createMenuIcon} aria-hidden="true">
+            <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+              <path d="M9 3v12M3 9h12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+            </svg>
+          </span>
+          <span className={styles.createMenuText}>
+            <span className={styles.createMenuTitle}>{t("chat.newConversation")}</span>
+            <span className={styles.createMenuSubtitle}>{t("chat.createMenu.chatHint")}</span>
+          </span>
+        </button>
 
-      <button
-        type="button"
-        className={styles.createMenuButton}
-        onClick={() => {
-          queueCreateAction(onOpenNewGroup);
-        }}
-        role="menuitem"
-        aria-label={t("group.create.open")}
-        data-mobile-create-item="true"
-      >
-        <span className={styles.createMenuIcon} aria-hidden="true">
-          <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
-            <circle cx="6.2" cy="6.2" r="2.2" stroke="currentColor" strokeWidth="1.5" />
-            <circle cx="11.8" cy="7.2" r="1.8" stroke="currentColor" strokeWidth="1.5" />
-            <path d="M2.8 13.3c.7-1.7 2.1-2.7 3.9-2.7s3.1 1 3.8 2.7" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
-            <path d="M14.6 11.8v4M12.6 13.8h4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
-          </svg>
-        </span>
-        <span className={styles.createMenuText}>
-          <span className={styles.createMenuTitle}>{t("group.create.open")}</span>
-          <span className={styles.createMenuSubtitle}>{t("chat.createMenu.groupHint")}</span>
-        </span>
-      </button>
+        <button
+          type="button"
+          className={styles.createMenuButton}
+          onClick={() => {
+            queueCreateAction(onOpenNewGroup);
+          }}
+          role="menuitem"
+          aria-label={t("group.create.open")}
+          data-mobile-create-item="true"
+        >
+          <span className={styles.createMenuIcon} aria-hidden="true">
+            <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+              <circle cx="6.2" cy="6.2" r="2.2" stroke="currentColor" strokeWidth="1.5" />
+              <circle cx="11.8" cy="7.2" r="1.8" stroke="currentColor" strokeWidth="1.5" />
+              <path d="M2.8 13.3c.7-1.7 2.1-2.7 3.9-2.7s3.1 1 3.8 2.7" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+              <path d="M14.6 11.8v4M12.6 13.8h4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+            </svg>
+          </span>
+          <span className={styles.createMenuText}>
+            <span className={styles.createMenuTitle}>{t("group.create.open")}</span>
+            <span className={styles.createMenuSubtitle}>{t("chat.createMenu.groupHint")}</span>
+          </span>
+        </button>
+      </SurfacePanel>
     </div>
   );
 

@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, type KeyboardEvent, type MouseEvent } from "react";
 import { createPortal } from "react-dom";
 import { useI18n } from "@/i18n";
-import { PillButton } from "@/components/ui";
+import { IconButton, PillButton } from "@/components/ui";
 import motionStyles from "@/components/ui/motion/Motion.module.css";
 import { formatBytes } from "../composer/compressImage";
 import type { PendingFile, SendQuality, UseMediaSendDialogResult } from "../composer/useMediaSendDialog";
@@ -70,14 +70,15 @@ function FileThumbnail({
     return (
       <div className={styles.thumb}>
         <img src={pf.previewUrl} alt={pf.file.name} className={styles.thumbImg} draggable={false} />
-        <button
-          type="button"
+        <IconButton
+          size={22}
+          variant="ghost"
           className={styles.thumbRemove}
           onClick={onRemove}
           aria-label={removeLabel}
         >
           <CloseIcon />
-        </button>
+        </IconButton>
       </div>
     );
   }
@@ -95,14 +96,15 @@ function FileThumbnail({
         <span className={styles.thumbVideoOverlay}>
           <VideoIcon />
         </span>
-        <button
-          type="button"
+        <IconButton
+          size={22}
+          variant="ghost"
           className={styles.thumbRemove}
           onClick={onRemove}
           aria-label={removeLabel}
         >
           <CloseIcon />
-        </button>
+        </IconButton>
       </div>
     );
   }
@@ -128,14 +130,15 @@ function FileRow({
       </span>
       <span className={styles.fileRowName}>{pf.file.name}</span>
       <span className={styles.fileRowSize}>{formatBytes(pf.size)}</span>
-      <button
-        type="button"
+      <IconButton
+        size={22}
+        variant="ghost"
         className={styles.fileRowRemove}
         onClick={onRemove}
         aria-label={removeLabel}
       >
         <CloseIcon />
-      </button>
+      </IconButton>
     </div>
   );
 }
@@ -289,14 +292,15 @@ export function MediaSendDialog({
         {/* Header */}
         <div className={styles.header}>
           <span className={styles.headerTitle}>{title}</span>
-          <button
-            type="button"
+          <IconButton
+            size={28}
+            variant="ghost"
             className={styles.headerClose}
             onClick={closeDialog}
             aria-label={t("mediaSend.close")}
           >
             <CloseIcon />
-          </button>
+          </IconButton>
         </div>
 
         {/* Media grid */}

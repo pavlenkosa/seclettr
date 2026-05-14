@@ -87,13 +87,13 @@
   right: 0;
   bottom: calc(100% + 0.7rem);
   width: min(15.2rem, calc(100vw - 2rem));
+  z-index: 5;
+}
+
+.createMenuSurface {
   display: grid;
   gap: 0.28rem;
   padding: 0.36rem;
-  border-radius: 8px;
-  border: 1px solid color-mix(in srgb, var(--panel-border-soft) 88%, transparent);
-  background: color-mix(in srgb, var(--bg-secondary) 98%, var(--bg-primary));
-  z-index: 5;
 }
 
 .createMenuButton {
@@ -209,7 +209,6 @@
   white-space: nowrap;
 }
 
-:global(:root[data-theme="light"]) .createMenu,
 :global(:root[data-theme="light"]) .createMenuButton {
   border-color: color-mix(in srgb, var(--panel-border-soft) 92%, transparent);
 }

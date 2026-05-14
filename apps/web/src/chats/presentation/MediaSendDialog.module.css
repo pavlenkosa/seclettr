@@ -46,27 +46,13 @@
 }
 
 .headerClose {
-  all: unset;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 28px;
-  height: 28px;
-  border-radius: 50%;
-  color: var(--text-muted);
-  cursor: pointer;
-  transition: background 120ms ease, color 120ms ease;
   flex-shrink: 0;
-}
-
-.headerClose:hover {
-  background: color-mix(in srgb, var(--accent) 12%, transparent);
-  color: var(--text-primary);
-}
-
-.headerClose:focus-visible {
-  outline: 2px solid var(--accent);
-  outline-offset: 1px;
+  --icon-button-color-base: var(--text-muted);
+  --icon-button-bg-base: transparent;
+  --icon-button-border-base: transparent;
+  --icon-button-bg-hover-base: color-mix(in srgb, var(--accent) 12%, transparent);
+  --icon-button-border-hover-base: transparent;
+  --icon-button-color-hover-base: var(--text-primary);
 }
 
 /* ─── Scrollable body ────────────────────────────────────────────────────── */
@@ -134,26 +120,12 @@
   position: absolute;
   top: 5px;
   right: 5px;
-  all: unset;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 22px;
-  height: 22px;
-  border-radius: 50%;
-  background: rgb(0 0 0 / 0.6);
-  color: #fff;
-  cursor: pointer;
-  transition: background 120ms ease;
-}
-
-.thumbRemove:hover {
-  background: rgb(0 0 0 / 0.82);
-}
-
-.thumbRemove:focus-visible {
-  outline: 2px solid var(--accent);
-  outline-offset: 1px;
+  --icon-button-bg-base: rgb(0 0 0 / 0.6);
+  --icon-button-border-base: transparent;
+  --icon-button-color-base: #fff;
+  --icon-button-bg-hover-base: rgb(0 0 0 / 0.82);
+  --icon-button-border-hover-base: transparent;
+  --icon-button-color-hover-base: #fff;
 }
 
 /* ─── File list ──────────────────────────────────────────────────────────── */
@@ -206,27 +178,13 @@
 }
 
 .fileRowRemove {
-  all: unset;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 22px;
-  height: 22px;
-  border-radius: 50%;
-  color: var(--text-muted);
-  cursor: pointer;
   flex-shrink: 0;
-  transition: background 120ms ease, color 120ms ease;
-}
-
-.fileRowRemove:hover {
-  background: color-mix(in srgb, var(--danger, #ef4444) 14%, transparent);
-  color: var(--danger, #ef4444);
-}
-
-.fileRowRemove:focus-visible {
-  outline: 2px solid var(--accent);
-  outline-offset: 1px;
+  --icon-button-color-base: var(--text-muted);
+  --icon-button-bg-base: transparent;
+  --icon-button-border-base: transparent;
+  --icon-button-bg-hover-base: color-mix(in srgb, var(--danger, #ef4444) 14%, transparent);
+  --icon-button-border-hover-base: transparent;
+  --icon-button-color-hover-base: var(--danger, #ef4444);
 }
 
 /* ─── Caption ────────────────────────────────────────────────────────────── */

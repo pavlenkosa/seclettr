@@ -1,6 +1,6 @@
 import { memo } from "react";
 import type { MouseEvent } from "react";
-import { IconButton } from "@/components/ui";
+import { IconButton, PillButton } from "@/components/ui";
 
 import { VideoNoteIcon, VoiceNoteIcon } from "./MessageComposerIcons";
 
@@ -99,19 +99,23 @@ export const MessageComposerPrimaryActions = memo(function MessageComposerPrimar
                 {recordHintText}
               </div>
             ) : null}
-            <button
-              type="button"
+            <PillButton
+              tone="accent"
+              appearance="soft"
+              size="sm"
               onClick={onToggleRecordMode}
               disabled={primaryButtonDisabled}
               className={styles.recordModeChip}
               aria-label={recordModeToggleAriaLabel}
               title={recordModeToggleTitle}
+              leading={
+                currentRecordMode === "voice"
+                  ? <VoiceNoteIcon size={14} />
+                  : <VideoNoteIcon size={14} />
+              }
             >
-              <span className={styles.recordModeChipIcon} aria-hidden="true">
-                {currentRecordMode === "voice" ? <VoiceNoteIcon size={14} /> : <VideoNoteIcon size={14} />}
-              </span>
               <span>{currentRecordModeLabel}</span>
-            </button>
+            </PillButton>
           </div>
         ) : null}
 
@@ -149,4 +153,3 @@ export const MessageComposerPrimaryActions = memo(function MessageComposerPrimar
     </div>
   );
 });
-

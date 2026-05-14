@@ -28,7 +28,6 @@ const scanRoots = [
   "src/chats/presentation/modals/SecurityModal.module.css",
   "src/chats/presentation/modals/NewChatModal.module.css",
   "src/chats/presentation/modals/NewGroupModal.module.css",
-  "src/chats/presentation/modals/GroupMembersModal.module.css",
   "src/ui-settings",
   "src/chats/presentation/MessageList.module.css",
   "src/calls/room/RoomCallPanel.module.css",

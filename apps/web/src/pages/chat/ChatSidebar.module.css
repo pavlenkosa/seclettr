@@ -91,35 +91,23 @@
 
 .search {
   position: relative;
-  display: flex;
-  align-items: center;
-  gap: 0.4rem;
-  height: 36px;
-  padding: 0 0.5rem 0 0.62rem;
-  border: 1px solid color-mix(in srgb, var(--panel-border-soft) 80%, transparent);
-  border-radius: 20px;
-  background: color-mix(in srgb, var(--surface-float) 64%, transparent);
-  transition: border-color var(--motion-duration-fast) ease, background var(--motion-duration-fast) ease;
+  min-width: 0;
 }
 
-.search:focus-within {
-  border-color: var(--accent);
+.searchField {
+  width: 100%;
+  min-height: 36px;
+  padding-right: 2rem;
+  border-radius: 20px;
+  border-color: color-mix(in srgb, var(--panel-border-soft) 80%, transparent);
+  background: color-mix(in srgb, var(--surface-float) 64%, transparent);
+}
+
+.searchField:focus-within {
   background: color-mix(in srgb, var(--surface-float) 88%, transparent);
 }
 
-.searchIcon {
-  flex-shrink: 0;
-  color: var(--text-secondary);
-  pointer-events: none;
-}
-
 .searchInput {
-  flex: 1;
-  min-width: 0;
-  border: none;
-  outline: none;
-  background: transparent;
-  color: var(--text-primary);
   font-size: 0.8rem;
   line-height: 1;
 }
@@ -134,22 +122,16 @@
 }
 
 .searchClear {
-  all: unset;
-  flex-shrink: 0;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 18px;
-  height: 18px;
-  border-radius: 50%;
-  color: var(--text-secondary);
-  cursor: pointer;
-  transition: background var(--motion-duration-fast) ease, color var(--motion-duration-fast) ease;
-}
-
-.searchClear:hover {
-  background: color-mix(in srgb, var(--accent) 14%, transparent);
-  color: var(--text-primary);
+  position: absolute;
+  top: 50%;
+  right: 0.5rem;
+  transform: translateY(-50%);
+  --icon-button-color-base: var(--text-secondary);
+  --icon-button-bg-base: transparent;
+  --icon-button-border-base: transparent;
+  --icon-button-bg-hover-base: color-mix(in srgb, var(--accent) 14%, transparent);
+  --icon-button-border-hover-base: transparent;
+  --icon-button-color-hover-base: var(--text-primary);
 }
 
 @media (max-width: 640px) {
@@ -180,7 +162,6 @@
 
 @media (prefers-reduced-motion: reduce) {
   .sidebar,
-  .search,
   .searchClear {
     transition: none !important;
     animation: none !important;

@@ -1,6 +1,7 @@
 import { useI18n } from "@/i18n";
 import { useFileAttachmentRuntime } from "@/chats/runtime/useFileAttachmentRuntime";
 import { useUploadProgress } from "@/chats/runtime/useUploadProgress";
+import { InlineNotice } from "@/components/ui";
 import type { Message } from "@/stores/messages";
 import { formatAttachmentSize, resolveAttachmentErrorMessage } from "./message-attachment-shared";
 import styles from "../MessageList.module.css";
@@ -67,7 +68,16 @@ export function FileAttachment({ msg }: { readonly msg: Message }) {
               ? t(isPlain ? "message.file.downloading" : "message.file.decrypting")
               : downloadedLabel}
           </button>
-          {error ? <div className={styles.voiceError}>{error}</div> : null}
+          {error ? (
+            <InlineNotice
+              tone="error"
+              size="sm"
+              role="alert"
+              className={styles.attachmentErrorNotice}
+            >
+              {error}
+            </InlineNotice>
+          ) : null}
         </>
       )}
     </div>

@@ -1,3 +1,5 @@
+/* === shell === */
+
 .root {
   height: 100%;
   min-height: 0;
@@ -7,37 +9,23 @@
   color: var(--text-primary);
 }
 
+/* === header === */
+
 .header {
   flex-shrink: 0;
   min-height: 60px;
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr) auto;
-  align-items: center;
-  gap: 0.75rem;
   padding: 0.7rem clamp(0.9rem, 1.4vw, 1.28rem);
   border-bottom: 1px solid color-mix(in srgb, var(--panel-border-soft) 82%, transparent);
   background: color-mix(in srgb, var(--bg-secondary) 90%, var(--bg-primary));
 }
 
-.headerDesktop {
-  grid-template-columns: minmax(0, 1fr) auto;
+.headerBar {
+  --header-bar-gap: 0.75rem;
+  --header-bar-actions-gap: 0;
 }
 
-.backButton,
-.closeButton {
-  width: 38px;
-  height: 38px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  border: 1px solid transparent;
-  border-radius: 999px;
-  background: transparent;
-  color: var(--text-secondary);
-  transition:
-    background-color var(--motion-duration-fast) var(--motion-ease-standard),
-    border-color var(--motion-duration-fast) var(--motion-ease-standard),
-    color var(--motion-duration-fast) var(--motion-ease-standard);
+.headerAction {
+  flex-shrink: 0;
 }
 
 .title {
@@ -49,6 +37,8 @@
   line-height: 1.2;
 }
 
+/* === desktop split layout === */
+
 .layout {
   flex: 1;
   min-height: 0;
@@ -57,6 +47,8 @@
   overflow: hidden;
   background: color-mix(in srgb, var(--bg-primary) 96%, var(--surface-shell));
 }
+
+/* === menu pane === */
 
 .menuPane {
   min-width: 0;
@@ -67,17 +59,15 @@
   padding: 0.9rem 0.74rem;
 }
 
+.accountPanel {
+  margin-bottom: 0.72rem;
+}
+
 .accountRow {
-  min-height: 70px;
   display: grid;
   grid-template-columns: 48px minmax(0, 1fr);
   align-items: center;
   gap: 0.78rem;
-  margin-bottom: 0.72rem;
-  padding: 0.72rem;
-  border: 1px solid color-mix(in srgb, var(--panel-border-soft) 78%, transparent);
-  border-radius: 8px;
-  background: color-mix(in srgb, var(--surface-shell) 86%, transparent);
 }
 
 .accountAvatar {
@@ -93,30 +83,8 @@
   font-weight: 760;
 }
 
-.accountCopy {
+.accountInfo {
   min-width: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 0.16rem;
-}
-
-.accountName {
-  overflow: hidden;
-  color: var(--text-primary);
-  font-size: 0.98rem;
-  font-weight: 720;
-  line-height: 1.25;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.accountMeta {
-  overflow: hidden;
-  color: var(--text-secondary);
-  font-size: 0.78rem;
-  line-height: 1.35;
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
 
 .sectionList {
@@ -128,16 +96,8 @@
 
 .sectionButton {
   min-height: 64px;
-  display: grid;
-  grid-template-columns: 32px minmax(0, 1fr) auto;
-  align-items: center;
-  gap: 0.72rem;
-  padding: 0.62rem 0.68rem;
   border: 1px solid transparent;
   border-radius: 8px;
-  background: transparent;
-  color: var(--text-primary);
-  text-align: left;
   transition:
     background-color var(--motion-duration-fast) var(--motion-ease-standard),
     border-color var(--motion-duration-fast) var(--motion-ease-standard),
@@ -165,39 +125,27 @@
 }
 
 .sectionCopy {
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
   gap: 0.1rem;
 }
 
 .sectionTitle {
-  overflow: hidden;
   color: inherit;
   font-size: 0.9rem;
   font-weight: 680;
   line-height: 1.28;
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
 
 .sectionDescription {
-  overflow: hidden;
   color: var(--text-secondary);
   font-size: 0.72rem;
   line-height: 1.35;
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
 
 .sectionSummary {
-  overflow: hidden;
   color: color-mix(in srgb, var(--text-secondary) 86%, transparent);
   font-size: 0.68rem;
   font-weight: 620;
   line-height: 1.35;
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
 
 .sectionChevron {
@@ -210,6 +158,8 @@
   font-size: 0.74rem;
   line-height: 1.45;
 }
+
+/* === detail pane === */
 
 .detailPane {
   min-width: 0;
@@ -271,6 +221,8 @@
   text-align: right;
 }
 
+/* === loading === */
+
 .emptyState {
   min-height: 240px;
   display: grid;
@@ -292,19 +244,16 @@
   background: color-mix(in srgb, var(--surface-shell) 92%, var(--bg-primary));
 }
 
-@media (hover: hover) and (pointer: fine) {
-  .backButton:hover,
-  .closeButton:hover {
-    border-color: color-mix(in srgb, var(--accent) 28%, transparent);
-    background: color-mix(in srgb, var(--accent) 10%, transparent);
-    color: var(--text-primary);
-  }
+/* === interactive states === */
 
+@media (hover: hover) and (pointer: fine) {
   .sectionButton:hover {
     border-color: color-mix(in srgb, var(--accent) 22%, transparent);
     background: color-mix(in srgb, var(--accent) 7%, transparent);
   }
 }
+
+/* === mobile split/detail === */
 
 @media (max-width: 760px) {
   .root {
@@ -356,7 +305,7 @@
     display: none;
   }
 
-  .accountRow {
+  .accountPanel {
     margin-bottom: 0.68rem;
   }
 
@@ -373,9 +322,9 @@
   }
 }
 
+/* === reduced motion === */
+
 @media (prefers-reduced-motion: reduce) {
-  .backButton,
-  .closeButton,
   .sectionButton {
     transition: none !important;
   }

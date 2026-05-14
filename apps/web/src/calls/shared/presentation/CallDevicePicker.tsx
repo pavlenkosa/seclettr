@@ -6,6 +6,7 @@ import {
   type ReactNode,
 } from "react";
 import type { InputDeviceOption } from "@/calls/shared/media/input-devices/useCallInputDevices";
+import { IconButton, SurfacePanel } from "@/components/ui";
 import motionStyles from "@/components/ui/motion/Motion.module.css";
 import styles from "./CallDevicePicker.module.css";
 
@@ -210,17 +211,23 @@ export function CallDevicePicker({
             aria-label={chevronAriaLabel}
             onClick={close}
           />
-          <div className={`${styles.menu} ${motionStyles.popoverIn}`} role="menu">
+          <SurfacePanel
+            tone="strong"
+            padding="none"
+            radius="md"
+            className={`${styles.menu} ${motionStyles.popoverIn}`}
+            role="menu"
+          >
             <div className={styles.menuHeader}>
               <span className={styles.menuTitle}>{chevronAriaLabel}</span>
-              <button
-                type="button"
+              <IconButton
                 className={styles.menuCloseBtn}
                 onClick={close}
                 aria-label={chevronAriaLabel}
+                size={34}
               >
                 <CloseIcon />
-              </button>
+              </IconButton>
             </div>
             {hasMics && onSelectMic && (
               <DeviceSection
@@ -245,7 +252,7 @@ export function CallDevicePicker({
                 onSelectResolution={(res) => { onSelectResolution(res); close(); }}
               />
             )}
-          </div>
+          </SurfacePanel>
         </>
       ) : null}
     </div>

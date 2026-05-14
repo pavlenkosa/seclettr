@@ -2,16 +2,16 @@
   position: relative;
 }
 
-.menu {
+.menuSurface {
   position: absolute;
   top: calc(100% + 6px);
   right: 0;
   z-index: 120;
   min-width: 188px;
+}
+
+.menu {
   padding: 0.3rem;
-  border-radius: 8px;
-  border: 1px solid color-mix(in srgb, var(--panel-border-soft) 90%, transparent);
-  background: var(--surface-float);
 }
 
 .item {

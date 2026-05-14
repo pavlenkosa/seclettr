@@ -4,6 +4,7 @@ import { useSecuritySettings } from "@/ui-settings";
 import { useFileAttachmentRuntime } from "@/chats/runtime/useFileAttachmentRuntime";
 import { useUploadProgress } from "@/chats/runtime/useUploadProgress";
 import { MediaLightbox } from "@/components/common/MediaLightbox";
+import { InlineNotice } from "@/components/ui";
 import type { Message } from "@/stores/messages";
 import { InlineAttachmentUploadOverlay } from "./AttachmentUploadProgress";
 import { MessageStatusIcon } from "./MessageStatusIcon";
@@ -196,7 +197,16 @@ export function InlineMediaAttachment({ msg, isOwn }: InlineMediaAttachmentProps
         )}
       </div>
 
-      {error ? <div className={styles.voiceError}>{error}</div> : null}
+      {error ? (
+        <InlineNotice
+          tone="error"
+          size="sm"
+          role="alert"
+          className={styles.attachmentErrorNotice}
+        >
+          {error}
+        </InlineNotice>
+      ) : null}
 
       {previewUrl ? (
         <MediaLightbox

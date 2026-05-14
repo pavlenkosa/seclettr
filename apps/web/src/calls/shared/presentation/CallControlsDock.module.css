@@ -1,4 +1,7 @@
 .root {
+  --surface-panel-bg-start: color-mix(in srgb, var(--surface-shell) 98%, var(--surface-float));
+  --surface-panel-bg-end: color-mix(in srgb, var(--surface-shell) 94%, var(--bg-secondary));
+  --surface-panel-border: color-mix(in srgb, var(--panel-border-soft) 76%, transparent);
   position: var(--call-controls-position, relative);
   bottom: var(--call-controls-bottom, auto);
   z-index: var(--call-controls-z-index, 5);
@@ -11,9 +14,7 @@
   flex-wrap: wrap;
   gap: var(--call-controls-gap, 0.75rem);
   padding: var(--call-controls-padding, 0.56rem);
-  border-radius: var(--call-controls-radius, 32px);
-  border: 1px solid color-mix(in srgb, var(--panel-border-soft) 76%, transparent);
-  background: color-mix(in srgb, var(--surface-shell) 98%, var(--surface-float));
+  border-radius: var(--call-controls-radius, 999px);
 }
 
 @media (max-width: 960px) {

@@ -1,3 +1,5 @@
+/* ── Composer shell ─────────────────────────────────────────────────────── */
+
 .composer {
   position: relative;
   z-index: 40;
@@ -39,6 +41,8 @@
   gap: 0.6rem;
   padding-right: 0.42rem;
 }
+
+/* ── Fullscreen video recording overlay ─────────────────────────────────── */
 
 .videoRecordingOverlay {
   position: fixed;
@@ -248,6 +252,8 @@
   display: none;
 }
 
+/* ── Idle composer controls / emoji rail ────────────────────────────────── */
+
 .emojiShell {
   position: relative;
   flex-shrink: 0;
@@ -307,38 +313,27 @@
 
 .recordModeChip {
   min-height: 34px;
-  display: inline-flex;
-  align-items: center;
-  gap: 0.34rem;
-  padding: 0.18rem 0.72rem;
-  border-radius: 999px;
-  background: color-mix(in srgb, var(--composer-inner-bg) 94%, var(--surface-float));
-  border: 1px solid color-mix(in srgb, var(--panel-border-soft) 86%, transparent);
-  color: var(--text-secondary);
+  padding-inline: 0.72rem;
+  --pill-border: color-mix(in srgb, var(--panel-border-soft) 86%, transparent);
+  --pill-bg: color-mix(in srgb, var(--composer-inner-bg) 94%, var(--surface-float));
+  --pill-bg-hover: color-mix(in srgb, var(--accent) 8%, var(--composer-inner-bg));
+  --pill-fg: var(--text-secondary);
   font-size: 0.72rem;
   font-weight: 700;
   line-height: 1;
   text-transform: capitalize;
-  transition:
-    background-color var(--motion-duration-fast) var(--motion-ease-standard),
-    color var(--motion-duration-fast) var(--motion-ease-standard),
-    border-color var(--motion-duration-fast) var(--motion-ease-standard);
 }
 
 .recordModeChip:hover:not(:disabled) {
-  color: var(--text-primary);
-  background: color-mix(in srgb, var(--accent) 8%, var(--composer-inner-bg));
-  border-color: color-mix(in srgb, var(--accent) 34%, transparent);
+  --pill-fg: var(--text-primary);
+  --pill-border: color-mix(in srgb, var(--accent) 34%, transparent);
 }
 
 .recordModeChip:disabled {
   opacity: 0.6;
 }
 
-.recordModeChipIcon {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
+.recordModeChip :global(svg) {
   color: color-mix(in srgb, var(--accent) 84%, white 8%);
 }
 
@@ -882,6 +877,8 @@
   background: var(--danger);
 }
 
+/* ── Reply / feedback surfaces ──────────────────────────────────────────── */
+
 .replyPreview {
   display: flex;
   align-items: center;
@@ -924,38 +921,20 @@
 }
 
 .replyPreviewClose {
-  all: unset;
   flex-shrink: 0;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 22px;
-  height: 22px;
-  border-radius: 50%;
-  color: var(--text-secondary);
-  cursor: pointer;
-  transition: background var(--motion-duration-fast) ease, color var(--motion-duration-fast) ease;
+  --icon-button-color-base: var(--text-secondary);
+  --icon-button-bg-base: transparent;
+  --icon-button-border-base: transparent;
+  --icon-button-bg-hover-base: color-mix(in srgb, var(--accent) 14%, transparent);
+  --icon-button-border-hover-base: transparent;
+  --icon-button-color-hover-base: var(--text-primary);
 }
 
-.replyPreviewClose:hover {
-  background: color-mix(in srgb, var(--accent) 14%, transparent);
-  color: var(--text-primary);
-}
-
-.replyPreviewClose:focus-visible {
-  outline: 2px solid var(--accent);
-  outline-offset: 1px;
-}
-
-.error {
+.errorNotice {
   margin-top: 0.5rem;
-  font-size: 0.76rem;
-  color: var(--danger-contrast);
-  background: var(--danger-soft-bg);
-  border: 1px solid var(--danger-soft-border);
-  border-radius: 14px;
-  padding: 0.42rem 0.6rem;
 }
+
+/* ── Responsive adjustments ─────────────────────────────────────────────── */
 
 @media (max-width: 760px) {
   .composer {
@@ -1053,7 +1032,7 @@
 
   .recordModeChip {
     min-height: 32px;
-    padding: 0.14rem 0.58rem;
+    padding-inline: 0.58rem;
     font-size: 0.68rem;
   }
 

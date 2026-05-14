@@ -102,14 +102,15 @@
 }
 
 .menu {
+  --surface-panel-bg-start: var(--surface-float, #1e1e2e);
+  --surface-panel-bg-end: color-mix(in srgb, var(--surface-shell) 96%, var(--surface-float, #1e1e2e));
+  --surface-panel-border: color-mix(in srgb, var(--panel-border-soft) 70%, transparent);
   position: absolute;
   bottom: calc(100% + 8px);
   left: 0;
   z-index: 200;
   min-width: 240px;
   max-width: 320px;
-  background: var(--surface-float, #1e1e2e);
-  border: 1px solid color-mix(in srgb, var(--panel-border-soft) 70%, transparent);
   border-radius: 12px;
   padding: 6px;
 }
@@ -136,16 +137,16 @@
 }
 
 .menuCloseBtn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 34px;
-  height: 34px;
-  border: 1px solid color-mix(in srgb, var(--panel-border-soft) 82%, transparent);
-  border-radius: 999px;
-  background: color-mix(in srgb, var(--surface-shell) 88%, transparent);
-  color: var(--text-secondary);
-  cursor: pointer;
+  --icon-button-size: 34px;
+  --icon-button-bg: color-mix(in srgb, var(--surface-shell) 88%, transparent);
+  --icon-button-bg-hover: color-mix(in srgb, var(--surface-shell) 76%, transparent);
+  --icon-button-border: color-mix(in srgb, var(--panel-border-soft) 82%, transparent);
+  --icon-button-border-hover: color-mix(in srgb, var(--accent) 28%, var(--panel-border-soft));
+  --icon-button-color: var(--text-secondary);
+  --icon-button-color-hover: var(--text-primary);
+  --icon-button-blur: 0;
+  --icon-button-transform: none;
+  --icon-button-transform-hover: none;
 }
 
 .menuSection {

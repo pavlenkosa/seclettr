@@ -1,11 +1,15 @@
 import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { LanguageSwitcher } from "@/components/common/LanguageSwitcher";
-import { SeclettrMark } from "@/components/common/SeclettrMark";
+import { LabelPill } from "@/components/ui";
 import { useI18n } from "@/i18n";
 import { mapAuthErrorMessage, shouldShowAuthErrorDetails } from "@/lib/auth-errors";
 import { useAuthStore } from "@/stores/auth";
-import { InlineNotice, InputField } from "@/components/ui";
+import { AuthCard } from "./auth/AuthCard";
+import { AuthErrorNotice } from "./auth/AuthErrorNotice";
+import { AuthFormFooter } from "./auth/AuthFormFooter";
+import { AuthPasswordField } from "./auth/AuthPasswordField";
+import { AuthUsernameField } from "./auth/AuthUsernameField";
 import styles from "./AuthPage.module.css";
 
 type Mode = "login" | "register";
@@ -32,21 +36,26 @@ export function AuthPage() {
   const errorAlertRef = useRef<HTMLDivElement>(null);
   const normalizedUsername = username.trim();
   const isUsernamePatternValid = normalizedUsername.length === 0 || USERNAME_PATTERN.test(normalizedUsername);
-  const canSubmit = (
-    !loading
+  const canSubmit = !loading
     && normalizedUsername.length >= 3
     && normalizedUsername.length <= 32
     && isUsernamePatternValid
-    && password.length >= 8
-  );
+    && password.length >= 8;
   const friendlyError = mapAuthErrorMessage(error, t);
   const showTechnicalError = shouldShowAuthErrorDetails(error);
+  const errorDetail = showTechnicalError ? error : null;
+  const isLogin = mode === "login";
   const submitLabel = mode === "login" ? t("auth.submit.signIn") : t("auth.submit.createAccount");
 
   useEffect(() => {
     if (!error) return;
     errorAlertRef.current?.focus();
   }, [error]);
+
+  const setAuthMode = (nextMode: Mode) => {
+    setMode(nextMode);
+    clearError();
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -67,142 +76,72 @@ export function AuthPage() {
     }
   };
 
+  const recoveryLink = isLogin
+    ? <Link to="/auth/recovery" className={styles.helpLink} onClick={() => clearError()}>{t("auth.helpCta")}</Link>
+    : null;
+  const modeToggle = isLogin
+    ? (
+        <>
+          {t("auth.noAccount")}{" "}
+          <button type="button" onClick={() => setAuthMode("register")} className={styles.link}>
+            {t("auth.createOne")}
+          </button>
+        </>
+      )
+    : (
+        <>
+          {t("auth.hasAccount")}{" "}
+          <button type="button" onClick={() => setAuthMode("login")} className={styles.link}>
+            {t("auth.signInLink")}
+          </button>
+        </>
+      );
+
   return (
     <div className={styles.container}>
-      <div className={styles.card}>
-        <div className={styles.cardTop}>
-          <div className={styles.logo}>
-            <span className={styles.logoMark} aria-hidden="true">
-              <SeclettrMark decorative />
-            </span>
-            <span className={styles.logoName}>{t("common.appName")}</span>
-          </div>
-          <LanguageSwitcher />
-        </div>
-
-        <h1 className={styles.title}>
-          {mode === "login" ? t("auth.title.signIn") : t("auth.title.createAccount")}
-        </h1>
-        <p className={styles.subtitle}>
-          {mode === "login"
-            ? t("auth.subtitle.signIn")
-            : t("auth.subtitle.createAccount")}
-        </p>
-
-        <form onSubmit={(e) => handleSubmit(e)} className={styles.form}>
-          <div className={styles.field}>
-            <label htmlFor="username" className={styles.label}>{t("auth.username")}</label>
-            <InputField
+      <AuthCard
+        appName={t("common.appName")}
+        actions={<LanguageSwitcher />}
+        title={isLogin ? t("auth.title.signIn") : t("auth.title.createAccount")}
+        subtitle={isLogin ? t("auth.subtitle.signIn") : t("auth.subtitle.createAccount")}
+        body={(
+          <form onSubmit={handleSubmit} className={styles.form}>
+            <AuthUsernameField
               id="username"
-              size="lg"
-              type="text"
-              autoComplete="username"
-              autoCapitalize="none"
-              autoCorrect="off"
-              spellCheck={false}
+              label={t("auth.username")}
               value={username}
-              onChange={(e) => setUsername(e.target.value)}
               placeholder={t("auth.usernamePlaceholder")}
-              required
-              minLength={3}
-              maxLength={32}
-              pattern="[a-zA-Z0-9._-]+"
-              aria-invalid={!isUsernamePatternValid}
+              invalid={!isUsernamePatternValid}
+              onChange={(e) => setUsername(e.target.value)}
             />
-          </div>
 
-          <div className={styles.field}>
-            <label htmlFor="password" className={styles.label}>{t("auth.password")}</label>
-            <div className={styles.passwordWrapper}>
-              <InputField
-                id="password"
-                size="lg"
-                type={showPassword ? "text" : "password"}
-                autoComplete={mode === "login" ? "current-password" : "new-password"}
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder={t("auth.passwordPlaceholder")}
-                required
-                minLength={8}
-                wrapperClassName={styles.passwordInputShell}
-              />
-              <button
-                type="button"
-                className={styles.passwordToggle}
-                onClick={() => setShowPassword((v) => !v)}
-                aria-label={showPassword ? t("auth.hidePassword") : t("auth.showPassword")}
-              >
-                {showPassword ? (
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                    <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19M1 1l22 22" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"/>
-                  </svg>
-                ) : (
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                    <path d="M1 12S5 4 12 4s11 8 11 8-4 8-11 8S1 12 1 12z" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"/>
-                    <circle cx="12" cy="12" r="3" stroke="currentColor" strokeWidth="1.75"/>
-                  </svg>
-                )}
-              </button>
-            </div>
-          </div>
+            <AuthPasswordField
+              id="password"
+              label={t("auth.password")}
+              value={password}
+              autoComplete={mode === "login" ? "current-password" : "new-password"}
+              placeholder={t("auth.passwordPlaceholder")}
+              showPassword={showPassword}
+              onChange={(e) => setPassword(e.target.value)}
+              onToggle={() => setShowPassword((value) => !value)}
+              showLabel={t("auth.showPassword")}
+              hideLabel={t("auth.hidePassword")}
+            />
 
-          {error && (
-            <div ref={errorAlertRef} tabIndex={-1}>
-              <InlineNotice tone="error" size="md" role="alert">
-                <p className={styles.errorText}>{friendlyError ?? error}</p>
-                {showTechnicalError ? (
-                  <p className={styles.errorDetail}>{error}</p>
-                ) : null}
-              </InlineNotice>
-            </div>
-          )}
+            <AuthErrorNotice ref={errorAlertRef} message={friendlyError ?? error} detail={errorDetail} />
 
-          <button
-            type="submit"
-            disabled={!canSubmit}
-            className={styles.submit}
-          >
-            {loading ? t("auth.generatingKeys") : submitLabel}
-          </button>
-          {mode === "login" ? (
-            <div className={styles.helpRow}>
-              <Link to="/auth/recovery" className={styles.helpLink} onClick={() => clearError()}>
-                {t("auth.helpCta")}
-              </Link>
-            </div>
-          ) : null}
-        </form>
-
-        <div className={styles.toggle}>
-          {mode === "login" ? (
-            <>
-              {t("auth.noAccount")}{" "}
-              <button
-                type="button"
-                onClick={() => { setMode("register"); clearError(); }}
-                className={styles.link}
-              >
-                {t("auth.createOne")}
-              </button>
-            </>
-          ) : (
-            <>
-              {t("auth.hasAccount")}{" "}
-              <button
-                type="button"
-                onClick={() => { setMode("login"); clearError(); }}
-                className={styles.link}
-              >
-                {t("auth.signInLink")}
-              </button>
-            </>
-          )}
-        </div>
-
-        <div className={styles.e2eeBadge}>
-          {`v${__APP_VERSION__}`}
-        </div>
-      </div>
+            <AuthFormFooter
+              submitLabel={submitLabel}
+              loadingLabel={t("auth.generatingKeys")}
+              loading={loading}
+              disabled={!canSubmit}
+              recoveryLink={recoveryLink}
+              modeToggle={modeToggle}
+            />
+          </form>
+        )}
+        footer={<footer className={styles.cardFooter}><LabelPill className={styles.versionBadge} size="sm">{`v${__APP_VERSION__}`}</LabelPill></footer>}
+      />
     </div>
   );
 }

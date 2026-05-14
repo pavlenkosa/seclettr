@@ -1,4 +1,5 @@
 import { memo, useCallback, type CSSProperties, type ReactNode } from "react";
+import { SurfacePanel } from "@/components/ui";
 import { MessageContextMenu, type MessageContextMenuAction } from "../MessageContextMenu";
 import {
   FileAttachment,
@@ -138,13 +139,13 @@ function CallEventRow({ presentation }: CallEventRowProps) {
 
   return (
     <div className={styles.callEventRow}>
-      <div className={styles.callEventCard}>
+      <SurfacePanel className={styles.callEventCard} padding="none" radius="lg">
         <div className={styles.callEventTitle}>{presentation.callEvent.title}</div>
         <div className={styles.callEventMeta}>
           <span>{presentation.callEvent.meta}</span>
           <span>{presentation.timeLabel}</span>
         </div>
-      </div>
+      </SurfacePanel>
     </div>
   );
 }

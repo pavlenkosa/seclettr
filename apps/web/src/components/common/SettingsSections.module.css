@@ -1,3 +1,5 @@
+/* === group panels === */
+
 .groupStack {
   display: flex;
   flex-direction: column;
@@ -53,6 +55,8 @@
   display: flex;
   flex-direction: column;
 }
+
+/* === settings rows === */
 
 .settingRow {
   min-height: 42px;
@@ -138,11 +142,14 @@
   background: #7c3aed;
 }
 
+/* === helper panels === */
+
 .feedbackPanel,
 .footerPanel {
-  --surface-panel-shadow: none;
+  width: 100%;
 }
 
+/* === skeleton loading === */
 
 .sectionSkeletonStack {
   display: flex;
@@ -242,6 +249,8 @@
   50% { opacity: 0.74; }
 }
 
+/* === copy and feedback === */
+
 .note,
 .error {
   margin: 0;
@@ -257,6 +266,8 @@
   color: var(--danger-contrast);
 }
 
+/* === notification devices === */
+
 .deviceList {
   display: flex;
   flex-direction: column;
@@ -264,20 +275,12 @@
 }
 
 .deviceCard {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 0.9rem;
-  padding: 0.88rem 0.92rem;
   border-radius: 8px;
   border: 1px solid color-mix(in srgb, var(--accent) 14%, var(--panel-border-soft));
   background: var(--bg-secondary);
 }
 
 .deviceMeta {
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
   gap: 0.34rem;
 }
 
@@ -303,9 +306,15 @@
   line-height: 1.45;
 }
 
+.deviceStatusRow {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+}
+
 .deviceAction {
   flex: 0 0 auto;
-  align-self: center;
 }
 
 .deviceEmpty {
@@ -314,6 +323,8 @@
   font-size: 0.78rem;
   line-height: 1.5;
 }
+
+/* === security pin controls === */
 
 .pinButtonRow {
   display: flex;
@@ -328,15 +339,8 @@
 }
 
 .pinInput {
-  background: color-mix(in srgb, var(--surface-float) 70%, transparent);
-  border: 1px solid var(--panel-border-soft);
-  border-radius: 10px;
-  padding: 0.5rem 0.75rem;
-  color: var(--text-primary);
-  font-size: 0.9rem;
-  outline: none;
   width: 100%;
-  box-sizing: border-box;
+  min-width: 0;
 }
 
 .pinFeedback {
@@ -357,6 +361,8 @@
   color: var(--success, #27ae60);
 }
 
+/* === light theme adjustments === */
+
 :global(:root[data-theme="light"]) .groupDescription,
 :global(:root[data-theme="light"]) .note,
 :global(:root[data-theme="light"]) .deviceStatus,
@@ -368,6 +374,8 @@
 :global(:root[data-theme="light"]) .deviceCard {
   --surface-panel-shadow: none;
 }
+
+/* === motion and responsive === */
 
 @media (prefers-reduced-motion: reduce) {
   .swatchBtn {
@@ -398,6 +406,11 @@
   .deviceCard {
     flex-direction: column;
     align-items: stretch;
+  }
+
+  .deviceCard > span:last-child {
+    width: 100%;
+    justify-content: stretch;
   }
 
   .deviceAction {

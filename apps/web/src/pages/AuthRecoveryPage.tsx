@@ -1,11 +1,15 @@
 import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { LanguageSwitcher } from "@/components/common/LanguageSwitcher";
-import { SeclettrMark } from "@/components/common/SeclettrMark";
 import { useI18n } from "@/i18n";
 import { mapAuthErrorMessage, shouldShowAuthErrorDetails } from "@/lib/auth-errors";
 import { logger } from "@/lib/logger.js";
 import { useAuthStore } from "@/stores/auth";
+import { AuthCard } from "./auth/AuthCard";
+import { AuthErrorNotice } from "./auth/AuthErrorNotice";
+import { AuthRecoveryDestructiveAction } from "./auth/AuthRecoveryDestructiveAction";
+import { AuthRecoveryExplanation } from "./auth/AuthRecoveryExplanation";
+import { AuthRecoverySuccess } from "./auth/AuthRecoverySuccess";
 import styles from "./AuthRecoveryPage.module.css";
 
 export function AuthRecoveryPage() {
@@ -16,6 +20,7 @@ export function AuthRecoveryPage() {
 
   const friendlyError = useMemo(() => mapAuthErrorMessage(error, t), [error, t]);
   const showErrorDetails = shouldShowAuthErrorDetails(error);
+  const errorDetail = showErrorDetails ? error : null;
   const recoveryReasonText = useMemo(() => {
     if (authRecoveryReason === "missing_local_keys") {
       return t("auth.recovery.reasonMissingLocalKeys");
@@ -49,70 +54,56 @@ export function AuthRecoveryPage() {
 
   return (
     <div className={styles.container}>
-      <div className={styles.card}>
-        <div className={styles.cardTop}>
-          <div className={styles.logo}>
-            <span className={styles.logoMark} aria-hidden="true">
-              <SeclettrMark decorative />
-            </span>
-            <span className={styles.logoName}>{t("common.appName")}</span>
+      <AuthCard
+        appName={t("common.appName")}
+        actions={<LanguageSwitcher />}
+        title={t("auth.recovery.title")}
+        subtitle={t("auth.recovery.subtitle")}
+        body={(
+          <div className={styles.body}>
+            {recoveryReasonText ? (
+              <AuthRecoveryExplanation
+                id="auth-recovery-reason"
+                title={t("auth.recovery.reasonTitle")}
+                body={recoveryReasonText}
+                tone="accent"
+              />
+            ) : null}
+
+            <AuthRecoveryExplanation
+              id="auth-recovery-step-1"
+              title={t("auth.recovery.stepCredentialsTitle")}
+              body={t("auth.recovery.stepCredentialsBody")}
+            />
+
+            <AuthRecoveryDestructiveAction
+              id="auth-recovery-step-2"
+              title={t("auth.recovery.stepDataTitle")}
+              body={t("auth.recovery.stepDataBody")}
+              actionLabel={t("auth.recovery.resetAction")}
+              busyLabel={t("auth.recovery.resetting")}
+              disabled={isResetting}
+              onClick={handleResetLocalData}
+              successNotice={<AuthRecoverySuccess visible={hasResetCompleted} message={t("auth.recovery.resetDone")} />}
+            />
+
+            <AuthRecoveryExplanation
+              id="auth-recovery-step-3"
+              title={t("auth.recovery.stepPasswordTitle")}
+              body={t("auth.recovery.stepPasswordBody")}
+            />
+
+            <AuthErrorNotice message={friendlyError} detail={errorDetail} />
           </div>
-          <LanguageSwitcher />
-        </div>
-
-        <h1 className={styles.title}>{t("auth.recovery.title")}</h1>
-        <p className={styles.subtitle}>{t("auth.recovery.subtitle")}</p>
-
-        {recoveryReasonText ? (
-          <section className={styles.section} aria-labelledby="auth-recovery-reason">
-            <h2 id="auth-recovery-reason" className={styles.sectionTitle}>
-              {t("auth.recovery.reasonTitle")}
-            </h2>
-            <p className={styles.sectionText}>{recoveryReasonText}</p>
-          </section>
-        ) : null}
-
-        <section className={styles.section} aria-labelledby="auth-recovery-step-1">
-          <h2 id="auth-recovery-step-1" className={styles.sectionTitle}>{t("auth.recovery.stepCredentialsTitle")}</h2>
-          <p className={styles.sectionText}>{t("auth.recovery.stepCredentialsBody")}</p>
-        </section>
-
-        <section className={styles.section} aria-labelledby="auth-recovery-step-2">
-          <h2 id="auth-recovery-step-2" className={styles.sectionTitle}>{t("auth.recovery.stepDataTitle")}</h2>
-          <p className={styles.sectionText}>{t("auth.recovery.stepDataBody")}</p>
-          <button
-            type="button"
-            className={styles.resetButton}
-            onClick={() => handleResetLocalData()}
-            disabled={isResetting}
-          >
-            {isResetting ? t("auth.recovery.resetting") : t("auth.recovery.resetAction")}
-          </button>
-          {hasResetCompleted ? (
-            <div className={styles.success} role="status" aria-live="polite">
-              {t("auth.recovery.resetDone")}
-            </div>
-          ) : null}
-        </section>
-
-        <section className={styles.section} aria-labelledby="auth-recovery-step-3">
-          <h2 id="auth-recovery-step-3" className={styles.sectionTitle}>{t("auth.recovery.stepPasswordTitle")}</h2>
-          <p className={styles.sectionText}>{t("auth.recovery.stepPasswordBody")}</p>
-        </section>
-
-        {friendlyError ? (
-          <div className={styles.error} role="alert" aria-live="assertive">
-            <p className={styles.errorText}>{friendlyError}</p>
-            {showErrorDetails && error ? <p className={styles.errorDetail}>{error}</p> : null}
+        )}
+        footer={(
+          <div className={styles.actions}>
+            <Link to="/auth" className={styles.primaryLink} onClick={() => clearError()}>
+              {t("auth.recovery.backToSignIn")}
+            </Link>
           </div>
-        ) : null}
-
-        <div className={styles.actions}>
-          <Link to="/auth" className={styles.primaryLink} onClick={() => clearError()}>
-            {t("auth.recovery.backToSignIn")}
-          </Link>
-        </div>
-      </div>
+        )}
+      />
     </div>
   );
 }

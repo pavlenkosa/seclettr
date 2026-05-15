@@ -65,7 +65,7 @@ export function DirectCallActiveMinimized({
   return (
     <FloatingDock
       ref={minimizedDockRef}
-      className={styles.minimizedCall}
+      className={styles.dock}
       style={style}
       tabIndex={-1}
       dialogAriaLabel={minimizedDialogAriaLabel}
@@ -79,7 +79,7 @@ export function DirectCallActiveMinimized({
         <AvatarSummaryButton
           ref={activeMinimizedSummaryRef}
           onClick={onOpenDetails}
-          className={styles.minimizedSummary}
+          className={styles.dockSummary}
           avatarLabel={peerDisplayName}
           avatarInitials={peerInitials}
           primaryText={peerDisplayName}
@@ -88,10 +88,10 @@ export function DirectCallActiveMinimized({
         />
       )}
       actions={(
-        <div className={styles.minimizedActions}>
+        <div className={styles.dockActions}>
           <IconButton
             onClick={onToggleMute}
-            className={styles.minimizedBtn}
+            className={styles.dockBtn}
             size={38}
             active={muted}
             aria-label={muteAriaLabel}
@@ -101,7 +101,7 @@ export function DirectCallActiveMinimized({
           </IconButton>
           <IconButton
             onClick={onOpenDetails}
-            className={styles.minimizedBtn}
+            className={styles.dockBtn}
             size={38}
             aria-label={expandAriaLabel}
           >
@@ -109,7 +109,7 @@ export function DirectCallActiveMinimized({
           </IconButton>
           <IconButton
             onClick={onHangup}
-            className={styles.minimizedBtn}
+            className={styles.dockBtn}
             size={38}
             tone="danger"
             aria-label={endAriaLabel}

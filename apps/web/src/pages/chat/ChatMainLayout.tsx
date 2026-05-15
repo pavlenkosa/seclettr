@@ -1,4 +1,5 @@
 import { memo, type ReactNode } from "react";
+import { useI18n } from "@/i18n";
 import motionStyles from "@/components/ui/motion/Motion.module.css";
 import { useAnimatedPresence } from "@/lib/hooks";
 import { ChatMobileShell } from "./ChatMobileShell";
@@ -26,6 +27,7 @@ export const ChatMainLayout = memo(function ChatMainLayout({
   startResize: ReturnType<typeof useSidebarResize>["startResize"];
   resetWidth: ReturnType<typeof useSidebarResize>["resetWidth"];
 }) {
+  const { t } = useI18n();
   const settingsPresence = useAnimatedPresence({
     isOpen: showSettings,
     durationMs: 180,
@@ -52,7 +54,7 @@ export const ChatMainLayout = memo(function ChatMainLayout({
         onPointerDown={startResize}
         onDoubleClick={resetWidth}
         aria-hidden="true"
-        title="Drag to resize · Double-click to reset"
+        title={t("chat.layout.resizerTitle")}
       />
       <main className={styles.main}>
         {threadPane}

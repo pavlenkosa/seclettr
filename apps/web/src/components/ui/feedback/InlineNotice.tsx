@@ -15,6 +15,7 @@ export interface InlineNoticeProps extends Readonly<HTMLAttributes<HTMLDivElemen
 /**
  * Shared compact notice surface for inline hints, transport warnings, and
  * lightweight overlay messages that should stay on the same flat system.
+ * Choose it for in-flow feedback near the owning UI; do not use it as a page banner or as a replacement for modal/destructive confirmation flows.
  */
 export function InlineNotice({
   tone = "info",

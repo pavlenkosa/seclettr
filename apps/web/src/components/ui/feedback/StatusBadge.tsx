@@ -21,6 +21,7 @@ export interface StatusBadgeProps extends Readonly<HTMLAttributes<HTMLSpanElemen
 /**
  * Shared inline status badge for security labels, call state pills, and small
  * meta chips. Keep semantic state in the parent and pass only the resolved tone.
+ * Choose it for resolved semantic state with tone meaning; prefer LabelPill for passive tags and narrow primitives such as SecurityModeBadge or MessageDeliveryStatusIcon for domain-specific states.
  */
 export function StatusBadge({
   tone = "neutral",

@@ -123,9 +123,10 @@
 
 .searchClear {
   position: absolute;
-  top: 50%;
+  top: 0;
+  bottom: 0;
   right: 0.5rem;
-  transform: translateY(-50%);
+  margin-block: auto;
   --icon-button-color-base: var(--text-secondary);
   --icon-button-bg-base: transparent;
   --icon-button-border-base: transparent;

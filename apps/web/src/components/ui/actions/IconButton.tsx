@@ -18,6 +18,7 @@ export interface IconButtonProps extends ButtonHTMLAttributes<HTMLButtonElement>
 /**
  * Shared circular icon-only button for toolbars, headers, and floating controls.
  * Visual variants are controlled through CSS variables plus the tone and active props.
+ * Choose it when the action is communicated by icon plus accessible label alone; prefer PillButton when visible text carries the action meaning.
  */
 export const IconButton = forwardRef<HTMLButtonElement, IconButtonProps>(function IconButton(
   {

@@ -30,6 +30,7 @@ export interface SegmentedControlProps<T extends string> {
 /**
  * Shared segmented switch for settings panels and compact toolbar choices.
  * It stays domain-agnostic and only renders the interaction pattern.
+ * Choose it for short mutually exclusive options visible at once; do not use it for long lists or cases better served by SelectField/Listbox.
  */
 export function SegmentedControl<T extends string>({
   value,

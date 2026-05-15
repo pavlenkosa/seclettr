@@ -6,6 +6,7 @@ import {
   type ReactNode,
   type Ref,
 } from "react";
+import { IconClose } from "../icons";
 import motionStyles from "@/components/ui/motion/Motion.module.css";
 import styles from "./ModalShell.module.css";
 
@@ -105,14 +106,7 @@ function ModalShellInner(
               className={`${styles.closeButton} ${closeButtonClassName}`.trim()}
               aria-label={closeAriaLabel}
             >
-              <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-                <path
-                  d="M3 3l10 10M13 3L3 13"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                />
-              </svg>
+              <IconClose strokeWidth={2} />
             </button>
           </div>
         </header>
@@ -125,7 +119,10 @@ function ModalShellInner(
 }
 
 /**
- * Shared modal frame with overlay, header, close button, and body/footer slots.
- * It owns the generic dialog shell only and should not absorb domain-specific logic.
+ * Shared modal or sheet frame with overlay, header, close button, and body/footer slots.
+ * It owns the generic dialog a11y/close contract only and should not absorb domain-specific logic.
+ * Choose it for standard framed overlays that can stack with the rest of the app modal system.
+ * Do not treat it as a replacement for `CallPanelShell`; fullscreen call surfaces with media-first,
+ * minimize/dock, or runtime-adjacent call semantics should stay on the call-specific shell.
  */
 export const ModalShell = forwardRef<HTMLElement, ModalShellProps>(ModalShellInner);

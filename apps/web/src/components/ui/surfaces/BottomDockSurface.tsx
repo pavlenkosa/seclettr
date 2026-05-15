@@ -8,6 +8,7 @@ type BottomDockSurfaceTag = "div" | "nav";
  * Shared mobile bottom-dock shell used by chat and other compact mobile surfaces.
  * It owns the flat dock spacing and placement modes while feature modules provide
  * only the dock content.
+ * Choose it for bottom-aligned mobile shells in inline or overlay placement; prefer FloatingDock for draggable minimized call surfaces.
  */
 export interface BottomDockSurfaceProps extends Readonly<Omit<HTMLAttributes<HTMLElement>, "children">> {
   readonly as?: BottomDockSurfaceTag;

@@ -1,7 +1,7 @@
 import type { DirectCallMediaEncryptionMode } from "@/calls/direct/model/call-media-encryption-negotiation";
 import { CallSecurityCard } from "./CallSecurityCard";
 import { ShieldIcon } from "@/calls/shared/presentation/CallIcons";
-import { PillButton, SecurityModeBadge, StatusBadge } from "@/components/ui";
+import { PillButton, SecurityModeBadge, StatusBadge, SurfacePanel } from "@/components/ui";
 
 import styles from "@/calls/direct/presentation/DirectCallPanel.module.css";
 
@@ -38,7 +38,12 @@ export function DirectCallSecurityPanel({
 
   return (
     <div className={styles.securityPanel}>
-      <div className={styles.securityPanelShell}>
+      <SurfacePanel
+        className={styles.securityPanelShell}
+        tone="default"
+        padding="md"
+        radius="xl"
+      >
         <div className={styles.securitySummaryRow}>
           <div className={styles.securityHeaderText}>
             <div className={styles.securityBadgeGroup}>
@@ -79,7 +84,7 @@ export function DirectCallSecurityPanel({
             />
           </div>
         ) : null}
-      </div>
+      </SurfacePanel>
     </div>
   );
 }

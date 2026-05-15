@@ -1,3 +1,5 @@
+import { IconClose } from "@/components/ui";
+
 export function PhoneIcon() {
   return (
     <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden="true">
@@ -88,11 +90,7 @@ export function ExpandIcon() {
 }
 
 export function CloseIcon() {
-  return (
-    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-      <path d="M3 3l10 10M13 3 3 13" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" />
-    </svg>
-  );
+  return <IconClose />;
 }
 
 export function FocusIcon() {

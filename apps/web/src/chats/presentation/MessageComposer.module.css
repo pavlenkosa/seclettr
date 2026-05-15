@@ -1,4 +1,15 @@
+/*
+ * Ownership map
+ * - Feature-local: composer layout, textarea sizing, emoji picker composition,
+ *   recorder surfaces, and responsive tuning.
+ * - Migrated: wrappers that only theme shared IconButton / PillButton / InlineNotice.
+ * - Reusable: lift later. Circular action/send shells still express a local
+ *   control language and should not move until a shared composer-action contract exists.
+ */
+
 /* ── Composer shell ─────────────────────────────────────────────────────── */
+
+/* Feature-local: shell layout, safe-area spacing, and input surface geometry. */
 
 .composer {
   position: relative;
@@ -44,6 +55,8 @@
 
 /* ── Fullscreen video recording overlay ─────────────────────────────────── */
 
+/* Feature-local: fullscreen recording mode backdrop and copy layout. */
+
 .videoRecordingOverlay {
   position: fixed;
   inset: 0;
@@ -56,7 +69,7 @@
   justify-content: center;
   gap: 1rem;
   padding: 1.4rem 1rem calc(8.6rem + var(--safe-bottom));
-  background: #020617;
+  background: color-mix(in srgb, var(--bg-primary) 82%, var(--surface-shell-strong));
   /* A solid dark background keeps recording mode predictable over messages. */
 }
 
@@ -82,7 +95,7 @@
   font-size: clamp(1rem, 1.4vw + 0.78rem, 1.28rem);
   font-weight: 700;
   line-height: 1.16;
-  color: #f8fbff;
+  color: var(--text-primary);
 }
 
 .videoRecordingOverlayCircle {
@@ -98,12 +111,11 @@
   border-radius: 50%;
   display: none;
 }
-
 .videoRecordingOverlayCircle .recordingVideoShell {
   width: min(72vw, 320px);
   height: min(72vw, 320px);
   border-width: 1px;
-  border-color: rgb(255 255 255 / 0.16);
+  border-color: color-mix(in srgb, var(--text-primary) 16%, transparent);
 }
 
 .videoRecordingOverlayCircle .recordingVideoTimeBadge {
@@ -122,12 +134,12 @@
   text-align: center;
   font-size: 0.82rem;
   line-height: 1.2;
-  color: #e2ecf8;
+  color: var(--text-secondary);
 }
 
 .videoRecordingOverlayFooterStrong {
   font-variant-numeric: tabular-nums;
-  color: #ffffff;
+  color: var(--text-primary);
 }
 
 .videoRecordingOverlayControls {
@@ -142,6 +154,7 @@
   pointer-events: auto;
 }
 
+/* Reusable: lift later. Overlay action shells mirror the local composer control system. */
 .videoRecordingOverlayCancelBtn,
 .videoRecordingOverlayStopBtn {
   width: 54px;
@@ -160,11 +173,12 @@
 }
 
 .videoRecordingOverlayCancelBtn {
-  color: #d5e4f8;
-  border-color: rgb(174 193 217 / 0.36);
-  background: rgb(15 23 42 / 0.94);
+  color: var(--icon-btn-color);
+  border-color: color-mix(in srgb, var(--panel-border-soft) 92%, transparent);
+  background: color-mix(in srgb, var(--surface-shell-strong) 94%, var(--bg-primary));
 }
 
+/* Feature-local exception: there is no shared on-danger token for icon contrast yet. */
 .videoRecordingOverlayStopBtn {
   color: #fff;
   border-color: color-mix(in srgb, var(--danger) 44%, transparent);
@@ -172,8 +186,8 @@
 }
 
 .videoRecordingOverlayCancelBtn:hover {
-  background: rgb(30 41 59 / 0.96);
-  border-color: rgb(203 213 225 / 0.48);
+  background: var(--icon-btn-hover-bg);
+  border-color: color-mix(in srgb, var(--accent) 24%, transparent);
 }
 
 .videoRecordingOverlayStopBtn:hover {
@@ -181,6 +195,7 @@
   border-color: color-mix(in srgb, var(--danger) 58%, transparent);
 }
 
+/* Feature-local: textarea sizing and inline composition inside the shell. */
 .textField {
   flex: 1;
   min-width: 0;
@@ -224,10 +239,7 @@
   color: color-mix(in srgb, var(--text-secondary) 84%, var(--text-muted));
 }
 
-/* In light theme the default overlay background is too transparent, making the
-   hard-coded white text invisible. Use a much darker gradient so the overlay
-   always reads as a distinct recording surface regardless of theme. */
-/* Light theme: use the app's own background so the overlay feels native. */
+/* Feature-local: light theme overlay follows app background instead of chat content. */
 :global(:root[data-theme="light"]) .videoRecordingOverlay {
   background: var(--bg-primary);
 }
@@ -248,12 +260,14 @@
   color: var(--text-primary);
 }
 
+/* Feature-local: DOM-only bridge for attachment capture. */
 .hiddenInput {
   display: none;
 }
 
 /* ── Idle composer controls / emoji rail ────────────────────────────────── */
 
+/* Feature-local: emoji trigger positioning and dock alignment. */
 .emojiShell {
   position: relative;
   flex-shrink: 0;
@@ -261,6 +275,7 @@
   min-inline-size: 0;
 }
 
+/* Migrated: shared IconButton wrapper for secondary composer actions. */
 .secondaryBtn {
   align-self: center;
   --icon-button-size: 40px;
@@ -268,6 +283,7 @@
   --icon-button-shadow-hover-base: none;
 }
 
+/* Feature-local: primary dock alignment only. */
 .primaryDock {
   position: relative;
   display: inline-flex;
@@ -293,6 +309,7 @@
   justify-content: center;
 }
 
+/* Feature-local: ephemeral hint copy above the record-mode switch. */
 .recordHint {
   position: absolute;
   left: 50%;
@@ -311,6 +328,7 @@
   pointer-events: none;
 }
 
+/* Migrated: shared PillButton with composer-specific density and tone overrides. */
 .recordModeChip {
   min-height: 34px;
   padding-inline: 0.72rem;
@@ -337,6 +355,7 @@
   color: color-mix(in srgb, var(--accent) 84%, white 8%);
 }
 
+/* Migrated: shared IconButton wrapper for recording cancel. */
 .recordCancelButton {
   align-self: center;
   --icon-button-size: 40px;
@@ -344,6 +363,7 @@
   --icon-button-shadow-hover-base: none;
 }
 
+/* Reusable: lift later. Circular action shells still duplicate control language. */
 .actionBtn {
   background: color-mix(in srgb, var(--icon-btn-bg) 96%, transparent);
   color: var(--icon-btn-color);
@@ -388,6 +408,7 @@
   line-height: 1;
 }
 
+/* Feature-local: emoji picker chrome and dense interaction layout. */
 .emojiPicker {
   position: absolute;
   left: 0;
@@ -569,6 +590,9 @@
   padding: 0.7rem;
 }
 
+/* ── Recorder UI / primary actions ──────────────────────────────────────── */
+
+/* Reusable: lift later. Record/send shells stay local until a shared composer action contract exists. */
 .recordBtn {
   background: color-mix(in srgb, var(--icon-btn-bg) 96%, transparent);
   color: var(--text-secondary);
@@ -609,6 +633,7 @@
   border-color: var(--danger-soft-border);
 }
 
+/* Feature-local exception: send affordance still needs a dedicated on-accent token. */
 .sendBtn {
   background: var(--accent);
   color: #fff;
@@ -644,6 +669,7 @@
   border: 1px solid color-mix(in srgb, var(--icon-btn-border) 92%, transparent);
 }
 
+/* Feature-local exception: recording CTA shares the same missing on-danger token. */
 .sendBtnRecording {
   background: color-mix(in srgb, var(--danger) 86%, black 14%);
   color: #fff;
@@ -659,6 +685,7 @@
   display: block;
 }
 
+/* Feature-local: recorder stage layout, live waveform, and media preview affordances. */
 .recordingSurface {
   flex: 1;
   min-width: 0;
@@ -789,7 +816,7 @@
   position: absolute;
   inset: 0;
   border-radius: 50%;
-  border: 1px solid rgb(255 255 255 / 0.18);
+  border: 1px solid color-mix(in srgb, var(--text-primary) 18%, transparent);
   pointer-events: none;
 }
 
@@ -804,8 +831,8 @@
   margin-inline: auto;
   padding: 0.14rem 0.46rem;
   border-radius: 999px;
-  background: rgb(2 6 23 / 0.62);
-  color: #f8fafc;
+  background: color-mix(in srgb, var(--bg-primary) 74%, transparent);
+  color: var(--text-primary);
   font-size: 0.68rem;
   line-height: 1.1;
   font-variant-numeric: tabular-nums;
@@ -879,6 +906,7 @@
 
 /* ── Reply / feedback surfaces ──────────────────────────────────────────── */
 
+/* Feature-local: reply context shell around shared thread metadata. */
 .replyPreview {
   display: flex;
   align-items: center;
@@ -930,12 +958,14 @@
   --icon-button-color-hover-base: var(--text-primary);
 }
 
+/* Migrated: InlineNotice already owns the error surface language. */
 .errorNotice {
   margin-top: 0.5rem;
 }
 
 /* ── Responsive adjustments ─────────────────────────────────────────────── */
 
+/* Feature-local: mobile density, keyboard-safe spacing, and recorder compaction. */
 @media (max-width: 760px) {
   .composer {
     margin-top: 0.22rem;
@@ -1227,6 +1257,7 @@
   }
 }
 
+/* Feature-local: motion reduction for composer-only affordances. */
 @media (prefers-reduced-motion: reduce) {
   .composer,
   .inner,
@@ -1254,6 +1285,7 @@
   }
 }
 
+/* Feature-local: pulse animation belongs to live recording feedback only. */
 @keyframes recordingPulse {
   0%,
   100% {

@@ -13,6 +13,7 @@ export interface MessageDeliveryStatusIconProps {
 
 /**
  * Compact icon set for message delivery states.
+ * Choose it only for outgoing message transport states; do not reuse it as a generic status badge or arbitrary timeline indicator.
  */
 export function MessageDeliveryStatusIcon({ status, size = 14 }: MessageDeliveryStatusIconProps) {
   if (status === "sending") {

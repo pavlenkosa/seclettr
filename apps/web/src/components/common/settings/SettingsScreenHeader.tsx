@@ -1,4 +1,4 @@
-import { HeaderBar, IconButton } from "@/components/ui";
+import { HeaderBar, IconButton, IconClose } from "@/components/ui";
 import styles from "../SettingsScreen.module.css";
 
 interface SettingsScreenHeaderProps {
@@ -45,7 +45,7 @@ export function SettingsScreenHeader({
             onClick={onClose}
             aria-label={closeLabel}
           >
-            <CloseIcon />
+            <IconClose size={18} strokeWidth={1.8} />
           </IconButton>
         ) : null}
       />
@@ -57,14 +57,6 @@ function BackIcon() {
   return (
     <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true">
       <path d="M12.5 4.5 7 10l5.5 5.5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-  );
-}
-
-function CloseIcon() {
-  return (
-    <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden="true">
-      <path d="M4 4l10 10M14 4 4 14" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
     </svg>
   );
 }

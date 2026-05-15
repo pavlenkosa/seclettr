@@ -14,6 +14,7 @@ export interface IconPillProps extends Readonly<HTMLAttributes<HTMLSpanElement>>
 /**
  * Shared icon-plus-label pill for compact contextual labels such as call mode,
  * media type, and floating toolbar states.
+ * Choose it when the icon meaning is part of the label; prefer LabelPill when the text tag stands on its own without icon semantics.
  */
 export function IconPill({
   icon,

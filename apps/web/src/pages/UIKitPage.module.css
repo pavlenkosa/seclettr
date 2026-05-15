@@ -183,6 +183,110 @@
   gap: 1rem;
 }
 
+.a11yLead {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 0.82rem;
+  line-height: 1.55;
+}
+
+.a11yGrid {
+  display: grid;
+  gap: 0.9rem;
+}
+
+.a11yCard {
+  display: grid;
+  gap: 0.8rem;
+  padding: 0.88rem;
+  border-radius: 16px;
+  border: 1px solid color-mix(in srgb, var(--panel-border-soft) 92%, transparent);
+  background: color-mix(in srgb, var(--surface-shell-strong) 96%, transparent);
+}
+
+.a11yHeader {
+  display: grid;
+  gap: 0.28rem;
+}
+
+.a11yHeader strong {
+  color: var(--text-primary);
+  font-size: 0.88rem;
+}
+
+.a11yHeader p,
+.a11yNote,
+.a11yModalText {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 0.76rem;
+  line-height: 1.5;
+}
+
+.a11yStates {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.72rem;
+}
+
+.a11yState {
+  display: grid;
+  gap: 0.42rem;
+  min-width: 0;
+}
+
+.a11yStateLabel {
+  color: var(--text-secondary);
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.a11yStatePreview {
+  min-height: 72px;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 0.5rem;
+  min-width: 0;
+}
+
+.a11yKeys {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.a11yKey {
+  display: inline-flex;
+  align-items: center;
+  min-height: 24px;
+  padding: 0 0.46rem;
+  border-radius: 999px;
+  border: 1px solid color-mix(in srgb, var(--panel-border-soft) 88%, transparent);
+  background: color-mix(in srgb, var(--surface-shell) 92%, transparent);
+  color: var(--text-primary);
+  font-size: 0.69rem;
+  font-weight: 650;
+}
+
+.a11yStaticNote {
+  color: var(--text-secondary);
+  font-size: 0.76rem;
+  line-height: 1.45;
+}
+
+.a11yEmoji {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1rem;
+  color: var(--text-secondary);
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
 .themeCard {
   --theme-bg: var(--bg-primary);
   --theme-surface: var(--surface-shell);
@@ -459,6 +563,10 @@
   .formGrid,
   .callExampleGrid {
     grid-template-columns: minmax(0, 1fr);
+  }
+
+  .a11yStates {
+    grid-template-columns: 1fr;
   }
 }
 

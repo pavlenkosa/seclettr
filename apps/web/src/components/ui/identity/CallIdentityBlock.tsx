@@ -34,6 +34,7 @@ export interface CallIdentityBlockProps extends Readonly<Omit<HTMLAttributes<HTM
  * Shared identity block for call surfaces that combine an avatar or icon
  * marker with a compact title/meta stack. It supports both stacked incoming
  * layouts and inline notice layouts without duplicating the text structure.
+ * Choose it for call-oriented identity composition; prefer AvatarSummaryButton for minimized clickable summaries and InfoStack when only the text hierarchy is needed.
  */
 export function CallIdentityBlock({
   leading = null,

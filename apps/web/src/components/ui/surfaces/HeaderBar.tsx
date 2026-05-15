@@ -17,6 +17,7 @@ export interface HeaderBarProps extends Readonly<HTMLAttributes<HTMLElement>> {
 /**
  * Shared three-slot header shell for call overlays and panel headers that need
  * balanced leading, centered, and trailing content.
+ * Choose it for compact header composition with stable slot ownership; do not use it as a full page layout system or a replacement for EntityRow.
  */
 export function HeaderBar({
   as: Component = "div",

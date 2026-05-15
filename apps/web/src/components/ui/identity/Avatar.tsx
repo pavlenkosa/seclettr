@@ -68,6 +68,7 @@ function toInitials(label: string): string {
 /**
  * Shared initials-based avatar for lists, headers, and call surfaces.
  * It intentionally renders a stable visual fallback instead of loading images.
+ * Choose it as the visual identity token; pair it with InfoStack, EntityRow, or CallIdentityBlock instead of turning Avatar itself into a summary component.
  */
 export function Avatar({
   label,

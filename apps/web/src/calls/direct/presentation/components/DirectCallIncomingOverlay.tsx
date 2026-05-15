@@ -1,7 +1,7 @@
 import type { RefObject } from "react";
 import { CallControlButton } from "@/calls/shared/presentation/CallControlButton";
 import { CameraIcon, HangupIcon, MinimizeIcon, PhoneIcon } from "@/calls/shared/presentation/CallIcons";
-import { Avatar, HeaderBar, IconButton, IconPill } from "@/components/ui";
+import { Avatar, HeaderBar, IconButton, IconPill, InfoStack } from "@/components/ui";
 
 import styles from "@/calls/direct/presentation/DirectCallPanel.module.css";
 
@@ -86,10 +86,14 @@ export function DirectCallIncomingOverlay({
             ariaHidden
           />
         </div>
-        <div className={styles.incomingInfo}>
-          <span className={styles.incomingName}>{incomingPeerDisplayName}</span>
-          <span className={styles.incomingRingLabel}>{ringingLabel}</span>
-        </div>
+        <InfoStack
+          className={styles.incomingInfo}
+          align="center"
+          title={incomingPeerDisplayName}
+          meta={ringingLabel}
+          titleClassName={styles.incomingName}
+          metaClassName={styles.incomingRingLabel}
+        />
       </div>
 
       <div className={`${styles.controlsDock} ${styles.incomingControlsDock}`}>

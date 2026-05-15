@@ -24,6 +24,7 @@ export interface PillButtonProps extends ButtonHTMLAttributes<HTMLButtonElement>
  * Shared rounded action button for compact CTA patterns. It keeps chip-like
  * buttons, small member actions, and secondary modal controls on one
  * interaction recipe while respecting the flat surface system.
+ * Choose it for compact labeled actions; prefer IconButton for icon-only affordances, and do not document loading unless the primitive gets a real loading contract.
  */
 export const PillButton = forwardRef<HTMLButtonElement, PillButtonProps>(function PillButton(
   {

@@ -1,3 +1,16 @@
+/*
+ * Ownership map
+ * - Feature-local: incoming/fullscreen/minimized direct-call layout, stage aspect ratios,
+ *   security-card composition, floating preview drag/resize shells, and responsive tuning.
+ * - Migrated: wrappers that only tune shared FloatingDock, IconButton, IconPill,
+ *   HeaderBar, CallControlsDock, and CallControlButton contracts.
+ * - Reusable: lift later. Stage action chips and preview action shells still express
+ *   direct-call-specific chrome and should move only after direct/group/room parity hardens.
+ */
+
+/* ── Motion + notice layer ──────────────────────────────────────────────── */
+
+/* Feature-local: incoming pulse and direct-call entrance timing. */
 @keyframes incomingRingPulse {
   0% {
     opacity: 0.6;
@@ -54,6 +67,7 @@
   z-index: 320;
 }
 
+/* Migrated: InlineNotice owns the surface language; this class only positions it. */
 .notice {
   pointer-events: auto;
   min-width: 220px;
@@ -61,9 +75,12 @@
   animation: noticeIn 180ms cubic-bezier(0.18, 0.9, 0.2, 1) both;
 }
 
+/* ── Incoming direct-call overlay ───────────────────────────────────────── */
+
+/* Feature-local: incoming fullscreen arrangement and ringing emphasis. */
 .incomingOverlay {
   justify-content: space-between;
-  background: color-mix(in srgb, var(--bg-primary) 96%, #091222);
+  background: color-mix(in srgb, var(--bg-primary) 96%, var(--surface-shell-strong));
 }
 
 .incomingCenter {
@@ -136,16 +153,20 @@
   gap: 1rem;
 }
 
-.minimizedCall {
+/* ── Minimized direct-call dock ─────────────────────────────────────────── */
+
+/* Migrated: FloatingDock and AvatarSummaryButton own the minimized dock language. */
+.dock {
   --floating-dock-z-index: 270;
   --floating-dock-bottom-offset: 10px;
   /* Default to bottom-right — avoids center-covering the composer */
   --floating-dock-left: auto;
   --floating-dock-right: clamp(0.75rem, 2vw, 1.5rem);
+  /* Functional exception: dock position uses translate variables for drag/rest placement. */
   --floating-dock-translate-x: 0;
 }
 
-.minimizedSummary {
+.dockSummary {
   --avatar-summary-padding: 0.38rem 0.46rem;
   --avatar-summary-radius: 12px;
   --avatar-summary-avatar-size: 34px;
@@ -154,16 +175,19 @@
   --avatar-summary-subtitle-size: 0.69rem;
 }
 
-.minimizedActions {
+.dockActions {
   display: inline-flex;
   align-items: center;
   gap: 0.34rem;
 }
 
-.minimizedBtn {
+.dockBtn {
   --icon-button-size: 38px;
 }
 
+/* ── Active fullscreen overlay shell ────────────────────────────────────── */
+
+/* Feature-local: fullscreen shell, safe-area padding, and scroll behavior. */
 .callOverlay {
   position: fixed;
   inset: 0;
@@ -188,7 +212,7 @@
     calc(env(safe-area-inset-top, 0px) + 18px)
     clamp(0.9rem, 1.5vw, 1.4rem)
     calc(env(safe-area-inset-bottom, 0px) + 22px);
-  background: color-mix(in srgb, var(--bg-primary) 96%, #07101d);
+  background: color-mix(in srgb, var(--bg-primary) 96%, var(--surface-shell-strong));
   animation: callSurfaceIn 220ms cubic-bezier(0.18, 0.9, 0.2, 1) both;
 }
 
@@ -235,6 +259,9 @@
   --icon-pill-gap: 0.425rem;
 }
 
+/* ── Stage shell + security surfaces ────────────────────────────────────── */
+
+/* Feature-local: stage sizing, source switching, and security composition. */
 .callCenter {
   position: relative;
   z-index: 2;
@@ -316,7 +343,7 @@
 
 .callStageScreen .stageVideo {
   object-fit: contain;
-  background: rgb(7 12 24 / 0.92);
+  background: color-mix(in srgb, var(--bg-primary) 92%, var(--surface-shell-strong));
 }
 
 .stagePlaceholder {
@@ -360,6 +387,7 @@
   justify-content: flex-end;
 }
 
+/* Reusable: lift later. Stage action shells overlap with compact call-control language. */
 .stageActionBtn {
   min-height: 34px;
   padding: 0 0.7rem;
@@ -405,6 +433,7 @@
   width: var(--direct-call-audio-ring-size);
   aspect-ratio: 1 / 1;
   border-radius: 999px;
+  /* Functional exception: active-audio ring is a real speaking-state cue, not decorative glow. */
   border: 2px solid color-mix(in srgb, var(--accent) 58%, transparent);
   background: transparent;
   opacity: 1;
@@ -418,8 +447,9 @@
   background: transparent;
 }
 
+/* Feature-local exception: primary stage text must stay high-contrast over live media. */
 .peerName {
-  color: #f8fafc;
+  color: var(--text-primary);
   font-weight: 700;
   font-size: clamp(0.94rem, 1.6vw, 1.12rem);
   letter-spacing: -0.008em;
@@ -428,7 +458,7 @@
 }
 
 .callState {
-  color: rgb(226 232 240 / 0.92);
+  color: var(--text-secondary);
   font-size: 0.78rem;
   font-variant-numeric: tabular-nums;
 }
@@ -439,11 +469,11 @@
 }
 
 :global(:root[data-theme="light"]) .stageMeta {
-  background: rgb(15 23 42 / 0.16);
+  background: color-mix(in srgb, var(--panel-header-bg) 18%, transparent);
 }
 
 :global(:root[data-theme="light"]) .peerName {
-  color: color-mix(in srgb, var(--text-primary) 92%, #0b1320);
+  color: var(--text-primary);
 }
 
 :global(:root[data-theme="light"]) .callState {
@@ -464,10 +494,6 @@
   display: flex;
   flex-direction: column;
   gap: 0.46rem;
-  padding: 0.8rem;
-  border-radius: 28px;
-  border: 1px solid color-mix(in srgb, var(--panel-border-soft) 74%, transparent);
-  background: color-mix(in srgb, var(--surface-shell) 96%, var(--surface-float));
 }
 
 .securitySummaryRow {
@@ -592,6 +618,9 @@
   padding: 0.35rem 0.45rem;
 }
 
+/* ── Floating previews + local preview actions ──────────────────────────── */
+
+/* Feature-local: draggable local previews and companion media windows. */
 .remoteCompanionPreview,
 .localPreview,
 .localScreenPreview {
@@ -615,7 +644,7 @@
 }
 
 .remoteCompanionPreview:focus-visible {
-  outline: 2px solid color-mix(in srgb, var(--accent) 72%, #fff);
+  outline: 2px solid var(--accent);
   outline-offset: 2px;
 }
 
@@ -630,7 +659,7 @@
 
 .remoteCompanionPreviewScreen video {
   object-fit: contain;
-  background: rgb(7 12 24 / 0.92);
+  background: color-mix(in srgb, var(--bg-primary) 92%, var(--surface-shell-strong));
 }
 
 .localPreview {
@@ -700,6 +729,7 @@
   z-index: 1;
 }
 
+/* Reusable: lift later. Preview action shells are still direct-call-specific. */
 .localPreviewAction {
   position: absolute;
   top: 0.38rem;
@@ -726,7 +756,7 @@
 }
 
 .localPreviewAction:focus-visible {
-  outline: 2px solid color-mix(in srgb, var(--accent) 72%, #fff);
+  outline: 2px solid var(--accent);
   outline-offset: 2px;
 }
 
@@ -754,7 +784,7 @@
 }
 
 .localPreviewResizeHandle:focus-visible {
-  outline: 2px solid color-mix(in srgb, var(--accent) 72%, #fff);
+  outline: 2px solid var(--accent);
   outline-offset: 2px;
 }
 
@@ -788,6 +818,9 @@
   align-self: flex-start;
 }
 
+/* ── Controls dock + output strip ───────────────────────────────────────── */
+
+/* Migrated: CallControlsDock and CallControlButton own the primary control language. */
 
 .controlsDock {
   --call-controls-position: sticky;
@@ -823,6 +856,9 @@
   --call-control-inline-blur: 8px;
 }
 
+/* ── Responsive + reduced motion ────────────────────────────────────────── */
+
+/* Feature-local: viewport-specific stage, preview, and dock compaction. */
 @media (max-width: 760px) {
   .incomingPrompt {
     font-size: 0.6875rem;
@@ -846,7 +882,7 @@
     --icon-button-size: 32px;
   }
 
-  .minimizedCall {
+  .dock {
     --floating-dock-screen-gap: 0.75rem;
     --floating-dock-bottom-offset: 10px;
     --floating-dock-padding: 0.34rem;
@@ -854,7 +890,7 @@
     --floating-dock-radius: 13px;
   }
 
-  .minimizedSummary {
+  .dockSummary {
     --avatar-summary-padding: 0.32rem 0.38rem;
     --avatar-summary-radius: 10px;
     --avatar-summary-avatar-size: 30px;
@@ -863,7 +899,7 @@
     --avatar-summary-subtitle-size: 0.64rem;
   }
 
-  .minimizedBtn {
+  .dockBtn {
     --icon-button-size: 34px;
   }
 
@@ -991,9 +1027,10 @@
   }
 }
 
+/* Feature-local: motion reduction for direct-call-only entrance and preview transitions. */
 @media (prefers-reduced-motion: reduce) {
   .notice,
-  .minimizedCall,
+  .dock,
   .callOverlay,
   .callHeader,
   .callCenter,
@@ -1004,13 +1041,16 @@
   .localScreenPreview,
   .minimizeBtn,
   .minimizedDragHandle,
-  .minimizedBtn,
+  .dockBtn,
   .controlBtn {
     animation: none !important;
     transition: none !important;
   }
 }
 
+/* ── Header summary + security section tail ─────────────────────────────── */
+
+/* Feature-local: direct-call header copy and security section sizing. */
 .callHeaderSummary {
   min-width: 0;
   text-align: center;

@@ -25,6 +25,7 @@ function toVariantKey(value: string): string {
 /**
  * Shared flat panel surface. It centralizes border, tint, spacing, and radius
  * decisions so chat, calls, and settings stay on the same visual system.
+ * Choose it for reusable flat panel surfaces inside pages, dialogs, and previews; do not use it as a modal frame, dock shell, or row interaction primitive.
  */
 export function SurfacePanel({
   as: Component = "div",

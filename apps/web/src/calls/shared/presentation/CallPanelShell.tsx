@@ -10,8 +10,11 @@ interface CallPanelShellProps {
 }
 
 /**
- * Shared fullscreen call frame for direct, group, and room call surfaces.
- * Feature panels own their content; this component owns the modal shell.
+ * Shared fullscreen call frame for group and room call surfaces, plus other call-owned fullscreen shells.
+ * Feature panels own their content; this component only owns the call-specific fullscreen backdrop/panel shell.
+ * Choose it when the surface is a media-first call container with call runtime semantics such as sticky controls,
+ * stage/media layout, or minimized/dock adjacency.
+ * Do not use it as a general modal replacement; standard dialogs and sheets should stay on `ModalShell`.
  */
 export function CallPanelShell({
   ariaLabel,

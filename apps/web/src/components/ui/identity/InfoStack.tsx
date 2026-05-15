@@ -26,6 +26,7 @@ export interface InfoStackProps extends Readonly<Omit<HTMLAttributes<HTMLDivElem
 /**
  * Shared eyebrow-title-meta stack used by call surfaces, notices, and other
  * compact UI summaries that need consistent spacing and accessory alignment.
+ * Choose it for text hierarchy only; prefer CallIdentityBlock when the pattern includes call identity framing, and pair it with Avatar separately when a leading identity mark is needed.
  */
 export function InfoStack({
   eyebrow,

@@ -118,6 +118,7 @@ function CheckIcon() {
  * Fully-styled custom listbox that replaces native `<select>`.
  * Renders the dropdown list into a portal to avoid overflow/z-index clipping.
  * Supports full keyboard navigation and ARIA.
+ * Choose it when the option picker needs richer popup behavior or explicit custom keyboard treatment; prefer SelectField for simpler native selection flows.
  */
 export function Listbox({
   id,

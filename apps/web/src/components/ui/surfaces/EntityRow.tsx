@@ -86,6 +86,7 @@ function renderEntityRowContent({
  * Shared directory-style row for user results, member summaries, and compact
  * list entries. It centralizes spacing, typography hierarchy, and interactive
  * hover behavior so entity lists stay visually consistent across the app.
+ * Choose it for entity-like rows with leading identity and trailing meta/actions; do not use it as a generic panel shell or header layout.
  */
 export function EntityRow(props: EntityRowProps) {
   if (props.as === "div") {

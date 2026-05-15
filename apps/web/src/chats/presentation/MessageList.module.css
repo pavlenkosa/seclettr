@@ -1,3 +1,11 @@
+/* Ownership map
+   Feature-local: virtualized timeline spacing, plain/encrypted bubble boundary, media-group layouts,
+   voice/video note chrome, upload/decrypt overlays, reply-preview composition, inline-media metadata.
+   Migrated: wrappers around shared SurfacePanel, InlineNotice, MessageDeliveryStatusIcon, SecurityModeBadge.
+   Reusable: lift later. Bubble/media overlay language is still tightly coupled to message composition
+   and should be tagged here, not promoted into shared primitives in this corrective slice. */
+
+/* ── Timeline shell + empty states ────────────────────────────────────────── */
 .container {
   position: relative;
   isolation: isolate;
@@ -48,6 +56,9 @@
   display: block;
 }
 
+/* ── Loading skeletons ────────────────────────────────────────────────────── */
+/* Flattened from gradient shimmer to token pulse so the style guard stays truthful
+   while the loading state remains visually distinct and low-jitter. */
 /* Loading skeleton — shown while a thread's first-page history is being
    fetched. Mirrors the bubble layout (alternating sides, varied widths)
    so the transition to real content doesn't visually jolt. */
@@ -74,44 +85,34 @@
 }
 
 .skeletonBubble {
+  --message-skeleton-base: color-mix(in srgb, var(--surface-shell-strong) 88%, transparent);
+  --message-skeleton-peak: color-mix(in srgb, var(--surface-shell-strong) 76%, var(--accent));
   height: 38px;
   border-radius: 18px;
-  background: linear-gradient(
-    100deg,
-    color-mix(in srgb, var(--surface-shell-strong) 88%, transparent) 0%,
-    color-mix(in srgb, var(--surface-shell-strong) 76%, var(--accent)) 50%,
-    color-mix(in srgb, var(--surface-shell-strong) 88%, transparent) 100%
-  );
-  background-size: 200% 100%;
-  animation: messageSkeletonShimmer 1.6s ease-in-out infinite;
+  background: var(--message-skeleton-base);
+  animation: messageSkeletonPulse 1.6s ease-in-out infinite;
   max-width: 78%;
 }
 
 .skeletonRowOwn .skeletonBubble {
-  background: linear-gradient(
-    100deg,
-    color-mix(in srgb, var(--message-out-ui-soft) 80%, transparent) 0%,
-    color-mix(in srgb, var(--message-out-ui-soft) 64%, var(--accent)) 50%,
-    color-mix(in srgb, var(--message-out-ui-soft) 80%, transparent) 100%
-  );
-  background-size: 200% 100%;
+  --message-skeleton-base: color-mix(in srgb, var(--message-out-ui-soft) 80%, transparent);
+  --message-skeleton-peak: color-mix(in srgb, var(--message-out-ui-soft) 64%, var(--accent));
 }
 
-@keyframes messageSkeletonShimmer {
-  from { background-position: 100% 0; }
-  to   { background-position: -100% 0; }
+@keyframes messageSkeletonPulse {
+  0%,
+  100% { background-color: var(--message-skeleton-base); }
+  50%  { background-color: var(--message-skeleton-peak); }
 }
 
 @media (prefers-reduced-motion: reduce) {
   .skeletonBubble {
     animation: none;
-    background: color-mix(in srgb, var(--surface-shell-strong) 88%, transparent);
-  }
-  .skeletonRowOwn .skeletonBubble {
-    background: color-mix(in srgb, var(--message-out-ui-soft) 80%, transparent);
+    background: var(--message-skeleton-base);
   }
 }
 
+/* ── Date separators, timestamps, typing, and call-event rows ────────────── */
 .dateSeparator {
   display: flex;
   align-items: center;
@@ -228,6 +229,7 @@
   line-height: 1.25;
 }
 
+/* ── Bubble base, text, reply preview, and delivery meta ─────────────────── */
 .messageRow {
   display: flex;
   margin: 0.14rem 0;
@@ -468,6 +470,7 @@ button.quotedBubble {
   outline: 2px solid var(--focus-ring, currentColor);
 }
 
+/* ── Voice-note and decrypt states ────────────────────────────────────────── */
 .voiceNote {
   display: flex;
   flex-direction: column;
@@ -559,7 +562,7 @@ button.quotedBubble {
   justify-content: center;
   background: color-mix(in srgb, var(--surface-shell-strong) 82%, transparent);
   border: 1px solid color-mix(in srgb, var(--voice-decrypt-border) 92%, transparent);
-  color: var(--voice-decrypt-icon, #edf6ff);
+  color: var(--voice-decrypt-icon, var(--text-primary));
   flex-shrink: 0;
 }
 
@@ -1309,6 +1312,7 @@ button.quotedBubble {
   opacity: 1;
 }
 
+/* ── Upload overlays and progress chrome ─────────────────────────────────── */
 /* Inline media upload overlay */
 .inlineMediaUploadOverlay {
   position: absolute;
@@ -1489,9 +1493,8 @@ button.quotedBubble {
   background: rgb(2 6 23 / 0.22);
 }
 
-/* ──────────────────────────────────────────────
-   Media-only bubble: image fills edge-to-edge
-   ────────────────────────────────────────────── */
+/* ── Media-only bubbles and grouped media layouts ─────────────────────────── */
+/* Media-only bubble: image fills edge-to-edge */
 
 .mediaBubble {
   padding: 0;
@@ -1520,9 +1523,7 @@ button.quotedBubble {
   pointer-events: none;
 }
 
-/* ──────────────────────────────────────────────
-   Media group (album) grid
-   ────────────────────────────────────────────── */
+/* Media group (album) grid */
 
 .mediaGroup {
   display: grid;
@@ -1681,7 +1682,7 @@ button.quotedBubble {
   bottom: 0;
   right: 0;
   padding: 3px 7px 4px;
-  background: rgb(0 0 0 / 0.45);
+  background: color-mix(in srgb, var(--bg-primary) 45%, transparent);
   color: #fff;
   font-size: 0.68rem;
   font-weight: 600;
@@ -1699,7 +1700,7 @@ button.quotedBubble {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgb(0 0 0 / 0.55);
+  background: color-mix(in srgb, var(--bg-primary) 55%, transparent);
   color: #fff;
   font-size: 1.4rem;
   font-weight: 700;
@@ -1710,12 +1711,10 @@ button.quotedBubble {
 }
 
 .mediaGroupMore:hover {
-  background: rgb(0 0 0 / 0.65);
+  background: color-mix(in srgb, var(--bg-primary) 65%, transparent);
 }
 
-/* ──────────────────────────────────────────────
-   Inline image / video thumbnail attachment
-   ────────────────────────────────────────────── */
+/* Inline image / video thumbnail attachment */
 
 .inlineMedia {
   display: flex;
@@ -1748,7 +1747,7 @@ button.quotedBubble {
   bottom: 0;
   right: 0;
   padding: 3px 7px 4px;
-  background: rgb(0 0 0 / 0.45);
+  background: color-mix(in srgb, var(--bg-primary) 45%, transparent);
   border-radius: 0 0 14px 0;
   color: #fff;
   font-size: 0.68rem;
@@ -1783,6 +1782,7 @@ button.quotedBubble {
   object-fit: contain;
 }
 
+/* ── Inline-media placeholders, shimmer, and play affordances ────────────── */
 /* Placeholder shown before the actual media resolves. We don't know the
    real aspect ratio yet, so default to 4:3 — close to the typical phone
    photo and balanced for landscape video stills. The frame swaps out
@@ -1843,31 +1843,28 @@ button.quotedBubble {
   to { transform: rotate(360deg); }
 }
 
-/* Plain media resting placeholder — pulsing skeleton instead of the lock
-   glyph used for E2EE attachments. */
+/* Flattened from shimmer-gradient to token pulse so the guard stays truthful
+   while plain attachments still read as unresolved media. */
 .inlineMediaShimmer {
+  --inline-media-shimmer-base: color-mix(in srgb, var(--surface-shell-strong) 90%, transparent);
+  --inline-media-shimmer-peak: color-mix(in srgb, var(--surface-shell-strong) 78%, var(--accent));
   position: absolute;
   inset: 0;
-  background: linear-gradient(
-    100deg,
-    color-mix(in srgb, var(--surface-shell-strong) 90%, transparent) 0%,
-    color-mix(in srgb, var(--surface-shell-strong) 78%, var(--accent)) 50%,
-    color-mix(in srgb, var(--surface-shell-strong) 90%, transparent) 100%
-  );
-  background-size: 200% 100%;
-  animation: inlineMediaShimmer 1.6s ease-in-out infinite;
+  background: var(--inline-media-shimmer-base);
+  animation: inlineMediaPlaceholderPulse 1.6s ease-in-out infinite;
   border-radius: inherit;
 }
 
-@keyframes inlineMediaShimmer {
-  from { background-position: 100% 0; }
-  to   { background-position: -100% 0; }
+@keyframes inlineMediaPlaceholderPulse {
+  0%,
+  100% { background-color: var(--inline-media-shimmer-base); }
+  50%  { background-color: var(--inline-media-shimmer-peak); }
 }
 
 @media (prefers-reduced-motion: reduce) {
   .inlineMediaShimmer {
     animation: none;
-    background: color-mix(in srgb, var(--surface-shell-strong) 90%, transparent);
+    background: var(--inline-media-shimmer-base);
   }
 }
 
@@ -1909,7 +1906,7 @@ button.quotedBubble {
   }
 }
 
-/* ─────────────────────────────────────────── */
+/* ── Mobile density tuning ───────────────────────────────────────────────── */
 
 @media (max-width: 760px) {
   .container {

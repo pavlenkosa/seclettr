@@ -6,7 +6,7 @@ import {
   type ReactNode,
 } from "react";
 import type { InputDeviceOption } from "@/calls/shared/media/input-devices/useCallInputDevices";
-import { IconButton, SurfacePanel } from "@/components/ui";
+import { IconButton, IconClose, SurfacePanel } from "@/components/ui";
 import motionStyles from "@/components/ui/motion/Motion.module.css";
 import styles from "./CallDevicePicker.module.css";
 
@@ -31,14 +31,6 @@ function CheckIcon() {
   return (
     <svg width="12" height="12" viewBox="0 0 24 24" fill="none" aria-hidden="true">
       <path d="M5 13l4 4L19 7" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-  );
-}
-
-function CloseIcon() {
-  return (
-    <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-      <path d="M3 3l10 10M13 3 3 13" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
     </svg>
   );
 }
@@ -221,13 +213,13 @@ export function CallDevicePicker({
             <div className={styles.menuHeader}>
               <span className={styles.menuTitle}>{chevronAriaLabel}</span>
               <IconButton
-                className={styles.menuCloseBtn}
-                onClick={close}
-                aria-label={chevronAriaLabel}
-                size={34}
-              >
-                <CloseIcon />
-              </IconButton>
+              className={styles.menuCloseBtn}
+              onClick={close}
+              aria-label={chevronAriaLabel}
+              size={34}
+            >
+              <IconClose size={14} strokeWidth={1.8} />
+            </IconButton>
             </div>
             {hasMics && onSelectMic && (
               <DeviceSection

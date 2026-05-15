@@ -15,6 +15,7 @@ export interface LabelPillProps extends Readonly<HTMLAttributes<HTMLSpanElement>
 /**
  * Shared compact text pill for media labels, stage badges, and other small
  * non-interactive UI tags that do not need a full status or icon treatment.
+ * Choose it for passive text tags; prefer IconPill when the icon adds meaning, and prefer StatusBadge when the label communicates semantic product state.
  */
 export function LabelPill({
   tone = "default",

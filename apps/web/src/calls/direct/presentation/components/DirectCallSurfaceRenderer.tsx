@@ -1,5 +1,6 @@
 import type {
   CSSProperties,
+  ReactNode,
   PointerEventHandler,
   RefObject,
 } from "react";
@@ -268,22 +269,9 @@ export function DirectCallSurfaceRenderer({
     return null;
   }
 
-  return (
-    <>
-      {notice ? (
-        <div className={styles.noticeLayer} aria-live="polite">
-          <InlineNotice
-            className={styles.notice}
-            tone={notice.kind === "error" ? "error" : "info"}
-            size="md"
-            role="status"
-          >
-            {notice.message}
-          </InlineNotice>
-        </div>
-      ) : null}
-
-      {incoming && surface === "incoming-fullscreen" ? (
+  function renderSurfaceBranch(): ReactNode {
+    if (incoming && surface === "incoming-fullscreen") {
+      return (
         <DirectCallIncomingOverlay
           incomingOverlayRef={incomingOverlayRef}
           incomingCallType={incoming.callType}
@@ -301,9 +289,11 @@ export function DirectCallSurfaceRenderer({
           onAccept={onAccept}
           incomingAcceptButtonRef={incomingAcceptButtonRef}
         />
-      ) : null}
+      );
+    }
 
-      {incoming && surface === "incoming-minimized" ? (
+    if (incoming && surface === "incoming-minimized") {
+      return (
         <DirectCallIncomingMinimized
           minimizedDockRef={minimizedDockRef}
           isDraggingMinimizedDock={isDraggingMinimizedDock}
@@ -327,9 +317,11 @@ export function DirectCallSurfaceRenderer({
           onReject={onReject}
           onAccept={onAccept}
         />
-      ) : null}
+      );
+    }
 
-      {active && surface === "active-minimized" ? (
+    if (active && surface === "active-minimized") {
+      return (
         <DirectCallActiveMinimized
           minimizedDockRef={minimizedDockRef}
           remoteAudioRef={remoteAudioRef}
@@ -355,9 +347,11 @@ export function DirectCallSurfaceRenderer({
           onToggleMute={onToggleMute}
           onHangup={onHangup}
         />
-      ) : null}
+      );
+    }
 
-      {active && surface === "active-fullscreen" ? (
+    if (active && surface === "active-fullscreen") {
+      return (
         <DirectCallActiveOverlay
           activeOverlayRef={activeOverlayRef}
           remoteAudioRef={remoteAudioRef}
@@ -447,7 +441,28 @@ export function DirectCallSurfaceRenderer({
           localStream={localStream ?? null}
           cameraSenderRef={cameraSenderRef ?? { current: null }}
         />
+      );
+    }
+
+    return null;
+  }
+
+  return (
+    <>
+      {notice ? (
+        <div className={styles.noticeLayer} aria-live="polite">
+          <InlineNotice
+            className={styles.notice}
+            tone={notice.kind === "error" ? "error" : "info"}
+            size="md"
+            role="status"
+          >
+            {notice.message}
+          </InlineNotice>
+        </div>
       ) : null}
+
+      {renderSurfaceBranch()}
     </>
   );
 }

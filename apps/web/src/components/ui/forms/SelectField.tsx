@@ -15,6 +15,7 @@ export interface SelectFieldProps extends Omit<SelectHTMLAttributes<HTMLSelectEl
 /**
  * Shared native select shell for modal forms and compact settings controls.
  * It keeps borders, flat fills, and caret treatment aligned with InputField.
+ * Choose it first for simple bounded option sets with native semantics; prefer Listbox only when the product needs a custom popup interaction.
  */
 export const SelectField = forwardRef<HTMLSelectElement, SelectFieldProps>(function SelectField(
   {

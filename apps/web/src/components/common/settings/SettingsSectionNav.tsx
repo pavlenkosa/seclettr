@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import { useMemo, useRef, type KeyboardEvent, type ReactNode } from "react";
 import { EntityRow } from "@/components/ui";
 import styles from "../SettingsScreen.module.css";
 
@@ -25,10 +25,44 @@ export function SettingsSectionNav({
   ariaLabel,
   note,
 }: Readonly<SettingsSectionNavProps>) {
+  const navRef = useRef<HTMLElement | null>(null);
+  const activeIndex = useMemo(
+    () => Math.max(0, sections.findIndex((section) => section.id === activeSection)),
+    [activeSection, sections]
+  );
+
+  const focusSection = (index: number) => {
+    const button = navRef.current?.querySelector<HTMLButtonElement>(
+      `button[data-settings-section-index="${index}"]`
+    );
+    if (!button) return;
+    button.focus();
+  };
+
+  const handleKeyDown = (event: KeyboardEvent<HTMLButtonElement>, index: number) => {
+    let nextIndex: number | null = null;
+
+    if (event.key === "ArrowDown" || event.key === "ArrowRight") {
+      nextIndex = (index + 1) % sections.length;
+    } else if (event.key === "ArrowUp" || event.key === "ArrowLeft") {
+      nextIndex = (index - 1 + sections.length) % sections.length;
+    } else if (event.key === "Home") {
+      nextIndex = 0;
+    } else if (event.key === "End") {
+      nextIndex = sections.length - 1;
+    }
+
+    if (nextIndex === null || nextIndex === index) return;
+
+    event.preventDefault();
+    onSelect(sections[nextIndex]!.id);
+    focusSection(nextIndex);
+  };
+
   return (
     <>
-      <nav className={styles.sectionList} aria-label={ariaLabel}>
-        {sections.map((section) => {
+      <nav ref={navRef} className={styles.sectionList} aria-label={ariaLabel}>
+        {sections.map((section, index) => {
           const isActive = section.id === activeSection;
           return (
             <EntityRow
@@ -47,7 +81,10 @@ export function SettingsSectionNav({
               metaClassName={styles.sectionSummary}
               trailing={<span className={styles.sectionChevron} aria-hidden="true"><ChevronIcon /></span>}
               onClick={() => onSelect(section.id)}
+              onKeyDown={(event) => handleKeyDown(event, index)}
               aria-current={isActive ? "page" : undefined}
+              tabIndex={index === activeIndex ? 0 : -1}
+              data-settings-section-index={index}
             />
           );
         })}

@@ -51,6 +51,7 @@ function assignRef<TValue>(ref: ForwardedRef<TValue> | undefined, value: TValue 
  * Shared floating dock shell for minimized call surfaces.
  * It aligns drag handle, summary content, and trailing actions across direct
  * and group call UIs while keeping positioning adjustable via CSS variables.
+ * Choose it for draggable minimized call surfaces only; do not generalize it into a generic floating action or modal shell.
  */
 export const FloatingDock = forwardRef<HTMLDialogElement, FloatingDockProps>(function FloatingDock(
   {

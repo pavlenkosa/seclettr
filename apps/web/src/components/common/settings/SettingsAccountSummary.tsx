@@ -1,4 +1,4 @@
-import { InfoStack, StatusBadge, SurfacePanel } from "@/components/ui";
+import { InfoStack, SurfacePanel } from "@/components/ui";
 import styles from "../SettingsScreen.module.css";
 
 interface SettingsAccountSummaryProps {
@@ -20,11 +20,8 @@ export function SettingsAccountSummary({
           className={styles.accountInfo}
           eyebrow={eyebrow}
           title={username || eyebrow}
-          metaAccessory={(
-            <StatusBadge tone="accent" dot size="sm">
-              {appliedInstantlyLabel}
-            </StatusBadge>
-          )}
+          meta={appliedInstantlyLabel}
+          metaClassName={styles.accountAppliedNote}
         />
       </div>
     </SurfacePanel>

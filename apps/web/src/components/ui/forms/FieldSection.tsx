@@ -18,6 +18,7 @@ export interface FieldSectionProps extends Readonly<HTMLAttributes<HTMLDivElemen
 /**
  * Shared field section wrapper for modal forms and settings panels.
  * It keeps label hierarchy and supporting copy spacing consistent around controls.
+ * Choose it as the default structured wrapper for labeled form rows; do not replace the inner control with layout-only wrappers that hide label or helper ownership.
  */
 export function FieldSection({
   label,

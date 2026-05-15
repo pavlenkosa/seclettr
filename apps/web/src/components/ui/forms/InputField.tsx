@@ -15,6 +15,7 @@ export interface InputFieldProps extends Omit<InputHTMLAttributes<HTMLInputEleme
 /**
  * Shared single-line input shell for search/name fields. It keeps focus ring,
  * flat fill, radius, and icon spacing consistent across the UI kit.
+ * Choose it for single-line text entry and search; prefer SelectField or Listbox when the user is choosing from a bounded option set.
  */
 export const InputField = forwardRef<HTMLInputElement, InputFieldProps>(function InputField(
   {

@@ -19,7 +19,7 @@ import { CallControlsDock } from "@/calls/shared/presentation/CallControlsDock";
 import { CallDurationText } from "@/calls/shared/presentation/CallDurationText";
 import { CallPanelShell } from "@/calls/shared/presentation/CallPanelShell";
 import { getMemberInitials, resolveGroupCallDockInlineStyle } from "@/calls/group/presentation/display";
-import { PillButton } from "@/components/ui";
+import { Avatar, EntityRow, FieldSection, InlineNotice, PillButton, SurfacePanel } from "@/components/ui";
 import { DetailsIcon } from "@/calls/group/presentation/components/GroupCallIcons";
 
 import groupStyles from "@/calls/group/presentation/GroupCallPanel.module.css";
@@ -391,71 +391,128 @@ export function RoomCallPanel({ session, onLeave }: Props) {
   ].filter(Boolean).join(" ");
 
   const inviteCard = session.isHost && session.inviteUrl ? (
-    <div className={styles.inviteCard}>
-      <div className={styles.inviteText}>
-        <span className={styles.inviteEyebrow}>{t("room.call.invite.label")}</span>
-        <span className={styles.inviteTitle}>{t("room.call.invite.title")}</span>
-        <span className={styles.inviteHint}>{t("room.call.invite.hint")}</span>
-        <code className={styles.inviteUrl} title={session.inviteUrl}>
-          {session.inviteUrl}
-        </code>
-      </div>
-      <PillButton
-        type="button"
-        onClick={() => void handleCopyInvite()}
-        tone={copied ? "accent" : "neutral"}
-        appearance="soft"
-        size="sm"
-        aria-label={copied ? t("room.call.invite.copiedAriaLabel") : t("room.call.invite.copyAriaLabel")}
-        leading={<DetailsIcon />}
-      >
-        {copied ? t("room.call.invite.copied") : t("room.call.invite.copy")}
-      </PillButton>
-    </div>
+    <FieldSection className={styles.sideSection} label={t("room.call.invite.label")}>
+      <SurfacePanel className={styles.inviteCard} padding="md" radius="lg">
+        <div className={styles.inviteText}>
+          <span className={styles.inviteTitle}>{t("room.call.invite.title")}</span>
+          <span className={styles.inviteHint}>{t("room.call.invite.hint")}</span>
+          <code className={styles.inviteUrl} title={session.inviteUrl}>
+            {session.inviteUrl}
+          </code>
+        </div>
+        <PillButton
+          type="button"
+          onClick={() => void handleCopyInvite()}
+          tone={copied ? "accent" : "neutral"}
+          appearance="soft"
+          size="sm"
+          aria-label={copied ? t("room.call.invite.copiedAriaLabel") : t("room.call.invite.copyAriaLabel")}
+          leading={<DetailsIcon />}
+        >
+          {copied ? t("room.call.invite.copied") : t("room.call.invite.copy")}
+        </PillButton>
+      </SurfacePanel>
+    </FieldSection>
   ) : null;
 
   const participantsPanel = (
-    <div className={styles.participantsList}>
-      <p className={styles.participantsLabel}>
-        {t("room.call.participants.label", { count: participants.length })}
-      </p>
-      {participants.length === 0 && (
-        <p className={styles.mutedText}>{t("room.call.participants.empty")}</p>
-      )}
-      {session.isHost ? (
-        <div className={styles.hostActions}>
-          <p className={styles.hostActionHint}>{t("group.call.endForEveryoneHint")}</p>
-          <PillButton
-            type="button"
-            tone="danger"
-            appearance="soft"
-            size="md"
-            onClick={handleEndForEveryone}
-          >
-            {endForEveryoneLabel}
-          </PillButton>
-        </div>
-      ) : null}
-      {participants.map((p) => (
-        <div key={p.id} className={styles.participantRow}>
-          <span className={styles.participantName}>
-            {p.displayName}
-            {!p.isGuest && <span className={styles.hostBadge}>{t("room.call.participant.host")}</span>}
-          </span>
-          {session.isHost && p.isGuest && (
-            <button
+    <FieldSection
+      className={styles.sideSection}
+      label={t("room.call.participants.label", { count: participants.length })}
+    >
+      <div className={styles.participantsList}>
+        {participants.length === 0 ? (
+          <InlineNotice className={styles.participantsEmpty} tone="info" size="sm">
+            {t("room.call.participants.empty")}
+          </InlineNotice>
+        ) : null}
+        {session.isHost ? (
+          <SurfacePanel className={styles.hostActions} padding="md" radius="lg">
+            <p className={styles.hostActionHint}>{t("group.call.endForEveryoneHint")}</p>
+            <PillButton
               type="button"
-              onClick={() => void handleKickGuest(p.id)}
-              disabled={kickingId === p.id}
-              className={styles.kickBtn}
+              tone="danger"
+              appearance="soft"
+              size="md"
+              onClick={handleEndForEveryone}
             >
-              {kickingId === p.id ? t("room.call.participant.removing") : t("room.call.participant.remove")}
-            </button>
-          )}
-        </div>
-      ))}
-    </div>
+              {endForEveryoneLabel}
+            </PillButton>
+          </SurfacePanel>
+        ) : null}
+        {participants.map((p) => (
+          <SurfacePanel
+            key={p.id}
+            className={styles.participantCard}
+            padding="none"
+            radius="lg"
+          >
+            <EntityRow
+              as="div"
+              size="sm"
+              className={styles.participantRow}
+              leading={(
+                <Avatar
+                  label={p.displayName}
+                  initials={getMemberInitials(p.displayName)}
+                  className={styles.participantAvatar}
+                  ariaHidden
+                />
+              )}
+              title={p.displayName}
+              titleClassName={styles.participantName}
+              trailing={(
+                <div className={styles.participantActions}>
+                  {!p.isGuest ? (
+                    <span className={styles.hostBadge}>{t("room.call.participant.host")}</span>
+                  ) : null}
+                  {session.isHost && p.isGuest ? (
+                    <PillButton
+                      type="button"
+                      tone="danger"
+                      appearance="soft"
+                      size="sm"
+                      onClick={() => void handleKickGuest(p.id)}
+                      disabled={kickingId === p.id}
+                    >
+                      {kickingId === p.id
+                        ? t("room.call.participant.removing")
+                        : t("room.call.participant.remove")}
+                    </PillButton>
+                  ) : null}
+                </div>
+              )}
+            />
+          </SurfacePanel>
+        ))}
+      </div>
+    </FieldSection>
   );
+
+  const connectingState = status === "connecting" ? (
+    <SurfacePanel className={styles.centeredState} padding="lg" radius="xl">
+      <p className={styles.mutedText}>{t("group.call.starting")}</p>
+    </SurfacePanel>
+  ) : null;
+
+  const errorState = status === "error" ? (
+    <SurfacePanel className={styles.centeredState} padding="lg" radius="xl">
+      <InlineNotice className={styles.errorNotice} tone="error" size="md" role="alert">
+        {errorMessage ?? t("room.call.error.connection")}
+      </InlineNotice>
+      <div className={styles.stateActions}>
+        <PillButton
+          type="button"
+          tone="danger"
+          appearance="soft"
+          size="md"
+          onClick={handleLeave}
+        >
+          {leaveLabel}
+        </PillButton>
+      </div>
+    </SurfacePanel>
+  ) : null;
 
   const bodyClassName = [
     groupStyles.body,
@@ -516,20 +573,9 @@ export function RoomCallPanel({ session, onLeave }: Props) {
           <div className={groupStyles.mainColumn}>
             {!shouldRenderRoomSidePanel ? inviteCard : null}
 
-            {status === "error" && (
-              <div className={styles.centeredState}>
-                <p className={styles.errorText}>{errorMessage ?? t("room.call.error.connection")}</p>
-                <button type="button" onClick={handleLeave} className={styles.leaveBtn}>
-                  {leaveLabel}
-                </button>
-              </div>
-            )}
+            {errorState}
 
-            {status === "connecting" && (
-              <div className={styles.centeredState}>
-                <p className={styles.mutedText}>{t("group.call.starting")}</p>
-              </div>
-            )}
+            {connectingState}
 
             {/* Media tiles grid */}
             {isReady && (

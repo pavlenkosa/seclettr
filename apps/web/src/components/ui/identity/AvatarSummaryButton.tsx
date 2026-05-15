@@ -16,6 +16,7 @@ export interface AvatarSummaryButtonProps extends Omit<ButtonHTMLAttributes<HTML
 /**
  * Shared summary button with an initials avatar and a compact two-line text stack.
  * It is used by floating docks and minimized call surfaces that need a reusable identity summary.
+ * Choose it for clickable dock or minimized-surface summaries; prefer CallIdentityBlock or InfoStack when the identity block is presentational rather than button-like.
  */
 export const AvatarSummaryButton = forwardRef<HTMLButtonElement, AvatarSummaryButtonProps>(function AvatarSummaryButton(
   {

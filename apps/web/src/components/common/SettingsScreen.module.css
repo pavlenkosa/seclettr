@@ -85,6 +85,15 @@
 
 .accountInfo {
   min-width: 0;
+  --info-stack-gap: 0.16rem;
+  --info-stack-row-gap: 0.22rem;
+}
+
+.accountAppliedNote {
+  color: var(--text-secondary);
+  font-size: 0.74rem;
+  line-height: 1.45;
+  white-space: normal;
 }
 
 .sectionList {
@@ -104,6 +113,13 @@
     color var(--motion-duration-fast) var(--motion-ease-standard);
 }
 
+.sectionButton:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--accent) 44%, transparent);
+  outline-offset: -2px;
+  border-color: color-mix(in srgb, var(--accent) 26%, transparent);
+  background: color-mix(in srgb, var(--accent) 9%, transparent);
+}
+
 .sectionButtonActive {
   background: color-mix(in srgb, var(--accent) 11%, transparent);
   border-color: color-mix(in srgb, var(--accent) 24%, transparent);
@@ -111,6 +127,10 @@
 
 .sectionButtonActive .sectionIcon {
   color: var(--accent);
+}
+
+.sectionButtonActive:focus-visible {
+  border-color: color-mix(in srgb, var(--accent) 34%, transparent);
 }
 
 .sectionIcon {

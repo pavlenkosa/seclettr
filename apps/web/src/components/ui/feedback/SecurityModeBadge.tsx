@@ -12,6 +12,7 @@ export interface SecurityModeBadgeProps extends Readonly<HTMLAttributes<HTMLSpan
 /**
  * Shared media-security mode badge used by call security panels and related
  * diagnostics where the encryption mode needs a consistent compact label.
+ * Choose it for call/media security modes only; prefer StatusBadge for broader product state that is not specifically about transport or frame protection.
  */
 export function SecurityModeBadge({
   tone,

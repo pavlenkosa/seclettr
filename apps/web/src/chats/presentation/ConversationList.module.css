@@ -79,6 +79,18 @@
   content: none;
 }
 
+.item:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--accent) 48%, transparent);
+  outline-offset: -2px;
+  border-color: color-mix(in srgb, var(--accent) 28%, transparent);
+  background: color-mix(in srgb, var(--list-item-hover-bg) 92%, transparent);
+}
+
+.active:focus-visible {
+  background: var(--list-item-active-bg) !important;
+  border-color: color-mix(in srgb, var(--accent) 34%, transparent);
+}
+
 .itemUnread .name {
   font-weight: 690;
 }
@@ -163,9 +175,8 @@
   margin-top: -0.4rem;
   padding: 0.3rem;
   border-radius: 12px;
-  border: 1px solid color-mix(in srgb, var(--panel-border-soft) 88%, transparent);
-  background: color-mix(in srgb, var(--surface-float) 98%, var(--bg-secondary));
-  box-shadow: 0 8px 24px rgb(0 0 0 / 0.18);
+  border: 1px solid color-mix(in srgb, var(--panel-border) 88%, transparent);
+  background: var(--surface-shell-strong);
 }
 
 .contextMenuItem {
@@ -267,6 +278,10 @@
 
 :global(:root[data-theme="light"]) .item:hover {
   background: color-mix(in srgb, var(--list-item-hover-bg) 78%, white);
+}
+
+:global(:root[data-theme="light"]) .item:focus-visible {
+  background: color-mix(in srgb, var(--list-item-hover-bg) 82%, white);
 }
 
 :global(:root[data-theme="light"]) .active {

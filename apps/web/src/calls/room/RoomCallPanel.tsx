@@ -8,19 +8,20 @@ import type { GroupCallRemoteMedia } from "@/calls/group/runtime/sfu";
 import type { RoomParticipantsResponse } from "@seclettr/protocol";
 
 import { GroupCallControls } from "@/calls/group/presentation/components/GroupCallControls";
-import { GroupCallDock } from "@/calls/group/presentation/components/GroupCallDock";
 import { GroupCallHeader } from "@/calls/group/presentation/components/GroupCallHeader";
-import { GroupCallMediaTile } from "@/calls/group/presentation/components/GroupCallMediaTile";
 import { GroupCallRemoteAudioTargets } from "@/calls/group/presentation/components/GroupCallRemoteAudioTargets";
 import { useGroupCallPanelDock } from "@/calls/group/presentation/useGroupCallPanelDock";
 import { useCallInputDevices } from "@/calls/shared/media/input-devices/useCallInputDevices";
 import { CallAudioOutputProvider } from "@/calls/shared/media/audio-output/CallAudioOutputProvider";
 import { CallControlsDock } from "@/calls/shared/presentation/CallControlsDock";
-import { CallDurationText } from "@/calls/shared/presentation/CallDurationText";
 import { CallPanelShell } from "@/calls/shared/presentation/CallPanelShell";
 import { getMemberInitials, resolveGroupCallDockInlineStyle } from "@/calls/group/presentation/display";
-import { Avatar, EntityRow, FieldSection, InlineNotice, PillButton, SurfacePanel } from "@/components/ui";
-import { DetailsIcon } from "@/calls/group/presentation/components/GroupCallIcons";
+
+import { RoomCallInviteCard } from "./RoomCallInviteCard";
+import { RoomCallMediaGrid, type RoomCallTile } from "./RoomCallMediaGrid";
+import { RoomCallMinimizedDock } from "./RoomCallMinimizedDock";
+import { RoomCallParticipantsSection } from "./RoomCallParticipantsSection";
+import { RoomCallStateNotice } from "./RoomCallStateNotice";
 
 import groupStyles from "@/calls/group/presentation/GroupCallPanel.module.css";
 import styles from "./RoomCallPanel.module.css";
@@ -36,6 +37,12 @@ function hasEnabledLiveAudioTrack(stream: MediaStream | null): boolean {
   return Boolean(stream?.getAudioTracks().some((track) => track.readyState === "live" && track.enabled));
 }
 
+/**
+ * Room-call container: owns join/share/leave/media-toggle runtime, SFU
+ * bootstrap, participant polling, and minimized-dock state. Visual subpanels
+ * (invite card, participants, state notice, media grid, minimized dock) live
+ * in sibling `RoomCall*` presentation files; this file stays the orchestrator.
+ */
 export function RoomCallPanel({ session, onLeave }: Props) {
   const { t } = useI18n();
   const isMobileViewport = useIsMobileViewport();
@@ -305,7 +312,6 @@ export function RoomCallPanel({ session, onLeave }: Props) {
   const videoToggleLabel = isVideoEnabled ? t("group.call.disableVideo") : t("group.call.enableVideo");
   const screenShareToggleLabel = isScreenSharing ? t("group.call.stopScreenShare") : t("group.call.startScreenShare");
   const leaveLabel = t("group.call.leave");
-  const endForEveryoneLabel = t("group.call.endForEveryone");
 
   const participantNameById = useMemo(
     () => new Map(participants.map((participant) => [participant.id, participant.displayName])),
@@ -321,10 +327,10 @@ export function RoomCallPanel({ session, onLeave }: Props) {
     return s;
   }, [isScreenSharing, localStream]);
 
-  const allTiles = useMemo(() => {
+  const allTiles = useMemo<RoomCallTile[]>(() => {
     const localVideoStream = isVideoEnabled ? localStream : null;
     const localHasAudio = !isAudioMuted && hasEnabledLiveAudioTrack(localStream);
-    const localTile = {
+    const localTile: RoomCallTile = {
       id: "local",
       label: session.displayName,
       stream: localVideoStream,
@@ -332,10 +338,10 @@ export function RoomCallPanel({ session, onLeave }: Props) {
       hasAudio: localHasAudio,
       fallbackInitials: displayInitials,
       badge: isAudioMuted ? t("call.mute") : undefined,
-      muted: true as const,
-      videoSource: isVideoEnabled ? ("camera" as const) : null,
+      muted: true,
+      videoSource: isVideoEnabled ? "camera" : null,
     };
-    const remoteTiles = remoteMedia.map((media) => {
+    const remoteTiles = remoteMedia.map((media): RoomCallTile => {
       const displayName = participantNameById.get(media.userId) ?? media.userId.slice(0, 8);
       return {
         id: media.mediaId,
@@ -349,11 +355,11 @@ export function RoomCallPanel({ session, onLeave }: Props) {
             ? t("group.call.screenSharing")
             : t("group.call.videoOn")
           : t("group.call.audioOnly"),
-        muted: false as const,
+        muted: false,
         videoSource: media.videoSource,
       };
     });
-    const screenTile = screenShareStream ? {
+    const screenTile: RoomCallTile | null = screenShareStream ? {
       id: "local:screen",
       label: session.displayName,
       stream: screenShareStream,
@@ -361,8 +367,8 @@ export function RoomCallPanel({ session, onLeave }: Props) {
       hasAudio: false,
       fallbackInitials: displayInitials,
       badge: t("group.call.screenSharing"),
-      muted: true as const,
-      videoSource: "screen" as const,
+      muted: true,
+      videoSource: "screen",
     } : null;
 
     return [localTile, ...(screenTile ? [screenTile] : []), ...remoteTiles];
@@ -391,128 +397,22 @@ export function RoomCallPanel({ session, onLeave }: Props) {
   ].filter(Boolean).join(" ");
 
   const inviteCard = session.isHost && session.inviteUrl ? (
-    <FieldSection className={styles.sideSection} label={t("room.call.invite.label")}>
-      <SurfacePanel className={styles.inviteCard} padding="md" radius="lg">
-        <div className={styles.inviteText}>
-          <span className={styles.inviteTitle}>{t("room.call.invite.title")}</span>
-          <span className={styles.inviteHint}>{t("room.call.invite.hint")}</span>
-          <code className={styles.inviteUrl} title={session.inviteUrl}>
-            {session.inviteUrl}
-          </code>
-        </div>
-        <PillButton
-          type="button"
-          onClick={() => void handleCopyInvite()}
-          tone={copied ? "accent" : "neutral"}
-          appearance="soft"
-          size="sm"
-          aria-label={copied ? t("room.call.invite.copiedAriaLabel") : t("room.call.invite.copyAriaLabel")}
-          leading={<DetailsIcon />}
-        >
-          {copied ? t("room.call.invite.copied") : t("room.call.invite.copy")}
-        </PillButton>
-      </SurfacePanel>
-    </FieldSection>
+    <RoomCallInviteCard
+      inviteUrl={session.inviteUrl}
+      copied={copied}
+      onCopy={() => void handleCopyInvite()}
+    />
   ) : null;
 
   const participantsPanel = (
-    <FieldSection
-      className={styles.sideSection}
-      label={t("room.call.participants.label", { count: participants.length })}
-    >
-      <div className={styles.participantsList}>
-        {participants.length === 0 ? (
-          <InlineNotice className={styles.participantsEmpty} tone="info" size="sm">
-            {t("room.call.participants.empty")}
-          </InlineNotice>
-        ) : null}
-        {session.isHost ? (
-          <SurfacePanel className={styles.hostActions} padding="md" radius="lg">
-            <p className={styles.hostActionHint}>{t("group.call.endForEveryoneHint")}</p>
-            <PillButton
-              type="button"
-              tone="danger"
-              appearance="soft"
-              size="md"
-              onClick={handleEndForEveryone}
-            >
-              {endForEveryoneLabel}
-            </PillButton>
-          </SurfacePanel>
-        ) : null}
-        {participants.map((p) => (
-          <SurfacePanel
-            key={p.id}
-            className={styles.participantCard}
-            padding="none"
-            radius="lg"
-          >
-            <EntityRow
-              as="div"
-              size="sm"
-              className={styles.participantRow}
-              leading={(
-                <Avatar
-                  label={p.displayName}
-                  initials={getMemberInitials(p.displayName)}
-                  className={styles.participantAvatar}
-                  ariaHidden
-                />
-              )}
-              title={p.displayName}
-              titleClassName={styles.participantName}
-              trailing={(
-                <div className={styles.participantActions}>
-                  {!p.isGuest ? (
-                    <span className={styles.hostBadge}>{t("room.call.participant.host")}</span>
-                  ) : null}
-                  {session.isHost && p.isGuest ? (
-                    <PillButton
-                      type="button"
-                      tone="danger"
-                      appearance="soft"
-                      size="sm"
-                      onClick={() => void handleKickGuest(p.id)}
-                      disabled={kickingId === p.id}
-                    >
-                      {kickingId === p.id
-                        ? t("room.call.participant.removing")
-                        : t("room.call.participant.remove")}
-                    </PillButton>
-                  ) : null}
-                </div>
-              )}
-            />
-          </SurfacePanel>
-        ))}
-      </div>
-    </FieldSection>
+    <RoomCallParticipantsSection
+      participants={participants}
+      isHost={session.isHost}
+      kickingId={kickingId}
+      onKickGuest={(guestId) => void handleKickGuest(guestId)}
+      onEndForEveryone={handleEndForEveryone}
+    />
   );
-
-  const connectingState = status === "connecting" ? (
-    <SurfacePanel className={styles.centeredState} padding="lg" radius="xl">
-      <p className={styles.mutedText}>{t("group.call.starting")}</p>
-    </SurfacePanel>
-  ) : null;
-
-  const errorState = status === "error" ? (
-    <SurfacePanel className={styles.centeredState} padding="lg" radius="xl">
-      <InlineNotice className={styles.errorNotice} tone="error" size="md" role="alert">
-        {errorMessage ?? t("room.call.error.connection")}
-      </InlineNotice>
-      <div className={styles.stateActions}>
-        <PillButton
-          type="button"
-          tone="danger"
-          appearance="soft"
-          size="md"
-          onClick={handleLeave}
-        >
-          {leaveLabel}
-        </PillButton>
-      </div>
-    </SurfacePanel>
-  ) : null;
 
   const bodyClassName = [
     groupStyles.body,
@@ -521,28 +421,21 @@ export function RoomCallPanel({ session, onLeave }: Props) {
 
   // ── Dock (minimized) ─────────────────────────────────────────────────────────
   if (isMinimized) {
-    const dockContent = (
-      <CallAudioOutputProvider>
-        <GroupCallRemoteAudioTargets remoteMedia={remoteMedia} />
-        <GroupCallDock
-          groupName={t("room.call.title")}
-          groupInitials={t("room.call.initials")}
-          isDragging={isDraggingMinimizedDock}
-          dockRef={minimizedDockRef}
-          inlineStyle={resolvedDockInlineStyle}
-          dockMetaLabel={(
-            <CallDurationText baseSeconds={0} startedAtMs={callStartMs} />
-          )}
-          leaveActionLabel={leaveLabel}
-          onRestore={handleRestore}
-          onLeave={handleLeave}
-          onDragStart={startMinimizedDockDrag}
-          onDragMove={moveMinimizedDock}
-          onDragEnd={stopMinimizedDockDrag}
-        />
-      </CallAudioOutputProvider>
+    return (
+      <RoomCallMinimizedDock
+        remoteMedia={remoteMedia}
+        callStartMs={callStartMs}
+        leaveLabel={leaveLabel}
+        isDragging={isDraggingMinimizedDock}
+        dockRef={minimizedDockRef}
+        inlineStyle={resolvedDockInlineStyle}
+        onRestore={handleRestore}
+        onLeave={handleLeave}
+        onDragStart={startMinimizedDockDrag}
+        onDragMove={moveMinimizedDock}
+        onDragEnd={stopMinimizedDockDrag}
+      />
     );
-    return createPortal(dockContent, document.body);
   }
 
   // ── Full panel ───────────────────────────────────────────────────────────────
@@ -573,32 +466,22 @@ export function RoomCallPanel({ session, onLeave }: Props) {
           <div className={groupStyles.mainColumn}>
             {!shouldRenderRoomSidePanel ? inviteCard : null}
 
-            {errorState}
+            {status === "error" ? (
+              <RoomCallStateNotice variant="error" errorMessage={errorMessage} onLeave={handleLeave} />
+            ) : null}
 
-            {connectingState}
+            {status === "connecting" ? (
+              <RoomCallStateNotice variant="connecting" errorMessage={errorMessage} onLeave={handleLeave} />
+            ) : null}
 
-            {/* Media tiles grid */}
-            {isReady && (
-              <div className={mediaGridClassName}>
-                {allTiles.map((tile) => (
-                  <GroupCallMediaTile
-                    key={tile.id}
-                    className={mediaTileClassName}
-                    label={tile.label}
-                    stream={tile.stream}
-                    audioStream={tile.audioStream}
-                    hasAudio={tile.hasAudio}
-                    fallbackInitials={tile.fallbackInitials}
-                    badge={tile.badge}
-                    muted={tile.muted}
-                    variant={allTiles.length <= 2 ? "stage" : "strip"}
-                    videoSource={tile.videoSource}
-                  />
-                ))}
-              </div>
-            )}
+            {isReady ? (
+              <RoomCallMediaGrid
+                tiles={allTiles}
+                gridClassName={mediaGridClassName}
+                tileClassName={mediaTileClassName}
+              />
+            ) : null}
 
-            {/* Participants list */}
             {isParticipantsOpen && !shouldRenderRoomSidePanel ? participantsPanel : null}
           </div>
           {shouldRenderRoomSidePanel ? (

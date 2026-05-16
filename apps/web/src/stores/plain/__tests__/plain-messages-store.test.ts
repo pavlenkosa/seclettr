@@ -168,4 +168,69 @@ describe("plain-messages-store", () => {
     });
     expect(conversations()["peer"]?.messages.some((m) => m.id === "m-edit")).toBe(false);
   });
+
+  it("loads paginated history and marks the conversation history-loaded", async () => {
+    apiGetMock.mockResolvedValue({
+      messages: [
+        makeWire({ id: "h2", clientId: "h2", content: "newer" }),
+        makeWire({ id: "h1", clientId: "h1", content: "older" }),
+      ],
+      hasMore: false,
+    });
+
+    await usePlainMessagesStore.getState().loadHistory("peer", "Peer");
+
+    const conv = conversations()["peer"];
+    expect(conv?.historyLoaded).toBe(true);
+    // API returns newest-first; the store reverses to chronological order.
+    expect(conv?.messages.map((m) => m.content)).toEqual(["older", "newer"]);
+  });
+
+  it("prepends older messages on loadMoreHistory", async () => {
+    apiGetMock.mockResolvedValueOnce({
+      messages: [makeWire({ id: "h2", clientId: "h2", content: "page1" })],
+      hasMore: true,
+      nextCursor: "cursor-1",
+    });
+    await usePlainMessagesStore.getState().loadHistory("peer", "Peer");
+
+    apiGetMock.mockResolvedValueOnce({
+      messages: [makeWire({ id: "h1", clientId: "h1", content: "page2-older" })],
+      hasMore: false,
+    });
+    await usePlainMessagesStore.getState().loadMoreHistory("peer");
+
+    expect(conversations()["peer"]?.messages.map((m) => m.content)).toEqual([
+      "page2-older",
+      "page1",
+    ]);
+  });
+
+  it("seeds conversation stubs with server unread counts on loadConversationList", async () => {
+    apiGetMock.mockImplementation((path: string) => {
+      if (path === "/plain/conversations") {
+        return Promise.resolve({
+          conversations: [
+            {
+              peerUserId: "peer",
+              peerUsername: "Peer",
+              lastMessageAt: new Date(1_700_000_000_000).toISOString(),
+              lastMessageContent: "last one",
+              lastMessageType: "text",
+              lastSenderUserId: "peer",
+              unreadCount: 3,
+            },
+          ],
+        });
+      }
+      return Promise.resolve({ messages: [], hasMore: false });
+    });
+
+    await usePlainMessagesStore.getState().loadConversationList();
+
+    const conv = conversations()["peer"];
+    expect(conv?.username).toBe("Peer");
+    expect(conv?.unreadCount).toBe(3);
+    expect(conv?.messages.at(-1)?.content).toBe("last one");
+  });
 });

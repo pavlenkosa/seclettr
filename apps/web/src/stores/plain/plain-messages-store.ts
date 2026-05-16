@@ -10,161 +10,21 @@ import type {
   PlainMessageType,
   PlainReplyMeta,
 } from "./types";
-
-// ─── Local cache (AES-GCM encrypted localStorage) ────────────────────────────
-
-interface CachedConvEntry {
-  userId: string;
-  username: string;
-  lastMessageAt: number;
-  unreadCount: number;
-  lastMessage?: { id: string; clientId: string; senderId: string; senderName: string; content: string; type: PlainMessageType; timestamp: number; isOwn: boolean };
-}
-
-function cacheStorageKey(myUserId: string): string {
-  return `plain_convs_v2_${myUserId}`;
-}
-
-// Derive a per-user AES-GCM key from userId + deviceId using PBKDF2.
-// This prevents another user on the same browser from reading cached messages.
-async function deriveCacheKey(myUserId: string, deviceId: string): Promise<CryptoKey> {
-  const enc = new TextEncoder();
-  const keyMaterial = await crypto.subtle.importKey(
-    "raw",
-    enc.encode(`${myUserId}:${deviceId}`),
-    "PBKDF2",
-    false,
-    ["deriveKey"]
-  );
-  return crypto.subtle.deriveKey(
-    { name: "PBKDF2", salt: enc.encode("plain_cache_v2"), iterations: 100_000, hash: "SHA-256" },
-    keyMaterial,
-    { name: "AES-GCM", length: 256 },
-    false,
-    ["encrypt", "decrypt"]
-  );
-}
-
-async function saveConversationsCache(
-  myUserId: string,
-  deviceId: string,
-  conversations: Record<string, PlainConversation>
-): Promise<void> {
-  try {
-    const entries: CachedConvEntry[] = Object.values(conversations).map((c) => {
-      const last = c.messages.at(-1);
-      return {
-        userId: c.userId,
-        username: c.username,
-        lastMessageAt: c.lastMessageAt,
-        unreadCount: c.unreadCount,
-        lastMessage: last ? {
-          id: last.id,
-          clientId: last.clientId,
-          senderId: last.senderId,
-          senderName: last.senderName,
-          content: last.content,
-          type: last.type,
-          timestamp: last.timestamp,
-          isOwn: last.isOwn,
-        } : undefined,
-      };
-    });
-    const plaintext = new TextEncoder().encode(JSON.stringify(entries));
-    const key = await deriveCacheKey(myUserId, deviceId);
-    const iv = crypto.getRandomValues(new Uint8Array(12));
-    const ciphertext = await crypto.subtle.encrypt({ name: "AES-GCM", iv }, key, plaintext);
-    const blob = new Uint8Array(iv.byteLength + ciphertext.byteLength);
-    blob.set(iv, 0);
-    blob.set(new Uint8Array(ciphertext), iv.byteLength);
-    localStorage.setItem(cacheStorageKey(myUserId), btoa(String.fromCharCode(...blob)));
-  } catch {
-    // quota exceeded, private mode, or crypto error — ignore
-  }
-}
-
-async function loadConversationsCache(
-  myUserId: string,
-  deviceId: string
-): Promise<Record<string, PlainConversation>> {
-  try {
-    const raw = localStorage.getItem(cacheStorageKey(myUserId));
-    if (!raw) return {};
-    const blob = Uint8Array.from(atob(raw), (c) => c.charCodeAt(0));
-    const iv = blob.slice(0, 12);
-    const ciphertext = blob.slice(12);
-    const key = await deriveCacheKey(myUserId, deviceId);
-    const plaintext = await crypto.subtle.decrypt({ name: "AES-GCM", iv }, key, ciphertext);
-    const entries = JSON.parse(new TextDecoder().decode(plaintext)) as CachedConvEntry[];
-    const result: Record<string, PlainConversation> = {};
-    for (const e of entries) {
-      result[e.userId] = {
-        userId: e.userId,
-        username: e.username,
-        messages: e.lastMessage ? [{ ...e.lastMessage, status: "sent" as const }] : [],
-        lastMessageAt: e.lastMessageAt,
-        unreadCount: e.unreadCount,
-        hasMore: false,
-        historyLoaded: false,
-      };
-    }
-    return result;
-  } catch {
-    return {};
-  }
-}
-
-// ─── Wire shapes from API ─────────────────────────────────────────────────────
-
-interface WirePlainMessage {
-  id: string;
-  clientId: string;
-  senderUserId: string;
-  senderUsername: string;
-  recipientUserId?: string;
-  recipientUsername?: string;
-  /** Set when the wire message belongs to a plain group thread. Owned by
-   *  plain-groups-store; this store ignores such messages to avoid duplicating
-   *  them into the sender's DM list. */
-  groupId?: string;
-  content: string;
-  messageType: string;
-  attachment?: {
-    attachmentId: string;
-    contentType: string;
-    fileName?: string;
-    size: number;
-    durationMs?: number;
-    mediaGroupId?: string;
-  };
-  replyTo?: { id: string; content: string; senderName?: string };
-  createdAt: string;
-  editedAt?: string;
-}
-
-interface WireHistoryResponse {
-  messages: WirePlainMessage[];
-  hasMore: boolean;
-  nextCursor?: string;
-}
-
-interface WireSendResponse {
-  id: string;
-  clientId: string;
-  createdAt: string;
-}
-
-interface WireInitUploadResponse {
-  attachmentId: string;
-  uploadUrl: string;
-  uploadFields?: Record<string, string>;
-  expiresAt: string;
-}
-
-interface WireConfirmUploadResponse {
-  attachmentId: string;
-  downloadUrl: string;
-}
+import {
+  cacheStorageKey,
+  loadConversationsCache,
+  saveConversationsCache,
+} from "./plain-messages-cache";
+import {
+  mergeIncomingMessage,
+  wireToPlainMessage,
+  type WireConfirmUploadResponse,
+  type WireHistoryResponse,
+  type WireInitUploadResponse,
+  type WirePlainMessage,
+  type WireSendResponse,
+} from "./plain-messages-wire";
+import { createPlainMessagesSendRuntime } from "./plain-messages-send-runtime";
 
 // ─── Store state / actions ────────────────────────────────────────────────────
 
@@ -226,83 +86,6 @@ export interface PlainMessagesState {
   reset: () => void;
 }
 
-// ─── Helpers ──────────────────────────────────────────────────────────────────
-
-function wireToPlainMessage(wire: WirePlainMessage, myUserId: string): PlainMessage {
-  return {
-    id: wire.id,
-    clientId: wire.clientId,
-    senderId: wire.senderUserId,
-    senderName: wire.senderUsername,
-    content: wire.content,
-    type: wire.messageType as PlainMessageType,
-    attachment: wire.attachment
-      ? {
-          attachmentId: wire.attachment.attachmentId,
-          contentType: wire.attachment.contentType,
-          fileName: wire.attachment.fileName,
-          size: wire.attachment.size,
-          durationMs: wire.attachment.durationMs,
-          mediaGroupId: wire.attachment.mediaGroupId,
-        }
-      : undefined,
-    replyTo: wire.replyTo,
-    timestamp: new Date(wire.createdAt).getTime(),
-    editedAt: wire.editedAt ? new Date(wire.editedAt).getTime() : undefined,
-    isOwn: wire.senderUserId === myUserId,
-    status: "sent",
-  };
-}
-
-function mergeIncomingMessage(
-  conversations: Record<string, PlainConversation>,
-  conversationKey: string,
-  msg: PlainMessage,
-  username: string
-): Record<string, PlainConversation> {
-  const existing = conversations[conversationKey];
-  if (existing) {
-    const alreadyExists = existing.messages.some(
-      (m) => m.id === msg.id || m.clientId === msg.clientId
-    );
-    if (alreadyExists) {
-      // Update status of optimistic message to sent
-      const messages = existing.messages.map((m) =>
-        m.clientId === msg.clientId ? { ...m, id: msg.id, status: "sent" as const, uploadProgress: undefined } : m
-      );
-      return {
-        ...conversations,
-        [conversationKey]: {
-          ...existing,
-          messages,
-          lastMessageAt: Math.max(existing.lastMessageAt, msg.timestamp),
-        },
-      };
-    }
-    return {
-      ...conversations,
-      [conversationKey]: {
-        ...existing,
-        messages: [...existing.messages, msg],
-        lastMessageAt: Math.max(existing.lastMessageAt, msg.timestamp),
-        unreadCount: msg.isOwn ? existing.unreadCount : existing.unreadCount + 1,
-      },
-    };
-  }
-  return {
-    ...conversations,
-    [conversationKey]: {
-      userId: conversationKey,
-      username,
-      messages: [msg],
-      lastMessageAt: msg.timestamp,
-      unreadCount: msg.isOwn ? 0 : 1,
-      hasMore: false,
-      historyLoaded: false,
-    },
-  };
-}
-
 // ─── Store ────────────────────────────────────────────────────────────────────
 
 export const usePlainMessagesStore = create<PlainMessagesState>((set, get) => {
@@ -319,6 +102,13 @@ export const usePlainMessagesStore = create<PlainMessagesState>((set, get) => {
   function conversationKeyFor(otherUserId: string): string {
     return otherUserId;
   }
+
+  const { sendText, editMessage, deleteMessage } = createPlainMessagesSendRuntime({
+    set,
+    getMyUserId,
+    getMyUsername,
+    conversationKeyFor,
+  });
 
   async function loadConversationList(): Promise<void> {
     // Restore from encrypted cache immediately — visible before API responds
@@ -475,89 +265,6 @@ export const usePlainMessagesStore = create<PlainMessagesState>((set, get) => {
       });
     } catch (err) {
       logger.error("[PlainMsg] loadMoreHistory failed", err);
-    }
-  }
-
-  async function sendText(
-    recipientUserId: string,
-    recipientUsername: string,
-    content: string,
-    replyTo?: PlainReplyMeta
-  ): Promise<void> {
-    const myUserId = getMyUserId();
-    const myUsername = getMyUsername();
-    if (!myUserId || !myUsername) return;
-
-    const clientId = crypto.randomUUID();
-    const key = conversationKeyFor(recipientUserId);
-    const optimistic: PlainMessage = {
-      id: clientId,
-      clientId,
-      senderId: myUserId,
-      senderName: myUsername,
-      content,
-      type: "text",
-      replyTo,
-      timestamp: Date.now(),
-      isOwn: true,
-      status: "sending",
-    };
-
-    set((state) => ({
-      conversations: mergeIncomingMessage(
-        state.conversations,
-        key,
-        optimistic,
-        recipientUsername
-      ),
-    }));
-
-    try {
-      const res = await api.post<WireSendResponse>(
-        `/plain/messages/${encodeURIComponent(recipientUserId)}`,
-        {
-          version: PLAIN_PROTOCOL_VERSION,
-          clientId,
-          content,
-          messageType: "text",
-          replyToId: replyTo?.id,
-        }
-      );
-      // Update optimistic message immediately; WS echo will arrive later and be deduped
-      set((state) => {
-        const conv = state.conversations[key];
-        if (!conv) return state;
-        return {
-          conversations: {
-            ...state.conversations,
-            [key]: {
-              ...conv,
-              messages: conv.messages.map((m) =>
-                m.clientId === clientId
-                  ? { ...m, id: res.id, status: "sent" as const }
-                  : m
-              ),
-            },
-          },
-        };
-      });
-    } catch (err) {
-      logger.error("[PlainMsg] sendText failed", err);
-      set((state) => {
-        const conv = state.conversations[key];
-        if (!conv) return state;
-        return {
-          conversations: {
-            ...state.conversations,
-            [key]: {
-              ...conv,
-              messages: conv.messages.map((m) =>
-                m.clientId === clientId ? { ...m, status: "error" as const } : m
-              ),
-            },
-          },
-        };
-      });
     }
   }
 
@@ -774,54 +481,6 @@ export const usePlainMessagesStore = create<PlainMessagesState>((set, get) => {
           },
         };
       });
-    }
-  }
-
-  async function editMessage(conversationUserId: string, messageId: string, content: string): Promise<void> {
-    const key = conversationKeyFor(conversationUserId);
-    try {
-      await api.patch(`/plain/messages/${encodeURIComponent(messageId)}`, { content });
-      // Optimistic update — WS event will confirm with server editedAt
-      const now = Date.now();
-      set((state) => {
-        const conv = state.conversations[key];
-        if (!conv) return state;
-        return {
-          conversations: {
-            ...state.conversations,
-            [key]: {
-              ...conv,
-              messages: conv.messages.map((m) =>
-                m.id === messageId ? { ...m, content, editedAt: now } : m
-              ),
-            },
-          },
-        };
-      });
-    } catch (err) {
-      logger.error("[PlainMsg] editMessage failed", err);
-    }
-  }
-
-  async function deleteMessage(conversationUserId: string, messageId: string): Promise<void> {
-    const key = conversationKeyFor(conversationUserId);
-    try {
-      await api.delete(`/plain/messages/${encodeURIComponent(messageId)}`);
-      set((state) => {
-        const conv = state.conversations[key];
-        if (!conv) return state;
-        return {
-          conversations: {
-            ...state.conversations,
-            [key]: {
-              ...conv,
-              messages: conv.messages.filter((m) => m.id !== messageId),
-            },
-          },
-        };
-      });
-    } catch (err) {
-      logger.error("[PlainMsg] deleteMessage failed", err);
     }
   }
 

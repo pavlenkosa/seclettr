@@ -23,6 +23,7 @@ import {
   type WireSendResponse,
 } from "./plain-groups-wire";
 import { createPlainGroupsHistoryRuntime } from "./plain-groups-history-runtime";
+import { createPlainGroupsMembershipRuntime } from "./plain-groups-membership-runtime";
 
 // ─── Store state / actions ────────────────────────────────────────────────────
 
@@ -92,135 +93,8 @@ export const usePlainGroupsStore = create<PlainGroupsState>((set, get) => {
     getMyUserId,
   });
 
-  async function createGroup(name: string, memberUserIds: string[]): Promise<string> {
-    const data = await api.post<WirePlainGroup>("/plain/groups", {
-      version: PLAIN_PROTOCOL_VERSION,
-      name,
-      memberUserIds,
-    });
-    const group = wireToPlainGroup(data);
-    set((state) => ({
-      groups: { ...state.groups, [group.groupId]: group },
-    }));
-    return group.groupId;
-  }
-
-  async function addMember(groupId: string, userId: string): Promise<void> {
-    await api.post(`/plain/groups/${encodeURIComponent(groupId)}/members`, { userId });
-    // Reload group to get updated member list
-    const data = await api.get<WirePlainGroup>(`/plain/groups/${encodeURIComponent(groupId)}`);
-    const updated = wireToPlainGroup(data);
-    set((state) => {
-      const existing = state.groups[groupId];
-      if (!existing) return state;
-      return {
-        groups: {
-          ...state.groups,
-          [groupId]: {
-            ...existing,
-            members: updated.members,
-          },
-        },
-      };
-    });
-  }
-
-  async function renameGroup(groupId: string, name: string): Promise<void> {
-    const trimmed = name.trim();
-    if (!trimmed) return;
-    const previous = get().groups[groupId];
-    // Optimistic update so the modal header / sidebar entry feel snappy.
-    if (previous) {
-      set((state) => ({
-        groups: { ...state.groups, [groupId]: { ...previous, name: trimmed } },
-      }));
-    }
-    try {
-      await api.patch<{ id: string; name: string; updatedAt: string }>(
-        `/plain/groups/${encodeURIComponent(groupId)}`,
-        { name: trimmed }
-      );
-    } catch (err) {
-      logger.error("[PlainGroups] renameGroup failed", err);
-      // Roll back on failure.
-      if (previous) {
-        set((state) => ({
-          groups: { ...state.groups, [groupId]: previous },
-        }));
-      }
-      throw err;
-    }
-  }
-
-  async function updateMemberRole(
-    groupId: string,
-    userId: string,
-    role: "owner" | "admin" | "member"
-  ): Promise<void> {
-    const previous = get().groups[groupId];
-    const myUserId = getMyUserId();
-    if (previous) {
-      // Promoting someone else to owner is a transfer — the server demotes the
-      // current owner to admin in the same transaction. Mirror that locally
-      // so the UI doesn't briefly show two owners.
-      const isTransfer = role === "owner" && myUserId !== null && userId !== myUserId;
-      set((state) => ({
-        groups: {
-          ...state.groups,
-          [groupId]: {
-            ...previous,
-            members: previous.members.map((m) => {
-              if (m.userId === userId) return { ...m, role };
-              if (isTransfer && m.userId === myUserId && m.role === "owner") {
-                return { ...m, role: "admin" as const };
-              }
-              return m;
-            }),
-          },
-        },
-      }));
-    }
-    try {
-      await api.patch(
-        `/plain/groups/${encodeURIComponent(groupId)}/members/${encodeURIComponent(userId)}`,
-        { role }
-      );
-    } catch (err) {
-      logger.error("[PlainGroups] updateMemberRole failed", err);
-      if (previous) {
-        set((state) => ({ groups: { ...state.groups, [groupId]: previous } }));
-      }
-      throw err;
-    }
-  }
-
-  async function removeMember(groupId: string, userId: string): Promise<void> {
-    await api.delete(
-      `/plain/groups/${encodeURIComponent(groupId)}/members/${encodeURIComponent(userId)}`
-    );
-    const myUserId = getMyUserId();
-    if (userId === myUserId) {
-      // Left group — remove from store
-      set((state) => {
-        const { [groupId]: _removed, ...rest } = state.groups;
-        return { groups: rest };
-      });
-    } else {
-      set((state) => {
-        const g = state.groups[groupId];
-        if (!g) return state;
-        return {
-          groups: {
-            ...state.groups,
-            [groupId]: {
-              ...g,
-              members: g.members.filter((m) => m.userId !== userId),
-            },
-          },
-        };
-      });
-    }
-  }
+  const { createGroup, renameGroup, addMember, removeMember, updateMemberRole } =
+    createPlainGroupsMembershipRuntime({ set, get, getMyUserId });
 
   async function sendText(groupId: string, content: string, replyTo?: PlainReplyMeta): Promise<void> {
     const myUserId = getMyUserId();

@@ -6,78 +6,22 @@ import { logger } from "@/lib/logger";
 import { PLAIN_PROTOCOL_VERSION } from "@seclettr/protocol";
 import type {
   PlainGroup,
-  PlainGroupMember,
   PlainMessage,
   PlainMessageType,
   PlainReplyMeta,
 } from "./types";
-
-// ─── Wire shapes ──────────────────────────────────────────────────────────────
-
-interface WirePlainGroupMessage {
-  id: string;
-  clientId: string;
-  senderUserId: string;
-  senderUsername: string;
-  groupId?: string;
-  content: string;
-  messageType: string;
-  attachment?: {
-    attachmentId: string;
-    contentType: string;
-    fileName?: string;
-    size: number;
-    durationMs?: number;
-    mediaGroupId?: string;
-  };
-  replyTo?: { id: string; content: string; senderName?: string };
-  createdAt: string;
-  editedAt?: string;
-}
-
-interface WireGroupHistoryResponse {
-  messages: WirePlainGroupMessage[];
-  hasMore: boolean;
-  nextCursor?: string;
-}
-
-interface WireGroupMember {
-  userId: string;
-  username: string;
-  role: string;
-  joinedAt: string;
-}
-
-interface WirePlainGroup {
-  id: string;
-  name: string;
-  creatorId: string;
-  members: WireGroupMember[];
-  createdAt: string;
-  updatedAt: string;
-}
-
-interface WireGroupListResponse {
-  groups: WirePlainGroup[];
-}
-
-interface WireSendResponse {
-  id: string;
-  clientId: string;
-  createdAt: string;
-}
-
-interface WireInitUploadResponse {
-  attachmentId: string;
-  uploadUrl: string;
-  uploadFields?: Record<string, string>;
-  expiresAt: string;
-}
-
-interface WireConfirmUploadResponse {
-  attachmentId: string;
-  downloadUrl: string;
-}
+import {
+  mergeGroupMessage,
+  wireToPlainGroup,
+  wireToPlainGroupMessage,
+  type WireConfirmUploadResponse,
+  type WireGroupHistoryResponse,
+  type WireGroupListResponse,
+  type WireInitUploadResponse,
+  type WirePlainGroup,
+  type WirePlainGroupMessage,
+  type WireSendResponse,
+} from "./plain-groups-wire";
 
 // ─── Store state / actions ────────────────────────────────────────────────────
 
@@ -132,93 +76,6 @@ export interface PlainGroupsState {
 
   /** Reset on logout */
   reset: () => void;
-}
-
-// ─── Helpers ──────────────────────────────────────────────────────────────────
-
-function wireToPlainGroupMessage(wire: WirePlainGroupMessage, myUserId: string): PlainMessage {
-  return {
-    id: wire.id,
-    clientId: wire.clientId,
-    senderId: wire.senderUserId,
-    senderName: wire.senderUsername,
-    content: wire.content,
-    type: wire.messageType as PlainMessageType,
-    attachment: wire.attachment
-      ? {
-          attachmentId: wire.attachment.attachmentId,
-          contentType: wire.attachment.contentType,
-          fileName: wire.attachment.fileName,
-          size: wire.attachment.size,
-          durationMs: wire.attachment.durationMs,
-          mediaGroupId: wire.attachment.mediaGroupId,
-        }
-      : undefined,
-    replyTo: wire.replyTo,
-    timestamp: new Date(wire.createdAt).getTime(),
-    editedAt: wire.editedAt ? new Date(wire.editedAt).getTime() : undefined,
-    isOwn: wire.senderUserId === myUserId,
-    status: "sent",
-  };
-}
-
-function wireToPlainGroup(wire: WirePlainGroup): PlainGroup {
-  return {
-    groupId: wire.id,
-    name: wire.name,
-    creatorId: wire.creatorId,
-    members: wire.members.map((m) => ({
-      userId: m.userId,
-      username: m.username,
-      role: m.role as PlainGroupMember["role"],
-      joinedAt: m.joinedAt,
-    })),
-    messages: [],
-    lastMessageAt: new Date(wire.updatedAt).getTime(),
-    unreadCount: 0,
-    hasMore: false,
-    historyLoaded: false,
-    createdAt: wire.createdAt,
-    updatedAt: wire.updatedAt,
-  };
-}
-
-function mergeGroupMessage(
-  groups: Record<string, PlainGroup>,
-  groupId: string,
-  msg: PlainMessage
-): Record<string, PlainGroup> {
-  const group = groups[groupId];
-  if (!group) return groups;
-
-  const alreadyExists = group.messages.some(
-    (m) => m.id === msg.id || m.clientId === msg.clientId
-  );
-  if (alreadyExists) {
-    const messages = group.messages.map((m) =>
-      m.clientId === msg.clientId
-        ? { ...m, id: msg.id, status: "sent" as const, uploadProgress: undefined }
-        : m
-    );
-    return {
-      ...groups,
-      [groupId]: {
-        ...group,
-        messages,
-        lastMessageAt: Math.max(group.lastMessageAt, msg.timestamp),
-      },
-    };
-  }
-
-  return {
-    ...groups,
-    [groupId]: {
-      ...group,
-      messages: [...group.messages, msg],
-      lastMessageAt: Math.max(group.lastMessageAt, msg.timestamp),
-      unreadCount: msg.isOwn ? group.unreadCount : group.unreadCount + 1,
-    },
-  };
 }
 
 // ─── Store ────────────────────────────────────────────────────────────────────

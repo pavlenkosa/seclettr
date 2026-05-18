@@ -25,6 +25,8 @@ interface Props {
   /** Optional delete handler. When provided, the row exposes a Delete entry
    *  in its context menu (own messages only). */
   readonly onDelete?: (messageId: string) => void;
+  /** Optional forward handler. When provided, exposes Forward in context menu. */
+  readonly onForward?: (messageId: string) => void;
   readonly onScrollToMessage?: (messageId: string) => void;
   readonly isHighlighted: boolean;
   readonly enterDelayMs: number;
@@ -364,6 +366,7 @@ export const MessageListRow = memo(function MessageListRow({
   onRetry,
   onReply,
   onDelete,
+  onForward,
   onScrollToMessage,
   isHighlighted,
   enterDelayMs,
@@ -377,6 +380,7 @@ export const MessageListRow = memo(function MessageListRow({
   // either own (sender) or from a thread without a strict ownership model.
   // The store / API enforces the actual permission server-side.
   const canDelete = !!onDelete && message.isOwn;
+  const canForward = !!onForward && kind === "text" && Boolean(message.content) && !message.content!.startsWith("[");
   const entryStyle = {
     "--message-enter-delay": `${Math.min(enterDelayMs, 160)}ms`,
   } as CSSProperties;
@@ -384,10 +388,12 @@ export const MessageListRow = memo(function MessageListRow({
   const handleContextAction = useCallback((action: MessageContextMenuAction) => {
     if (action.kind === "reply") {
       onReply?.(message.id);
+    } else if (action.kind === "forward") {
+      onForward?.(message.id);
     } else if (action.kind === "delete") {
       onDelete?.(message.id);
     }
-  }, [message.id, onDelete, onReply]);
+  }, [message.id, onDelete, onForward, onReply]);
 
   return (
     <div style={entryStyle}>
@@ -399,6 +405,7 @@ export const MessageListRow = memo(function MessageListRow({
         <MessageContextMenu
           onAction={handleContextAction}
           canCopy={canCopy}
+          canForward={canForward}
           canDelete={canDelete}
           copyText={canCopy ? (message.content ?? undefined) : undefined}
         >
@@ -425,6 +432,7 @@ export const MessageListRow = memo(function MessageListRow({
     prev.onRetry === next.onRetry &&
     prev.onReply === next.onReply &&
     prev.onDelete === next.onDelete &&
+    prev.onForward === next.onForward &&
     prev.onScrollToMessage === next.onScrollToMessage &&
     prev.isHighlighted === next.isHighlighted &&
     prev.enterDelayMs === next.enterDelayMs &&

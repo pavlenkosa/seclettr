@@ -4,14 +4,11 @@ import type { PeerIdentityAlert } from "@/stores/messages";
 import { useAnimatedClose, useModalSurfaceA11y } from "@/lib/hooks";
 import { ModalShell } from "@/components/ui";
 import { useSecurityModalLogic } from "./useSecurityModalLogic";
-import {
-  SafetyNumberSection,
-  SecurityHeaderIcon,
-  SecurityNotices,
-  SecurityQuickGuide,
-  SecurityStatusSummary,
-  SecurityTechnicalDetails,
-} from "./SecurityModalSections";
+import { SecurityHeaderIcon } from "./SecurityHeaderIcon";
+import { SecurityNotices, SecurityStatusSummary } from "./SecurityStatusSummary";
+import { SecurityQuickGuide } from "./SecurityQuickGuide";
+import { SecurityTechnicalDetails } from "./SecurityTechnicalDetails";
+import { SafetyNumberSection } from "./SecuritySafetyNumberSection";
 import { getVerificationStatus } from "./security-modal-shared";
 
 import styles from "./SecurityModal.module.css";
@@ -116,7 +113,6 @@ export function SecurityModal({
         t={t}
         trustIntegrityState={trustIntegrityState}
       />
-
       <p className={styles.description}>
         {t("security.description", { recipient: recipientUsername })}
       </p>

@@ -8,7 +8,14 @@
 }
 
 .headerSlot {
-  /* Hide the default modal header — the hero acts as the title. */
+  /* Compact header: no title, just the close button in the top-right corner. */
+  padding: 0.6rem 0.6rem 0.2rem 0.6rem;
+  min-height: 0;
+  justify-content: flex-end;
+}
+
+/* Hide the empty left side so only the trailing close button is visible. */
+.headerSlot > *:first-child {
   display: none;
 }
 
@@ -27,7 +34,7 @@
   align-items: center;
   text-align: center;
   gap: 0.5rem;
-  padding: 1.4rem 0 0.6rem;
+  padding: 0.6rem 0 0.6rem;
 }
 
 .heroName {

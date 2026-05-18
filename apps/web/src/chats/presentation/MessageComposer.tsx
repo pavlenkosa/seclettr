@@ -36,6 +36,7 @@ interface Props {
   readonly onSendVoiceBlob?: (blob: Blob, durationMs: number) => Promise<void>;
   readonly onSendVideoBlob?: (blob: Blob, durationMs: number) => Promise<void>;
   readonly isGroupComposer?: boolean;
+  readonly placeholder?: string;
 }
 
 export interface MessageComposerHandle {
@@ -53,6 +54,7 @@ const MessageComposerView = forwardRef<MessageComposerHandle, Props>(function Me
   onSendVoiceBlob,
   onSendVideoBlob,
   isGroupComposer: isGroupComposerOverride,
+  placeholder: placeholderOverride,
 }, ref) {
   const { t } = useI18n();
   const emojiPickerId = useId();
@@ -178,9 +180,8 @@ const MessageComposerView = forwardRef<MessageComposerHandle, Props>(function Me
 
   const primaryButtonDisabled = isRecording ? false : draft.sending;
   const showRecordModeChip = !isRecording && primaryAction.kind === "record";
-  const composerPlaceholder = isGroupComposer
-    ? t("group.composer.placeholder")
-    : t("composer.placeholder.default");
+  const composerPlaceholder = placeholderOverride
+    ?? (isGroupComposer ? t("group.composer.placeholder") : t("composer.placeholder.default"));
   const composerAriaLabel = isGroupComposer
     ? t("group.composer.aria.typeMessage")
     : t("composer.aria.typeMessage");

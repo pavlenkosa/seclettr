@@ -30,22 +30,24 @@
   left: var(--menu-x);
   top: var(--menu-y);
   z-index: 200;
-  min-width: 148px;
-  /* Clamp width to viewport on narrow screens so long labels can't push
-     the menu off-screen while the JS-side clamping is still measuring. */
+  min-width: 164px;
   max-width: calc(100vw - 16px);
-  padding: 0.3rem;
+  padding: 0.32rem;
   border-radius: 14px;
   border: 1px solid color-mix(in srgb, var(--panel-border) 88%, transparent);
   background: var(--surface-shell-strong);
+  overflow: clip;
+  box-shadow:
+    0 4px 16px rgb(0 0 0 / 0.12),
+    0 1px 4px rgb(0 0 0 / 0.06);
 }
 
 .item {
   display: flex;
   align-items: center;
-  gap: 0.54rem;
+  gap: 0.58rem;
   width: 100%;
-  padding: 0.5rem 0.7rem;
+  padding: 0.56rem 0.76rem;
   border: none;
   border-radius: 10px;
   background: transparent;
@@ -56,6 +58,12 @@
   cursor: pointer;
   text-align: left;
   transition: background var(--motion-duration-fast, 140ms) ease;
+  white-space: nowrap;
+}
+
+.item svg {
+  flex-shrink: 0;
+  opacity: 0.72;
 }
 
 .item:hover {
@@ -66,13 +74,23 @@
   color: var(--danger, #ef4444);
 }
 
+.itemDanger svg {
+  opacity: 1;
+}
+
 .itemDanger:hover {
-  background: color-mix(in srgb, var(--danger, #ef4444) 14%, transparent);
+  background: color-mix(in srgb, var(--danger, #ef4444) 12%, transparent);
 }
 
 .item:focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: -2px;
+}
+
+.separator {
+  height: 1px;
+  margin: 0.22rem 0.44rem;
+  background: color-mix(in srgb, var(--panel-border) 72%, transparent);
 }
 
 @media (prefers-reduced-motion: reduce) {

@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import type { Conversation } from "@/stores/messages";
 import type { GroupChat } from "@/stores/groups";
 import { usePlainPinsStore, type PlainConversation, type PlainGroup } from "@/stores/plain";
+import type { SavedMessage } from "@/stores/saved";
 import { useI18n } from "@/i18n";
 import { SeclettrMark } from "@/components/common/SeclettrMark";
 
@@ -9,6 +10,7 @@ import styles from "./ConversationList.module.css";
 import { ConversationListRow } from "./conversation-list/ConversationListRow";
 import {
   buildConversationEntries,
+  buildSavedEntry,
   clampLoadingPlaceholderCount,
   type ConversationEntry,
   type ConversationSelection,
@@ -19,6 +21,7 @@ interface Props {
   readonly groups?: GroupChat[];
   readonly plainConversations?: PlainConversation[];
   readonly plainGroups?: PlainGroup[];
+  readonly savedMessages?: SavedMessage[];
   readonly activeId: string | null;
   readonly loading?: boolean;
   readonly loadingPlaceholderCount?: number;
@@ -32,6 +35,7 @@ export function ConversationList({
   groups = [],
   plainConversations = [],
   plainGroups = [],
+  savedMessages = [],
   activeId,
   loading,
   loadingPlaceholderCount,
@@ -52,6 +56,12 @@ export function ConversationList({
     });
   }, [conversations, groups, pins, plainConversations, plainGroups]);
 
+  // Saved Messages is always the first entry — pinned above the sorted list.
+  const savedEntry = useMemo<ConversationEntry>(
+    () => buildSavedEntry(savedMessages, t("saved.title")),
+    [savedMessages, t]
+  );
+
   const handleTogglePin = useCallback((entry: ConversationEntry) => {
     if (!entry.pinKind) return;
     if (entry.pinnedAt) {
@@ -60,6 +70,7 @@ export function ConversationList({
       void pinChat(entry.pinKind, entry.id);
     }
   }, [pinChat, unpinChat]);
+
   const hasRelativeTimeLabels = useMemo(
     () => sorted.some((entry) => entry.lastMessageAt > 0 && nowMs - entry.lastMessageAt < 3_600_000),
     [nowMs, sorted]
@@ -89,6 +100,17 @@ export function ConversationList({
   if (sorted.length === 0 && loading) {
     return (
       <ul className={styles.list} aria-busy="true" aria-label={t("conversation.loading")} data-testid="chat-thread-list">
+        <ConversationListRow
+          key={savedEntry.key}
+          entry={savedEntry}
+          isActive={activeId === savedEntry.key}
+          locale={locale}
+          nowMs={nowMs}
+          t={t}
+          onSelect={onSelect}
+          onTogglePin={handleTogglePin}
+          enterDelayMs={0}
+        />
         {Array.from({ length: resolvedLoadingPlaceholderCount }, (_, i) => (
           <li key={i} className={styles.skeletonItem} aria-hidden="true">
             <div className={styles.skeletonAvatar} />
@@ -104,31 +126,55 @@ export function ConversationList({
 
   if (sorted.length === 0) {
     return (
-      <div className={styles.empty}>
-        <span className={styles.emptyMark} aria-hidden="true">
-          <SeclettrMark decorative />
-        </span>
-        <span>{t("conversation.empty.line1")}</span>
-        <span>{t("conversation.empty.line2")}</span>
-      </div>
+      <ul className={styles.list} aria-label={t("conversation.listLabel")} data-testid="chat-thread-list">
+        <ConversationListRow
+          key={savedEntry.key}
+          entry={savedEntry}
+          isActive={activeId === savedEntry.key}
+          locale={locale}
+          nowMs={nowMs}
+          t={t}
+          onSelect={onSelect}
+          onTogglePin={handleTogglePin}
+          enterDelayMs={0}
+        />
+        <li className={styles.empty}>
+          <span className={styles.emptyMark} aria-hidden="true">
+            <SeclettrMark decorative />
+          </span>
+          <span>{t("conversation.empty.line1")}</span>
+          <span>{t("conversation.empty.line2")}</span>
+        </li>
+      </ul>
     );
   }
 
   return (
-      <ul className={styles.list} aria-label={t("conversation.listLabel")} data-testid="chat-thread-list">
-        {sorted.map((entry, index) => (
-          <ConversationListRow
-            key={entry.key}
-            entry={entry}
-            isActive={activeId === entry.key}
-            locale={locale}
-            nowMs={nowMs}
-            t={t}
-            onSelect={onSelect}
-            onTogglePin={handleTogglePin}
-            enterDelayMs={Math.min(index, 10) * 16}
-          />
-        ))}
-      </ul>
+    <ul className={styles.list} aria-label={t("conversation.listLabel")} data-testid="chat-thread-list">
+      <ConversationListRow
+        key={savedEntry.key}
+        entry={savedEntry}
+        isActive={activeId === savedEntry.key}
+        locale={locale}
+        nowMs={nowMs}
+        t={t}
+        onSelect={onSelect}
+        onTogglePin={handleTogglePin}
+        enterDelayMs={0}
+      />
+      {sorted.map((entry, index) => (
+        <ConversationListRow
+          key={entry.key}
+          entry={entry}
+          isActive={activeId === entry.key}
+          locale={locale}
+          nowMs={nowMs}
+          t={t}
+          onSelect={onSelect}
+          onTogglePin={handleTogglePin}
+          enterDelayMs={Math.min(index + 1, 10) * 16}
+        />
+      ))}
+    </ul>
   );
 }

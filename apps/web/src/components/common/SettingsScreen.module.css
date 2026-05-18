@@ -12,9 +12,11 @@
 /* === header === */
 
 .header {
+  display: flex;
+  align-items: center;
   flex-shrink: 0;
-  min-height: 60px;
-  padding: 0.7rem clamp(0.9rem, 1.4vw, 1.28rem);
+  min-height: var(--panel-header-height, 76px);
+  padding: 0 clamp(0.9rem, 1.4vw, 1.28rem);
   border-bottom: 1px solid color-mix(in srgb, var(--panel-border-soft) 82%, transparent);
   background: color-mix(in srgb, var(--bg-secondary) 90%, var(--bg-primary));
 }
@@ -283,8 +285,7 @@
   }
 
   .header {
-    min-height: 56px;
-    padding: 0.58rem 0.72rem;
+    padding: 0 0.72rem;
   }
 
   .layout {

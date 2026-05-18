@@ -100,6 +100,24 @@ export const ChatThreadHeader = memo(function ChatThreadHeader({
 }) {
   if (!activeThreadKind) return null;
 
+  if (activeThreadKind === "saved") {
+    return (
+      <ChatThreadChrome
+        title={t("saved.title")}
+        subtitle={t("saved.subtitle")}
+        statusLabel={null}
+        statusAriaLabel={null}
+        statusTone={null}
+        onStatusClick={null}
+        avatarLabel={t("saved.title")}
+        backAriaLabel={t("chat.back")}
+        onBack={handleBack}
+        actions={threadChromeActions}
+        callNotice={null}
+      />
+    );
+  }
+
   const isPlainDirect = activeThreadKind === "plain-direct";
   const isPlainGroup = activeThreadKind === "plain-group";
 

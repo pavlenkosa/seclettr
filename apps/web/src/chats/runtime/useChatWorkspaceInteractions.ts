@@ -9,7 +9,7 @@ import { type DirectCallPanelHandle } from "@/calls/direct";
 import { useI18n } from "@/i18n";
 
 interface ThreadSelection {
-  kind: "direct" | "group" | "plain-direct" | "plain-group";
+  kind: "direct" | "group" | "plain-direct" | "plain-group" | "saved";
   id: string;
 }
 
@@ -26,7 +26,7 @@ interface UseChatWorkspaceInteractionsOptions {
   activeConversation: ActiveConversationSummary | null;
   activePlainConversation: ActiveConversationSummary | null;
   activeGroup: ActiveGroupSummary | null;
-  activeThreadKind: "direct" | "group" | "plain-direct" | "plain-group" | null;
+  activeThreadKind: "direct" | "group" | "plain-direct" | "plain-group" | "saved" | null;
   directCallPanelRef: RefObject<DirectCallPanelHandle | null>;
   showChatNotice: (message: string) => void;
   ensureConversation: (userId: string, username: string) => void;

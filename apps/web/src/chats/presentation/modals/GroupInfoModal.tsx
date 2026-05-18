@@ -11,13 +11,14 @@ import {
 import { ModalShell } from "@/components/ui";
 
 import styles from "./GroupInfoModal.module.css";
+import { GroupInfoHeroSection } from "./GroupInfoHeroSection";
+import { GroupInfoLeaveSection } from "./GroupInfoLeaveSection";
+import { GroupInfoMemberActionSheet } from "./GroupInfoMemberActionSheet";
+import { GroupInfoMemberList } from "./GroupInfoMemberList";
 import {
-  GroupInfoHeroSection,
-  GroupInfoLeaveSection,
-  GroupInfoMemberActionSheet,
-  GroupInfoMemberList,
   GroupInfoSearchSection,
-} from "./GroupInfoModalSections";
+  type GroupInfoSearchResultLike,
+} from "./GroupInfoSearchSection";
 import { normalizeRole, roleSortKey, type GroupInfoMember, type GroupRole } from "./group-info-modal-shared";
 
 export type { GroupInfoMember, GroupRole } from "./group-info-modal-shared";
@@ -90,7 +91,7 @@ export function GroupInfoModal({
   const [searchOpen, setSearchOpen] = useState(false);
   const [inputValue, setInputValue] = useState("");
   const [query, setQuery] = useState("");
-  const [results, setResults] = useState<UserSearchResult[]>([]);
+  const [results, setResults] = useState<GroupInfoSearchResultLike[]>([]);
   const [loadingSearch, setLoadingSearch] = useState(false);
   const [addingRole, setAddingRole] = useState<GroupRole>("member");
   const debounceRef = useRef<number | null>(null);
@@ -156,7 +157,7 @@ export function GroupInfoModal({
     [sortedMembers, activeSheetUserId]
   );
 
-  const handleAdd = async (user: UserSearchResult) => {
+  const handleAdd = async (user: GroupInfoSearchResultLike) => {
     if (busyMemberId) return;
     setBusyMemberId(user.userId);
     setError(null);

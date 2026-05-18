@@ -16,6 +16,7 @@ import { useGlobalGroupCallAlerts } from "@/calls/group/runtime/useGlobalGroupCa
 import { useMessagesStore, type Message } from "@/stores/messages";
 import { useGroupsStore, type GroupChatMessage } from "@/stores/groups";
 import { usePlainMessagesStore, usePlainGroupsStore, type PlainMessage } from "@/stores/plain";
+import { useSavedMessagesStore, type SavedMessage } from "@/stores/saved";
 import { useChatThreadRouting } from "./useChatThreadRouting";
 
 interface UseChatWorkspaceEntryOptions {
@@ -180,6 +181,10 @@ export function useChatWorkspaceEntry(options: UseChatWorkspaceEntryOptions) {
 
   const [activePlainConversationId, setActivePlainConversation] = useState<string | null>(null);
   const [activePlainGroupId, setActivePlainGroup] = useState<string | null>(null);
+  const [savedThreadActive, setSavedThreadActive] = useState(false);
+
+  const savedMessages = useSavedMessagesStore((state) => state.messages);
+  const addSavedMessage = useSavedMessagesStore((state) => state.addMessage);
 
   const ensurePlainConversation = useCallback(
     (peerUserId: string, peerUsername: string) => {
@@ -236,6 +241,8 @@ export function useChatWorkspaceEntry(options: UseChatWorkspaceEntryOptions) {
     setActivePlainConversation,
     setActivePlainGroup,
     loadPlainGroupMessages,
+    savedThreadActive,
+    setSavedThreadActive,
     setMobileShowConversation,
     setMobileCreateMenuOpen,
   });
@@ -343,7 +350,7 @@ export function useChatWorkspaceEntry(options: UseChatWorkspaceEntryOptions) {
     usePlainMessagesStore.getState().markRead(activePlainConversation.userId);
   }, [activePlainConversation?.userId, activePlainConversation?.historyLoaded, activePlainConversation?.unreadCount]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const activeThreadKind: "direct" | "group" | "plain-direct" | "plain-group" | null =
+  const activeThreadKind: "direct" | "group" | "plain-direct" | "plain-group" | "saved" | null =
     activeConversation
       ? "direct"
       : activeGroup
@@ -352,7 +359,9 @@ export function useChatWorkspaceEntry(options: UseChatWorkspaceEntryOptions) {
           ? "plain-direct"
           : activePlainGroup
             ? "plain-group"
-            : null;
+            : savedThreadActive
+              ? "saved"
+              : null;
 
   const activeConversationUserId = activeConversation?.userId ?? null;
   const activePeerIdentityAlertCount = Object.keys(
@@ -469,7 +478,8 @@ export function useChatWorkspaceEntry(options: UseChatWorkspaceEntryOptions) {
       ? `direct:${activeConversation.userId}`
       : activeGroupListId
         ?? (activePlainConversation ? `plain-direct:${activePlainConversation.userId}` : null)
-        ?? activePlainGroupListId;
+        ?? activePlainGroupListId
+        ?? (savedThreadActive ? "saved:saved" : null);
 
   const conversationEntries = useMemo(
     () => Object.values(conversations),
@@ -498,9 +508,32 @@ export function useChatWorkspaceEntry(options: UseChatWorkspaceEntryOptions) {
     return [];
   }, [activePlainConversation, activePlainGroup]);
 
+  const sendSavedMessage = useCallback(
+    (content: string) => {
+      addSavedMessage(content);
+    },
+    [addSavedMessage]
+  );
+
+  const savedActiveMessages = useMemo<Message[]>(
+    () =>
+      savedMessages.map((m: SavedMessage) => ({
+        id: m.id,
+        senderId: userId ?? "me",
+        senderDeviceId: userId ?? "me",
+        content: m.content,
+        type: "text" as const,
+        timestamp: m.timestamp,
+        status: "sent" as const,
+        isOwn: true,
+      })),
+    [savedMessages, userId]
+  );
+
   const activeMessages = useMemo<Message[]>(() => {
     if (activeConversation) return activeConversation.messages;
     if (activeGroupProjection) return activeGroupProjection.activeMessages;
+    if (savedThreadActive) return savedActiveMessages;
     return plainActiveMessages.map((m) => ({
       id: m.id,
       senderId: m.senderId,
@@ -522,6 +555,7 @@ export function useChatWorkspaceEntry(options: UseChatWorkspaceEntryOptions) {
             isPlain: true,
             localUrl: m.attachment.localUrl,
             uploadProgress: m.uploadProgress,
+            caption: m.content?.trim() || undefined,
           }
         : undefined,
       timestamp: m.timestamp,
@@ -529,7 +563,7 @@ export function useChatWorkspaceEntry(options: UseChatWorkspaceEntryOptions) {
       isOwn: m.isOwn,
       replyTo: m.replyTo,
     }));
-  }, [activeConversation, activeGroupProjection, plainActiveMessages]);
+  }, [activeConversation, activeGroupProjection, savedThreadActive, savedActiveMessages, plainActiveMessages]);
 
   const plainGroupSenderLabels = useMemo<Record<string, string>>(() => {
     if (!activePlainGroup) return {};
@@ -605,5 +639,8 @@ export function useChatWorkspaceEntry(options: UseChatWorkspaceEntryOptions) {
     sendPlainGroupText,
     sendPlainGroupAttachment,
     ensurePlainConversation,
+    savedThreadActive,
+    savedMessages,
+    sendSavedMessage,
   };
 }

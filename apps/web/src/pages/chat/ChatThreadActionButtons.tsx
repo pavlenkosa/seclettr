@@ -3,7 +3,7 @@ import { IconButton } from "@/components/ui";
 import { ThreadActionsDropdown, type ThreadActionsItem } from "./ThreadActionsDropdown";
 import styles from "./ChatThreadActions.module.css";
 
-type ChatThreadKind = "direct" | "group" | "plain-direct" | "plain-group" | null;
+type ChatThreadKind = "direct" | "group" | "plain-direct" | "plain-group" | "saved" | null;
 
 /**
  * Props for the thread-level action button cluster displayed in chat chrome.

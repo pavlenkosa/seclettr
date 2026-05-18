@@ -2,6 +2,7 @@ const CHAT_QUERY_PARAM = "chat";
 const GROUP_QUERY_PARAM = "group";
 const PLAIN_CHAT_QUERY_PARAM = "plain-chat";
 const PLAIN_GROUP_QUERY_PARAM = "plain-group";
+const SAVED_QUERY_PARAM = "saved";
 const SAFE_THREAD_ID_PATTERN = /^[A-Za-z0-9._:-]{1,128}$/;
 
 function normalizeSearch(search: string): string {
@@ -38,6 +39,7 @@ export function buildSearchWithConversation(
     params.delete(GROUP_QUERY_PARAM);
     params.delete(PLAIN_CHAT_QUERY_PARAM);
     params.delete(PLAIN_GROUP_QUERY_PARAM);
+    params.delete(SAVED_QUERY_PARAM);
   } else {
     params.delete(CHAT_QUERY_PARAM);
   }
@@ -56,6 +58,7 @@ export function buildSearchWithGroup(
     params.delete(CHAT_QUERY_PARAM);
     params.delete(PLAIN_CHAT_QUERY_PARAM);
     params.delete(PLAIN_GROUP_QUERY_PARAM);
+    params.delete(SAVED_QUERY_PARAM);
   } else {
     params.delete(GROUP_QUERY_PARAM);
   }
@@ -84,6 +87,7 @@ export function buildSearchWithPlainConversation(
     params.delete(CHAT_QUERY_PARAM);
     params.delete(GROUP_QUERY_PARAM);
     params.delete(PLAIN_GROUP_QUERY_PARAM);
+    params.delete(SAVED_QUERY_PARAM);
   } else {
     params.delete(PLAIN_CHAT_QUERY_PARAM);
   }
@@ -102,8 +106,32 @@ export function buildSearchWithPlainGroup(
     params.delete(CHAT_QUERY_PARAM);
     params.delete(GROUP_QUERY_PARAM);
     params.delete(PLAIN_CHAT_QUERY_PARAM);
+    params.delete(SAVED_QUERY_PARAM);
   } else {
     params.delete(PLAIN_GROUP_QUERY_PARAM);
+  }
+  const next = params.toString();
+  return next ? `?${next}` : "";
+}
+
+export function getSavedFromSearch(search: string): boolean {
+  const params = new URLSearchParams(normalizeSearch(search));
+  return params.get(SAVED_QUERY_PARAM) === "1";
+}
+
+export function buildSearchWithSaved(
+  search: string,
+  active: boolean
+): string {
+  const params = new URLSearchParams(normalizeSearch(search));
+  if (active) {
+    params.set(SAVED_QUERY_PARAM, "1");
+    params.delete(CHAT_QUERY_PARAM);
+    params.delete(GROUP_QUERY_PARAM);
+    params.delete(PLAIN_CHAT_QUERY_PARAM);
+    params.delete(PLAIN_GROUP_QUERY_PARAM);
+  } else {
+    params.delete(SAVED_QUERY_PARAM);
   }
   const next = params.toString();
   return next ? `?${next}` : "";

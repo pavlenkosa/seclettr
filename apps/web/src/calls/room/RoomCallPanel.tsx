@@ -17,11 +17,11 @@ import { CallControlsDock } from "@/calls/shared/presentation/CallControlsDock";
 import { CallPanelShell } from "@/calls/shared/presentation/CallPanelShell";
 import { getMemberInitials, resolveGroupCallDockInlineStyle } from "@/calls/group/presentation/display";
 
-import { RoomCallInviteCard } from "./RoomCallInviteCard";
-import { RoomCallMediaGrid, type RoomCallTile } from "./RoomCallMediaGrid";
-import { RoomCallMinimizedDock } from "./RoomCallMinimizedDock";
-import { RoomCallParticipantsSection } from "./RoomCallParticipantsSection";
-import { RoomCallStateNotice } from "./RoomCallStateNotice";
+import { RoomCallInviteCard } from "./components/RoomCallInviteCard";
+import { RoomCallMediaGrid, type RoomCallTile } from "./components/RoomCallMediaGrid";
+import { RoomCallMinimizedDock } from "./components/RoomCallMinimizedDock";
+import { RoomCallParticipantsSection } from "./components/RoomCallParticipantsSection";
+import { RoomCallStateNotice } from "./components/RoomCallStateNotice";
 
 import groupStyles from "@/calls/group/presentation/GroupCallPanel.module.css";
 import styles from "./RoomCallPanel.module.css";

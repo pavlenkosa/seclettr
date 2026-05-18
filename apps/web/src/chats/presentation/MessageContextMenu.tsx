@@ -15,7 +15,7 @@ import motionStyles from "@/components/ui/motion/Motion.module.css";
 import styles from "./MessageContextMenu.module.css";
 
 export interface MessageContextMenuAction {
-  kind: "reply" | "copy" | "delete";
+  kind: "reply" | "copy" | "forward" | "delete";
 }
 
 interface Props {
@@ -24,6 +24,7 @@ interface Props {
   readonly copyText?: string;
   readonly canReply?: boolean;
   readonly canCopy?: boolean;
+  readonly canForward?: boolean;
   readonly canDelete?: boolean;
 }
 
@@ -44,6 +45,7 @@ export const MessageContextMenu = memo(function MessageContextMenu({
   copyText,
   canReply = true,
   canCopy = true,
+  canForward = false,
   canDelete = false,
 }: Props) {
   const { t } = useI18n();
@@ -271,6 +273,22 @@ export const MessageContextMenu = memo(function MessageContextMenu({
               )}
               {copied ? t("message.context.copied") : t("message.context.copy")}
             </button>
+          )}
+          {canForward && (
+            <button
+              role="menuitem"
+              type="button"
+              className={styles.item}
+              onClick={() => handleAction("forward")}
+            >
+              <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                <path d="M9 3l5 4-5 4V8c-3.5 0-6 1.5-7 4 .5-4 3-7 7-7V3z" fill="currentColor" />
+              </svg>
+              {t("message.context.forward")}
+            </button>
+          )}
+          {canDelete && (canReply || canCopy || canForward) && (
+            <div className={styles.separator} aria-hidden="true" />
           )}
           {canDelete && (
             <button

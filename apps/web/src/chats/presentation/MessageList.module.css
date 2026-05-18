@@ -1506,7 +1506,9 @@ button.quotedBubble {
 }
 
 .mediaBubble .inlineMediaMeta {
-  border-radius: 0;
+  /* In a media-only bubble the overflow:hidden on the bubble clips the corner,
+     so we can keep the badge's own border-radius for the pill shape. */
+  border-radius: 6px 0 0 0;
 }
 
 .mediaBubble .attachmentCaption {
@@ -1681,8 +1683,10 @@ button.quotedBubble {
   position: absolute;
   bottom: 0;
   right: 0;
-  padding: 3px 7px 4px;
-  background: color-mix(in srgb, var(--bg-primary) 45%, transparent);
+  padding: 3px 7px 5px;
+  background: rgb(0 0 0 / 0.42);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
   color: #fff;
   font-size: 0.68rem;
   font-weight: 600;
@@ -1746,9 +1750,11 @@ button.quotedBubble {
   position: absolute;
   bottom: 0;
   right: 0;
-  padding: 3px 7px 4px;
-  background: color-mix(in srgb, var(--bg-primary) 45%, transparent);
-  border-radius: 0 0 14px 0;
+  padding: 3px 7px 5px;
+  background: rgb(0 0 0 / 0.42);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  border-radius: 6px 0 14px 0;
   color: #fff;
   font-size: 0.68rem;
   font-weight: 600;
@@ -1797,7 +1803,7 @@ button.quotedBubble {
   align-items: center;
   justify-content: center;
   gap: 0.56rem;
-  background: color-mix(in srgb, var(--surface-shell-strong) 90%, transparent);
+  background: var(--skeleton-surface, color-mix(in srgb, var(--surface-shell-strong) 100%, transparent));
   border-radius: inherit;
   overflow: hidden;
 }
@@ -1843,28 +1849,30 @@ button.quotedBubble {
   to { transform: rotate(360deg); }
 }
 
-/* Flattened from shimmer-gradient to token pulse so the guard stays truthful
-   while plain attachments still read as unresolved media. */
+/* Moving-gradient skeleton shimmer — slides left-to-right like Telegram. */
 .inlineMediaShimmer {
-  --inline-media-shimmer-base: color-mix(in srgb, var(--surface-shell-strong) 90%, transparent);
-  --inline-media-shimmer-peak: color-mix(in srgb, var(--surface-shell-strong) 78%, var(--accent));
   position: absolute;
   inset: 0;
-  background: var(--inline-media-shimmer-base);
-  animation: inlineMediaPlaceholderPulse 1.6s ease-in-out infinite;
   border-radius: inherit;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    color-mix(in srgb, var(--bg-primary) 55%, transparent) 50%,
+    transparent 100%
+  );
+  background-size: 300% 100%;
+  animation: inlineMediaShimmerSlide 1.5s linear infinite;
 }
 
-@keyframes inlineMediaPlaceholderPulse {
-  0%,
-  100% { background-color: var(--inline-media-shimmer-base); }
-  50%  { background-color: var(--inline-media-shimmer-peak); }
+@keyframes inlineMediaShimmerSlide {
+  from { background-position: 150% center; }
+  to   { background-position: -150% center; }
 }
 
 @media (prefers-reduced-motion: reduce) {
   .inlineMediaShimmer {
     animation: none;
-    background: var(--inline-media-shimmer-base);
+    background: color-mix(in srgb, var(--bg-primary) 20%, transparent);
   }
 }
 

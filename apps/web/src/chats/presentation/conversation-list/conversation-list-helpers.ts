@@ -1,6 +1,7 @@
 import type { CallMessageMeta, Conversation } from "@/stores/messages";
 import type { GroupChat } from "@/stores/groups";
 import type { PlainConversation, PlainGroup, PlainPinKind } from "@/stores/plain";
+import type { SavedMessage } from "@/stores/saved";
 
 export type PreviewStatus = "sending" | "sent" | "delivered" | "read" | "error";
 
@@ -20,7 +21,7 @@ export interface EntryLastMessage {
 export interface ConversationEntry {
   key: string;
   id: string;
-  kind: "direct" | "group" | "plain-direct" | "plain-group";
+  kind: "direct" | "group" | "plain-direct" | "plain-group" | "saved";
   name: string;
   lastMessageAt: number;
   unreadCount: number;
@@ -89,6 +90,25 @@ export function clampLoadingPlaceholderCount(count: number | undefined): number 
     MAX_LOADING_PLACEHOLDERS,
     Math.max(MIN_LOADING_PLACEHOLDERS, Math.round(count))
   );
+}
+
+export function buildSavedEntry(
+  savedMessages: SavedMessage[],
+  savedTitle: string
+): ConversationEntry {
+  const last = savedMessages.at(-1);
+  return {
+    key: "saved:saved",
+    id: "saved",
+    kind: "saved",
+    name: savedTitle,
+    lastMessageAt: last?.timestamp ?? 0,
+    unreadCount: 0,
+    lastMessage: last
+      ? { type: "text", content: last.content, isOwn: true, status: "sent" }
+      : undefined,
+    isEncrypted: false,
+  };
 }
 
 export function buildConversationEntries({

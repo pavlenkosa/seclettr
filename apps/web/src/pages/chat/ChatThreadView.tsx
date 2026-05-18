@@ -31,6 +31,7 @@ export const ChatThreadView = memo(function ChatThreadView({
   threadPaneState,
   handleRetryMessage,
   handleDeleteMessage,
+  handleForwardMessage,
   directTrustBlocked,
   handleDropFiles,
 }: {
@@ -48,6 +49,7 @@ export const ChatThreadView = memo(function ChatThreadView({
   threadPaneState: ThreadPaneState;
   handleRetryMessage: WorkspaceEntryState["handleRetryMessage"];
   handleDeleteMessage?: (messageId: string) => void;
+  handleForwardMessage?: (messageId: string) => void;
   directTrustBlocked: WorkspaceEntryState["directTrustBlocked"];
   handleDropFiles: (files: File[]) => Promise<void>;
 }) {
@@ -101,6 +103,7 @@ export const ChatThreadView = memo(function ChatThreadView({
         onRetry={activeThreadKind === null ? undefined : handleRetryMessage}
         onReply={threadPaneState.handleReply}
         onDelete={handleDeleteMessage}
+        onForward={handleForwardMessage}
         onScrollToMessage={threadPaneState.handleScrollToMessage}
         onDropFiles={
           activeThreadKind === "group" || (activeThreadKind === "direct" && !directTrustBlocked)

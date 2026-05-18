@@ -8,11 +8,11 @@ export type {
   PlainGroupMember,
 } from "./types";
 
-export { usePlainMessagesStore } from "./plain-messages-store";
-export type { PlainMessagesState } from "./plain-messages-store";
+export { usePlainMessagesStore } from "./messages/plain-messages-store";
+export type { PlainMessagesState } from "./messages/plain-messages-store";
 
-export { usePlainGroupsStore } from "./plain-groups-store";
-export type { PlainGroupsState } from "./plain-groups-store";
+export { usePlainGroupsStore } from "./groups/plain-groups-store";
+export type { PlainGroupsState } from "./groups/plain-groups-store";
 
-export { usePlainPinsStore } from "./plain-pins-store";
-export type { PlainPin, PlainPinKind, PlainPinsState } from "./plain-pins-store";
+export { usePlainPinsStore } from "./pins/plain-pins-store";
+export type { PlainPin, PlainPinKind, PlainPinsState } from "./pins/plain-pins-store";

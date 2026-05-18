@@ -33,6 +33,7 @@ export const ChatThreadComposer = memo(function ChatThreadComposer({
   sendPlainAttachment,
   sendPlainGroupText,
   sendPlainGroupAttachment,
+  sendSavedMessage,
 }: {
   activeThreadKind: WorkspaceEntryState["activeThreadKind"];
   activeConversation: WorkspaceEntryState["activeConversation"];
@@ -50,6 +51,7 @@ export const ChatThreadComposer = memo(function ChatThreadComposer({
   sendPlainAttachment: WorkspaceEntryState["sendPlainAttachment"];
   sendPlainGroupText: WorkspaceEntryState["sendPlainGroupText"];
   sendPlainGroupAttachment: WorkspaceEntryState["sendPlainGroupAttachment"];
+  sendSavedMessage: WorkspaceEntryState["sendSavedMessage"];
 }) {
   const handlePlainDirectSendText = useCallback(
     async (content: string, replyTo?: MessageReplyMeta) => {
@@ -221,6 +223,22 @@ export const ChatThreadComposer = memo(function ChatThreadComposer({
           onSendVoiceBlob={handlePlainGroupSendVoice}
           onSendVideoBlob={handlePlainGroupSendVideo}
           isGroupComposer
+        />
+      </Suspense>
+    );
+  }
+  if (activeThreadKind === "saved") {
+    const handleSavedSendText = async (text: string) => {
+      sendSavedMessage(text);
+    };
+    return (
+      <Suspense fallback={<div className={styles.composerLazyFallback} aria-hidden="true" />}>
+        <MessageComposer
+          key="saved:saved"
+          ref={messageComposerRef}
+          onFocusChange={onComposerFocusChange}
+          onSendText={handleSavedSendText}
+          placeholder={t("saved.composer.placeholder")}
         />
       </Suspense>
     );

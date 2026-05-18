@@ -11,14 +11,16 @@ import {
   buildSearchWithGroup,
   buildSearchWithPlainConversation,
   buildSearchWithPlainGroup,
+  buildSearchWithSaved,
   getConversationIdFromSearch,
   getGroupIdFromSearch,
   getPlainConversationIdFromSearch,
   getPlainGroupIdFromSearch,
+  getSavedFromSearch,
 } from "@/lib/chat-route";
 
 export interface ChatThreadSelection {
-  kind: "direct" | "group" | "plain-direct" | "plain-group";
+  kind: "direct" | "group" | "plain-direct" | "plain-group" | "saved";
   id: string;
 }
 
@@ -39,6 +41,8 @@ interface UseChatThreadRoutingOptions {
   setActivePlainConversation: (userId: string | null) => void;
   setActivePlainGroup: (groupId: string | null) => void;
   loadPlainGroupMessages: (groupId: string) => Promise<void>;
+  savedThreadActive: boolean;
+  setSavedThreadActive: (active: boolean) => void;
   setMobileShowConversation: Dispatch<SetStateAction<boolean>>;
   setMobileCreateMenuOpen: Dispatch<SetStateAction<boolean>>;
 }
@@ -136,6 +140,8 @@ export function useChatThreadRouting(options: UseChatThreadRoutingOptions) {
     setActivePlainConversation,
     setActivePlainGroup,
     loadPlainGroupMessages,
+    savedThreadActive,
+    setSavedThreadActive,
     setMobileShowConversation,
     setMobileCreateMenuOpen,
   } = options;
@@ -145,6 +151,7 @@ export function useChatThreadRouting(options: UseChatThreadRoutingOptions) {
   const routeGroupId = getGroupIdFromSearch(location.search);
   const routePlainConversationId = getPlainConversationIdFromSearch(location.search);
   const routePlainGroupId = getPlainGroupIdFromSearch(location.search);
+  const routeSaved = getSavedFromSearch(location.search);
   const activeThreadState = useMemo<ActiveThreadState>(() => ({
     activeConversationId,
     activeGroupId,
@@ -196,6 +203,16 @@ export function useChatThreadRouting(options: UseChatThreadRoutingOptions) {
       if (activePlainConversationId !== routePlainConversationId) {
         setActivePlainConversation(routePlainConversationId);
       }
+      if (savedThreadActive) setSavedThreadActive(false);
+      setMobileShowConversation(true);
+      return;
+    }
+
+    if (routeSaved) {
+      clearActiveThreadState(activeThreadState);
+      if (activePlainConversationId !== null) setActivePlainConversation(null);
+      if (activePlainGroupId !== null) setActivePlainGroup(null);
+      if (!savedThreadActive) setSavedThreadActive(true);
       setMobileShowConversation(true);
       return;
     }
@@ -203,17 +220,21 @@ export function useChatThreadRouting(options: UseChatThreadRoutingOptions) {
     clearActiveThreadState(activeThreadState);
     if (activePlainConversationId !== null) setActivePlainConversation(null);
     if (activePlainGroupId !== null) setActivePlainGroup(null);
+    if (savedThreadActive) setSavedThreadActive(false);
   }, [
     routeConversationId,
     routeGroupId,
     routePlainConversationId,
     routePlainGroupId,
+    routeSaved,
     conversations,
     plainConversations,
     activeThreadState,
     loadGroupMessages,
     getGroupsState,
     loadPlainGroupMessages,
+    savedThreadActive,
+    setSavedThreadActive,
     activeConversationId,
     activeGroupId,
     activePlainConversationId,
@@ -261,11 +282,21 @@ export function useChatThreadRouting(options: UseChatThreadRoutingOptions) {
     [location.pathname, location.search, navigate]
   );
 
+  const updateSavedRoute = useCallback(
+    (active: boolean) => {
+      const nextSearch = buildSearchWithSaved(location.search, active);
+      if (nextSearch === location.search) return;
+      navigate({ pathname: location.pathname, search: nextSearch }, { replace: false });
+    },
+    [location.pathname, location.search, navigate]
+  );
+
   const clearThreadRoute = useCallback(() => {
     const s1 = buildSearchWithConversation(location.search, null);
     const s2 = buildSearchWithGroup(s1, null);
     const s3 = buildSearchWithPlainConversation(s2, null);
-    const nextSearch = buildSearchWithPlainGroup(s3, null);
+    const s4 = buildSearchWithPlainGroup(s3, null);
+    const nextSearch = buildSearchWithSaved(s4, false);
     if (nextSearch === location.search) return;
     navigate({ pathname: location.pathname, search: nextSearch }, { replace: false });
   }, [location.pathname, location.search, navigate]);
@@ -314,8 +345,19 @@ export function useChatThreadRouting(options: UseChatThreadRoutingOptions) {
         if (activeGroupId !== null) setActiveGroup(null);
         if (activePlainConversationId !== null) setActivePlainConversation(null);
         if (activePlainGroupId !== selection.id) setActivePlainGroup(selection.id);
+        if (savedThreadActive) setSavedThreadActive(false);
         loadPlainGroupMessages(selection.id).catch(() => {});
         updatePlainGroupRoute(selection.id);
+        return;
+      }
+
+      if (selection.kind === "saved") {
+        if (activeConversationId !== null) setActiveConversation(null);
+        if (activeGroupId !== null) setActiveGroup(null);
+        if (activePlainConversationId !== null) setActivePlainConversation(null);
+        if (activePlainGroupId !== null) setActivePlainGroup(null);
+        if (!savedThreadActive) setSavedThreadActive(true);
+        updateSavedRoute(true);
       }
     },
     [
@@ -323,6 +365,8 @@ export function useChatThreadRouting(options: UseChatThreadRoutingOptions) {
       activeGroupId,
       activePlainConversationId,
       activePlainGroupId,
+      savedThreadActive,
+      setSavedThreadActive,
       loadGroupMessages,
       loadPlainGroupMessages,
       setActiveConversation,
@@ -335,6 +379,7 @@ export function useChatThreadRouting(options: UseChatThreadRoutingOptions) {
       updateGroupRoute,
       updatePlainConversationRoute,
       updatePlainGroupRoute,
+      updateSavedRoute,
     ]
   );
 
@@ -347,6 +392,7 @@ export function useChatThreadRouting(options: UseChatThreadRoutingOptions) {
     updateGroupRoute,
     updatePlainConversationRoute,
     updatePlainGroupRoute,
+    updateSavedRoute,
     clearThreadRoute,
     handleBack,
     handleSelectThread,

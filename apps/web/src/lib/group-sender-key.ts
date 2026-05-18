@@ -15,19 +15,14 @@ import {
   type PlaintextSenderKeyDistributionMessage,
 } from "@seclettr/protocol";
 import { type GroupTextContent } from "@/lib/group-message-codec";
+import { createGroupSenderKeyLockRuntime } from "./group-sender-key-lock-runtime";
 
 const LOCAL_SENDER_KEY_PREFIX = "group:sender-key:local:v1:";
 const REMOTE_SENDER_KEY_PREFIX = "group:sender-key:remote:v1:";
 const CURRENT_LOCAL_SENDER_KEY_RECORD_VERSION = 2;
-const localSenderKeyLocks = new Map<string, Promise<void>>();
-
-interface BrowserLockManager {
-  request<T>(
-    name: string,
-    options: { mode: "exclusive" },
-    callback: () => Promise<T>
-  ): Promise<T>;
-}
+const senderKeyLockRuntime = createGroupSenderKeyLockRuntime(
+  LOCAL_SENDER_KEY_PREFIX
+);
 
 interface StoredLocalSenderKey {
   distributionId: string;
@@ -80,63 +75,6 @@ export type GroupTextDecryptResult =
 
 function localSenderKeyStorageKey(groupId: string, senderDeviceId: string): string {
   return `${LOCAL_SENDER_KEY_PREFIX}${groupId}:${senderDeviceId}`;
-}
-
-function localSenderKeyLockKey(groupId: string, senderDeviceId: string): string {
-  return `${groupId}:${senderDeviceId}`;
-}
-
-function localSenderKeyBrowserLockName(
-  groupId: string,
-  senderDeviceId: string
-): string {
-  return `seclettr:${LOCAL_SENDER_KEY_PREFIX}${localSenderKeyLockKey(groupId, senderDeviceId)}`;
-}
-
-function getBrowserLockManager(): BrowserLockManager | null {
-  if (globalThis.navigator === undefined) return null;
-  const locks = (globalThis.navigator as Navigator & {
-    locks?: BrowserLockManager;
-  }).locks;
-  return locks && typeof locks.request === "function" ? locks : null;
-}
-
-async function withInMemoryLocalSenderKeyLock<T>(
-  groupId: string,
-  senderDeviceId: string,
-  fn: () => Promise<T>
-): Promise<T> {
-  const key = localSenderKeyLockKey(groupId, senderDeviceId);
-  const previous = localSenderKeyLocks.get(key) ?? Promise.resolve();
-  let releaseLock!: () => void;
-  const current = new Promise<void>((resolve) => {
-    releaseLock = resolve;
-  });
-  localSenderKeyLocks.set(key, current);
-  await previous.catch(() => {});
-  try {
-    return await fn();
-  } finally {
-    releaseLock();
-    if (localSenderKeyLocks.get(key) === current) {
-      localSenderKeyLocks.delete(key);
-    }
-  }
-}
-
-async function withLocalSenderKeyLock<T>(
-  groupId: string,
-  senderDeviceId: string,
-  fn: () => Promise<T>
-): Promise<T> {
-  const run = () => withInMemoryLocalSenderKeyLock(groupId, senderDeviceId, fn);
-  const browserLocks = getBrowserLockManager();
-  if (!browserLocks) return run();
-  return browserLocks.request(
-    localSenderKeyBrowserLockName(groupId, senderDeviceId),
-    { mode: "exclusive" },
-    run
-  );
 }
 
 function remoteSenderKeyStorageKey(groupId: string, senderDeviceId: string, distributionId: string): string {
@@ -311,7 +249,7 @@ export async function ensureLocalSenderKeyRecord(
   groupId: string,
   senderDeviceId: string
 ): Promise<LocalSenderKeyRecord> {
-  return withLocalSenderKeyLock(groupId, senderDeviceId, () =>
+  return senderKeyLockRuntime.withLocalSenderKeyLock(groupId, senderDeviceId, () =>
     loadOrCreateLocalSenderKeyRecord(storageKey, groupId, senderDeviceId)
   );
 }
@@ -323,7 +261,7 @@ export async function ensureLocalSenderKeyRecordForMemberDevices(
   activeRecipientDeviceIds: string[]
 ): Promise<LocalSenderKeyRecord> {
   const nextFingerprint = memberDeviceFingerprint(activeRecipientDeviceIds);
-  return withLocalSenderKeyLock(groupId, senderDeviceId, async () => {
+  return senderKeyLockRuntime.withLocalSenderKeyLock(groupId, senderDeviceId, async () => {
     const record = await loadOrCreateLocalSenderKeyRecord(
       storageKey,
       groupId,
@@ -373,7 +311,7 @@ export async function markSenderKeyDistributedToDevices(
   deviceIds: string[]
 ): Promise<void> {
   if (deviceIds.length === 0) return;
-  await withLocalSenderKeyLock(groupId, senderDeviceId, async () => {
+  await senderKeyLockRuntime.withLocalSenderKeyLock(groupId, senderDeviceId, async () => {
     const record = await loadOrCreateLocalSenderKeyRecord(
       storageKey,
       groupId,
@@ -452,7 +390,7 @@ export async function encryptGroupTextEnvelope(
   text: string,
   reply?: { id: string; snippet: string }
 ): Promise<GroupCipherEnvelope> {
-  return withLocalSenderKeyLock(groupId, senderDeviceId, async () => {
+  return senderKeyLockRuntime.withLocalSenderKeyLock(groupId, senderDeviceId, async () => {
     const record = await loadOrCreateLocalSenderKeyRecord(
       storageKey,
       groupId,
@@ -497,7 +435,7 @@ export async function encryptGroupAttachmentEnvelope(
   senderDeviceId: string,
   attachmentPayload: PlaintextAttachmentMessage
 ): Promise<GroupCipherEnvelope> {
-  return withLocalSenderKeyLock(groupId, senderDeviceId, async () => {
+  return senderKeyLockRuntime.withLocalSenderKeyLock(groupId, senderDeviceId, async () => {
     const record = await loadOrCreateLocalSenderKeyRecord(
       storageKey,
       groupId,

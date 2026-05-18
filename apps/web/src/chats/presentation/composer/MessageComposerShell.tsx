@@ -5,13 +5,13 @@ import { MessageComposerPrimaryActions, MessageComposerVideoRecordingOverlay, ty
 import type { UseMessageComposerDraftResult } from "../../composer/useMessageComposerDraft";
 import type { UseMessageComposerEmojiStateResult } from "../../composer/useMessageComposerEmojiState";
 import type { UseMediaSendDialogResult } from "../../composer/useMediaSendDialog";
+import { ComposerBody } from "./MessageComposerBody";
 import {
-  ComposerBody,
   ComposerErrorMessage,
-  HiddenAttachmentInput,
   MountedMediaSendDialog,
-  ReplyPreview,
-} from "./MessageComposerParts";
+} from "./MessageComposerDialogMount";
+import { HiddenAttachmentInput } from "./MessageComposerHiddenAttachmentInput";
+import { ReplyPreview } from "./MessageComposerReplyPreview";
 import type { DialogState, RecordingCopy } from "./message-composer-view-model";
 import styles from "../MessageComposer.module.css";
 

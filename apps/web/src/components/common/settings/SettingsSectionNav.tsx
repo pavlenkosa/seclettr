@@ -15,7 +15,7 @@ interface SettingsSectionNavProps {
   readonly activeSection: SettingsSectionEntry["id"];
   readonly onSelect: (section: SettingsSectionEntry["id"]) => void;
   readonly ariaLabel: string;
-  readonly note: string;
+  readonly note?: string;
 }
 
 export function SettingsSectionNav({
@@ -90,7 +90,7 @@ export function SettingsSectionNav({
         })}
       </nav>
 
-      <p className={styles.menuNote}>{note}</p>
+      {note ? <p className={styles.menuNote}>{note}</p> : null}
     </>
   );
 }

@@ -122,7 +122,9 @@ export const ConversationListRow = memo(function ConversationListRow({
         data-testid={`conversation-entry:${entry.kind}:${entry.id}`}
         aria-current={isActive ? "true" : undefined}
       >
-        <Avatar label={entry.name} size={50} fontSize="0.9rem" ariaHidden />
+        {entry.kind === "saved"
+          ? <SavedAvatar />
+          : <Avatar label={entry.name} size={50} fontSize="0.9rem" ariaHidden />}
 
         <div className={styles.content}>
           <div className={styles.row}>
@@ -212,6 +214,23 @@ function areEntryLastMessagesEqual(left?: EntryLastMessage, right?: EntryLastMes
     && left.isOwn === right.isOwn
     && left.status === right.status
     && left.senderLabel === right.senderLabel;
+}
+
+function SavedAvatar() {
+  return (
+    <span className={styles.savedAvatar} aria-hidden="true">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+        <path
+          d="M5 5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16l-7-3.5L5 21V5Z"
+          fill="currentColor"
+          fillOpacity="0.18"
+          stroke="currentColor"
+          strokeWidth="1.6"
+          strokeLinejoin="round"
+        />
+      </svg>
+    </span>
+  );
 }
 
 function EncryptedBadge({ ariaLabel }: { readonly ariaLabel: string }) {

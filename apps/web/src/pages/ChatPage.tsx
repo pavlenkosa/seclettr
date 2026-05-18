@@ -2,6 +2,7 @@ import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } fro
 import { useShallow } from "zustand/react/shallow";
 import { useAuthStore } from "@/stores/auth";
 import { usePlainMessagesStore, usePlainGroupsStore } from "@/stores/plain";
+import { useSavedMessagesStore } from "@/stores/saved";
 import type { DirectCallPanelHandle } from "@/calls/direct/model/direct-call-types";
 import { useDirectMissedCallAlerts } from "@/calls/direct/runtime/useDirectMissedCallAlerts";
 import {
@@ -32,6 +33,7 @@ import { ChatThreadComposer } from "./chat/ChatThreadComposer";
 import { ChatCallPanels } from "./chat/ChatCallPanels";
 import { ChatMainLayout } from "./chat/ChatMainLayout";
 import { ChatModals } from "./chat/ChatModals";
+import { ForwardPickerModal, type ForwardTarget } from "@/chats/presentation/modals/ForwardPickerModal";
 import { CreateRoomDialog } from "./chat/CreateRoomDialog";
 import type { RoomCallSession } from "@/calls/room/room-call-bootstrap";
 import type { WorkspaceEntryState } from "./chat/chat-page-types";
@@ -167,11 +169,21 @@ export function ChatPage() {
     createPlainGroup,
     sendPlainGroupText,
     sendPlainGroupAttachment,
+    savedMessages,
+    sendSavedMessage,
   } = useChatWorkspaceEntry({
     userId,
     setMobileShowConversation: workspaceUiState.setMobileShowConversation,
     setMobileCreateMenuOpen: workspaceUiState.setMobileCreateMenuOpen,
   });
+
+  useEffect(() => {
+    if (userId) {
+      useSavedMessagesStore.getState().load(userId);
+    } else {
+      useSavedMessagesStore.getState().reset();
+    }
+  }, [userId]);
 
   const { missedDirectCalls, dismissMissedDirectCall } = useDirectMissedCallAlerts(userId);
 
@@ -292,6 +304,58 @@ export function ChatPage() {
     deletePlainGroupMessage,
   ]);
 
+  // Forward message: collect plain-only targets (plain-direct + plain-group),
+  // show picker, then send forwarded text with attribution to the chosen thread.
+  const [forwardMessageId, setForwardMessageId] = useState<string | null>(null);
+
+  const forwardTargets = useMemo<ForwardTarget[]>(() => {
+    const savedTarget: ForwardTarget = { kind: "saved", id: "saved", name: t("saved.title") };
+    const dmTargets: ForwardTarget[] = plainConversationEntries.map((c) => ({
+      kind: "plain-direct" as const,
+      id: c.userId,
+      name: c.username,
+    }));
+    const groupTargets: ForwardTarget[] = plainGroupEntries.map((g) => ({
+      kind: "plain-group" as const,
+      id: g.groupId,
+      name: g.name,
+    }));
+    const rest = [...dmTargets, ...groupTargets].sort((a, b) => a.name.localeCompare(b.name));
+    return [savedTarget, ...rest];
+  }, [plainConversationEntries, plainGroupEntries, t]);
+
+  const handleForwardMessage = useCallback((messageId: string) => {
+    setForwardMessageId(messageId);
+  }, []);
+
+  const handleForwardSend = useCallback((target: ForwardTarget) => {
+    const message = activeMessages.find((m) => m.id === forwardMessageId);
+    if (!message || !message.content) return;
+    const senderLabel = message.isOwn
+      ? `@${username ?? "me"}`
+      : (groupSenderLabels?.[message.id] ?? `@${activePlainConversation?.username ?? "unknown"}`);
+    const attribution = t("forward.attribution", { sender: senderLabel });
+    const text = `${attribution}\n\n${message.content}`;
+    if (target.kind === "saved") {
+      void sendSavedMessage(text);
+    } else if (target.kind === "plain-direct") {
+      void sendPlainText(target.id, target.name, text);
+    } else {
+      void sendPlainGroupText(target.id, text);
+    }
+    setForwardMessageId(null);
+  }, [
+    activeMessages,
+    forwardMessageId,
+    username,
+    groupSenderLabels,
+    activePlainConversation,
+    t,
+    sendSavedMessage,
+    sendPlainText,
+    sendPlainGroupText,
+  ]);
+
   const directPresenceLabel = useMemo(
     () => resolveDirectPresenceLabel({ activeConversationUserId, activeTyping, activePresence, locale, t }),
     [activeConversationUserId, activeTyping, activePresence, locale, t]
@@ -373,6 +437,7 @@ export function ChatPage() {
       sendPlainAttachment={sendPlainAttachment}
       sendPlainGroupText={sendPlainGroupText}
       sendPlainGroupAttachment={sendPlainGroupAttachment}
+      sendSavedMessage={sendSavedMessage}
     />
   );
 
@@ -385,6 +450,7 @@ export function ChatPage() {
         groups={groupEntries}
         plainConversations={plainConversationEntries}
         plainGroups={plainGroupEntries}
+        savedMessages={savedMessages}
         activeId={activeListId}
         loading={!historyLoaded || loadingGroups}
         onSelectThread={handleSelectThread}
@@ -431,6 +497,7 @@ export function ChatPage() {
       threadPaneState={threadPaneState}
       handleRetryMessage={handleRetryMessage}
       handleDeleteMessage={handleDeleteMessage}
+      handleForwardMessage={handleForwardMessage}
       directTrustBlocked={directTrustBlocked}
       handleDropFiles={handleDropFiles}
     />
@@ -509,6 +576,13 @@ export function ChatPage() {
               inviteUrl: res.inviteUrl,
             });
           }}
+        />
+      )}
+      {forwardMessageId !== null && (
+        <ForwardPickerModal
+          targets={forwardTargets}
+          onClose={() => setForwardMessageId(null)}
+          onSelect={handleForwardSend}
         />
       )}
       {activeRoomSession && (

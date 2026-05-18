@@ -191,7 +191,6 @@ export function SettingsScreen({
             activeSection={activeSection}
             onSelect={handleSectionClick}
             ariaLabel={t("settings.sections.ariaLabel")}
-            note={t("settings.appliedInstantly")}
           />
         </aside>
 

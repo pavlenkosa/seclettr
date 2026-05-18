@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useI18n } from "@/i18n";
 import { useSecuritySettings } from "@/ui-settings";
 import { useFileAttachmentRuntime } from "@/chats/runtime/useFileAttachmentRuntime";
@@ -68,6 +68,7 @@ export function MediaGroupCell({
   });
   const { progress: uploadProgress, cancel: cancelUpload } = useUploadProgress(msg.id);
   const isVideo = msg.attachment?.mimeType.startsWith("video/") ?? false;
+  const [cellLoaded, setCellLoaded] = useState(false);
   const previewDataRef = useRef<CellPreviewData | null>(null);
   const previewMediaElement = isVideo ? (
     <video
@@ -81,6 +82,7 @@ export function MediaGroupCell({
           onAspectRatioUpdate(msg.id, e.currentTarget.videoWidth / e.currentTarget.videoHeight);
         }
         e.currentTarget.currentTime = 0.001;
+        setCellLoaded(true);
       }}
     />
   ) : (
@@ -93,6 +95,7 @@ export function MediaGroupCell({
         if (e.currentTarget.naturalWidth > 0 && e.currentTarget.naturalHeight > 0) {
           onAspectRatioUpdate(msg.id, e.currentTarget.naturalWidth / e.currentTarget.naturalHeight);
         }
+        setCellLoaded(true);
       }}
     />
   );
@@ -170,7 +173,9 @@ export function MediaGroupCell({
     }
   };
 
-  const cellMetaOverlay = isLast ? (
+  // Badge only shown after the media element has loaded — prevents it from
+  // appearing at the wrong position before the cell has its natural dimensions.
+  const cellMetaOverlay = isLast && previewUrl && cellLoaded ? (
     <div className={styles.mediaGroupMeta} aria-hidden="true">
       <span>{timeLabel}</span>
       {isOwn ? <MessageStatusIcon status={msg.status} /> : null}

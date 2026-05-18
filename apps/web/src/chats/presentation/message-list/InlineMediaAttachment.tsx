@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useI18n } from "@/i18n";
 import { useSecuritySettings } from "@/ui-settings";
 import { useFileAttachmentRuntime } from "@/chats/runtime/useFileAttachmentRuntime";
@@ -16,6 +16,8 @@ type InlineMediaPreviewProps = Readonly<{
   isVideo: boolean;
   previewUrl: string | null;
   fileName?: string;
+  hidden: boolean;
+  onReady: () => void;
 }>;
 
 type InlineMediaPlaceholderProps = Readonly<{
@@ -34,16 +36,28 @@ function InlineMediaPreview({
   isVideo,
   previewUrl,
   fileName,
+  hidden,
+  onReady,
 }: InlineMediaPreviewProps) {
+  // When hidden, the element stays in the DOM so loading proceeds, but takes
+  // no layout space. Once onReady fires the parent swaps it visible.
+  const hiddenStyle = hidden
+    ? ({ position: "absolute", opacity: 0, pointerEvents: "none", width: 0, height: 0, overflow: "hidden" } as const)
+    : undefined;
+
   if (isVideo) {
     return (
       <video
         src={previewUrl ?? undefined}
         className={styles.inlineMediaThumb}
+        style={hiddenStyle}
         muted
         playsInline
         preload="metadata"
-        onLoadedMetadata={(e) => { e.currentTarget.currentTime = 0.001; }}
+        onLoadedMetadata={(e) => {
+          e.currentTarget.currentTime = 0.001;
+          onReady();
+        }}
       />
     );
   }
@@ -52,16 +66,15 @@ function InlineMediaPreview({
     <img
       src={previewUrl ?? undefined}
       className={styles.inlineMediaThumb}
+      style={hiddenStyle}
       alt={fileName || ""}
       draggable={false}
+      onLoad={onReady}
     />
   );
 }
 
 function InlineMediaPlaceholder({ isVideo, loading, isPlain }: InlineMediaPlaceholderProps) {
-  // Plain media: no decryption gate, so the resting state is a shimmer
-  // skeleton instead of the lock glyph (which previously confused users on
-  // unencrypted chats).
   const restingGlyph = isPlain
     ? <span className={styles.inlineMediaShimmer} aria-hidden="true" />
     : (
@@ -99,6 +112,10 @@ function InlineMediaPlaceholder({ isVideo, loading, isPlain }: InlineMediaPlaceh
  * Inline image / video attachment — shows a thumbnail in the bubble, opens a
  * fullscreen lightbox on tap. Media is decrypted on first interaction; the
  * resulting blob URL is kept alive for the lifetime of the message row.
+ *
+ * The placeholder is kept visible until the media element fires its load event
+ * so the badge never appears at the wrong position and the list never reflows
+ * from 0-height to natural-height in the same frame.
  */
 export function InlineMediaAttachment({ msg, isOwn }: InlineMediaAttachmentProps) {
   const { t, locale } = useI18n();
@@ -116,15 +133,31 @@ export function InlineMediaAttachment({ msg, isOwn }: InlineMediaAttachmentProps
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const { progress: uploadProgress, cancel: cancelUpload } = useUploadProgress(msg.id);
 
-  // Plain attachments use the local blob URL directly — no decryption needed,
-  // no "tap to unlock" gate. Bypass the hook's previewUrl gating completely.
   const plainLocalUrl = msg.attachment?.isPlain ? msg.attachment.localUrl ?? null : null;
   const previewUrl = plainLocalUrl ?? hookPreviewUrl;
+
+  // Track whether the media element has finished loading so the badge is only
+  // shown once it's at the correct bottom-right position.
+  const [mediaLoaded, setMediaLoaded] = useState(false);
+  const prevPreviewUrlRef = useRef<string | null>(null);
+  useEffect(() => {
+    // When a URL becomes available for the first time, ensure loaded state is
+    // false so the placeholder is displayed while the element decodes.
+    if (previewUrl !== null && prevPreviewUrlRef.current === null) {
+      setMediaLoaded(false);
+    }
+    prevPreviewUrlRef.current = previewUrl;
+  }, [previewUrl]);
+
+  const handleMediaReady = useCallback(() => setMediaLoaded(true), []);
 
   const isVideo = msg.attachment?.mimeType.startsWith("video/") ?? false;
   const messageTimeLabel = formatTime(msg.timestamp, locale);
   const error = resolveAttachmentErrorMessage("file", errorCause, t, !!msg.attachment?.isPlain);
-  const mediaMetaOverlay = previewUrl ? (
+
+  // Badge rendered only after media is loaded — prevents it from floating at
+  // (0, 0) while the image element hasn't yet reported its natural dimensions.
+  const mediaMetaOverlay = previewUrl && mediaLoaded ? (
     <div className={styles.inlineMediaMeta} aria-hidden="true">
       <span>{messageTimeLabel}</span>
       {isOwn ? <MessageStatusIcon status={msg.status} /> : null}
@@ -132,11 +165,6 @@ export function InlineMediaAttachment({ msg, isOwn }: InlineMediaAttachmentProps
   ) : null;
 
   useEffect(() => {
-    // Plain attachments resolve their preview synchronously inside the runtime
-    // hook; for E2EE we kick off decrypt-on-mount when the user opted in.
-    // `errorCause` guard prevents an infinite retry loop when the fetch fails
-    // (the effect would otherwise re-fire on the next render and hammer the
-    // attachment endpoint until rate-limited).
     if (
       (autoDecryptMedia === "on" || !!msg.attachment?.isPlain) &&
       uploadProgress === null &&
@@ -158,6 +186,10 @@ export function InlineMediaAttachment({ msg, isOwn }: InlineMediaAttachmentProps
     if (url) setLightboxOpen(true);
   };
 
+  // Show placeholder while no previewUrl OR while previewUrl is set but the
+  // media element hasn't fired its load/loadedmetadata event yet.
+  const showPlaceholder = !previewUrl || !mediaLoaded;
+
   return (
     <div className={`${styles.inlineMedia} ${isOwn ? styles.voiceOwn : styles.voiceTheirs}`}>
       <div className={styles.inlineMediaFrame}>
@@ -168,17 +200,28 @@ export function InlineMediaAttachment({ msg, isOwn }: InlineMediaAttachmentProps
           disabled={uploadProgress !== null || (loading && !previewUrl)}
           aria-label={t(isVideo ? "message.media.tapToPlayVideo" : "message.media.tapToViewImage")}
         >
+          {showPlaceholder ? (
+            <InlineMediaPlaceholder
+              isVideo={isVideo}
+              loading={loading}
+              isPlain={!!msg.attachment?.isPlain}
+            />
+          ) : null}
+
+          {/* Render the media element early (hidden) so it starts loading while
+              the placeholder is still displayed. Once onReady fires, the
+              placeholder is removed and the element becomes visible. */}
           {previewUrl ? (
             <InlineMediaPreview
               isVideo={isVideo}
               previewUrl={previewUrl}
               fileName={msg.attachment?.fileName}
+              hidden={!mediaLoaded}
+              onReady={handleMediaReady}
             />
-          ) : (
-            <InlineMediaPlaceholder isVideo={isVideo} loading={loading} isPlain={!!msg.attachment?.isPlain} />
-          )}
+          ) : null}
 
-          {previewUrl && isVideo ? (
+          {mediaLoaded && previewUrl && isVideo ? (
             <span className={styles.inlineMediaPlayOverlay} aria-hidden="true">
               <svg viewBox="0 0 24 24" fill="none">
                 <circle cx="12" cy="12" r="11" fill="rgb(0 0 0 / 0.48)" />

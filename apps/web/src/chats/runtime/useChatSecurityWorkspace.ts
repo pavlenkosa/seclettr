@@ -20,7 +20,7 @@ interface ChatSecurityWorkspaceOptions {
   deviceId?: string | null;
   activeGroupId: string | null;
   activeGroupMembers: GroupMember[] | null;
-  activeThreadKind: "direct" | "group" | "plain-direct" | "plain-group" | null;
+  activeThreadKind: "direct" | "group" | "plain-direct" | "plain-group" | "saved" | null;
   groupSecurityDirectory: Pick<GroupSecurityDirectory, "fetchGroupSecurityDevices">;
   showChatNotice: (message: string) => void;
 }

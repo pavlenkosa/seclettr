@@ -409,16 +409,25 @@ export async function plainMessageRoutes(fastify: FastifyInstance): Promise<void
         [body.content, editedAt, id]
       );
 
-      const editEvent = {
+      // threadKey is the peer's userId from the receiving side's perspective:
+      // recipient stores the conversation under sender_user_id (= userId here),
+      // sender stores it under recipient_user_id.
+      await publishPlainMessageToUser(msg.recipient_user_id, {
+        type: "plain_message.edited" as const,
+        messageId: id,
+        content: body.content,
+        editedAt,
+        threadKey: userId,
+        threadKind: "dm" as const,
+      });
+      await publishPlainMessageToUser(userId, {
         type: "plain_message.edited" as const,
         messageId: id,
         content: body.content,
         editedAt,
         threadKey: msg.recipient_user_id,
         threadKind: "dm" as const,
-      };
-      await publishPlainMessageToUser(msg.recipient_user_id, editEvent);
-      await publishPlainMessageToUser(userId, editEvent);
+      });
 
       return reply.code(200).send({ id, editedAt });
     }
@@ -445,14 +454,19 @@ export async function plainMessageRoutes(fastify: FastifyInstance): Promise<void
       const deletedAt = new Date().toISOString();
       await query(`UPDATE plain_messages SET deleted_at = $1 WHERE id = $2`, [deletedAt, id]);
 
-      const deleteEvent = {
+      // threadKey must be the peer's userId from each side's perspective.
+      await publishPlainMessageToUser(msg.recipient_user_id, {
+        type: "plain_message.deleted" as const,
+        messageId: id,
+        threadKey: userId,
+        threadKind: "dm" as const,
+      });
+      await publishPlainMessageToUser(userId, {
         type: "plain_message.deleted" as const,
         messageId: id,
         threadKey: msg.recipient_user_id,
         threadKind: "dm" as const,
-      };
-      await publishPlainMessageToUser(msg.recipient_user_id, deleteEvent);
-      await publishPlainMessageToUser(userId, deleteEvent);
+      });
 
       return reply.code(204).send();
     }

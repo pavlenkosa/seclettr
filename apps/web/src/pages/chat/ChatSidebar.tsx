@@ -2,6 +2,7 @@ import { useCallback, useMemo, useState } from "react";
 import type { Conversation } from "@/stores/messages";
 import type { GroupChat } from "@/stores/groups";
 import type { PlainConversation, PlainGroup } from "@/stores/plain";
+import type { SavedMessage } from "@/stores/saved";
 import { useI18n } from "@/i18n";
 import { ConversationList } from "@/chats/presentation/ConversationList";
 import { SeclettrMark } from "@/components/common/SeclettrMark";
@@ -19,9 +20,10 @@ export interface ChatSidebarProps {
   readonly groups: GroupChat[];
   readonly plainConversations?: PlainConversation[];
   readonly plainGroups?: PlainGroup[];
+  readonly savedMessages?: SavedMessage[];
   readonly activeId: string | null;
   readonly loading?: boolean;
-  readonly onSelectThread: (selection: { kind: "direct" | "group" | "plain-direct" | "plain-group"; id: string }) => void;
+  readonly onSelectThread: (selection: { kind: "direct" | "group" | "plain-direct" | "plain-group" | "saved"; id: string }) => void;
   readonly onOpenSettings: () => void;
   readonly onLock: () => void;
   readonly onLogout: () => void;
@@ -40,6 +42,7 @@ export function ChatSidebar({
   groups,
   plainConversations = [],
   plainGroups = [],
+  savedMessages = [],
   activeId,
   loading,
   onSelectThread,
@@ -224,6 +227,7 @@ export function ChatSidebar({
         groups={filteredGroups}
         plainConversations={filteredPlainConversations}
         plainGroups={filteredPlainGroups}
+        savedMessages={savedMessages}
         activeId={activeId}
         loading={loading}
         loadingPlaceholderCount={loadingPlaceholderCount}

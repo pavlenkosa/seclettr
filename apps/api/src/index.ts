@@ -261,7 +261,7 @@ export async function buildApp() {
   return fastify;
 }
 
-const EXPECTED_LATEST_MIGRATION = "024_plain_chat_folders.sql";
+const EXPECTED_LATEST_MIGRATION = "025_background_poll_tokens.sql";
 
 async function checkDbSchemaVersion(): Promise<void> {
   const rows = await query<{ filename: string }>(

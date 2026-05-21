@@ -1,3 +1,16 @@
+/**
+ * MessageListRow — renders one projected chat timeline row.
+ *
+ * Owns:
+ *   - Row-level rendering branches for text, file, inline media, albums,
+ *     voice notes, video notes, and call events
+ *   - Quoted-reply rendering and reply-jump affordance
+ *   - Row-local context-menu capabilities (copy / reply / forward / delete)
+ *   - Own-vs-peer bubble/meta presentation
+ *
+ * Does not own virtualization, row projection building, message-store updates,
+ * or attachment/media runtime behavior.
+ */
 import { memo, useCallback, type CSSProperties, type ReactNode } from "react";
 import { SurfacePanel } from "@/components/ui";
 import { MessageContextMenu, type MessageContextMenuAction } from "../MessageContextMenu";
@@ -77,6 +90,25 @@ type MessageRowFrameProps = Readonly<{
   presentation: MessageListRowPresentation;
   children: ReactNode;
 }>;
+type MessageRowCapabilities = Readonly<{
+  canCopy: boolean;
+  canDelete: boolean;
+  canForward: boolean;
+}>;
+type MessageRowContentProps = Readonly<{
+  presentation: MessageListRowPresentation;
+  kind: MessageBodyKind;
+  capabilities: MessageRowCapabilities;
+  activeMediaKey: string | null;
+  onActiveMediaChange: (next: string | null) => void;
+  onRetry?: (messageId: string) => void;
+  onReply?: (messageId: string) => void;
+  onDelete?: (messageId: string) => void;
+  onForward?: (messageId: string) => void;
+  onScrollToMessage?: (messageId: string) => void;
+  isHighlighted: boolean;
+  t: Props["t"];
+}>;
 
 function getMessageBodyKind(
   message: MessageListRowMessage,
@@ -96,6 +128,23 @@ function usesInlineAttachmentMeta(kind: MessageBodyKind): boolean {
 
 function canCopyMessage(message: MessageListRowMessage, kind: MessageBodyKind): boolean {
   return kind === "text" && Boolean(message.content) && !message.content.startsWith("[");
+}
+
+function resolveMessageRowCapabilities(
+  message: MessageListRowMessage,
+  kind: MessageBodyKind,
+  handlers: Pick<Props, "onDelete" | "onForward">
+): MessageRowCapabilities {
+  return {
+    canCopy: canCopyMessage(message, kind),
+    // Delete is offered when the row owns a delete handler AND the message is
+    // own (sender). The store / API enforces the actual permission server-side.
+    canDelete: Boolean(handlers.onDelete) && message.isOwn,
+    canForward: Boolean(handlers.onForward)
+      && kind === "text"
+      && Boolean(message.content)
+      && !message.content.startsWith("["),
+  };
 }
 
 function resolveAttachmentCaption({
@@ -359,6 +408,66 @@ function MessageRowFrame({
   );
 }
 
+function MessageRowContent({
+  presentation,
+  kind,
+  capabilities,
+  activeMediaKey,
+  onActiveMediaChange,
+  onRetry,
+  onReply,
+  onDelete,
+  onForward,
+  onScrollToMessage,
+  isHighlighted,
+  t,
+}: MessageRowContentProps) {
+  const { message } = presentation;
+
+  const handleContextAction = useCallback((action: MessageContextMenuAction) => {
+    if (action.kind === "reply") {
+      onReply?.(message.id);
+      return;
+    }
+
+    if (action.kind === "forward") {
+      onForward?.(message.id);
+      return;
+    }
+
+    if (action.kind === "delete") {
+      onDelete?.(message.id);
+    }
+  }, [message.id, onDelete, onForward, onReply]);
+
+  if (presentation.callEvent) {
+    return <CallEventRow presentation={presentation} />;
+  }
+
+  return (
+    <MessageContextMenu
+      onAction={handleContextAction}
+      canCopy={capabilities.canCopy}
+      canForward={capabilities.canForward}
+      canDelete={capabilities.canDelete}
+      copyText={capabilities.canCopy ? (message.content ?? undefined) : undefined}
+    >
+      <MessageRowFrame presentation={presentation}>
+        <MessageBubble
+          presentation={presentation}
+          kind={kind}
+          activeMediaKey={activeMediaKey}
+          onActiveMediaChange={onActiveMediaChange}
+          onRetry={onRetry}
+          onScrollToMessage={onScrollToMessage}
+          isHighlighted={isHighlighted}
+          t={t}
+        />
+      </MessageRowFrame>
+    </MessageContextMenu>
+  );
+}
+
 export const MessageListRow = memo(function MessageListRow({
   presentation,
   activeMediaKey,
@@ -375,53 +484,28 @@ export const MessageListRow = memo(function MessageListRow({
   const { message } = presentation;
   const hasMediaGroup = (presentation.mediaGroupMessages?.length ?? 0) > 1;
   const kind = getMessageBodyKind(message, hasMediaGroup);
-  const canCopy = canCopyMessage(message, kind);
-  // Delete is offered when the row owns a delete handler AND the message is
-  // either own (sender) or from a thread without a strict ownership model.
-  // The store / API enforces the actual permission server-side.
-  const canDelete = !!onDelete && message.isOwn;
-  const canForward = !!onForward && kind === "text" && Boolean(message.content) && !message.content!.startsWith("[");
+  const capabilities = resolveMessageRowCapabilities(message, kind, { onDelete, onForward });
   const entryStyle = {
     "--message-enter-delay": `${Math.min(enterDelayMs, 160)}ms`,
   } as CSSProperties;
 
-  const handleContextAction = useCallback((action: MessageContextMenuAction) => {
-    if (action.kind === "reply") {
-      onReply?.(message.id);
-    } else if (action.kind === "forward") {
-      onForward?.(message.id);
-    } else if (action.kind === "delete") {
-      onDelete?.(message.id);
-    }
-  }, [message.id, onDelete, onForward, onReply]);
-
   return (
     <div style={entryStyle}>
       <DateSeparator presentation={presentation} />
-      {presentation.callEvent ? (
-        <CallEventRow presentation={presentation} />
-      ) : (
-        <MessageContextMenu
-          onAction={handleContextAction}
-          canCopy={canCopy}
-          canForward={canForward}
-          canDelete={canDelete}
-          copyText={canCopy ? (message.content ?? undefined) : undefined}
-        >
-          <MessageRowFrame presentation={presentation}>
-            <MessageBubble
-              presentation={presentation}
-              kind={kind}
-              activeMediaKey={activeMediaKey}
-              onActiveMediaChange={onActiveMediaChange}
-              onRetry={onRetry}
-              onScrollToMessage={onScrollToMessage}
-              isHighlighted={isHighlighted}
-              t={t}
-            />
-          </MessageRowFrame>
-        </MessageContextMenu>
-      )}
+      <MessageRowContent
+        presentation={presentation}
+        kind={kind}
+        capabilities={capabilities}
+        activeMediaKey={activeMediaKey}
+        onActiveMediaChange={onActiveMediaChange}
+        onRetry={onRetry}
+        onReply={onReply}
+        onDelete={onDelete}
+        onForward={onForward}
+        onScrollToMessage={onScrollToMessage}
+        isHighlighted={isHighlighted}
+        t={t}
+      />
     </div>
   );
 }, (prev, next) => {

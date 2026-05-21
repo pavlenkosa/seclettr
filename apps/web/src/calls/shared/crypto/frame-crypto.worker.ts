@@ -1,3 +1,18 @@
+/**
+ * frame-crypto.worker — RTCRtpScriptTransform Worker entry point for frame E2EE.
+ *
+ * Owns:
+ *   - onrtctransform event handler: receives the RTCRtpScriptTransformer and starts
+ *     piping encoded frames through processFrameBuffer (encrypt or decrypt)
+ *   - message handler: processes configure and close messages from the main thread
+ *   - Per-handle state management (TransformRuntimeState) keyed by handleId
+ *   - Key material updates via configure messages (normalizeKeyInput + clearMutableKeyStates)
+ *   - pipeline-failed notification to the main thread on unrecoverable pipeline errors
+ *
+ * Runs entirely in a dedicated Worker context. Does not import anything from the
+ * main thread or hold references to DOM objects.
+ * Crypto primitives are provided by frame-crypto-core.ts (shared module).
+ */
 import {
   buildAssociatedData,
   clearMutableKeyStates,

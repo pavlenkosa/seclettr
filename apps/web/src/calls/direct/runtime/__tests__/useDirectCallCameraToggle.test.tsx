@@ -5,7 +5,7 @@ import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { ActiveCall } from "@/calls/direct/model/direct-call-types";
-import { useDirectCallCameraToggle } from "@/calls/direct/runtime/useDirectCallCameraToggle";
+import { useDirectCallCameraToggle } from "@/calls/direct/runtime/media/useDirectCallCameraToggle";
 
 type CameraToggleApi = ReturnType<typeof useDirectCallCameraToggle>;
 type CameraToggleOptions = Parameters<typeof useDirectCallCameraToggle>[0];

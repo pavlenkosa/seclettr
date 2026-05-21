@@ -1,3 +1,18 @@
+/**
+ * useDirectCallFrameCryptoRuntime — frame-level encryption lifecycle for 1:1 calls.
+ *
+ * Owns:
+ *   - local ephemeral key preparation (ECDH keypair generated once per call)
+ *   - peer ephemeral public key ingestion
+ *   - sender frame encryption handle binding per RTCRtpSender (camera / screen)
+ *   - receiver frame decryption handle binding per RTCRtpReceiver
+ *   - frame crypto state configuration and mode negotiation (frame-v1 → transport fallback)
+ *   - cleanup on call teardown via closeDirectCallFrameCrypto
+ *
+ * Does not own the negotiation protocol, signal dispatch, or peer-connection
+ * bootstrap. Crypto keys are derived in direct-call-frame-crypto.ts; this
+ * hook manages their lifecycle inside the call runtime.
+ */
 import { useCallback, useRef, type MutableRefObject } from "react";
 import {
   detectLocalDirectCallMediaEncryptionModes,

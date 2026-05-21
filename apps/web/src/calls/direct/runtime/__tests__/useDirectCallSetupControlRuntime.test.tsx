@@ -8,6 +8,7 @@ import {
 import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { detectLocalDirectCallMediaEncryptionModes } from "@/calls/direct/model/call-media-encryption-negotiation";
 import type {
   ActiveCall,
   IncomingCall,
@@ -87,6 +88,54 @@ function createFakeStream(): MediaStream {
 
 function createActiveStateRef() {
   return { current: null as ActiveCall | null } as MutableRefObject<ActiveCall | null>;
+}
+
+function installScriptTransformSupport() {
+  class MockSender {}
+  class MockReceiver {}
+  class MockWorker {}
+  class MockScriptTransform {
+    constructor(_worker: Worker, _options?: unknown) {}
+  }
+
+  Object.defineProperty(MockSender.prototype, "transform", {
+    configurable: true,
+    get() {
+      return undefined;
+    },
+    set(_value: unknown) {
+      return undefined;
+    },
+  });
+  Object.defineProperty(MockReceiver.prototype, "transform", {
+    configurable: true,
+    get() {
+      return undefined;
+    },
+    set(_value: unknown) {
+      return undefined;
+    },
+  });
+
+  vi.stubGlobal("RTCRtpSender", MockSender);
+  vi.stubGlobal("RTCRtpReceiver", MockReceiver);
+  vi.stubGlobal("Worker", MockWorker);
+  Object.defineProperty(globalThis, "RTCRtpScriptTransform", {
+    configurable: true,
+    writable: true,
+    value: MockScriptTransform,
+  });
+}
+
+function installIosWebKitBrowserGlobals() {
+  vi.spyOn(window.navigator, "userAgent", "get").mockReturnValue(
+    "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) CriOS/135.0.0.0 Mobile/15E148 Safari/604.1"
+  );
+  Object.defineProperty(window, "Capacitor", {
+    configurable: true,
+    writable: true,
+    value: undefined,
+  });
 }
 
 function HookHarness(props: {
@@ -226,7 +275,13 @@ describe("useDirectCallSetupControlRuntime", () => {
       root.unmount();
     });
     container.remove();
+    Reflect.deleteProperty(window, "Capacitor");
+    Reflect.deleteProperty(globalThis, "RTCRtpScriptTransform");
+    Reflect.deleteProperty(globalThis, "RTCRtpSender");
+    Reflect.deleteProperty(globalThis, "RTCRtpReceiver");
+    Reflect.deleteProperty(globalThis, "Worker");
     delete (globalThis as typeof globalThis & { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT;
+    vi.restoreAllMocks();
   });
 
   it("starts an outbound call through the setup boundary and commits ringing state", async () => {
@@ -416,6 +471,88 @@ describe("useDirectCallSetupControlRuntime", () => {
         }),
       })
     );
+  });
+
+  it("advertises transport-only for outbound calls on iOS WebKit browser runtimes", async () => {
+    installIosWebKitBrowserGlobals();
+    installScriptTransformSupport();
+
+    const activeState = createActiveStateRef();
+    const incomingState = { current: null } as MutableRefObject<IncomingCall | null>;
+    const peerConnection = {
+      createOffer: vi.fn(async () => ({ type: "offer", sdp: "offer-sdp" })),
+      setLocalDescription: vi.fn(async () => undefined),
+      close: vi.fn(),
+    } as unknown as RTCPeerConnection;
+
+    setupControlMocks.apiPost.mockResolvedValue({ callId: "call-ios-browser-offer" });
+
+    act(() => {
+      root.render(
+        <HookHarness
+          activeRef={activeState}
+          incomingRef={incomingState}
+          peerConnectionRef={{ current: null }}
+          directCallLifecycleTokenRef={{ current: 0 }}
+          directCallNegotiationRoleRef={{ current: "impolite" }}
+          supportsPeerRenegotiationV1Ref={{ current: false }}
+          renegotiationUnsupportedRef={{ current: false }}
+          negotiationReadyRef={{ current: false }}
+          makingOfferRef={{ current: false }}
+          ignoreOfferRef={{ current: false }}
+          isSettingRemoteAnswerPendingRef={{ current: false }}
+          renegotiationRevisionRef={{ current: 0 }}
+          lastAppliedRemoteRenegotiationRevisionRef={{ current: 0 }}
+          pendingLocalRenegotiationRevisionRef={{ current: null }}
+          pendingIceCandidatesRef={{ current: new Map() }}
+          incomingIceCandidatesRef={{ current: new Map() }}
+          outboundMediaEncryptionOfferRef={{ current: null }}
+          commitIncomingState={vi.fn()}
+          commitActiveState={vi.fn()}
+          setIsMinimized={vi.fn()}
+          resetMinimizedDockState={vi.fn()}
+          clearNotice={vi.fn()}
+          callSecurityMode="balanced"
+          ensureConversationUsername={vi.fn(async () => "Peer One")}
+          resolvePeerLabel={(userId, fallbackLabel) => fallbackLabel ?? userId}
+          pushNotice={vi.fn()}
+          recordCallEvent={vi.fn()}
+          debugCallMedia={vi.fn()}
+          createPeerConnection={vi.fn(async () => peerConnection)}
+          ensureVideoSenders={vi.fn()}
+          requestLocalStream={vi.fn(async () => createFakeStream())}
+          attachLocalTracksToPeer={vi.fn(async () => undefined)}
+          syncVisualTransceiverBindings={vi.fn()}
+          syncVisualTransceiverDirections={vi.fn()}
+          resolveLocalSupportedMediaEncryptionModes={detectLocalDirectCallMediaEncryptionModes}
+          primeDirectCallSenderFrameCrypto={vi.fn(() => true)}
+          closeDirectCallFrameCrypto={vi.fn()}
+          configureDirectCallFrameCrypto={vi.fn(async () => true)}
+          applyCallSecurityState={vi.fn(async () => undefined)}          capture={(nextRuntime) => {
+            runtime = nextRuntime;
+          }}
+        />
+      );
+    });
+
+    if (!runtime) {
+      throw new Error("Expected setup control runtime");
+    }
+
+    await act(async () => {
+      await runtime?.startCall("peer-1", "audio", "Peer One");
+    });
+
+    expect(setupControlMocks.createSignedCallOfferAuth).toHaveBeenCalledWith({
+      callId: "call-ios-browser-offer",
+      recipientUserId: "peer-1",
+      callType: "audio",
+      sdp: "offer-sdp",
+      mediaEncryption: {
+        preferredMode: "transport",
+        supportedModes: ["transport"],
+      },
+    });
   });
 
   it("commits the outbound active ref before dispatching the initial offer", async () => {

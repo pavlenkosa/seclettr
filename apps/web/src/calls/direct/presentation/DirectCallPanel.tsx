@@ -1,7 +1,7 @@
 import { forwardRef, useImperativeHandle } from "react";
 import { CallAudioOutputProvider } from "@/calls/shared/media/audio-output/CallAudioOutputProvider";
 import { DirectCallSurfaceRenderer } from "@/calls/direct/presentation/components/DirectCallSurfaceRenderer";
-import { useDirectCallSurfaceFocusTrap } from "@/calls/direct/runtime/useDirectCallSurfaceFocusTrap";
+import { useDirectCallSurfaceFocusTrap } from "@/calls/direct/runtime/presentation";
 import { useDirectCallController } from "@/calls/direct/runtime/useDirectCallController";
 import type { DirectCallPanelHandle } from "@/calls/direct/model/direct-call-types";
 

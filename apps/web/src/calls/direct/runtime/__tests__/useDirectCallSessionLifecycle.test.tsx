@@ -9,7 +9,7 @@ import type {
   IncomingCall,
 } from "@/calls/direct/model/direct-call-types";
 import { createEmptyRemoteMediaSlot } from "@/calls/direct/model/call-media-slots";
-import type { UseDirectCallSessionLifecycleOptions } from "@/calls/direct/runtime/direct-call-session-lifecycle-shared";
+import type { UseDirectCallSessionLifecycleOptions } from "@/calls/direct/runtime/session/direct-call-session-lifecycle-shared";
 import { useDirectCallSessionLifecycle } from "@/calls/direct/runtime/useDirectCallSessionLifecycle";
 
 const sessionLifecycleMocks = vi.hoisted(() => ({
@@ -26,13 +26,13 @@ vi.mock("@/lib/api", () => ({
   },
 }));
 
-vi.mock("@/calls/direct/runtime/useDirectCallIncomingRingtone", () => ({
+vi.mock("@/calls/direct/runtime/session/useDirectCallIncomingRingtone", () => ({
   useDirectCallIncomingRingtone: () => ({
     stopIncomingRingtone: sessionLifecycleMocks.stopIncomingRingtone,
   }),
 }));
 
-vi.mock("@/calls/direct/runtime/useDirectCallFrameModeRecovery", () => ({
+vi.mock("@/calls/direct/runtime/session/useDirectCallFrameModeRecovery", () => ({
   useDirectCallFrameModeRecovery: sessionLifecycleMocks.useDirectCallFrameModeRecovery,
 }));
 

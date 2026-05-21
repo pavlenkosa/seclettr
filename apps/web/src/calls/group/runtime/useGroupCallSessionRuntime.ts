@@ -1,3 +1,20 @@
+/**
+ * useGroupCallSessionRuntime — session-level action coordinator for group calls.
+ *
+ * Owns:
+ *   - Session-scoped mutable refs: callIdRef, didEndRef, ownsServerCallRef,
+ *     joinedParticipantRef, actionInFlightRef, unloadCleanupSentRef, activeStreamRef
+ *   - performUnloadCleanup — best-effort keepalive-leave sent on page unload
+ *   - endServerRoom — updates call status on the API (ends the server room)
+ *   - leaveCurrentCall — removes the local participant from the call via the API
+ *   - handleLeave / handleEndForEveryone — user-initiated leave and host end actions
+ *   - Composition of useGroupCallSessionLifecycle, useGroupCallSessionSubscriptions,
+ *     and useGroupCallPresenceHeartbeat under a single hook
+ *
+ * Does not own local media controls (useGroupCallLocalMedia), the panel presentation
+ * layer, or media-key exchange. Returned callbacks (handleLeave, handleEndForEveryone)
+ * are passed into the presentation layer for UI binding.
+ */
 import {
   useCallback,
   useRef,
@@ -15,7 +32,7 @@ import {
 import type {
   UseGroupCallSessionRuntimeOptions,
   UseGroupCallSessionRuntimeResult,
-} from "./group-call-session-types";
+} from "./session/session-types";
 
 export function useGroupCallSessionRuntime({
   session,

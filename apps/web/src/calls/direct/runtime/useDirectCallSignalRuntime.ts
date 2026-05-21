@@ -20,56 +20,29 @@ import {
   type MutableRefObject,
   type SetStateAction,
 } from "react";
-import { resolveLegacyDirectCallMediaEncryptionOffer } from "@/calls/direct/model/call-media-encryption-negotiation";
-import { useAuthStore } from "@/stores/auth";
-import { useMessagesStore } from "@/stores/messages";
-import { usePlainMessagesStore } from "@/stores/plain";
-import {
-  toIncomingMediaStateHint,
-  shouldApplyIncomingMediaState,
-  type CallMediaSource,
-  type LastIncomingMediaState,
-  type IncomingMediaStateHint,
-} from "@/calls/direct/model/call-media-state";
+import { type CallMediaSource, type LastIncomingMediaState, type IncomingMediaStateHint } from "@/calls/direct/model/call-media-state";
 import type {
   ActiveCall,
-  CallType,
   IncomingCall,
   IncomingCallAnsweredSignal,
-  IncomingCallMediaStateSignal,
-  IncomingCallOfferSignal,
   IncomingCallRenegotiationAnswerSignal,
   IncomingCallRenegotiationOfferSignal,
 } from "@/calls/direct/model/direct-call-types";
 import {
   type RemoteMediaSlot,
 } from "@/calls/direct/model/call-media-slots";
-import { useDirectCallSignalOutcomeHandlers } from "./useDirectCallSignalOutcomeHandlers";
-import { useDirectCallSignalSubscription } from "./useDirectCallSignalSubscription";
-import { logger } from "@/lib/logger.js";
+import {
+  useDirectCallSignalCommandRuntime,
+  useDirectCallSignalMediaIngress,
+  useDirectCallSignalOfferIngress,
+  useDirectCallSignalOutcomeHandlers,
+  useDirectCallSignalSubscription,
+} from "./signal";
 import type {
   DirectCallFinishSession,
   DirectCallPushNotice,
   DirectCallTranslate,
 } from "./direct-call-runtime-types";
-
-function resolveInboundCallChatKind(callerUserId: string): "plain" | "e2ee" | null {
-  const hasE2ee = !!useMessagesStore.getState().conversations[callerUserId];
-  const hasPlain = !!usePlainMessagesStore.getState().conversations[callerUserId];
-  if (hasPlain && !hasE2ee) return "plain";
-  if (hasE2ee) return "e2ee";
-  return null;
-}
-
-type RecordCallEvent = (params: {
-  userId: string;
-  fallbackLabel?: string;
-  mode: CallType;
-  direction: "inbound" | "outbound";
-  outcome: "ended" | "declined" | "missed";
-  durationSec?: number;
-  chatKind?: "plain" | "e2ee";
-}) => void;
 
 type EnsureConversationUsername = (
   userId: string,
@@ -101,7 +74,15 @@ interface UseDirectCallSignalRuntimeOptions {
   resolvePeerLabel: (userId: string, fallbackLabel?: string) => string;
   pushNotice: DirectCallPushNotice;
   callChatKindRef: MutableRefObject<"plain" | "e2ee" | null>;
-  recordCallEvent: RecordCallEvent;
+  recordCallEvent: (params: {
+    userId: string;
+    fallbackLabel?: string;
+    mode: "audio" | "video";
+    direction: "inbound" | "outbound";
+    outcome: "ended" | "declined" | "missed";
+    durationSec?: number;
+    chatKind?: "plain" | "e2ee";
+  }) => void;
   rejectIncomingCall: (callId: string) => void;
   finishCallSession: DirectCallFinishSession;
   debugCallMedia: (event: string, payload: Record<string, unknown>) => void;
@@ -166,276 +147,58 @@ export function useDirectCallSignalRuntime({
   handleIncomingRenegotiationAnswer,
   t,
 }: UseDirectCallSignalRuntimeOptions) {
-  const runGuardedSignalCommand = useCallback((params: {
-    callId: string;
-    signalType: "call.answered" | "call.renegotiate.offer" | "call.renegotiate.answer";
-    revision?: number;
-    run: () => Promise<void>;
-  }) => {
-    params.run().catch((error) => {
-      const pc = peerConnectionRef.current;
-      if (activeRef.current?.callId !== params.callId) {
-        debugCallMedia("signal-command-ignored-stale", {
-          callId: params.callId,
-          signalType: params.signalType,
-          revision: params.revision ?? null,
-          errorName: error instanceof Error ? error.name : null,
-          errorMessage: error instanceof Error ? error.message : String(error),
-        });
-        return;
-      }
-
-      const errorPayload = {
-        code: "ASYNC_SIGNAL_HANDLER_FAILED",
-        callId: params.callId,
-        signalType: params.signalType,
-        revision: params.revision ?? null,
-        errorName: error instanceof Error ? error.name : null,
-        errorMessage: error instanceof Error ? error.message : String(error),
-        signalingState: pc?.signalingState ?? null,
-        remoteDescriptionType: pc?.remoteDescription?.type ?? null,
-      };
-      lastSignalingErrorRef.current = {
-        ...errorPayload,
-        at: new Date().toISOString(),
-      };
-      if (params.signalType !== "call.answered") {
-        lastRenegotiationAttemptRef.current = {
-          ...lastRenegotiationAttemptRef.current,
-          callId: params.callId,
-          signalType: params.signalType,
-          revision: params.revision ?? null,
-          stage: "signal-handler-failed",
-          error: errorPayload.errorMessage,
-          at: new Date().toISOString(),
-        };
-      }
-      debugCallMedia("signal-command-failed", errorPayload);
-      logger.warn("[CALL] async signal command failed", error);
-
-      // Once a current-session signal handler throws, local WebRTC/signaling
-      // state is no longer trustworthy. End through the normal teardown path.
-      finishCallSession({
-        reason: "signal-handler-failed",
-        authority: "hangup",
-        callId: params.callId,
-        notice: params.signalType === "call.answered"
-          ? { kind: "error", message: t("call.error.unableStart") }
-          : { kind: "error", message: t("call.notice.connectionFailed") },
-      });
-    });
-  }, [
+  const {
+    handleAnsweredSignal,
+    handleRenegotiationOfferSignal,
+    handleRenegotiationAnswerSignal,
+  } = useDirectCallSignalCommandRuntime({
     activeRef,
+    peerConnectionRef,
+    lastSignalingErrorRef,
+    lastRenegotiationAttemptRef,
     debugCallMedia,
     finishCallSession,
-    lastRenegotiationAttemptRef,
-    lastSignalingErrorRef,
-    peerConnectionRef,
+    handleRemoteAnswer,
+    handleIncomingRenegotiationOffer,
+    handleIncomingRenegotiationAnswer,
     t,
-  ]);
-
-  const applyIncomingIceCandidate = useCallback((callId: string, candidate: RTCIceCandidateInit) => {
-    const currentActive = activeRef.current;
-    if (currentActive?.callId !== callId) {
-      if (
-        incomingRef.current?.callId === callId ||
-        acceptingIncomingCallRef.current?.callId === callId
-      ) {
-        // Accept can hide incoming UI before activeRef exists; keep trickle ICE
-        // attached to that call until setup promotes it to the active session.
-        const queued = incomingIceCandidatesRef.current.get(callId) ?? [];
-        queued.push(candidate);
-        incomingIceCandidatesRef.current.set(callId, queued);
-      }
-      return;
-    }
-
-    const pc = peerConnectionRef.current;
-    if (!pc) return;
-    if (!pc.remoteDescription) {
-      const queued = pendingIceCandidatesRef.current.get(callId) ?? [];
-      queued.push(candidate);
-      pendingIceCandidatesRef.current.set(callId, queued);
-      return;
-    }
-
-    pc.addIceCandidate(new RTCIceCandidate(candidate)).catch((error) => {
-      if (ignoreOfferRef.current) {
-        debugCallMedia("ice-candidate-ignored", {
-          callId,
-          reason: "ignored-offer-collision",
-        });
-        return;
-      }
-      logger.warn("[CALL] failed to add ICE candidate", error);
-    });
-  }, [
-    acceptingIncomingCallRef,
+  });
+  const {
+    applyIncomingIceCandidate,
+    applyIncomingCallMediaState,
+  } = useDirectCallSignalMediaIngress({
     activeRef,
-    debugCallMedia,
-    ignoreOfferRef,
-    incomingIceCandidatesRef,
     incomingRef,
-    pendingIceCandidatesRef,
+    acceptingIncomingCallRef,
     peerConnectionRef,
-  ]);
-
-  /**
-   * Process incoming media state signal as a HINT.
-   * 
-   * IMPORTANT: This does NOT directly command slot status changes.
-   * The slot lifecycle is driven by track events (in useDirectCallRemoteMediaRuntime).
-   * This function only:
-   * 1. Validates and sequences the incoming signal
-   * 2. Stores it as lastIncomingMediaState
-   * 3. Delegates to processIncomingMediaStateHint for hint processing
-   */
-  const applyIncomingCallMediaState = useCallback((
-    message: IncomingCallMediaStateSignal
-  ) => {
-    const currentActive = activeRef.current;
-    if (currentActive?.callId !== message.callId) return;
-    if (shouldIgnoreUnexpectedPeerSignal({
-      callId: message.callId,
-      signalType: "call.media_state",
-      senderUserId: message.senderUserId ?? null,
-      senderDeviceId: message.senderDeviceId ?? null,
-      source: message.source,
-    })) {
-      return;
-    }
-
-    const localDeviceId = useAuthStore.getState().deviceId;
-    if (localDeviceId && message.senderDeviceId === localDeviceId) return;
-
-    const prevSeq = remoteMediaStateSeqRef.current[message.source];
-    const prevRevision = remoteMediaStateRevisionRef.current[message.source];
-    if (!shouldApplyIncomingMediaState(prevSeq, prevRevision, message.seq, message.streamRevision)) {
-      return;
-    }
-    remoteMediaStateSeqRef.current[message.source] = message.seq;
-    remoteMediaStateRevisionRef.current[message.source] = message.streamRevision ?? prevRevision;
-    lastIncomingMediaStateRef.current[message.source] = {
-      seq: message.seq,
-      streamRevision: message.streamRevision ?? prevRevision,
-      state: message.state,
-      activity: message.activity,
-      reason: message.reason ?? null,
-      mid: message.mid ?? null,
-    };
-    debugCallMedia("media-state-in", {
-      callId: message.callId,
-      source: message.source,
-      state: message.state,
-      activity: message.activity,
-      mid: message.mid ?? null,
-      seq: message.seq,
-      streamRevision: message.streamRevision ?? prevRevision,
-      reason: message.reason ?? null,
-    });
-
-    const source = message.source;
-    if (source === "mic") {
-      return;
-    }
-
-    const offOrOnMediaState = message.state === "off" ? "off" : "on";
-    const normalizedMediaState = message.state === "ended" ? "ended" : offOrOnMediaState;
-    const hint = toIncomingMediaStateHint({
-      state: normalizedMediaState,
-      activity: message.activity,
-      reason: message.reason ?? null,
-      mid: message.mid ?? null,
-    });
-
-    const slotRef = source === "camera" ? remoteCameraSlotRef : remoteScreenSlotRef;
-    const currentSlot = slotRef.current;
-    const currentTrack = currentSlot.stream?.getVideoTracks()[0] ?? null;
-    const trackEnded = currentTrack ? currentTrack.readyState !== "live" : true;
-
-    // Delegate to hint processor (single owner for slot lifecycle)
-    processIncomingMediaStateHint(source, hint, currentSlot.trackId, trackEnded);
-  }, [
-    activeRef,
-    debugCallMedia,
-    lastIncomingMediaStateRef,
-    processIncomingMediaStateHint,
-    remoteCameraSlotRef,
-    remoteMediaStateRevisionRef,
+    incomingIceCandidatesRef,
+    pendingIceCandidatesRef,
+    ignoreOfferRef,
     remoteMediaStateSeqRef,
+    remoteMediaStateRevisionRef,
+    lastIncomingMediaStateRef,
+    remoteCameraSlotRef,
     remoteScreenSlotRef,
-    shouldIgnoreUnexpectedPeerSignal,
-  ]);
-
-  const handleIncomingOfferSignal = useCallback((message: IncomingCallOfferSignal) => {
-    if (activeRef.current) {
-      rejectIncomingCall(message.callId);
-      return;
-    }
-    if (acceptingIncomingCallRef.current) {
-      if (acceptingIncomingCallRef.current.callId !== message.callId) {
-        rejectIncomingCall(message.callId);
-      }
-      return;
-    }
-    if (incomingRef.current && incomingRef.current.callId !== message.callId) {
-      rejectIncomingCall(message.callId);
-      return;
-    }
-
-    debugCallMedia("initial-offer-received", {
-      callId: message.callId,
-      callerUserId: message.callerUserId,
-      supportsRenegotiationV1: !!(message.features?.renegotiationV1),
-    });
-
-    ensureConversationUsername(message.callerUserId).then((resolvedLabel) => {
-      if (!resolvedLabel) return;
-      setIncoming((prev) => (
-        prev?.callId === message.callId
-          ? { ...prev, callerLabel: resolvedLabel }
-          : prev
-      ));
-      setActive((prev) => (
-        prev?.callId === message.callId
-          ? { ...prev, peerLabel: resolvedLabel }
-          : prev
-      ));
-    }).catch((err) => {
-      logger.warn("[CALL] failed to resolve peer label for incoming call", err);
-    });
-
-    setIncoming({
-      callId: message.callId,
-      callerUserId: message.callerUserId,
-      callerDeviceId: message.callerDeviceId ?? null,
-      callerLabel: resolvePeerLabel(message.callerUserId),
-      callType: message.callType,
-      targetUserId: message.targetUserId ?? null,
-      auth: message.auth,
-      offerSdp: message.sdp,
-      mediaEncryptionOffer: message.mediaEncryption ?? resolveLegacyDirectCallMediaEncryptionOffer(),
-      supportsRenegotiationV1: !!(message.features?.renegotiationV1),
-    });
-    // Tag this call with the chat kind so call-history records land in the right store.
-    // For inbound calls, infer from which store has a conversation with the caller.
-    callChatKindRef.current = resolveInboundCallChatKind(message.callerUserId);
-    setIsMinimized(false);
-    resetMinimizedDockState();
-  }, [
-    acceptingIncomingCallRef,
-    activeRef,
-    callChatKindRef,
     debugCallMedia,
-    ensureConversationUsername,
+    shouldIgnoreUnexpectedPeerSignal,
+    processIncomingMediaStateHint,
+  });
+  const {
+    handleIncomingOfferSignal,
+  } = useDirectCallSignalOfferIngress({
+    activeRef,
     incomingRef,
-    rejectIncomingCall,
-    resetMinimizedDockState,
-    resolvePeerLabel,
+    acceptingIncomingCallRef,
     setActive,
     setIncoming,
     setIsMinimized,
-  ]);
+    ensureConversationUsername,
+    resetMinimizedDockState,
+    resolvePeerLabel,
+    callChatKindRef,
+    rejectIncomingCall,
+    debugCallMedia,
+  });
 
   const {
     handleIncomingHangupSignal,
@@ -457,53 +220,6 @@ export function useDirectCallSignalRuntime({
     debugCallMedia,
     t,
   });
-
-  const handleAnsweredSignal = useCallback((message: IncomingCallAnsweredSignal) => {
-    debugCallMedia("initial-answer-received", {
-      callId: message.callId,
-      answererUserId: message.answererUserId ?? null,
-      supportsRenegotiationV1: !!(message.features?.renegotiationV1),
-    });
-    if (activeRef.current?.callId !== message.callId) {
-      debugCallMedia("initial-answer-ignored-missing-active-context", {
-        callId: message.callId,
-        activeCallId: activeRef.current?.callId ?? null,
-      });
-      return;
-    }
-    runGuardedSignalCommand({
-      callId: message.callId,
-      signalType: "call.answered",
-      run: () => handleRemoteAnswer(message),
-    });
-  }, [
-    activeRef,
-    debugCallMedia,
-    handleRemoteAnswer,
-    runGuardedSignalCommand,
-  ]);
-
-  const handleRenegotiationOfferSignal = useCallback((message: IncomingCallRenegotiationOfferSignal) => {
-    if (activeRef.current?.callId === message.callId) {
-      runGuardedSignalCommand({
-        callId: message.callId,
-        signalType: "call.renegotiate.offer",
-        revision: message.revision,
-        run: () => handleIncomingRenegotiationOffer(message),
-      });
-    }
-  }, [activeRef, handleIncomingRenegotiationOffer, runGuardedSignalCommand]);
-
-  const handleRenegotiationAnswerSignal = useCallback((message: IncomingCallRenegotiationAnswerSignal) => {
-    if (activeRef.current?.callId === message.callId) {
-      runGuardedSignalCommand({
-        callId: message.callId,
-        signalType: "call.renegotiate.answer",
-        revision: message.revision,
-        run: () => handleIncomingRenegotiationAnswer(message),
-      });
-    }
-  }, [activeRef, handleIncomingRenegotiationAnswer, runGuardedSignalCommand]);
 
   useDirectCallSignalSubscription({
     onOffer: handleIncomingOfferSignal,

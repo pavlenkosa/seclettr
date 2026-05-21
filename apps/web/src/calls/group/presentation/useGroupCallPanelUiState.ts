@@ -1,3 +1,19 @@
+/**
+ * useGroupCallPanelUiState — panel-level UI state management for the group call panel.
+ *
+ * Owns:
+ *   - isMinimized / isDetailsOpen / isStageViewerOpen state
+ *   - pinnedStageTileId — the currently pinned tile in the stage view
+ *   - suppressedStageTileIds — tiles hidden from stage selection by the user
+ *   - handleToggleDetails / handleMinimize / handleRestore — panel navigation actions
+ *   - handleResetStageFocus — clears pinned tile and suppressed set
+ *   - handleStopWatchingStageTile — adds a tile to the suppressed set
+ *   - handleSelectTile — pins a tile as the stage focus
+ *   - Auto-reset of all state when the session group changes (sessionGroupId dep)
+ *
+ * Does not own the dock drag behaviour (useGroupCallPanelDock) or any presentation
+ * derivation (useGroupCallPanelPresentation).
+ */
 import { useCallback, useEffect, useState } from "react";
 import type { GroupCallStageTile } from "@/calls/group/model/group-call-types";
 

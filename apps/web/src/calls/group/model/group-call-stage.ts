@@ -1,3 +1,14 @@
+/**
+ * group-call-stage — stage tile selection logic for the group call panel.
+ *
+ * Owns:
+ *   - GroupCallStageTileCandidate type
+ *   - resolveGroupCallStageTileId — selects the active stage tile from a candidate list,
+ *     honouring pinnedTileId and applying a preference order:
+ *     remote screen-share → local screen-share → remote camera → local camera → first tile
+ *
+ * Does not own tile construction or panel layout (see group-call-panel-tiles.ts).
+ */
 import type { SfuProducerSource } from "@seclettr/protocol";
 
 export interface GroupCallStageTileCandidate {

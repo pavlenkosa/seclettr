@@ -1,13 +1,34 @@
+/**
+ * useGroupCallMediaKeyExchange — per-session media-key send/receive protocol.
+ *
+ * Owns:
+ *   - Outbound media-key delivery: encrypts the local media key with each
+ *     remote participant device's identity public key and sends it over WS
+ *   - Inbound media-key reception: decrypts incoming group.call.media-key
+ *     signals and forwards the decrypted key bytes to the SFU consumer runtime
+ *   - ACK emission: computes and sends group.call.media-key.ack proofs after
+ *     successful key reception
+ *   - ACK verification: validates incoming ACK proofs and marks targets as
+ *     confirmed in sharedMediaKeyTargetsRef
+ *   - Balanced-mode fallback: arms transport-only mode when E2E key delivery
+ *     fails for all known targets (best-effort mode only)
+ *   - Device roster management: fetches and merges the group member device
+ *     roster (identityKeyPublic) needed for key encryption
+ *
+ * Does not own media-key generation/rotation (see useGroupCallMediaKeyRotation),
+ * delivery retry scheduling (see media-key-delivery.ts), or local key arm/disarm
+ * logic (see useGroupCallLocalMediaKeySync).
+ */
 import { useEffect, useRef } from "react";
 import {
   decryptGroupCallMediaKeyFromSignal,
   encryptGroupCallMediaKeyForDevice,
   shouldReplaceReceivedGroupCallMediaKey,
   type LocalGroupCallMediaKey,
-} from "@/calls/group/runtime/group-call/media-key";
-import type { GroupCallMediaKeyDeliveryTracker } from "@/calls/group/runtime/group-call/media-key-delivery";
-import { computeMediaKeyAckProof, verifyMediaKeyAckProof } from "@/calls/group/runtime/group-call/media-key-ack-proof";
-import { logGroupCallInfo, logGroupCallWarn } from "@/calls/group/runtime/group-call/logger";
+} from "@/calls/group/runtime/media-key/media-key";
+import type { GroupCallMediaKeyDeliveryTracker } from "@/calls/group/runtime/media-key/media-key-delivery";
+import { computeMediaKeyAckProof, verifyMediaKeyAckProof } from "@/calls/group/runtime/media-key/media-key-ack-proof";
+import { logGroupCallInfo, logGroupCallWarn } from "@/calls/group/runtime/media-key/logger";
 import { api } from "@/lib/api";
 import { wsClient } from "@/lib/websocket";
 import {
@@ -18,7 +39,7 @@ import {
   toGroupCallDeviceRoster,
   type GroupCallDeviceRoster,
 } from "@/calls/group/model/group-call-device-roster";
-import { type UseGroupCallMediaKeyRuntimeOptions } from "./group-call-media-key-runtime-shared";
+import { type UseGroupCallMediaKeyRuntimeOptions } from "./media-key/media-key-runtime-shared";
 
 interface UseGroupCallMediaKeyExchangeOptions extends Pick<
   UseGroupCallMediaKeyRuntimeOptions,

@@ -1,5 +1,4 @@
 import { useI18n } from "@/i18n";
-import { CallIdentityBlock, PillButton, StatusBadge, SurfacePanel } from "@/components/ui";
 
 import styles from "./GroupCallNotice.module.css";
 
@@ -16,7 +15,7 @@ interface Props {
 
 function PhoneIcon() {
   return (
-    <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden="true">
+    <svg width="14" height="14" viewBox="0 0 18 18" fill="none" aria-hidden="true">
       <path
         d="M3.75 3h3l1.5 3.75-1.875 1.125c.885 1.77 2.25 3.135 4.02 4.02L11.52 10.5 15.27 12v3c0 .828-.672 1.5-1.5 1.5A12.75 12.75 0 0 1 2.25 4.5C2.25 3.672 2.922 3 3.75 3Z"
         stroke="currentColor"
@@ -30,7 +29,7 @@ function PhoneIcon() {
 
 function CameraIcon() {
   return (
-    <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden="true">
+    <svg width="14" height="14" viewBox="0 0 18 18" fill="none" aria-hidden="true">
       <path
         d="M1.5 5.25A1.5 1.5 0 0 1 3 3.75h9a1.5 1.5 0 0 1 1.5 1.5v7.5A1.5 1.5 0 0 1 12 14.25H3A1.5 1.5 0 0 1 1.5 12.75V5.25Z"
         stroke="currentColor"
@@ -49,7 +48,7 @@ function CameraIcon() {
 export function GroupCallNotice({
   callType,
   status,
-  callerLabel,
+  callerLabel: _callerLabel,
   participantCount,
   onJoin,
 }: Props) {
@@ -57,55 +56,22 @@ export function GroupCallNotice({
   const isActive = status === "active";
 
   return (
-    <SurfacePanel
-      className={styles.notice}
-      padding="md"
-      radius="xl"
-      role="status"
-      aria-live="polite"
-    >
-      <CallIdentityBlock
-        className={styles.body}
-        leading={(
-          <span className={styles.iconWrap} aria-hidden="true">
-            {callType === "video" ? <CameraIcon /> : <PhoneIcon />}
-          </span>
-        )}
-        title={t("group.call.notice.title")}
-        titleAccessory={(
-          <StatusBadge
-            tone={isActive ? "success" : "warning"}
-            size="sm"
-            dot
-          >
-            {isActive ? t("group.call.notice.active") : t("group.call.notice.ringing")}
-          </StatusBadge>
-        )}
-        meta={(
-          <>
-            <span className={styles.metaItem}>{t("group.call.notice.startedBy", { user: callerLabel })}</span>
-            <span aria-hidden="true">/</span>
-            <span className={styles.metaItem}>
-              {t("group.call.notice.participants", { count: Math.max(1, participantCount) })}
-            </span>
-          </>
-        )}
-        titleRowClassName={styles.titleRow}
-        titleClassName={styles.title}
-        metaClassName={styles.meta}
-      />
-
-      <PillButton
-        type="button"
-        onClick={onJoin}
-        className={styles.joinBtn}
-        tone="accent"
-        appearance="soft"
-        size="md"
-      >
+    <div className={styles.notice} role="status" aria-live="polite">
+      <span className={styles.leading} aria-hidden="true">
+        {callType === "video" ? <CameraIcon /> : <PhoneIcon />}
+      </span>
+      <span className={styles.pulseDot} aria-hidden="true" />
+      <span className={styles.text}>
+        {isActive ? t("group.call.notice.active") : t("group.call.notice.ringing")}
+      </span>
+      {participantCount > 0 ? (
+        <span className={styles.participants}>
+          {"· "}{t("group.call.notice.participants", { count: Math.max(1, participantCount) })}
+        </span>
+      ) : null}
+      <button type="button" className={styles.joinBtn} onClick={onJoin}>
         {t("group.call.join")}
-      </PillButton>
-    </SurfacePanel>
+      </button>
+    </div>
   );
 }
-

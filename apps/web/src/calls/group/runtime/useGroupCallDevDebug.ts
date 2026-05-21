@@ -1,5 +1,20 @@
+/**
+ * useGroupCallDevDebug — dev-only global debug utilities for the group call runtime.
+ *
+ * Owns:
+ *   - window.__scGetCallDebugSnapshot() — returns a full async snapshot of call state
+ *   - window.__scDumpCallDebug() — logs the snapshot to the browser console
+ *   - window.__scSetCallDebugEnabled(enabled) — toggles call-media debug logging
+ *   - window.__scIsCallDebugEnabled() — returns current debug logging state
+ *   - Lifecycle-aware snapshot including session, encryption, participants, local/remote
+ *     media track details, and the SFU client debug snapshot
+ *   - Auto-cleanup of window helpers on unmount
+ *
+ * In production builds (import.meta.env.DEV === false) this hook is replaced with
+ * a no-op function and none of the above is registered.
+ */
 import { useCallback, useEffect, useRef, type MutableRefObject } from "react";
-import type { GroupCallRuntimeMediaEncryptionMode } from "@/calls/group/runtime/group-call/media-encryption-negotiation";
+import type { GroupCallRuntimeMediaEncryptionMode } from "@/calls/group/runtime/media-key/media-encryption-negotiation";
 import type { GroupCallRemoteMedia, GroupSfuClient } from "@/calls/group/runtime/sfu";
 import {
   readCallMediaDebugEnabled,

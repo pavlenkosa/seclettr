@@ -1,3 +1,19 @@
+/**
+ * useGroupCallSync — active group call state synchronizer for the group panel.
+ *
+ * Owns:
+ *   - REST-based initial fetch: resolves activeGroupCall and participant IDs on mount
+ *   - WebSocket subscription for real-time call lifecycle events:
+ *     group.call.started, group.call.ended, group.call.participant_joined/left
+ *   - Degraded-sync flag: set when the REST fetch fails; keeps stale call state
+ *     visible rather than clearing it (avoids false "no active call" flashes)
+ *   - participantCountUncertain flag: set when the participant fetch fails independently
+ *   - MissedGroupCall detection: emitted when the call ends before the local user joins
+ *   - clearMissedCall — resets missed-call state after the user dismisses it
+ *
+ * Does not own session bootstrap, SFU lifecycle, or media-key exchange.
+ * The hook is consumed by the group panel to decide whether to show a call banner.
+ */
 import { useEffect, useRef, useState, type MutableRefObject } from "react";
 import type { GroupActiveCall, WsServerMessage } from "@seclettr/protocol";
 import { api } from "@/lib/api";

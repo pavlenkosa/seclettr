@@ -1,3 +1,19 @@
+/**
+ * useGroupCallLocalMedia — local media stream management for group calls.
+ *
+ * Owns:
+ *   - Local camera and microphone stream state (localStream, localScreenStream)
+ *   - Mute, video-on/off, and screen-share toggle handlers
+ *   - Camera and microphone device switching (handleSwitchCamera, handleSwitchMic)
+ *   - Video and screen resolution selection with live constraint application
+ *   - Track lifecycle: acquiring via getUserMedia/getDisplayMedia, replacing on
+ *     the SFU producer, and stopping on teardown
+ *   - attachInitialStream / cleanupLocalMedia / resetLocalMediaState helpers
+ *
+ * Does not own remote media, participant roster, or SFU transport setup.
+ * Video-switching and screen-switching flags are local to this hook; the SFU
+ * client (sfuClientRef) is updated directly via setVideoTrack / setAudioTrack.
+ */
 import {
   useCallback,
   useRef,
@@ -6,7 +22,7 @@ import {
   type MutableRefObject,
   type SetStateAction,
 } from "react";
-import { logGroupCallWarn } from "@/calls/group/runtime/group-call/logger";
+import { logGroupCallWarn } from "@/calls/group/runtime/media-key/logger";
 import type { GroupSfuClient } from "@/calls/group/runtime/sfu";
 import { resolveErrorMessage } from "@/calls/group/runtime/runtime-utils";
 import type { GroupCallStatus } from "@/calls/group/model/group-call-types";

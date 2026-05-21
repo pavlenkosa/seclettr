@@ -4,7 +4,7 @@ import { type MutableRefObject } from "react";
 import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { useDirectCallRemoteMediaRuntime } from "@/calls/direct/runtime/useDirectCallRemoteMediaRuntime";
+import { useDirectCallRemoteMediaRuntime } from "@/calls/direct/runtime/media/useDirectCallRemoteMediaRuntime";
 import type { LastIncomingMediaState } from "@/calls/direct/model/call-media-state";
 
 type RemoteMediaRuntimeApi = ReturnType<typeof useDirectCallRemoteMediaRuntime>;

@@ -5,7 +5,7 @@ import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { ActiveCall } from "@/calls/direct/model/direct-call-types";
-import { useDirectCallScreenShareControls } from "@/calls/direct/runtime/useDirectCallScreenShareControls";
+import { useDirectCallScreenShareControls } from "@/calls/direct/runtime/media/useDirectCallScreenShareControls";
 
 type ScreenShareControlsApi = ReturnType<typeof useDirectCallScreenShareControls>;
 type ScreenShareControlsOptions = Parameters<typeof useDirectCallScreenShareControls>[0];

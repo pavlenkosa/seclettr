@@ -1,15 +1,22 @@
+/**
+ * remote-producers — SFU remote producer filtering and sync utilities.
+ *
+ * Owns:
+ *   - dedupeRemoteProducersBySlot — deduplicates producers from the same
+ *     user+device+kind+source slot, keeping the last entry
+ *   - filterRemoteProducersForConsume — strips local producers and own-device
+ *     producers from a raw SFU producer list
+ *   - computeConsumeRetryDelayMs — fixed 2-second retry delay for failed consumes
+ *   - getNextRemoteConsumeRetryAt — earliest retry timestamp across pending retries
+ *   - computeRemoteSyncDelayMs — next reconciliation interval (30 seconds)
+ *   - getProducerRemovalGracePeriodMs — grace window (5 seconds) after explicit removal
+ *   - CONSUME_RETRY_DELAY_MS / PRODUCER_REMOVAL_GRACE_PERIOD_MS / RECONCILIATION_INTERVAL_MS constants
+ *
+ * Does not own consumer creation, retry state storage, or WS signal handling
+ * (all owned by consumer-runtime.ts).
+ */
 import type { SfuRoomProducer } from "@seclettr/protocol";
 export type { SfuProducerSource } from "@seclettr/protocol";
-
-/**
- * Simplified producer sync utilities.
- * 
- * Design principles:
- * 1. WS signals are authoritative for topology changes
- * 2. Periodic reconciliation as a safety net only
- * 3. Simple retry delays (no exponential backoff)
- * 4. Clear producer state transitions
- */
 
 // Reasonable retry delay for failed consume operations
 const CONSUME_RETRY_DELAY_MS = 2_000;

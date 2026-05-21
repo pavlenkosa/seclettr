@@ -1,3 +1,18 @@
+/**
+ * call-signal-guard — incoming signal sender verification utilities for 1:1 calls.
+ *
+ * Owns:
+ *   - isCurrentDirectCallContext — generic call-ID + optional connection identity check;
+ *     used before applying any signal to confirm it belongs to the current active call
+ *   - resolveExpectedDirectCallSignalSender — validates that the signal sender's userId
+ *     and deviceId match the known peer; returns a typed result with a mismatch reason
+ *     so callers can log the exact rejection cause
+ *   - updateDirectCallIfCurrent — immutable conditional update helper: applies the
+ *     updater only when callId matches, otherwise returns the original value unchanged
+ *
+ * Does not own signal routing, WebSocket ingress, or React state. These are pure
+ * guard functions invoked at the boundary where signals enter the runtime.
+ */
 import type { ActiveCall } from "./direct-call-types";
 
 export function isCurrentDirectCallContext<TConnection>(params: {

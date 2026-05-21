@@ -6,6 +6,7 @@
  */
 
 import type { MutableRefObject } from "react";
+import type { CallSignalAuthProof } from "@/calls/direct/runtime/crypto/call-auth-material";
 import { wsClient } from "@/lib/websocket";
 import { logger } from "@/lib/logger.js";
 
@@ -18,7 +19,7 @@ export interface PendingRenegotiationOfferDispatch {
     callId: string;
     revision: number;
     sdp: string;
-    auth: unknown;
+    auth: CallSignalAuthProof | null;
   };
 }
 
@@ -30,7 +31,7 @@ export interface PendingRenegotiationAnswerDispatch {
     callId: string;
     revision: number;
     sdp: string;
-    auth: unknown;
+    auth: CallSignalAuthProof | null;
   };
 }
 

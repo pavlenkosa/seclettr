@@ -1,3 +1,13 @@
+/**
+ * buildGroupCallPanelChromeViewProps — view-props builder for the panel chrome (dock + header).
+ *
+ * Owns:
+ *   - GroupCallPanelChromeViewProps type (dockProps + headerProps)
+ *   - buildGroupCallPanelChromeViewProps — maps GroupCallPanelViewPropsBuildParams to
+ *     the props consumed by GroupCallDock and GroupCallHeader
+ *
+ * Does not own any state or rendering — this is a pure props-mapping function.
+ */
 import type { ComponentProps } from "react";
 import { GroupCallDock } from "@/calls/group/presentation/components/GroupCallDock";
 import { GroupCallHeader } from "@/calls/group/presentation/components/GroupCallHeader";

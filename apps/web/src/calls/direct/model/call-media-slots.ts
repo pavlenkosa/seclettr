@@ -1,3 +1,22 @@
+/**
+ * call-media-slots — remote media slot state model for 1:1 calls.
+ *
+ * Owns:
+ *   - RemoteMediaSlot / RemoteMediaSlotStatus / RemoteMediaUiStatus type definitions
+ *     that track the runtime lifecycle of an incoming video track (camera or screen)
+ *   - createEmptyRemoteMediaSlot — factory for initial slot state
+ *   - isRemoteMediaSlotRenderable — source-of-truth rendering gate: only shows video
+ *     when the slot has a live track with confirmed RTP or frame activity, guarding
+ *     against flicker from racey signaling / advisory state transitions
+ *   - resolveRemoteMediaSlotRuntimeStatus — upgrades "starting" → "live" on confirmed
+ *     activity, stabilises "live" through short telemetry gaps to prevent flicker
+ *   - toRemoteMediaUiStatus — collapses the 5-state lifecycle into the 3-state UI enum
+ *   - withRemoteMediaProgress — immutable progress tick update helper
+ *   - isRemoteTrackSignalingLive, getOppositeRemoteMediaSource — small utilities
+ *
+ * Does not own slot lifecycle mutation, transceiver binding, or React hooks.
+ * Slot lifecycle is owned by useDirectCallRemoteMediaRuntime.
+ */
 import type { CallMediaActivity } from "@seclettr/protocol";
 import { REMOTE_TRACK_ACTIVE_WINDOW_MS } from "./direct-call-types";
 

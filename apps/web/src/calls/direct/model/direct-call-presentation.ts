@@ -1,3 +1,21 @@
+/**
+ * direct-call-presentation — pure presentation state derivation for 1:1 calls.
+ *
+ * Owns:
+ *   - DirectCallPresentationState — the complete flat bag of display strings and
+ *     derived booleans consumed by the presentation layer (labels, initials, surface,
+ *     security status, media control aria labels, etc.)
+ *   - buildDirectCallPresentationState — single entry-point that derives all
+ *     presentation values from active call state, incoming call state, UI toggles,
+ *     security mode, and i18n translation function
+ *
+ * Internal helpers (resolveCallPeerLabels, resolveIncomingCallText,
+ * resolveActiveCallSecurityLabels, resolveCallControlLabels) are private to this
+ * module and keep buildDirectCallPresentationState declarative and testable.
+ *
+ * Does not own React state, hooks, or any side effects.
+ * Consumed by useDirectCallPresentationBindings via useDirectCallVisualStateSummary.
+ */
 import type { CallSecurityMode } from "@/ui-settings";
 import { resolveDirectCallSurface, type DirectCallSurface, type ActiveCall, type IncomingCall } from "./direct-call-types";
 import {

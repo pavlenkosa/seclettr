@@ -1,3 +1,22 @@
+/**
+ * useGroupCallSessionLifecycle — session-scoped call bootstrap and rejoin orchestration.
+ *
+ * Owns:
+ *   - The single useEffect that fires when a GroupCallPanelSession appears, which:
+ *     resets all call state, runs the bootstrap sequence (runGroupCallBootstrap),
+ *     and wires up the SFU rejoin handler (buildAttemptSfuRejoin)
+ *   - Session run-ID bookkeeping to detect stale async chains (isCurrentSessionRun /
+ *     abortIfStaleSessionRun)
+ *   - Local-stream acquisition guard (ensureLocalStream) with media-permission error
+ *   - Created-call and joined-participant cleanup helpers for abort paths
+ *   - Session-level ref initialization (callIdRef, ownsServerCallRef, etc.)
+ *
+ * Does not own the session-level WS subscriptions (useGroupCallSessionSubscriptions),
+ * local media controls (useGroupCallLocalMedia), or media-key runtime.
+ *
+ * Invariant: exactly one sessionRunId is "current" at a time; all async callbacks
+ * check isCurrentSessionRun() before mutating shared state.
+ */
 import {
   useEffect,
   useRef,
@@ -11,30 +30,30 @@ import {
   type GroupSfuClient,
 } from "@/calls/group/runtime/sfu";
 import { buildParticipantDeviceIndex } from "@/calls/group/runtime/runtime-utils";
-import type { GroupCallRuntimeMediaEncryptionMode } from "@/calls/group/runtime/group-call/media-encryption-negotiation";
+import type { GroupCallRuntimeMediaEncryptionMode } from "@/calls/group/runtime/media-key/media-encryption-negotiation";
 import type {
   LocalGroupCallMediaKey,
   ReceivedGroupCallMediaKey,
-} from "@/calls/group/runtime/group-call/media-key";
-import type { GroupCallMediaKeyDeliveryTracker } from "@/calls/group/runtime/group-call/media-key-delivery";
+} from "@/calls/group/runtime/media-key/media-key";
+import type { GroupCallMediaKeyDeliveryTracker } from "@/calls/group/runtime/media-key/media-key-delivery";
 import type { KeyPair } from "@seclettr/crypto";
 import type {
   GroupCallPanelSession,
   GroupCallStatusAction,
 } from "@/calls/group/model/group-call-types";
-import type { MediaKeyRotationState } from "./group-call-session-types";
+import type { MediaKeyRotationState } from "./session/session-types";
 import {
   GroupCallSessionAbortError,
   runGroupCallBootstrap,
   type BootstrapContext,
   type BootstrapCallState,
-} from "./group-call-bootstrap";
+} from "./session/bootstrap";
 import {
   buildAttemptSfuRejoin,
   type RejoinContext,
   type RejoinState,
-} from "./group-call-rejoin";
-import type { CreateSfuClientWithRetryContext } from "./group-call-sfu-client";
+} from "./session/rejoin";
+import type { CreateSfuClientWithRetryContext } from "./session/sfu-client";
 
 const MAX_REJOIN_ATTEMPTS = 3;
 

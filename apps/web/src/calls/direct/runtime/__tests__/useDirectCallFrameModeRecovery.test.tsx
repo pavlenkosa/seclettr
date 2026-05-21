@@ -10,7 +10,7 @@ import {
   type RemoteMediaSource,
 } from "@/calls/direct/model/call-media-slots";
 import type { ActiveCall } from "@/calls/direct/model/direct-call-types";
-import { useDirectCallFrameModeRecovery } from "@/calls/direct/runtime/useDirectCallFrameModeRecovery";
+import { useDirectCallFrameModeRecovery } from "@/calls/direct/runtime/session/useDirectCallFrameModeRecovery";
 
 type FrameModeRecoveryOptions = Parameters<typeof useDirectCallFrameModeRecovery>[0];
 

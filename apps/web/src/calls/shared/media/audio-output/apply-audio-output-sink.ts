@@ -1,3 +1,13 @@
+/**
+ * apply-audio-output-sink — applies an audio output preference to an HTMLMediaElement.
+ *
+ * Owns:
+ *   - supportsAudioOutputSelection — detects HTMLMediaElement.setSinkId availability
+ *   - applyAudioOutputPreference — calls setSinkId on a capable audio element using
+ *     the decoded device ID; no-ops on unsupported browsers so playback still works
+ *
+ * Does not own device enumeration or Audio Session routing.
+ */
 import type { AudioOutputPreference } from "@/ui-settings";
 import { decodeAudioOutputPreference } from "./audio-output-types";
 

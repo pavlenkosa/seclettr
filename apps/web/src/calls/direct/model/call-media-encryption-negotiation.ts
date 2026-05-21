@@ -1,9 +1,29 @@
+/**
+ * call-media-encryption-negotiation — media encryption mode negotiation for 1:1 calls.
+ *
+ * Owns:
+ *   - Re-exports of protocol encryption types (DirectCallMediaEncryptionMode, Offer, Answer)
+ *   - detectLocalDirectCallMediaEncryptionModes — probes local browser capabilities and
+ *     the VITE_ENABLE_DIRECT_CALL_FRAME_E2EE env flag to build the supported-modes list
+ *   - resolvePreferredDirectCallMediaEncryptionMode — maps callSecurityMode + local
+ *     capabilities to the preferred encryption mode for outgoing offers
+ *   - buildDirectCallMediaEncryptionOffer — builds the wire offer payload
+ *   - negotiateDirectCallMediaEncryptionMode — selects the best common mode from
+ *     remote offer + local capabilities (frame-v1 only when both peers prefer it)
+ *   - validateDirectCallMediaEncryptionAnswer — validates the callee's answer against
+ *     the original offer and confirms the selected mode is a legal common mode
+ *   - resolveLegacyDirectCallMediaEncryptionOffer — synthetic offer for peers that
+ *     predate the encryption negotiation protocol
+ *
+ * Does not own frame-crypto key exchange, SDP handling, or any React hooks.
+ */
 import type {
   CallMediaEncryptionAnswer as ProtocolDirectCallMediaEncryptionAnswer,
   CallMediaEncryptionMode as ProtocolDirectCallMediaEncryptionMode,
   CallMediaEncryptionOffer as ProtocolDirectCallMediaEncryptionOffer,
 } from "@seclettr/protocol";
 import { supportsEncodedFrameTransforms } from "@/calls/shared/crypto/frame-crypto-capabilities";
+import { resolveDirectCallFrameCompatibilityPolicy } from "@/calls/direct/model/direct-call-media-encryption-compatibility";
 import type { CallSecurityMode } from "@/ui-settings";
 
 export type DirectCallMediaEncryptionMode = ProtocolDirectCallMediaEncryptionMode;
@@ -29,7 +49,12 @@ function isDirectCallFrameEncryptionEnabled(): boolean {
 
 export function detectLocalDirectCallMediaEncryptionModes(): DirectCallMediaEncryptionMode[] {
   const modes: DirectCallMediaEncryptionMode[] = ["transport"];
-  if (isDirectCallFrameEncryptionEnabled() && supportsEncodedFrameTransforms()) {
+  const frameCompatibilityPolicy = resolveDirectCallFrameCompatibilityPolicy();
+  if (
+    isDirectCallFrameEncryptionEnabled() &&
+    frameCompatibilityPolicy.allowFrameMode &&
+    supportsEncodedFrameTransforms()
+  ) {
     modes.unshift("frame-v1");
   }
   return sanitizeModes(modes);

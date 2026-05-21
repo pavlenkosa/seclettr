@@ -1,3 +1,26 @@
+/**
+ * frame-crypto-core — AES-256-GCM frame encryption primitives and key-state management.
+ *
+ * Owns:
+ *   - Type definitions: FrameCryptoDirection, EncodedFrame, GroupCallFrameCryptoContext,
+ *     MutableKeyState, GroupCallFrameKeyContext, GroupCallFrameKeyInput,
+ *     FrameCryptoRuntime, and all Worker message types
+ *   - Frame wire format: NEXT_FRAME_MAGIC (SDFEP) + legacy FRAME_MAGIC (QMGC\x01) magic bytes,
+ *     12-byte IV prefix, 16-byte AES-GCM auth tag
+ *   - buildAssociatedData — derives AEAD additional data from roomId:deviceId:kind:source
+ *   - normalizeKeyInput — converts Uint8Array | GroupCallFrameKeyContext[] | null to MutableKeyState[]
+ *   - clearMutableKeyStates — zeroes raw key material on pipeline teardown
+ *   - processFrameBuffer — the hot path: encrypts (send) or tries all key contexts (recv)
+ *   - encryptGroupCallFramePayload / decryptGroupCallFramePayload — one-shot test/util helpers
+ *   - cloneKeyContext / cloneKeyInputContexts — deep copies for safe key handoff across threads
+ *   - startsWithMagic — identifies encrypted frames by magic-byte prefix
+ *
+ * Does not own transport binding (see frame-crypto.ts), Worker entry point
+ * (see frame-crypto.worker.ts), or capability detection (see frame-crypto-capabilities.ts).
+ *
+ * Invariant: raw key bytes in MutableKeyState are always zeroed via clearMutableKeyStates
+ * before the array is discarded — never left resident in memory.
+ */
 import type { SfuProducerSource } from "@seclettr/protocol";
 
 export type FrameCryptoDirection = "send" | "recv";

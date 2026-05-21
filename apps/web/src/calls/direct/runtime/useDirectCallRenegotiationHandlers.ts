@@ -20,6 +20,7 @@ import type {
 } from "@/calls/direct/model/direct-call-types";
 import type {
   PendingRenegotiationAnswerDispatch,
+  PendingRenegotiationOfferDispatch,
 } from "@/calls/direct/runtime/direct-call-negotiation-dispatch";
 import { logger } from "@/lib/logger.js";
 import type { DirectCallTranslate, DirectCallPushNotice } from "./direct-call-runtime-types";
@@ -38,18 +39,7 @@ interface UseDirectCallRenegotiationHandlersOptions {
   directCallNegotiationRoleRef: MutableRefObject<DirectCallNegotiationRole>;
   lastRenegotiationAttemptRef: MutableRefObject<Record<string, unknown> | null>;
   lastSignalingErrorRef: MutableRefObject<Record<string, unknown> | null>;
-  pendingOutboundRenegotiationOfferRef: MutableRefObject<{
-    callId: string;
-    reason: string;
-    revision: number;
-    message: {
-      type: "call.renegotiate.offer";
-      callId: string;
-      revision: number;
-      sdp: string;
-      auth: unknown;
-    };
-  } | null>;
+  pendingOutboundRenegotiationOfferRef: MutableRefObject<PendingRenegotiationOfferDispatch | null>;
   setActive: Dispatch<SetStateAction<ActiveCall | null>>;
   callSecurityMode: CallSecurityMode;
   debugCallMedia: (event: string, payload: Record<string, unknown>) => void;

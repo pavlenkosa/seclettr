@@ -1,3 +1,17 @@
+/**
+ * room-call-bootstrap — SFU join and client creation for guest/host room calls.
+ *
+ * Owns:
+ *   - RoomCallSession — session descriptor for a room call (callId, participantId,
+ *     deviceId, displayName, isGuest, isHost, guestToken, sfuBaseUrl, inviteUrl)
+ *   - RoomSfuClient — thin wrapper exposing sfuClient + close()
+ *   - joinRoomAndStartSfu — async function that calls api.joinRoomCall, starts
+ *     the group SFU client (reusing the group call SFU stack), and returns RoomSfuClient
+ *
+ * Does not own local media acquisition, room-call panel state, or rejoin logic.
+ * Guest authentication uses the guestToken injected into the SFU HTTP client
+ * as a static token rather than the auth store.
+ */
 import { api } from "@/lib/api";
 import type { GroupSfuClient, GroupSfuClientOptions } from "@/calls/group/runtime/sfu";
 import { startGroupSfuClient } from "@/calls/group/runtime/sfu";

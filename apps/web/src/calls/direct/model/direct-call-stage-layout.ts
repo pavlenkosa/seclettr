@@ -1,3 +1,22 @@
+/**
+ * direct-call-stage-layout — stage / companion source layout resolution for 1:1 calls.
+ *
+ * Owns:
+ *   - DirectCallStageLayout — describes which source occupies the main stage
+ *     (camera | screen | audio) and an optional companion pip source
+ *   - resolveDirectCallStageLayout — pure function that picks the stage and companion
+ *     source given what is renderable, the user's preferred source, and whether the
+ *     remote screen share is temporarily suppressed
+ *
+ * Layout policy:
+ *   - No renderable remote video → "audio" stage (avatar mode)
+ *   - Remote screen active → screen is primary by default (content beats camera)
+ *   - User explicit preference honoured when the preferred source is renderable
+ *   - Both sources renderable → non-stage source becomes companion pip
+ *
+ * Does not own React state, preference persistence, or viewer-dialog lifecycle.
+ * Those are owned by useDirectCallStagePresentation.
+ */
 export type DirectCallStageVisualSource = "camera" | "screen";
 
 interface ResolveDirectCallStageLayoutInput {

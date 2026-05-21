@@ -1,3 +1,20 @@
+/**
+ * group-call-device-roster — device roster model for E2EE media-key targeting.
+ *
+ * Owns:
+ *   - GroupCallDeviceRoster type — userId → GroupCallMemberDeviceRecord[] map
+ *   - hasAuthoritativeGroupCallDeviceRoster — true when active-device-ids are known
+ *   - mergeGroupCallDeviceRoster — merges two rosters, preferring the most complete
+ *     identityKeyPublic per device; used when roster refreshes arrive asynchronously
+ *   - toGroupCallDeviceRoster — converts the API member device list to the roster format
+ *   - hasMissingRemoteGroupDevices — checks if any active device is absent from the roster
+ *   - shouldRefreshAuthoritativeGroupCallDeviceRoster — determines when a roster refresh
+ *     fetch is needed (new group, or roster is missing active devices)
+ *   - selectAuthoritativeGroupCallParticipantDevices — returns the intersection of known
+ *     roster entries and active-device IDs for a participant, excluding the local device
+ *
+ * Does not own key exchange or device-key fetch (see useGroupCallMediaKeyExchange).
+ */
 interface GroupCallMemberDeviceRecord {
   deviceId: string;
   identityKeyPublic?: string;

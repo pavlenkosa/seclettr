@@ -21,12 +21,12 @@ import {
   type UseDirectCallSessionLifecycleOptions,
   type DirectCallLifecycleVideoElementRefs,
   type DirectCallLifecycleMediaStateRefs,
-} from "./direct-call-session-lifecycle-shared";
+} from "./session/direct-call-session-lifecycle-shared";
 import { closePeerConnection as doClosePeerConnection } from "./direct-call-pc-utils";
-import { clearDirectCallNegotiationState } from "./direct-call-setup-shared";
+import { clearDirectCallNegotiationState } from "./setup/direct-call-setup-shared";
 import { type DirectCallFinishSession } from "./direct-call-runtime-types";
-import { useDirectCallIncomingRingtone } from "./useDirectCallIncomingRingtone";
-import { useDirectCallFrameModeRecovery } from "./useDirectCallFrameModeRecovery";
+import { useDirectCallFrameModeRecovery } from "./session/useDirectCallFrameModeRecovery";
+import { useDirectCallIncomingRingtone } from "./session/useDirectCallIncomingRingtone";
 
 function detachVideoElements(refs: DirectCallLifecycleVideoElementRefs): void {
   if (refs.localVideoRef.current) refs.localVideoRef.current.srcObject = null;

@@ -19,7 +19,7 @@ const signalRuntimeMocks = vi.hoisted(() => {
   };
 });
 
-vi.mock("@/calls/direct/runtime/useDirectCallSignalSubscription", () => ({
+vi.mock("@/calls/direct/runtime/signal/useDirectCallSignalSubscription", () => ({
   useDirectCallSignalSubscription: (handlers: Record<string, unknown>) => {
     signalRuntimeMocks.subscriptionState.handlers = handlers;
   },

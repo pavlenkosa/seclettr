@@ -4,9 +4,9 @@ import { type MutableRefObject } from "react";
 import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { useDirectCallSignalOutcomeHandlers } from "@/calls/direct/runtime/useDirectCallSignalOutcomeHandlers";
+import { useDirectCallSignalOutcomeHandlers } from "@/calls/direct/runtime/signal/useDirectCallSignalOutcomeHandlers";
 import type { ActiveCall, CallNotice, IncomingCall } from "@/calls/direct/model/direct-call-types";
-import type { DirectCallErrorSignal } from "@/calls/direct/runtime/direct-call-signal-dispatch";
+import type { DirectCallErrorSignal } from "@/calls/direct/runtime/signal/direct-call-signal-dispatch";
 import type { DirectCallFinishSessionOptions } from "@/calls/direct/runtime/direct-call-runtime-types";
 
 type OutcomeHandlers = ReturnType<typeof useDirectCallSignalOutcomeHandlers>;

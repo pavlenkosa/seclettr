@@ -5,7 +5,7 @@ import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { ActiveCall } from "@/calls/direct/model/direct-call-types";
-import { useDirectCallCameraSwitch } from "@/calls/direct/runtime/useDirectCallCameraSwitch";
+import { useDirectCallCameraSwitch } from "@/calls/direct/runtime/media/useDirectCallCameraSwitch";
 
 type CameraSwitchApi = ReturnType<typeof useDirectCallCameraSwitch>;
 

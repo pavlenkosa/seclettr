@@ -1,13 +1,26 @@
+/**
+ * useGroupCallMediaKeyRotation — React hook that drives periodic and event-based key rotation.
+ *
+ * Owns:
+ *   - The useEffect that fires on participantUserIds or mediaKeyRotationTick changes
+ *   - Computes the participant fingerprint and calls decideGroupCallMediaKeyRotation
+ *   - Updates mediaKeyRotationStateRef.participantFingerprint after each decision
+ *   - Generates the next media key (createLocalGroupCallMediaKey) and sets it on
+ *     localMediaKeyRef + React state when rotation is required
+ *
+ * Does not own the rotation interval timer (see useGroupCallLocalMediaKeySync),
+ * the rotation policy itself (see media-key-rotation.ts), or key delivery.
+ */
 import { useEffect } from "react";
-import { createLocalGroupCallMediaKey } from "@/calls/group/runtime/group-call/media-key";
+import { createLocalGroupCallMediaKey } from "@/calls/group/runtime/media-key/media-key";
 import {
   buildGroupCallParticipantFingerprint,
   decideGroupCallMediaKeyRotation,
-} from "@/calls/group/runtime/group-call/media-key-rotation";
-import { logGroupCallInfo } from "@/calls/group/runtime/group-call/logger";
+} from "@/calls/group/runtime/media-key/media-key-rotation";
+import { logGroupCallInfo } from "@/calls/group/runtime/media-key/logger";
 import {
   type UseGroupCallMediaKeyRuntimeOptions,
-} from "./group-call-media-key-runtime-shared";
+} from "./media-key/media-key-runtime-shared";
 
 interface UseGroupCallMediaKeyRotationOptions extends Pick<
   UseGroupCallMediaKeyRuntimeOptions,

@@ -1,3 +1,16 @@
+/**
+ * useDirectCallSetupControlRuntime — call setup state machine entry point.
+ *
+ * Owns:
+ *   - startCall: initiates an outgoing call (media acquisition → offer → invite API)
+ *   - acceptCall: accepts an incoming call (media acquisition → answer → connect)
+ *   - rejectCall: rejects an incoming call without setting up media
+ *   - hangup: terminates the active call and tears down peer-connection
+ *
+ * Delegates each flow to runStartCallFlow / runAcceptCallFlow in the setup/
+ * subdirectory. Does not own negotiation runtime ordering, signal ingress,
+ * media controls, or frame-crypto lifecycle beyond initial call setup.
+ */
 import { useCallback } from "react";
 import {
   resolveDirectCallDurationSeconds,
@@ -7,9 +20,10 @@ import {
 } from "@/calls/direct/model/direct-call-types";
 import {
   type DirectCallSetupRuntimeOptions,
-} from "./direct-call-setup-shared";
-import { runStartCallFlow } from "./start-call-flow";
-import { runAcceptCallFlow } from "./accept-call-flow";
+  runAcceptCallFlow,
+  runStartCallFlow,
+} from "./setup";
+import { hapticImpactMedium, hapticNotificationWarning } from "@/lib/native-haptics";
 
 export function useDirectCallSetupControlRuntime(options: DirectCallSetupRuntimeOptions) {
   const {
@@ -155,6 +169,7 @@ export function useDirectCallSetupControlRuntime(options: DirectCallSetupRuntime
   ]);
 
   const acceptCall = useCallback(async () => {
+    hapticImpactMedium();
     await runAcceptCallFlow({
       incomingRef,
       acceptingIncomingCallRef,
@@ -244,6 +259,7 @@ export function useDirectCallSetupControlRuntime(options: DirectCallSetupRuntime
     if (!currentIncoming) {
       return;
     }
+    hapticNotificationWarning();
     finishCallSession({
       reason: "local-reject",
       authority: "reject",

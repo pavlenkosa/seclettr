@@ -1,3 +1,12 @@
+/**
+ * buildGroupCallPanelControlsViewProps — view-props builder for the GroupCallControls rail.
+ *
+ * Owns:
+ *   - buildGroupCallPanelControlsViewProps — maps GroupCallPanelViewPropsBuildParams to
+ *     the props consumed by GroupCallControls (mute, video, screen-share, device pickers, labels)
+ *
+ * Does not own any state or rendering — this is a pure props-mapping function.
+ */
 import type { ComponentProps } from "react";
 import { GroupCallControls } from "@/calls/group/presentation/components/GroupCallControls";
 import type { GroupCallPanelViewPropsBuildParams } from "@/calls/group/presentation/group-call-panel-view-props-contract";

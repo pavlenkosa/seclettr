@@ -1,3 +1,21 @@
+/**
+ * consumer-runtime — SFU consumer lifecycle manager for group calls.
+ *
+ * Owns:
+ *   - createSfuConsumerRuntime — factory that returns GroupSfuConsumerRuntime
+ *   - GroupSfuConsumerRuntime interface (syncRemoteProducers, removeParticipantMedia,
+ *     setRemoteMediaKey, getDebugSnapshot, close)
+ *   - Consumer creation, retry state, and grace-period logic for remote producers
+ *   - WebSocket signal subscription for producer_state events
+ *   - 30-second reconciliation timer as a safety net for missed signals
+ *   - Per-consumer frame-decryption handle lifecycle (attach / detach / key update)
+ *
+ * Does not own producer-side publishing (see producer-runtime.ts), RTP parameter
+ * negotiation (see rtp-parameters.ts), or the SFU HTTP client (see http-client.ts).
+ *
+ * Invariant: WS producer_state signals are the primary change driver; the periodic
+ * reconciliation sync is only a fallback and runs every 30 seconds.
+ */
 import type {
   SfuRoomProducer,
   WsServerMessage,
@@ -7,12 +25,12 @@ import {
   bindReceiverFrameDecryption,
   type GroupCallFrameCryptoHandle,
 } from "@/calls/shared/crypto/frame-crypto";
-import type { ReceivedGroupCallMediaKey } from "@/calls/group/runtime/group-call/media-key";
+import type { ReceivedGroupCallMediaKey } from "@/calls/group/runtime/media-key/media-key";
 import {
   logGroupCallError,
   logGroupCallInfo,
   logGroupCallWarn,
-} from "@/calls/group/runtime/group-call/logger";
+} from "@/calls/group/runtime/media-key/logger";
 import {
   computeConsumeRetryDelayMs,
   dedupeRemoteProducersBySlot,

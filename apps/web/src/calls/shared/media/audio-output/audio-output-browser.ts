@@ -1,3 +1,17 @@
+/**
+ * audio-output-browser — browser-specific audio output routing utilities.
+ *
+ * Owns:
+ *   - isAndroidBrowserManagedAudioOutput — detects Android where the OS owns
+ *     handset/speaker routing and web setSinkId cannot override it
+ *   - resolveAudioOutputDevices — enumerates available audiooutput devices and maps
+ *     them to AudioOutputOption values usable in the settings UI
+ *   - promptAudioOutputDevice — wraps selectAudioOutput (Chrome 116+) for explicit
+ *     user-driven audio output device selection
+ *
+ * Does not own audio element sink assignment (see apply-audio-output-sink.ts) or
+ * the audio output context (see CallAudioOutputProvider).
+ */
 import { decodeAudioOutputPreference } from "./audio-output-types";
 import type { AudioOutputPreference } from "@/ui-settings";
 

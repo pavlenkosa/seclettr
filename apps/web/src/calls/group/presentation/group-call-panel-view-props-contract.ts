@@ -1,3 +1,14 @@
+/**
+ * group-call-panel-view-props-contract — shared props contract for GroupCallPanel view builders.
+ *
+ * Owns:
+ *   - GroupCallPanelViewPropsBuildParams — the combined build-time input record passed to
+ *     buildGroupCallPanelChromeViewProps, buildGroupCallPanelControlsViewProps, and
+ *     buildGroupCallPanelMediaDetailsViewProps
+ *
+ * Does not own any view building logic — this is a pure type contract file.
+ * All builders receive the same params object and extract the fields they need.
+ */
 import type { CSSProperties, ComponentProps, ReactNode, RefObject } from "react";
 import type { GroupCallPanelSession } from "@/calls/group/model/entry";
 import { GroupCallControls } from "@/calls/group/presentation/components/GroupCallControls";

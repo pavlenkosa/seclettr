@@ -1,3 +1,19 @@
+/**
+ * useDirectCallNegotiationRuntime — negotiation orchestrator for 1:1 calls.
+ *
+ * Composes the four negotiation sub-runtimes into a unified API:
+ *   - createDirectCallInitialAnswerRuntime   → handleRemoteAnswer (initial offer/answer)
+ *   - createDirectCallOutgoingNegotiationRuntime → sendRenegotiationOffer
+ *   - useDirectCallPendingNegotiationRuntime → flushPendingRenegotiationOffer (ws reconnect)
+ *   - useDirectCallRenegotiationHandlers     → handleIncomingRenegotiationOffer / Answer
+ *
+ * Also wires the negotiation dispatch layer (createNegotiationDispatch) that
+ * buffers outbound offers/answers until the WebSocket is ready.
+ *
+ * The only refs owned here are the two pending dispatch refs
+ * (pendingOutboundRenegotiationOfferRef / AnswerRef) — all other refs are
+ * threaded in from useDirectCallControllerState via the controller.
+ */
 import {
   useCallback,
   useEffect,

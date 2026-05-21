@@ -8,9 +8,9 @@ import type {
   IncomingMediaStateHint,
   LastIncomingMediaState,
 } from "@/calls/direct/model/call-media-state";
-import { useDirectCallRemoteMediaHints } from "@/calls/direct/runtime/useDirectCallRemoteMediaHints";
-import { useDirectCallRemoteMediaState } from "@/calls/direct/runtime/useDirectCallRemoteMediaState";
-import { useDirectCallRemoteTrackIngress } from "@/calls/direct/runtime/useDirectCallRemoteTrackIngress";
+import { useDirectCallRemoteMediaHints } from "@/calls/direct/runtime/media/useDirectCallRemoteMediaHints";
+import { useDirectCallRemoteMediaState } from "@/calls/direct/runtime/media/useDirectCallRemoteMediaState";
+import { useDirectCallRemoteTrackIngress } from "@/calls/direct/runtime/media/useDirectCallRemoteTrackIngress";
 
 type RemoteMediaStateApi = ReturnType<typeof useDirectCallRemoteMediaState>;
 type RemoteTrackIngressApi = ReturnType<typeof useDirectCallRemoteTrackIngress>;

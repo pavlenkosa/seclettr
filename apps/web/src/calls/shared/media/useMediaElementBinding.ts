@@ -1,3 +1,16 @@
+/**
+ * useMediaElementBinding — React hook that binds a MediaStream to an HTMLMediaElement ref.
+ *
+ * Owns:
+ *   - elementRef — a stable MutableRefObject<TElement | null> for attaching to the DOM
+ *   - isReady — true once the element has enough data to render (HAVE_CURRENT_DATA + video dimensions)
+ *   - srcObject assignment on stream change; cleanup clears srcObject on unmount
+ *   - Optional audio output sink routing via CallAudioOutputProvider context
+ *   - "canplay" event listener for audio elements; "timeupdate" / "loadeddata" for video
+ *
+ * Does not own audio output selection UI or the audio output context itself
+ * (see CallAudioOutputProvider and audio-output/apply-audio-output-sink.ts).
+ */
 import { useEffect, useRef, useState } from "react";
 import { useOptionalCallAudioOutput } from "./audio-output/CallAudioOutputProvider";
 

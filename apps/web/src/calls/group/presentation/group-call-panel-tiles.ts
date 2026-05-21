@@ -1,3 +1,19 @@
+/**
+ * group-call-panel-tiles — GroupCallStageTile construction and gallery layout helpers.
+ *
+ * Owns:
+ *   - resolveRemoteTileBadge — maps remote media to a localised badge label
+ *   - createRemoteCallTile — builds a GroupCallStageTile from a GroupCallRemoteMedia entry
+ *   - createLocalCallTiles — builds local camera and/or screen-share tiles from local state
+ *   - buildMemberNameMap — creates a userId → username lookup from the session member list
+ *   - Layout predicates: isCompactGallery, isAudioOnlyGallery, isCrowdedGallery,
+ *     isWaitingSoloAudioGallery, hasPinnedStageTile, shouldShowStageLayout,
+ *     shouldForceCrowdedStageLayout
+ *   - resolvePanelClassNames — maps layout flags to CSS class-name strings
+ *
+ * Does not own stage tile selection (see group-call-stage.ts) or presentation
+ * composition (see useGroupCallPanelPresentation.ts).
+ */
 import type { GroupCallRemoteMedia } from "@/calls/group/runtime/sfu";
 import type {
   GroupCallPanelSession,

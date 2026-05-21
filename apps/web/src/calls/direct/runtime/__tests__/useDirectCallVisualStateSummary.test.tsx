@@ -8,7 +8,7 @@ import {
   type RemoteMediaSlot,
 } from "@/calls/direct/model/call-media-slots";
 import type { ActiveCall } from "@/calls/direct/model/direct-call-types";
-import { useDirectCallVisualStateSummary } from "@/calls/direct/runtime/useDirectCallVisualStateSummary";
+import { useDirectCallVisualStateSummary } from "@/calls/direct/runtime/media/useDirectCallVisualStateSummary";
 
 type VisualStateSummaryApi = ReturnType<typeof useDirectCallVisualStateSummary>;
 

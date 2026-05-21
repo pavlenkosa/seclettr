@@ -1,3 +1,22 @@
+/**
+ * frame-crypto — WebRTC encoded-frame E2EE pipeline for group calls.
+ *
+ * Owns:
+ *   - GroupCallFrameCryptoHandle interface (supported, failed, setKeyBytes, setKeyContexts, close)
+ *   - encryptGroupCallFrame / decryptGroupCallFrame — low-level AES-256-GCM frame wrappers
+ *   - decryptGroupCallFrameWithKeyContexts — tries multiple key contexts in order; used
+ *     for graceful key rotation where the sender advanced the key before the receiver
+ *   - bindSenderFrameEncryption / bindReceiverFrameDecryption — public API that attaches a
+ *     frame-crypto transform to an RTCRtpSender or RTCRtpReceiver
+ *   - Two transport strategies (chosen automatically by capability detection):
+ *       1. RTCRtpScriptTransform (Chrome 94+, Safari 15.4+) — runs in a dedicated Worker
+ *       2. createEncodedStreams (legacy Chrome) — runs inline via TransformStream
+ *   - iOS WebKit silent-discard detection for RTCRtpScriptTransform
+ *   - createNoopHandle — fallback for unsupported browsers (supported = false)
+ *
+ * Does not own crypto primitives (see frame-crypto-core.ts), capability detection
+ * (see frame-crypto-capabilities.ts), or the Worker entry point (see frame-crypto.worker.ts).
+ */
 import {
   buildAssociatedData,
   cloneKeyInputContexts,

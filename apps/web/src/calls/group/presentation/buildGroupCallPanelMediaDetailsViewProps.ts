@@ -1,3 +1,13 @@
+/**
+ * buildGroupCallPanelMediaDetailsViewProps — view-props builder for the media section and details drawer.
+ *
+ * Owns:
+ *   - GroupCallPanelMediaDetailsViewProps type (mediaSectionProps + detailsDrawerProps)
+ *   - buildGroupCallPanelMediaDetailsViewProps — maps GroupCallPanelViewPropsBuildParams to
+ *     the props consumed by GroupCallMediaSection and GroupCallDetailsDrawer
+ *
+ * Does not own any state or rendering — this is a pure props-mapping function.
+ */
 import type { ComponentProps } from "react";
 import { GroupCallDetailsDrawer } from "@/calls/group/presentation/components/GroupCallDetailsDrawer";
 import { GroupCallMediaSection } from "@/calls/group/presentation/components/GroupCallMediaSection";

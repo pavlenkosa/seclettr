@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import { api } from "@/lib/api";
-import { logGroupCallWarn } from "./group-call/logger";
+import { logGroupCallWarn } from "./media-key/logger";
 
 const GROUP_CALL_HEARTBEAT_INTERVAL_MS = 15_000;
 

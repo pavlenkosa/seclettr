@@ -1,3 +1,20 @@
+/**
+ * group-call-types — core type definitions and the call status reducer for group calls.
+ *
+ * Owns:
+ *   - CallType — "audio" | "video"
+ *   - GroupCallStatus — 9-state enum (idle → starting → joining → ready → reconnecting
+ *     → leaving | ending → ended | error)
+ *   - GroupCallStatusAction — discriminated union driving the status state machine
+ *   - groupCallStatusReducer — pure function implementing valid status transitions
+ *   - GroupCallPanelSession — session parameters passed into the panel on open
+ *   - GroupCallStageTile — UI tile model for the stage/gallery layout
+ *   - MinimizedDockPosition — x/y coordinates for the draggable minimized dock
+ *   - GroupCallParticipantDevice — userId + deviceId pair
+ *   - GroupCallRemoteMediaEntry — alias for GroupCallRemoteMedia
+ *
+ * Does not own lifecycle state derivation (see group-call-lifecycle.ts) or any hooks.
+ */
 import type { GroupCallRemoteMedia } from "@/calls/group/runtime/sfu";
 import type { GroupMember } from "@/stores/groups";
 

@@ -1,3 +1,15 @@
+/**
+ * audio-output-types — type definitions and codec helpers for audio output preferences.
+ *
+ * Owns:
+ *   - SYSTEM_AUDIO_OUTPUT_PREFERENCE — sentinel value for the default system route
+ *   - AudioOutputSupport — "unsupported" | "system-only" | "full" capability enum
+ *   - AudioOutputOption — UI option record (value, deviceId, label)
+ *   - encodeAudioOutputPreference — converts a raw deviceId to a persisted preference string
+ *   - decodeAudioOutputPreference — converts a persisted preference back to a setSinkId argument
+ *
+ * Does not own device enumeration or element sink assignment.
+ */
 import type { AudioOutputPreference } from "@/ui-settings";
 
 export const SYSTEM_AUDIO_OUTPUT_PREFERENCE: AudioOutputPreference = "system";

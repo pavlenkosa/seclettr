@@ -23,13 +23,13 @@ import {
   createLocalGroupCallMediaKey,
   type LocalGroupCallMediaKey,
   type ReceivedGroupCallMediaKey,
-} from "@/calls/group/runtime/group-call/media-key";
-import { type GroupCallMediaKeyDeliveryTracker } from "@/calls/group/runtime/group-call/media-key-delivery";
+} from "@/calls/group/runtime/media-key/media-key";
+import { type GroupCallMediaKeyDeliveryTracker } from "@/calls/group/runtime/media-key/media-key-delivery";
 import {
   resolveEffectiveGroupMediaEncryptionMode,
   resolveLocalGroupCallMediaEncryptionDecision,
   type GroupCallRuntimeMediaEncryptionMode,
-} from "@/calls/group/runtime/group-call/media-encryption-negotiation";
+} from "@/calls/group/runtime/media-key/media-encryption-negotiation";
 import { type GroupCallRemoteMedia, type GroupSfuClient } from "@/calls/group/runtime/sfu";
 import { useAuthStore } from "@/stores/auth";
 import { resolveCallDurationSeconds } from "@/calls/shared/model/call-duration";

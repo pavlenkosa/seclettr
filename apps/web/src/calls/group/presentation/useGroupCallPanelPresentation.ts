@@ -1,13 +1,28 @@
+/**
+ * useGroupCallPanelPresentation — derived presentation state for the group call panel.
+ *
+ * Owns:
+ *   - Full UseGroupCallPanelPresentationResult: all labels, tiles, layout flags, and
+ *     class names consumed by GroupCallPanel and its sub-components
+ *   - Tile construction: createLocalCallTiles + createRemoteCallTile → callTiles array
+ *   - Stage tile selection (resolveGroupCallStageTileId with pinned override)
+ *   - Gallery vs. stage layout decision (shouldShowStageLayout, isCrowdedGallery, etc.)
+ *   - Label resolution: status, hero status, media key mode/status, leave/end labels
+ *   - CSS class name resolution (resolvePanelClassNames) for body/grid/rail elements
+ *
+ * Does not own action dispatch, session lifecycle, or remote media subscription.
+ * All inputs are passed in as props/state; this hook is purely derived/display logic.
+ */
 import { useMemo } from "react";
 import { useI18n } from "@/i18n";
-import type { LocalGroupCallMediaKey } from "@/calls/group/runtime/group-call/media-key";
+import type { LocalGroupCallMediaKey } from "@/calls/group/runtime/media-key/media-key";
 import type { GroupCallRemoteMedia } from "@/calls/group/runtime/sfu";
 import { type StatusBadgeTone } from "@/components/ui";
 
 import {
   isGroupMediaModeDowngraded,
   type GroupCallRuntimeMediaEncryptionMode,
-} from "@/calls/group/runtime/group-call/media-encryption-negotiation";
+} from "@/calls/group/runtime/media-key/media-encryption-negotiation";
 import { resolveGroupCallStageTileId } from "@/calls/group/model/group-call-stage";
 import type {
   GroupCallPanelSession,

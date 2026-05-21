@@ -1,14 +1,30 @@
+/**
+ * producer-runtime — local media producer lifecycle manager for group calls.
+ *
+ * Owns:
+ *   - createSfuProducerRuntime — factory that returns GroupSfuProducerRuntime
+ *   - GroupSfuProducerRuntime interface (initializeLocalProducers, setVideoTrack,
+ *     setAudioTrack, setLocalMediaKey, getLocalProducerIds, getDebugSnapshot, close)
+ *   - Audio and per-source video producer creation via the mediasoup send transport
+ *   - Sender-side frame-encryption handle lifecycle: bind on produce, update on
+ *     key change, close on track removal
+ *   - Bitrate encoding caps: CAMERA_MAX_BITRATE (1.5 Mbps), SCREEN_SHARE_MAX_BITRATE (2.5 Mbps)
+ *   - Remote producer teardown via sfuHttpClient.closeProducer (best-effort)
+ *
+ * Does not own the send transport setup (see group-call-sfu-client.ts), the SFU
+ * HTTP client (see http-client.ts), or consumer-side decryption (see consumer-runtime.ts).
+ */
 import type { SfuProducerSource } from "@seclettr/protocol";
 import { type types as MediasoupTypes } from "mediasoup-client";
 import {
   bindSenderFrameEncryption,
   type GroupCallFrameCryptoHandle,
 } from "@/calls/shared/crypto/frame-crypto";
-import type { LocalGroupCallMediaKey } from "@/calls/group/runtime/group-call/media-key";
+import type { LocalGroupCallMediaKey } from "@/calls/group/runtime/media-key/media-key";
 import {
   logGroupCallInfo,
   logGroupCallWarn,
-} from "@/calls/group/runtime/group-call/logger";
+} from "@/calls/group/runtime/media-key/logger";
 import type { SfuHttpClient } from "./http-client";
 import { snapshotMediaTrack, toFrameKeyContext } from "./runtime-common";
 import type {

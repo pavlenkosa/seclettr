@@ -1,3 +1,17 @@
+/**
+ * useGroupCallSession — group call panel session lifecycle hook.
+ *
+ * Owns:
+ *   - groupCallSession state (GroupCallPanelSession | null)
+ *   - handleStartGroupCall — creates a new session for the active group
+ *   - handleJoinActiveGroupCall — creates a session targeting the current active call
+ *   - handleCloseGroupCallPanel — clears the session (closes the panel)
+ *   - Auto-clear: if the group is removed from the store, the session is nulled
+ *
+ * Does not own the SFU bootstrap, media, or any call-level state. This hook is
+ * solely responsible for determining whether the group call panel should be mounted
+ * and which session parameters to pass to it.
+ */
 import { useCallback, useEffect, useState } from "react";
 import type { GroupActiveCall } from "@seclettr/protocol";
 import {

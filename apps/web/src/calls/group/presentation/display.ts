@@ -1,3 +1,14 @@
+/**
+ * display — display-formatting helpers for the group call panel.
+ *
+ * Owns:
+ *   - getMemberInitials — extracts 1–2 uppercase initials from a display name;
+ *     handles multi-word names (first letters) and single words (first 2 chars)
+ *   - resolveGroupCallDockInlineStyle — adapts the draggable dock's inline style by
+ *     overriding bottom and transform so it anchors to the drag position correctly
+ *
+ * Does not own any state or React hooks — all functions are pure.
+ */
 import type { CSSProperties } from "react";
 
 export function getMemberInitials(username: string): string {

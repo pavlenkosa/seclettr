@@ -1,6 +1,18 @@
 /**
- * Shared audio activity registry for detecting voice activity from MediaStream audio tracks.
- * Uses WebAudio API's AnalyserNode to compute RMS (Root Mean Square) amplitude.
+ * audio-activity-registry — singleton voice-activity detector for all call types.
+ *
+ * Owns:
+ *   - AudioActivityRegistry class: manages a shared AudioContext and a single
+ *     requestAnimationFrame loop that polls AnalyserNode samples for all registered streams
+ *   - Hysteresis thresholds: AUDIO_ACTIVITY_START_THRESHOLD (0.022 RMS) and
+ *     AUDIO_ACTIVITY_STOP_THRESHOLD (0.012 RMS) to prevent rapid on/off toggling
+ *   - subscribe(stream, listener) — ref-counted registration; AudioContext is created
+ *     lazily and closed when the last subscriber unregisters
+ *   - audioActivityRegistry — the module-level singleton instance
+ *   - computeAudioRms, isAudioActivityActive, isTrackAvailableForActivity — internal helpers
+ *
+ * Does not own per-hook React integration (see useCallAudioActivity / useGroupCallAudioActivity).
+ * All consumers share the same AudioContext and animation loop for efficiency.
  */
 
 const AUDIO_ACTIVITY_START_THRESHOLD = 0.022;

@@ -1,3 +1,20 @@
+/**
+ * useCallInputDevices — input device enumeration and selection for calls.
+ *
+ * Owns:
+ *   - micDevices / cameraDevices — enumerated InputDeviceOption lists
+ *   - selectedMicId / selectedCameraId — currently selected device IDs
+ *   - isLoading — true while the initial device list is being fetched
+ *   - selectMic — switches the microphone track on a live stream; preserves
+ *     the current mute state for the new track
+ *   - selectCamera — switches the camera track; calls an optional onTrackReplaced
+ *     callback so the SFU producer can replace the track on the send transport
+ *   - refreshDevices — re-enumerates devices (e.g. after permissions are granted)
+ *   - devicechange listener that auto-refreshes the device list
+ *
+ * Does not own media capture initialization or SFU track replacement directly —
+ * the caller provides the current stream and an optional onTrackReplaced callback.
+ */
 import {
   useCallback,
   useEffect,

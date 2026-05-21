@@ -1,3 +1,14 @@
+/**
+ * createDirectCallOutgoingNegotiationRuntime — outgoing renegotiation offer factory.
+ *
+ * Owns the offer-creation path only: creates a new SDP offer on the peer-connection,
+ * signs it with a call auth proof, and queues the resulting message in the dispatch
+ * state for immediate or deferred WebSocket send.
+ *
+ * Does not own answer processing, pending-offer resend, or negotiation role logic.
+ * Those responsibilities belong to useDirectCallRenegotiationHandlers and
+ * useDirectCallPendingNegotiationRuntime respectively.
+ */
 import type { MutableRefObject } from "react";
 import { createSignedCallRenegotiationOfferAuth } from "@/calls/direct/runtime/crypto/call-auth-actions";
 import type { ActiveCall } from "@/calls/direct/model/direct-call-types";

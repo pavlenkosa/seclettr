@@ -1,3 +1,15 @@
+/**
+ * audio-session-routing — Audio Session API integration for call audio routing hints.
+ *
+ * Owns:
+ *   - supportsCallAudioSessionRouting — detects navigator.audioSession availability
+ *   - setCallAudioSessionType — sets navigator.audioSession.type to "play-and-record"
+ *     when a call becomes active (hints the browser to use the earpiece/speaker route)
+ *   - clearCallAudioSessionType — resets the session type to "auto" on call teardown
+ *
+ * The Audio Session API is a best-effort hint; most browsers currently ignore it.
+ * Does not own device enumeration or setSinkId routing (see apply-audio-output-sink.ts).
+ */
 type AudioSessionLike = {
   type: string;
 };

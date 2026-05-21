@@ -1,3 +1,19 @@
+/**
+ * call-remote-slot-binding — transceiver-to-slot source resolution for 1:1 calls.
+ *
+ * Owns:
+ *   - resolveRemoteReceiverSlotSource — determines which visual source (camera | screen)
+ *     a receiver transceiver belongs to, using a priority cascade:
+ *       1. Remote-signaled MID (most authoritative — peer explicitly labels the track)
+ *       2. Local transceiver identity (we know what we're sending on each transceiver)
+ *       3. Stable existing binding (preserves slots across renegotiations when MID matches)
+ *       4. Negotiated order fallback (camera = first video MID, screen = second)
+ *       5. Ultimate fallback to "camera"
+ *   - detectSourceSwitch — detects when the peer reuses the same MID for a different source
+ *
+ * Does not own slot state, transceiver lifecycle, or media routing. This module is a
+ * pure resolution function invoked by useDirectCallRemoteMediaRuntime.
+ */
 import type { DirectCallVisualMediaSource } from "./call-media-state";
 
 interface ResolveRemoteReceiverSlotSourceParams {

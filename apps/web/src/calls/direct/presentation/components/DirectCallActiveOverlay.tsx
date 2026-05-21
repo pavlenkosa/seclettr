@@ -5,6 +5,7 @@ import { DirectCallControls } from "./DirectCallControls";
 import { DirectCallFloatingPreview } from "./DirectCallFloatingPreview";
 import { DirectCallSecurityPanel } from "./DirectCallSecurityPanel";
 import { DirectCallStage } from "./DirectCallStage";
+import { VIDEO_FRAME_RATE, VIDEO_RESOLUTION_DIMENSIONS } from "./direct-call-video-constraints";
 import { AudioOutputSelector } from "@/calls/shared/media/audio-output/AudioOutputSelector";
 import { useCallAudioOutput } from "@/calls/shared/media/audio-output/CallAudioOutputProvider";
 import { useCallInputDevices } from "@/calls/shared/media/input-devices/useCallInputDevices";
@@ -238,27 +239,27 @@ export function DirectCallActiveOverlay({
 
   const handleSelectCamera = useCallback(async (deviceId: string) => {
     if (!localStream || !cameraSenderRef.current) return;
-    const resolution = { "360p": [640, 360], "480p": [854, 480], "720p": [1280, 720], "1080p": [1920, 1080] }[selectedVideoResolution] ?? [1280, 720];
+    const [w, h] = VIDEO_RESOLUTION_DIMENSIONS[selectedVideoResolution] ?? [1280, 720];
     await selectCamera(deviceId, localStream, async (nextTrack) => {
       if (cameraSenderRef.current) {
         await cameraSenderRef.current.replaceTrack(nextTrack);
       }
       await nextTrack.applyConstraints({
-        width: { ideal: resolution[0] },
-        height: { ideal: resolution[1] },
-        frameRate: { ideal: 30, max: 30 },
+        width: { ideal: w },
+        height: { ideal: h },
+        frameRate: VIDEO_FRAME_RATE,
       }).catch(() => {});
     });
   }, [cameraSenderRef, localStream, selectCamera, selectedVideoResolution]);
 
   const handleSelectVideoResolution = useCallback(async (resolution: VideoResolution) => {
-    const constraints = { "360p": [640, 360], "480p": [854, 480], "720p": [1280, 720], "1080p": [1920, 1080] }[resolution] ?? [1280, 720];
+    const [w, h] = VIDEO_RESOLUTION_DIMENSIONS[resolution] ?? [1280, 720];
     const track = cameraSenderRef.current?.track ?? localStream?.getVideoTracks()[0] ?? null;
     if (track) {
       await track.applyConstraints({
-        width: { ideal: constraints[0] },
-        height: { ideal: constraints[1] },
-        frameRate: { ideal: 30, max: 30 },
+        width: { ideal: w },
+        height: { ideal: h },
+        frameRate: VIDEO_FRAME_RATE,
       }).catch(() => {});
     }
     setSelectedVideoResolution(resolution);

@@ -1,3 +1,15 @@
+/**
+ * CallIcons — inline SVG icon components for call controls and overlays.
+ *
+ * Owns:
+ *   - PhoneIcon, CameraIcon, SwitchCameraIcon, HangupIcon
+ *   - MinimizeIcon, ExpandIcon, CloseIcon, FocusIcon
+ *   - ScreenShareIcon, ShieldIcon, MuteIcon (muted/unmuted variants)
+ *
+ * Does not own any state, call logic, or interaction handling.
+ * All icons are aria-hidden presentational primitives consumed across
+ * direct and group call surfaces.
+ */
 import { IconClose } from "@/components/ui";
 
 export function PhoneIcon() {

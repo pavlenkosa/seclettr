@@ -1,3 +1,13 @@
+/**
+ * InputField — shared single-line input shell for search bars, name fields, and compact toolbar inputs.
+ *
+ * Owns:
+ *   - Rendering a `<label>` wrapper around a native `<input>` with consistent focus ring, flat fill, radius, and icon spacing.
+ *   - Optional leading icon slot and size presets (`md`/`lg`/`pill`).
+ *
+ * Does not own runtime state, business logic, or domain-specific wiring.
+ * Use when: single-line text entry or search is needed; prefer SelectField or Listbox when the user is choosing from a bounded option set.
+ */
 import { forwardRef, type InputHTMLAttributes, type ReactNode } from "react";
 import styles from "./InputField.module.css";
 

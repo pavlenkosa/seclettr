@@ -1,3 +1,13 @@
+/**
+ * SurfacePanel — shared flat panel surface for cards, sheets, and preview regions.
+ *
+ * Owns:
+ *   - Rendering a polymorphic wrapper element with tone (`default`/`strong`/`accent`), padding, and radius presets.
+ *   - Centralizing border, tint, spacing, and radius decisions so chat, calls, and settings stay on the same visual system.
+ *
+ * Does not own runtime state, business logic, or domain-specific wiring.
+ * Use when: a reusable flat panel is needed inside pages, dialogs, or previews; do not use as a modal frame, dock shell, or row interaction primitive.
+ */
 import type { CSSProperties, ElementType, HTMLAttributes, ReactNode } from "react";
 import styles from "./SurfacePanel.module.css";
 

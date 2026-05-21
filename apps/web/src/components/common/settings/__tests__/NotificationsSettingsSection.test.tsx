@@ -10,7 +10,7 @@ vi.mock("@/i18n", () => ({
   }),
 }));
 
-import { NotificationsSettingsSection } from "./NotificationsSettingsSection";
+import { NotificationsSettingsSection } from "../NotificationsSettingsSection";
 
 describe("NotificationsSettingsSection", () => {
   let container: HTMLDivElement;

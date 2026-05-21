@@ -1,3 +1,14 @@
+/**
+ * PillButton — shared rounded action button for compact CTA patterns and secondary modal controls.
+ *
+ * Owns:
+ *   - Rendering a `<button>` with tone (`neutral`/`accent`/`danger`), appearance (`soft`/`strong`), and size (`sm`/`md`) variants.
+ *   - Optional leading and trailing icon slots flanking the label content.
+ *   - Full-width expansion mode for list-level or footer CTAs.
+ *
+ * Does not own runtime state, business logic, or domain-specific wiring.
+ * Use when: the action has visible text and a chip-like pill shape; prefer IconButton for icon-only affordances.
+ */
 import { forwardRef, type ButtonHTMLAttributes, type ReactNode } from "react";
 import styles from "./PillButton.module.css";
 

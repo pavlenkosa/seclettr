@@ -57,6 +57,7 @@ function MediaGrid({
   readonly onOpen: (index: number) => void;
   readonly locale: string;
 }) {
+  const { t } = useI18n();
   if (messages.length === 0) {
     return (
       <div className={styles.empty}>
@@ -67,7 +68,7 @@ function MediaGrid({
             <path d="M21 15l-5-5-4 4-2-2-5 5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
           </svg>
         </span>
-        <span>Пока ничего нет</span>
+        <span>{t("chat.media.empty")}</span>
       </div>
     );
   }

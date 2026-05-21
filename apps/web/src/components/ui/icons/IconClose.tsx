@@ -1,3 +1,13 @@
+/**
+ * IconClose — inline SVG close/dismiss glyph rendered as a presentational icon.
+ *
+ * Owns:
+ *   - Rendering a diagonal cross path with configurable size and stroke width.
+ *   - Marking the SVG `aria-hidden` so screen readers skip it.
+ *
+ * Does not own runtime state, business logic, or domain-specific wiring.
+ * Use when: a dismiss or clear affordance needs an icon that scales with `currentColor`.
+ */
 interface IconCloseProps {
   readonly size?: number;
   readonly strokeWidth?: number;

@@ -36,7 +36,7 @@ vi.mock("@/stores/auth", () => ({
   }),
 }));
 
-import { SecuritySettingsSection } from "./SecuritySettingsSection";
+import { SecuritySettingsSection } from "../SecuritySettingsSection";
 
 function updateTextInput(input: HTMLInputElement, nextValue: string) {
   const valueSetter = Object.getOwnPropertyDescriptor(

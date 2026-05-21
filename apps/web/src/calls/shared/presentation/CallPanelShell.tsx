@@ -1,3 +1,16 @@
+/**
+ * CallPanelShell — fullscreen backdrop and panel shell for call surfaces.
+ *
+ * Owns:
+ *   - `<dialog open>` backdrop with fade-in entry animation
+ *   - Inner panel wrapper with surface-in entry animation
+ *   - `aria-modal` and `aria-label` accessibility attributes
+ *   - CSS className forwarding for backdrop and panel customisation
+ *
+ * Does not own call content, controls, media layout, or call lifecycle.
+ * Consumed by both direct and group call panels as the outermost fullscreen frame.
+ * Not a general-purpose modal; standard dialogs and sheets should use `ModalShell`.
+ */
 import { type ReactNode } from "react";
 import motionStyles from "@/components/ui/motion/Motion.module.css";
 import styles from "./CallPanelShell.module.css";

@@ -1,3 +1,17 @@
+/**
+ * CallDevicePicker — inline device/resolution picker attached to a call control button.
+ *
+ * Owns:
+ *   - Chevron toggle button rendered next to the wrapped child control
+ *   - Floating menu with mic, camera, and video-resolution sections
+ *   - Outside-click and Escape dismissal
+ *   - Mobile scrim backdrop for touch dismissal
+ *   - VideoResolution constant list and type export
+ *
+ * Does not own the underlying media device enumeration, active device switching logic,
+ * or call state. Those are supplied as props by the caller.
+ * Consumed by both direct and group call control docks.
+ */
 import {
   useCallback,
   useEffect,

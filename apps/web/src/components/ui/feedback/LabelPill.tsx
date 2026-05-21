@@ -1,3 +1,13 @@
+/**
+ * LabelPill — shared compact text pill for media labels, stage badges, and non-interactive UI tags.
+ *
+ * Owns:
+ *   - Rendering a pill-shaped `<span>` with tone (`default`/`overlay`) and size (`xs`/`sm`/`md`) presets.
+ *   - Neutral surface for media labels and dark-overlay variants for content overlaid on video or images.
+ *
+ * Does not own runtime state, business logic, or domain-specific wiring.
+ * Use when: a passive text tag is needed; prefer IconPill when the icon adds meaning, and prefer StatusBadge when the label communicates semantic product state.
+ */
 import type { HTMLAttributes, ReactNode } from "react";
 import styles from "./LabelPill.module.css";
 

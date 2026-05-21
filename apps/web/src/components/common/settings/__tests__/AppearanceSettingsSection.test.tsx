@@ -10,7 +10,7 @@ vi.mock("@/i18n", () => ({
   }),
 }));
 
-import { AppearanceSettingsSection } from "./AppearanceSettingsSection";
+import { AppearanceSettingsSection } from "../AppearanceSettingsSection";
 
 describe("AppearanceSettingsSection", () => {
   let container: HTMLDivElement;

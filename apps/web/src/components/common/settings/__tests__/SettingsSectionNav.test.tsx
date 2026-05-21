@@ -3,7 +3,7 @@
 import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { SettingsSectionNav, type SettingsSectionEntry } from "./SettingsSectionNav";
+import { SettingsSectionNav, type SettingsSectionEntry } from "../SettingsSectionNav";
 
 const sections: SettingsSectionEntry[] = [
   {

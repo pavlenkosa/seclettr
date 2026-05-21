@@ -1,3 +1,14 @@
+/**
+ * IconButton — shared circular icon-only button for toolbars, headers, and floating controls.
+ *
+ * Owns:
+ *   - Rendering a square/circular `<button>` with configurable size via CSS variable.
+ *   - Tone variants (`default`/`danger`/`success`) and surface variants (`default`/`ghost`).
+ *   - Active state styling for toggled toolbar controls.
+ *
+ * Does not own runtime state, business logic, or domain-specific wiring.
+ * Use when: the action is communicated by icon plus accessible label alone; prefer PillButton when visible text carries the action meaning.
+ */
 import { forwardRef, type ButtonHTMLAttributes, type CSSProperties } from "react";
 import styles from "./IconButton.module.css";
 

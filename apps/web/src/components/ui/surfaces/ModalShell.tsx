@@ -1,3 +1,15 @@
+/**
+ * ModalShell — shared modal or sheet frame with overlay, header, close button, and body/footer slots.
+ *
+ * Owns:
+ *   - Rendering a backdrop overlay with fade animation and click-to-dismiss behavior.
+ *   - Composing the dialog surface with header (title, headerStart, headerExtra, close button), body, and optional footer.
+ *   - Keyboard Escape dismissal and `aria-modal` / role ARIA contract.
+ *   - Closing animation flag (`isClosing`) for delayed unmount without losing focus state.
+ *
+ * Does not own runtime state, business logic, or domain-specific wiring.
+ * Use when: framing standard overlays that can stack within the app modal system; do not use for fullscreen call surfaces with media-first or dock semantics.
+ */
 import {
   forwardRef,
   type CSSProperties,

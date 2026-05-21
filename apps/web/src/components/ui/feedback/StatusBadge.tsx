@@ -1,3 +1,14 @@
+/**
+ * StatusBadge — shared inline status badge for semantic state labels, call state pills, and small meta chips.
+ *
+ * Owns:
+ *   - Rendering a `<span>` with tone-driven surface/border/foreground styling (`neutral`/`accent`/`success`/`warning`/`danger`).
+ *   - Optional leading icon slot and standalone status dot when no icon is provided.
+ *   - Size presets (`sm`/`md`/`lg`) used across headers, notices, and toolbars.
+ *
+ * Does not own runtime state, business logic, or domain-specific wiring.
+ * Use when: communicating resolved semantic state with tone meaning; prefer LabelPill for passive tags and domain-specific narrow primitives for single-concern states.
+ */
 import type { CSSProperties, HTMLAttributes, ReactNode } from "react";
 import styles from "./StatusBadge.module.css";
 

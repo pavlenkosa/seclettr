@@ -1,3 +1,15 @@
+/**
+ * Listbox — fully-styled custom listbox that replaces native `<select>`.
+ *
+ * Owns:
+ *   - Rendering the trigger button, portal-mounted dropdown list, and animated open/close transitions.
+ *   - Full keyboard navigation (ArrowUp/Down, Home/End, Enter/Space, Escape) and ARIA combobox/listbox roles.
+ *   - Dropdown position computation (opens upward when viewport space below is insufficient).
+ *   - Outside-click and scroll dismissal with focus restoration to the trigger.
+ *
+ * Does not own runtime state, business logic, or domain-specific wiring.
+ * Use when: the option picker needs richer popup behavior or explicit custom keyboard treatment; prefer SelectField for simpler native selection flows.
+ */
 import {
   useCallback,
   useEffect,

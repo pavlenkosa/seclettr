@@ -1,3 +1,14 @@
+/**
+ * EntityRow — shared directory-style row for user results, member summaries, and compact list entries.
+ *
+ * Owns:
+ *   - Rendering a polymorphic row as either an interactive `<button>` or a static `<div>`.
+ *   - Composing leading identity, title/subtitle/meta text stack, and optional trailing slot.
+ *   - Size (`sm`/`md`/`lg`) and vertical alignment (`center`/`start`) presets.
+ *
+ * Does not own runtime state, business logic, or domain-specific wiring.
+ * Use when: rendering entity-like rows with leading identity and trailing meta/actions; do not use as a generic panel shell or header layout.
+ */
 import type { ButtonHTMLAttributes, HTMLAttributes, ReactNode } from "react";
 import styles from "./EntityRow.module.css";
 

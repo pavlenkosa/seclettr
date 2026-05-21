@@ -1,3 +1,14 @@
+/**
+ * FloatingDock — shared floating dock shell for minimized call surfaces.
+ *
+ * Owns:
+ *   - Rendering a `<dialog>` with a drag handle, middle summary slot, and trailing actions slot.
+ *   - Tracking active dock count to set/clear the `--call-dock-clearance` CSS variable for layout clearance.
+ *   - Applying enter/exit animations via motion CSS classes and propagating `isDragging` state styling.
+ *
+ * Does not own runtime state, business logic, or domain-specific wiring.
+ * Use when: rendering a draggable minimized call dock; do not generalize it into a generic floating action or modal shell.
+ */
 import {
   forwardRef,
   useCallback,

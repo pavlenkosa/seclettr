@@ -1,3 +1,13 @@
+/**
+ * SelectField — shared native select shell for modal forms and compact settings controls.
+ *
+ * Owns:
+ *   - Rendering a styled `<label>` wrapper around a native `<select>` with a custom SVG chevron indicator.
+ *   - Optional leading icon slot and size presets (`md`/`pill`) aligned with InputField styling.
+ *
+ * Does not own runtime state, business logic, or domain-specific wiring.
+ * Use when: the option set is bounded and native select semantics are sufficient; prefer Listbox when a custom popup interaction is required.
+ */
 import { forwardRef, type ReactNode, type SelectHTMLAttributes } from "react";
 import styles from "./SelectField.module.css";
 

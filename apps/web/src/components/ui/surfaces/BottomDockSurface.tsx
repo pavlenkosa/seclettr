@@ -1,3 +1,13 @@
+/**
+ * BottomDockSurface — shared mobile bottom-dock shell used by chat and other compact mobile surfaces.
+ *
+ * Owns:
+ *   - Rendering a polymorphic bottom-anchored container (`div` or `nav`) with overlay or inline placement modes.
+ *   - Applying enter/exit fade animations and flat dock spacing while feature modules supply only the dock content.
+ *
+ * Does not own runtime state, business logic, or domain-specific wiring.
+ * Use when: a bottom-aligned mobile shell is needed in inline or overlay placement; prefer FloatingDock for draggable minimized call surfaces.
+ */
 import type { HTMLAttributes, ReactNode } from "react";
 import motionStyles from "@/components/ui/motion/Motion.module.css";
 import styles from "./BottomDockSurface.module.css";

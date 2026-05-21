@@ -10,7 +10,7 @@ vi.mock("@/i18n", () => ({
   }),
 }));
 
-import { MediaLightbox } from "./MediaLightbox";
+import { MediaLightbox } from "../MediaLightbox";
 
 function dispatchPointerGesture(
   target: HTMLElement,

@@ -1,3 +1,14 @@
+/**
+ * CallIdentityBlock — shared identity block combining an avatar/icon marker with a compact title-and-meta text stack.
+ *
+ * Owns:
+ *   - Composing a leading identity visual with an `InfoStack` text hierarchy.
+ *   - Switching between `inline` (horizontal) and `stacked` (vertical, center-aligned) layout modes.
+ *   - Forwarding eyebrow, title, meta, and accessory slots to the nested InfoStack.
+ *
+ * Does not own runtime state, business logic, or domain-specific wiring.
+ * Use when: call surfaces need avatar-plus-text identity framing; prefer AvatarSummaryButton for minimized clickable summaries and InfoStack when only the text hierarchy is needed.
+ */
 import type { HTMLAttributes, ReactNode } from "react";
 import { InfoStack, type InfoStackProps } from "./InfoStack";
 import styles from "./CallIdentityBlock.module.css";

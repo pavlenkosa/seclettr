@@ -18,6 +18,9 @@ const devSfuPort = Number(process.env["VITE_DEV_SFU_PORT"] ?? "3002");
 const devMinioHost = process.env["VITE_DEV_MINIO_HOST"] ?? "127.0.0.1";
 const devMinioPort = Number(process.env["VITE_DEV_MINIO_PORT"] ?? "59000");
 const devMinioBucket = process.env["VITE_DEV_MINIO_BUCKET"] ?? "seclettr-attachments";
+// The Host header value that the API's S3 client used when signing presigned URLs.
+// Must match S3_ENDPOINT's host:port in the API so MinIO's SigV4 check passes.
+const devMinioSigningHost = process.env["VITE_DEV_MINIO_SIGNING_HOST"] ?? "minio:9000";
 const devApiOrigin = `http://${devApiHost}:${devApiPort}`;
 const devWsOrigin = `ws://${devApiHost}:${devApiPort}`;
 const devSfuOrigin = `http://${devSfuHost}:${devSfuPort}`;
@@ -344,17 +347,31 @@ export default defineConfig(({ command }) => ({
         changeOrigin: true,
         rewrite: (p) => p.replace(/^\/sfu/, ""),
       },
-      // MinIO presigned upload proxy — keeps browser requests on the same HTTPS
+      // MinIO presigned URL proxy — keeps browser requests on the same HTTPS
       // origin (Vite dev server) rather than hitting MinIO over plain HTTP.
       // S3_PUBLIC_URL in the API must be set to the Vite dev server origin so
-      // the API rewrites presigned upload URLs to this prefix.
+      // the API rewrites presigned URLs to this prefix.
+      //
+      // The Host header is overridden to devMinioSigningHost so MinIO's SigV4
+      // verification uses the same host value that the API's S3 client signed
+      // against (its internal S3_ENDPOINT, e.g. minio:9000).
       [`/${devMinioBucket}`]: {
         target: devMinioOrigin,
         changeOrigin: true,
+        configure: (proxy) => {
+          proxy.on("proxyReq", (proxyReq) => {
+            proxyReq.setHeader("host", devMinioSigningHost);
+          });
+        },
       },
       [`/${devMinioBucket}-plain`]: {
         target: devMinioOrigin,
         changeOrigin: true,
+        configure: (proxy) => {
+          proxy.on("proxyReq", (proxyReq) => {
+            proxyReq.setHeader("host", devMinioSigningHost);
+          });
+        },
       },
     },
   },

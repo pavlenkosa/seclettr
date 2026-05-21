@@ -6,32 +6,21 @@ import {
   COMPOSER_EMOJI_TOGGLE_GLYPH,
   type ComposerEmojiEntry,
   type ComposerEmojiGroup,
-  type ComposerEmojiSubgroup,
 } from "./composer-emojis";
+import type { GifResult } from "./composer-gif-service";
 import styles from "../presentation/MessageComposer.module.css";
 
-/**
- * Static tab metadata used by the emoji picker category switcher.
- */
-export interface MessageComposerEmojiTab {
-  id: string;
-  labelKey: string;
-  fallbackLabel: string;
-}
-
-/**
- * Props for the composer emoji toggle button and floating picker panel.
- */
 export interface MessageComposerEmojiPickerProps {
   readonly isOpen: boolean;
   readonly disabled: boolean;
   readonly pickerId: string;
   readonly searchQuery: string;
   readonly isSearchActive: boolean;
-  readonly emojiTabs: readonly MessageComposerEmojiTab[];
+  readonly emojiGroups: readonly ComposerEmojiGroup[];
   readonly activeEmojiGroupId: string;
   readonly activeEmojiGroup: ComposerEmojiGroup | null;
-  readonly activeEmojiSubgroup: ComposerEmojiSubgroup | null;
+  readonly hasRecentEmojis: boolean;
+  readonly recentEmojiItems: readonly ComposerEmojiEntry[];
   readonly visibleEmojiItems: readonly ComposerEmojiEntry[];
   readonly toggleButtonRef: RefObject<HTMLButtonElement>;
   readonly pickerRef: RefObject<HTMLElement>;
@@ -40,24 +29,241 @@ export interface MessageComposerEmojiPickerProps {
   readonly onToggleOpen: () => void;
   readonly onSearchQueryChange: (value: string) => void;
   readonly onSelectEmojiGroup: (groupId: string) => void;
-  readonly onSelectEmojiSubgroup: (subgroupId: string) => void;
   readonly onInsertEmoji: (emoji: string) => void;
+  // GIF
+  readonly isGifMode: boolean;
+  readonly isGifTabAvailable: boolean;
+  readonly gifQuery: string;
+  readonly gifResults: readonly GifResult[];
+  readonly isGifLoading: boolean;
+  readonly isSendingGif: boolean;
+  readonly onSetGifMode: (next: boolean) => void;
+  readonly onSetGifQuery: (q: string) => void;
+  readonly onSendGif: (gif: GifResult) => Promise<void>;
 }
 
-/**
- * Presentation-only emoji picker used in the message composer.
- * State and behavior are delegated to the parent container.
- */
+/** Maps emoji group IDs to representative emoji icons shown in the bottom tab bar. */
+const GROUP_ICONS: Record<string, string> = {
+  "smileys-and-emotion": "😀",
+  "people-and-body": "👋",
+  "animals-and-nature": "🐶",
+  "food-and-drink": "🍎",
+  "travel-and-places": "✈️",
+  activities: "⚽",
+  objects: "💡",
+  symbols: "❤️",
+  flags: "🏳️",
+};
+
+// ── Sub-components ──────────────────────────────────────────────────────────
+
+type EmojiGridProps = Readonly<{
+  items: readonly ComposerEmojiEntry[];
+  onInsert: (emoji: string) => void;
+  t: ReturnType<typeof useI18n>["t"];
+}>;
+
+function EmojiGrid({ items, onInsert, t }: EmojiGridProps) {
+  if (items.length === 0) {
+    return (
+      <div className={styles.emojiEmptyState}>
+        {t("composer.emojiSearch.empty")}
+      </div>
+    );
+  }
+
+  return (
+    <div className={styles.emojiGrid}>
+      {items.map((item) => (
+        <button
+          key={`${item.subgroupId}-${item.emoji}`}
+          type="button"
+          className={styles.emojiButton}
+          onMouseDown={(e) => e.preventDefault()}
+          onClick={() => onInsert(item.emoji)}
+          aria-label={t("composer.aria.insertEmoji", { emoji: item.emoji })}
+          title={item.name}
+        >
+          <span aria-hidden="true">{item.emoji}</span>
+        </button>
+      ))}
+    </div>
+  );
+}
+
+type EmojiSectionsProps = Readonly<{
+  group: ComposerEmojiGroup;
+  onInsert: (emoji: string) => void;
+  t: ReturnType<typeof useI18n>["t"];
+}>;
+
+function EmojiSections({ group, onInsert, t }: EmojiSectionsProps) {
+  return (
+    <>
+      {group.subgroups.map((subgroup) => (
+        <div key={subgroup.id} className={styles.emojiSection}>
+          <div className={styles.emojiSectionHeader}>{subgroup.label}</div>
+          <EmojiGrid items={subgroup.items} onInsert={onInsert} t={t} />
+        </div>
+      ))}
+    </>
+  );
+}
+
+type GifPanelProps = Readonly<{
+  gifResults: readonly GifResult[];
+  isGifLoading: boolean;
+  isSendingGif: boolean;
+  gifQuery: string;
+  onSendGif: (gif: GifResult) => Promise<void>;
+  t: ReturnType<typeof useI18n>["t"];
+}>;
+
+function GifPanel({
+  gifResults,
+  isGifLoading,
+  isSendingGif,
+  gifQuery,
+  onSendGif,
+  t,
+}: GifPanelProps) {
+  if (isGifLoading) {
+    return (
+      <div className={styles.gifLoadingState}>
+        <div className={styles.gifSpinner} aria-hidden="true" />
+      </div>
+    );
+  }
+
+  if (gifResults.length === 0) {
+    return (
+      <div className={styles.emojiEmptyState}>
+        {gifQuery.trim()
+          ? t("composer.gifSearch.empty")
+          : t("composer.gifSearch.trending")}
+      </div>
+    );
+  }
+
+  return (
+    <>
+    <div className={styles.gifGrid}>
+      {gifResults.map((gif) => (
+        <button
+          key={gif.id}
+          type="button"
+          className={styles.gifCell}
+          disabled={isSendingGif}
+          onMouseDown={(e) => e.preventDefault()}
+          onClick={() => void onSendGif(gif)}
+          title={gif.title || t("composer.gif.send")}
+          aria-label={gif.title || t("composer.gif.send")}
+        >
+          <img
+            src={gif.previewUrl}
+            alt={gif.title}
+            loading="lazy"
+            decoding="async"
+            className={styles.gifImg}
+            style={{ aspectRatio: `${gif.width} / ${gif.height}` }}
+          />
+        </button>
+      ))}
+    </div>
+    <div className={styles.gifAttribution}>Powered by GIPHY</div>
+    </>
+  );
+}
+
+type EmojiTabBarProps = Readonly<{
+  emojiGroups: readonly ComposerEmojiGroup[];
+  activeEmojiGroupId: string;
+  hasRecentEmojis: boolean;
+  isGifMode: boolean;
+  isGifTabAvailable: boolean;
+  onSelectGroup: (groupId: string) => void;
+  onSetGifMode: (next: boolean) => void;
+  t: ReturnType<typeof useI18n>["t"];
+}>;
+
+function EmojiTabBar({
+  emojiGroups,
+  activeEmojiGroupId,
+  hasRecentEmojis,
+  isGifMode,
+  isGifTabAvailable,
+  onSelectGroup,
+  onSetGifMode,
+  t,
+}: EmojiTabBarProps) {
+  return (
+    <div
+      className={styles.emojiTabBar}
+      role="tablist"
+      aria-label={t("composer.aria.emojiCategories")}
+    >
+      {hasRecentEmojis && (
+        <button
+          type="button"
+          role="tab"
+          className={`${styles.emojiTabBtn} ${!isGifMode && activeEmojiGroupId === "recent" ? styles.emojiTabBtnActive : ""}`}
+          onClick={() => { onSetGifMode(false); onSelectGroup("recent"); }}
+          title={t("composer.emojiGroup.recent")}
+          aria-selected={!isGifMode && activeEmojiGroupId === "recent"}
+        >
+          <span aria-hidden="true">🕐</span>
+          <span className={styles.screenReaderOnly}>
+            {t("composer.emojiGroup.recent")}
+          </span>
+        </button>
+      )}
+
+      {emojiGroups.map((group) => (
+        <button
+          key={group.id}
+          type="button"
+          role="tab"
+          className={`${styles.emojiTabBtn} ${!isGifMode && activeEmojiGroupId === group.id ? styles.emojiTabBtnActive : ""}`}
+          onClick={() => { onSetGifMode(false); onSelectGroup(group.id); }}
+          title={group.fallbackLabel}
+          aria-selected={!isGifMode && activeEmojiGroupId === group.id}
+        >
+          <span aria-hidden="true">{GROUP_ICONS[group.id] ?? "🙂"}</span>
+        </button>
+      ))}
+
+      {isGifTabAvailable && (
+        <>
+          <div className={styles.emojiTabSpacer} />
+          <button
+            type="button"
+            role="tab"
+            className={`${styles.emojiTabBtn} ${isGifMode ? styles.emojiTabBtnActive : ""}`}
+            onClick={() => onSetGifMode(true)}
+            title="GIF"
+            aria-selected={isGifMode}
+          >
+            <span className={styles.gifTabLabel} aria-hidden="true">GIF</span>
+          </button>
+        </>
+      )}
+    </div>
+  );
+}
+
+// ── Main component ───────────────────────────────────────────────────────────
+
 export function MessageComposerEmojiPicker({
   isOpen,
   disabled,
   pickerId,
   searchQuery,
   isSearchActive,
-  emojiTabs,
+  emojiGroups,
   activeEmojiGroupId,
   activeEmojiGroup,
-  activeEmojiSubgroup,
+  hasRecentEmojis,
+  recentEmojiItems,
   visibleEmojiItems,
   toggleButtonRef,
   pickerRef,
@@ -66,10 +272,74 @@ export function MessageComposerEmojiPicker({
   onToggleOpen,
   onSearchQueryChange,
   onSelectEmojiGroup,
-  onSelectEmojiSubgroup,
   onInsertEmoji,
+  isGifMode,
+  isGifTabAvailable,
+  gifQuery,
+  gifResults,
+  isGifLoading,
+  isSendingGif,
+  onSetGifMode,
+  onSetGifQuery,
+  onSendGif,
 }: MessageComposerEmojiPickerProps) {
   const { t } = useI18n();
+
+  const currentSearchQuery = isGifMode ? gifQuery : searchQuery;
+  const handleSearchChange = (value: string) => {
+    if (isGifMode) onSetGifQuery(value);
+    else onSearchQueryChange(value);
+  };
+  const searchPlaceholder = isGifMode
+    ? t("composer.gifSearch.placeholder")
+    : t("composer.emojiSearch.placeholder");
+
+  function renderContent() {
+    if (isGifMode) {
+      return (
+        <GifPanel
+          gifResults={gifResults}
+          isGifLoading={isGifLoading}
+          isSendingGif={isSendingGif}
+          gifQuery={gifQuery}
+          onSendGif={onSendGif}
+          t={t}
+        />
+      );
+    }
+
+    if (isSearchActive) {
+      return (
+        <EmojiGrid
+          items={visibleEmojiItems}
+          onInsert={onInsertEmoji}
+          t={t}
+        />
+      );
+    }
+
+    if (activeEmojiGroupId === "recent") {
+      return (
+        <EmojiGrid
+          items={recentEmojiItems}
+          onInsert={onInsertEmoji}
+          t={t}
+        />
+      );
+    }
+
+    if (activeEmojiGroup) {
+      return (
+        <EmojiSections
+          group={activeEmojiGroup}
+          onInsert={onInsertEmoji}
+          t={t}
+        />
+      );
+    }
+
+    return null;
+  }
 
   return (
     <div className={styles.emojiShell}>
@@ -94,109 +364,56 @@ export function MessageComposerEmojiPicker({
             : "composer.title.openEmojiPicker"
         )}
       >
-        <span className={styles.emojiToggleGlyph} aria-hidden="true">{COMPOSER_EMOJI_TOGGLE_GLYPH}</span>
+        <span className={styles.emojiToggleGlyph} aria-hidden="true">
+          {COMPOSER_EMOJI_TOGGLE_GLYPH}
+        </span>
       </IconButton>
 
       {isOpen ? (
-        <fieldset
+        <div
           id={pickerId}
-          ref={pickerRef as React.RefObject<HTMLFieldSetElement>}
+          ref={pickerRef as React.RefObject<HTMLDivElement>}
           className={styles.emojiPicker}
+          role="dialog"
           aria-label={t("composer.aria.emojiPicker")}
         >
+          {/* Search bar */}
           <div className={styles.emojiSearchWrap}>
             <input
               type="search"
-              value={searchQuery}
-              onChange={(event) => onSearchQueryChange(event.currentTarget.value)}
+              value={currentSearchQuery}
+              onChange={(e) => handleSearchChange(e.currentTarget.value)}
               className={styles.emojiSearchInput}
-              placeholder={t("composer.emojiSearch.placeholder")}
-              aria-label={t("composer.aria.searchEmoji")}
+              placeholder={searchPlaceholder}
+              aria-label={isGifMode ? t("composer.aria.searchGif") : t("composer.aria.searchEmoji")}
               autoCapitalize="none"
               autoCorrect="off"
               spellCheck={false}
             />
           </div>
 
-          {isSearchActive ? (
-            <div className={styles.emojiSearchSummary}>
-              {t("composer.emojiSearch.results", { count: visibleEmojiItems.length })}
-            </div>
-          ) : (
-            <>
-              <div className={styles.emojiGroupTabs} role="tablist" aria-label={t("composer.aria.emojiCategories")}>
-                {emojiTabs.map((group) => {
-                  const translatedLabel = t(group.labelKey);
-                  const label = translatedLabel === group.labelKey
-                    ? group.fallbackLabel
-                    : translatedLabel;
-
-                  return (
-                    <button
-                      key={group.id}
-                      type="button"
-                      role="tab"
-                      aria-selected={group.id === activeEmojiGroupId}
-                      className={`${styles.emojiGroupTab} ${
-                        group.id === activeEmojiGroupId ? styles.emojiGroupTabActive : ""
-                      }`}
-                      onClick={() => onSelectEmojiGroup(group.id)}
-                    >
-                      {label}
-                    </button>
-                  );
-                })}
-              </div>
-
-              {activeEmojiGroupId !== "recent" && activeEmojiGroup && activeEmojiGroup.subgroups.length > 1 ? (
-                <div className={styles.emojiSubgroupRow}>
-                  <select
-                    className={styles.emojiSubgroupSelect}
-                    value={activeEmojiSubgroup?.id ?? ""}
-                    onChange={(event) => onSelectEmojiSubgroup(event.currentTarget.value)}
-                    aria-label={t("composer.aria.selectEmojiSubgroup")}
-                  >
-                    {activeEmojiGroup.subgroups.map((subgroup) => (
-                      <option key={subgroup.id} value={subgroup.id}>
-                        {subgroup.label}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              ) : null}
-            </>
-          )}
-
-          <section
+          {/* Scrollable content */}
+          <div
             ref={viewportRef}
             className={styles.emojiViewport}
-            aria-label={t("composer.aria.emojiResults")}
+            aria-label={isGifMode ? "GIF results" : t("composer.aria.emojiResults")}
           >
-            {visibleEmojiItems.length > 0 ? (
-              <div className={styles.emojiGrid}>
-                {visibleEmojiItems.map((item) => (
-                  <button
-                    key={`${item.subgroupId}-${item.emoji}`}
-                    type="button"
-                    className={styles.emojiButton}
-                    onMouseDown={(event) => event.preventDefault()}
-                    onClick={() => onInsertEmoji(item.emoji)}
-                    aria-label={t("composer.aria.insertEmoji", { emoji: item.emoji })}
-                    title={isSearchActive ? item.name : t("composer.aria.insertEmoji", { emoji: item.emoji })}
-                  >
-                    <span aria-hidden="true">{item.emoji}</span>
-                  </button>
-                ))}
-              </div>
-            ) : (
-              <div className={styles.emojiEmptyState}>
-                {t("composer.emojiSearch.empty")}
-              </div>
-            )}
-          </section>
-        </fieldset>
+            {renderContent()}
+          </div>
+
+          {/* Bottom tab bar */}
+          <EmojiTabBar
+            emojiGroups={emojiGroups}
+            activeEmojiGroupId={activeEmojiGroupId}
+            hasRecentEmojis={hasRecentEmojis}
+            isGifMode={isGifMode}
+            isGifTabAvailable={isGifTabAvailable}
+            onSelectGroup={onSelectEmojiGroup}
+            onSetGifMode={onSetGifMode}
+            t={t}
+          />
+        </div>
       ) : null}
     </div>
   );
 }
-

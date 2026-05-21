@@ -1,0 +1,9 @@
+.root {
+  flex-shrink: 0;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--accent-primary, #6366f1) 16%, var(--surface-shell));
+  color: var(--accent-primary, #6366f1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}

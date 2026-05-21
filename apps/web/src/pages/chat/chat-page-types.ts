@@ -6,7 +6,7 @@ import type {
   useChatWorkspaceInteractions,
   useChatWorkspaceUiState,
 } from "@/chats";
-import type { useDirectMissedCallAlerts } from "@/calls/direct/runtime/useDirectMissedCallAlerts";
+import type { useDirectMissedCallAlerts } from "@/calls/direct/runtime/session/useDirectMissedCallAlerts";
 
 export type TranslateFn = ReturnType<typeof useI18n>["t"];
 export type WorkspaceEntryState = ReturnType<typeof useChatWorkspaceEntry>;

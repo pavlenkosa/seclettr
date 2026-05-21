@@ -30,6 +30,8 @@ export interface ChatThreadChromeProps {
   readonly onStatusClick?: (() => void) | null;
   /** Source label used to derive the avatar initials. */
   readonly avatarLabel: string;
+  /** Optional custom avatar node — replaces the generated initials avatar when provided. */
+  readonly avatarSlot?: ReactNode;
   /** Accessible label for the mobile back button. */
   readonly backAriaLabel: string;
   /** Back handler used on mobile layouts. */
@@ -52,6 +54,7 @@ export function ChatThreadChrome({
   statusTone,
   onStatusClick,
   avatarLabel,
+  avatarSlot,
   backAriaLabel,
   onBack,
   actions,
@@ -78,12 +81,14 @@ export function ChatThreadChrome({
             </svg>
           </IconButton>
 
-          <Avatar
-            label={avatarLabel}
-            size={38}
-            fontSize="0.82rem"
-            ariaHidden
-          />
+          {avatarSlot ?? (
+            <Avatar
+              label={avatarLabel}
+              size={38}
+              fontSize="0.82rem"
+              ariaHidden
+            />
+          )}
 
           <div className={styles.info}>
             <span className={styles.title}>{title}</span>

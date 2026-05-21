@@ -4,7 +4,7 @@ import { useAuthStore } from "@/stores/auth";
 import { usePlainMessagesStore, usePlainGroupsStore } from "@/stores/plain";
 import { useSavedMessagesStore } from "@/stores/saved";
 import type { DirectCallPanelHandle } from "@/calls/direct/model/direct-call-types";
-import { useDirectMissedCallAlerts } from "@/calls/direct/runtime/useDirectMissedCallAlerts";
+import { useDirectMissedCallAlerts } from "@/calls/direct/runtime/session/useDirectMissedCallAlerts";
 import {
   createGroupSecurityDirectory,
   useChatSecurityWorkspace,
@@ -171,6 +171,7 @@ export function ChatPage() {
     sendPlainGroupAttachment,
     savedMessages,
     sendSavedMessage,
+    sendSavedFile,
   } = useChatWorkspaceEntry({
     userId,
     setMobileShowConversation: workspaceUiState.setMobileShowConversation,
@@ -438,6 +439,7 @@ export function ChatPage() {
       sendPlainGroupText={sendPlainGroupText}
       sendPlainGroupAttachment={sendPlainGroupAttachment}
       sendSavedMessage={sendSavedMessage}
+      sendSavedFile={sendSavedFile}
     />
   );
 

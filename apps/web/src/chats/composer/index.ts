@@ -1,7 +1,6 @@
 export {
   MessageComposerEmojiPicker,
   type MessageComposerEmojiPickerProps,
-  type MessageComposerEmojiTab,
 } from "./MessageComposerEmojiPicker";
 export { MessageComposerPrimaryActions } from "./MessageComposerPrimaryActions";
 export { MessageComposerRecordingSurface } from "./MessageComposerRecordingSurface";

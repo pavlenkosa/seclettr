@@ -181,6 +181,99 @@ describe("group-sender-key", () => {
     expect(rotated.memberDeviceFingerprint).toBe(targetB);
   });
 
+  it("does not let an older imported sender-key distribution overwrite newer current state", async () => {
+    const storageKey = {} as CryptoKey;
+    const groupId = crypto.randomUUID();
+    const senderDeviceId = crypto.randomUUID();
+
+    const localRecord = await ensureLocalSenderKeyRecord(storageKey, groupId, senderDeviceId);
+    const newerDistribution = buildSenderKeyDistributionPayload(
+      {
+        ...localRecord,
+        state: {
+          ...localRecord.state,
+          chainId: 7,
+        },
+      },
+      groupId,
+      senderDeviceId
+    );
+    const olderDistribution = {
+      ...newerDistribution,
+      chainId: 3,
+    };
+
+    await importSenderKeyDistribution(storageKey, newerDistribution);
+    await importSenderKeyDistribution(storageKey, olderDistribution);
+
+    const stored = memoryStore.get(
+      `group:sender-key:remote:v1:${groupId}:${senderDeviceId}:${newerDistribution.distributionId}`
+    ) as
+      | {
+          state: { chainId: number };
+          initialState?: { chainId: number };
+        }
+      | undefined;
+
+    expect(stored?.state.chainId).toBe(7);
+    expect(stored?.initialState?.chainId).toBe(localRecord.state.chainId);
+  });
+
+  it("backfills initialState from an older import when a newer remote chain was stored without it", async () => {
+    const storageKey = {} as CryptoKey;
+    const groupId = crypto.randomUUID();
+    const senderDeviceId = crypto.randomUUID();
+    const distributionId = crypto.randomUUID();
+    const chainKey = "older-chain-key";
+    const signingKey = "older-signing-key";
+
+    memoryStore.set(
+      `group:sender-key:remote:v1:${groupId}:${senderDeviceId}:${distributionId}`,
+      {
+        state: {
+          chainKey: "newer-chain-key",
+          chainId: 9,
+          signingPublicKey: "newer-signing-key",
+        },
+      }
+    );
+
+    await importSenderKeyDistribution(storageKey, {
+      schemaVersion: 1,
+      type: "sender_key_distribution",
+      groupId,
+      senderDeviceId,
+      distributionId,
+      chainId: 4,
+      chainKey,
+      signingKey,
+    });
+
+    const stored = memoryStore.get(
+      `group:sender-key:remote:v1:${groupId}:${senderDeviceId}:${distributionId}`
+    ) as
+      | {
+          state: {
+            chainKey: string;
+            chainId: number;
+            signingPublicKey: string;
+          };
+          initialState?: {
+            chainKey: string;
+            chainId: number;
+            signingPublicKey: string;
+          };
+        }
+      | undefined;
+
+    expect(stored?.state.chainId).toBe(9);
+    expect(stored?.initialState).toEqual({
+      chainKey,
+      chainId: 4,
+      signingPublicKey: signingKey,
+    });
+  });
+
   it("encrypts with the rotated distribution after recipient devices change", async () => {
     const storageKey = {} as CryptoKey;
     const groupId = crypto.randomUUID();

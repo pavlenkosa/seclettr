@@ -1,5 +1,6 @@
 import { memo, type ReactNode } from "react";
 import { ChatThreadChrome } from "@/chats/presentation/ChatThreadChrome";
+import { SavedMessagesAvatar } from "@/chats/presentation/SavedMessagesAvatar";
 import type {
   SecurityWorkspaceState,
   TranslateFn,
@@ -110,6 +111,7 @@ export const ChatThreadHeader = memo(function ChatThreadHeader({
         statusTone={null}
         onStatusClick={null}
         avatarLabel={t("saved.title")}
+        avatarSlot={<SavedMessagesAvatar size={38} />}
         backAriaLabel={t("chat.back")}
         onBack={handleBack}
         actions={threadChromeActions}

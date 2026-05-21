@@ -15,7 +15,7 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0.82rem 0.9rem 0.72rem;
+  padding: calc(0.82rem + var(--safe-top)) 0.9rem 0.72rem;
   border-bottom: 1px solid color-mix(in srgb, var(--panel-border-soft) 70%, transparent);
   flex-shrink: 0;
 }
@@ -198,4 +198,75 @@
 .itemGoBtn:focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: -1px;
+}
+
+/* ── Media grid ─────────────────────────────────────────────────────────── */
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 2px;
+  padding: 2px;
+}
+
+.gridCell {
+  position: relative;
+  aspect-ratio: 1;
+  overflow: hidden;
+  cursor: pointer;
+  background: color-mix(in srgb, var(--surface-shell-strong) 80%, transparent);
+  border: none;
+  padding: 0;
+  display: block;
+}
+
+.gridCell:hover .gridThumb {
+  opacity: 0.82;
+}
+
+.gridCell:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+  border-radius: 2px;
+}
+
+.gridThumb {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  transition: opacity var(--motion-duration-fast) ease;
+}
+
+.gridPlaceholder {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-muted);
+  opacity: 0.35;
+}
+
+.gridBadge {
+  position: absolute;
+  bottom: 4px;
+  left: 4px;
+  padding: 1px 5px;
+  border-radius: 4px;
+  font-size: 0.58rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  background: rgb(0 0 0 / 0.52);
+  color: #fff;
+  pointer-events: none;
+}
+
+.gridPlayIcon {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
 }

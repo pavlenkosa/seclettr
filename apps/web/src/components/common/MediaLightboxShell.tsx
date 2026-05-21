@@ -13,6 +13,7 @@ interface LightboxToolbarProps {
   readonly isClosing: boolean;
   readonly onClose: () => void;
   readonly onDownload: () => void;
+  readonly onGoToMessage?: () => void;
   readonly showSequenceUi: boolean;
   readonly totalCount?: number;
   readonly t: Translate;
@@ -26,6 +27,7 @@ function LightboxToolbar({
   isClosing,
   onClose,
   onDownload,
+  onGoToMessage,
   showSequenceUi,
   totalCount,
   t,
@@ -40,6 +42,18 @@ function LightboxToolbar({
       <div className={styles.toolbarActions}>
         {sequenceLabel ? (
           <span className={styles.toolbarCounter}>{sequenceLabel}</span>
+        ) : null}
+        {onGoToMessage ? (
+          <IconButton
+            className={styles.iconBtn}
+            onClick={onGoToMessage}
+            aria-label={t("message.media.goToMessage")}
+            title={t("message.media.goToMessage")}
+          >
+            <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden="true">
+              <path d="M3 9h12M10 4l5 5-5 5" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+          </IconButton>
         ) : null}
         <IconButton
           className={styles.iconBtn}
@@ -108,6 +122,7 @@ interface MediaLightboxShellProps {
   readonly isClosing: boolean;
   readonly onClose: () => void;
   readonly onDownload: () => void;
+  readonly onGoToMessage?: () => void;
   readonly onNavigate?: (delta: -1 | 1) => void;
   readonly showSequenceUi: boolean;
   readonly totalCount?: number;
@@ -128,6 +143,7 @@ export function MediaLightboxShell({
   isClosing,
   onClose,
   onDownload,
+  onGoToMessage,
   onNavigate,
   showSequenceUi,
   totalCount,
@@ -165,6 +181,7 @@ export function MediaLightboxShell({
         isClosing={isClosing}
         onClose={onClose}
         onDownload={onDownload}
+        onGoToMessage={onGoToMessage}
         showSequenceUi={showSequenceUi}
         totalCount={totalCount}
         t={t}

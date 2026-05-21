@@ -103,9 +103,14 @@
 .composerRail::before {
   content: "";
   position: absolute;
-  inset: 0.18rem 0 0;
+  inset: 0;
   pointer-events: none;
-  background: color-mix(in srgb, var(--bg-primary) 92%, transparent);
+  background: linear-gradient(
+    to bottom,
+    transparent 0%,
+    color-mix(in srgb, var(--bg-primary) 70%, transparent) 35%,
+    color-mix(in srgb, var(--bg-primary) 96%, transparent) 100%
+  );
 }
 
 .empty {
@@ -192,7 +197,7 @@
   }
 
   .composerRail::before {
-    inset: 0.14rem 0 0;
+    inset: 0;
   }
 
   .empty {

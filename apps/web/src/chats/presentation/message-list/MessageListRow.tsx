@@ -398,7 +398,6 @@ export const MessageListRow = memo(function MessageListRow({
   return (
     <div style={entryStyle}>
       <DateSeparator presentation={presentation} />
-      <RowTimestamp presentation={presentation} />
       {presentation.callEvent ? (
         <CallEventRow presentation={presentation} />
       ) : (

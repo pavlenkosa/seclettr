@@ -102,7 +102,11 @@ export const ChatThreadView = memo(function ChatThreadView({
         highlightMessageId={threadPaneState.highlightMessageId}
         onRetry={activeThreadKind === null ? undefined : handleRetryMessage}
         onReply={threadPaneState.handleReply}
-        onDelete={handleDeleteMessage}
+        onDelete={
+          activeThreadKind === "plain-direct" || activeThreadKind === "plain-group"
+            ? handleDeleteMessage
+            : undefined
+        }
         onForward={handleForwardMessage}
         onScrollToMessage={threadPaneState.handleScrollToMessage}
         onDropFiles={

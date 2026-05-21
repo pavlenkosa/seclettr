@@ -25,6 +25,7 @@ interface MediaLightboxProps {
   readonly onClose: () => void;
   readonly onClosed?: () => void;
   readonly onDownload: () => void;
+  readonly onGoToMessage?: () => void;
   readonly onNavigate?: (delta: -1 | 1) => void;
 }
 
@@ -40,6 +41,7 @@ export function MediaLightbox({
   onClose,
   onClosed,
   onDownload,
+  onGoToMessage,
   onNavigate,
 }: MediaLightboxProps) {
   const { t } = useI18n();
@@ -100,6 +102,7 @@ export function MediaLightbox({
       isClosing={isClosing}
       onClose={onClose}
       onDownload={onDownload}
+      onGoToMessage={onGoToMessage}
       onNavigate={onNavigate}
       showSequenceUi={showSequenceUi}
       totalCount={totalCount}

@@ -6,7 +6,9 @@ import {
   useId,
   useImperativeHandle,
 } from "react";
+import type { GifResult } from "../composer/composer-gif-service";
 import { useI18n } from "@/i18n";
+import { hapticImpactLight } from "@/lib/native-haptics";
 import type { MessageReplyMeta } from "@/stores/messages";
 import {
   resolvePrimaryComposerAction,
@@ -37,6 +39,7 @@ interface Props {
   readonly onSendVideoBlob?: (blob: Blob, durationMs: number) => Promise<void>;
   readonly isGroupComposer?: boolean;
   readonly placeholder?: string;
+  readonly supportsGif?: boolean;
 }
 
 export interface MessageComposerHandle {
@@ -55,6 +58,7 @@ const MessageComposerView = forwardRef<MessageComposerHandle, Props>(function Me
   onSendVideoBlob,
   isGroupComposer: isGroupComposerOverride,
   placeholder: placeholderOverride,
+  supportsGif = false,
 }, ref) {
   const { t } = useI18n();
   const emojiPickerId = useId();
@@ -99,6 +103,14 @@ const MessageComposerView = forwardRef<MessageComposerHandle, Props>(function Me
   const isVideoRecording = recordingKind === "video";
   const isRecording = recordingKind !== null;
 
+  const handleSendGif = useCallback(async (gifUrl: string, filename: string) => {
+    if (!onSendFile) return;
+    const response = await fetch(gifUrl);
+    const blob = await response.blob();
+    const file = new File([blob], filename, { type: blob.type || "image/gif" });
+    await onSendFile(file);
+  }, [onSendFile]);
+
   const emojiState = useMessageComposerEmojiState({
     sending: draft.sending,
     isRecording,
@@ -106,6 +118,8 @@ const MessageComposerView = forwardRef<MessageComposerHandle, Props>(function Me
     syncTextareaSelection: draft.syncTextareaSelection,
     insertTextAtSelection: draft.insertTextAtSelection,
     clearComposerError: draft.clearComposerError,
+    supportsGif,
+    onSendGif: supportsGif ? handleSendGif : undefined,
   });
 
   useImperativeHandle(ref, () => ({
@@ -135,6 +149,7 @@ const MessageComposerView = forwardRef<MessageComposerHandle, Props>(function Me
 
     if (primaryAction.kind === "send") {
       emojiState.closeEmojiPicker();
+      hapticImpactLight();
       void draft.handleSend();
       return;
     }

@@ -1,8 +1,11 @@
 import { memo, useCallback, useEffect, useRef, useState, type CSSProperties, type MouseEvent as ReactMouseEvent, type PointerEvent as ReactPointerEvent } from "react";
 
 import { Avatar, MessageDeliveryStatusIcon, type MessageDeliveryStatus } from "@/components/ui";
+import { hapticSelection } from "@/lib/native-haptics";
+import type { PlainFolder } from "@/stores/plain";
 
 import styles from "../ConversationList.module.css";
+import { SavedMessagesAvatar } from "../SavedMessagesAvatar";
 import { ConversationListPinMenu } from "./ConversationListPinMenu";
 import {
   formatTime,
@@ -24,6 +27,11 @@ interface ConversationListRowProps {
   readonly t: (key: string, params?: Record<string, string | number>) => string;
   readonly onSelect: (selection: ConversationSelection) => void;
   readonly onTogglePin: (entry: ConversationEntry) => void;
+  readonly onMoveToFolder: (entry: ConversationEntry, folderId: string) => void;
+  readonly onRemoveFromFolder: (entry: ConversationEntry) => void;
+  readonly onCreateFolder: (entry: ConversationEntry) => void;
+  readonly onDeleteChat: (entry: ConversationEntry) => void;
+  readonly folders: PlainFolder[];
   readonly enterDelayMs: number;
 }
 
@@ -35,6 +43,11 @@ export const ConversationListRow = memo(function ConversationListRow({
   t,
   onSelect,
   onTogglePin,
+  onMoveToFolder,
+  onRemoveFromFolder,
+  onCreateFolder,
+  onDeleteChat,
+  folders,
   enterDelayMs,
 }: ConversationListRowProps) {
   const last = entry.lastMessage;
@@ -48,6 +61,8 @@ export const ConversationListRow = memo(function ConversationListRow({
     "--conversation-enter-delay": `${enterDelayMs}ms`,
   } as CSSProperties;
   const [menuOpen, setMenuOpen] = useState(false);
+  const isPlainChat = entry.kind === "plain-direct" || entry.kind === "plain-group";
+  const canOpenMenu = !!entry.pinKind || isPlainChat;
   const canPin = !!entry.pinKind;
   const pressStateRef = useRef<{ id: ReturnType<typeof setTimeout>; x: number; y: number } | null>(null);
 
@@ -59,15 +74,13 @@ export const ConversationListRow = memo(function ConversationListRow({
   }, []);
 
   const startPress = (event: ReactPointerEvent<HTMLButtonElement>) => {
-    if (!canPin || event.pointerType !== "touch") return;
+    if (!canOpenMenu || event.pointerType !== "touch") return;
     cancelPress();
     pressStateRef.current = {
       id: setTimeout(() => {
         setMenuOpen(true);
         pressStateRef.current = null;
-        if (typeof navigator !== "undefined" && typeof navigator.vibrate === "function") {
-          try { navigator.vibrate(8); } catch { /* ignore */ }
-        }
+        hapticSelection();
       }, LONG_PRESS_MS),
       x: event.clientX,
       y: event.clientY,
@@ -88,8 +101,8 @@ export const ConversationListRow = memo(function ConversationListRow({
   useEffect(() => () => cancelPress(), [cancelPress]);
 
   const handleContextMenu = (event: ReactMouseEvent<HTMLButtonElement>) => {
-    if (!canPin) return;
     event.preventDefault();
+    if (!canOpenMenu) return;
     setMenuOpen(true);
   };
 
@@ -123,7 +136,7 @@ export const ConversationListRow = memo(function ConversationListRow({
         aria-current={isActive ? "true" : undefined}
       >
         {entry.kind === "saved"
-          ? <SavedAvatar />
+          ? <SavedMessagesAvatar size={50} />
           : <Avatar label={entry.name} size={50} fontSize="0.9rem" ariaHidden />}
 
         <div className={styles.content}>
@@ -141,10 +154,10 @@ export const ConversationListRow = memo(function ConversationListRow({
             <div className={styles.row}>
               <span className={`${styles.preview} truncate`}>
                 {showOwnPrefix ? (
-                  <span className={styles.previewOwn}>
+                  <>
                     {renderPreviewStatus(last.status)}
-                    {t("conversation.youPrefix")}
-                  </span>
+                    <span className={styles.youBadge}>{t("conversation.youBadge")}</span>
+                  </>
                 ) : null}
                 {!last.isOwn && senderPrefix}
                 {previewText}
@@ -154,13 +167,30 @@ export const ConversationListRow = memo(function ConversationListRow({
           ) : null}
         </div>
       </button>
-      {menuOpen && canPin ? (
+      {menuOpen && canOpenMenu ? (
         <ConversationListPinMenu
           entry={entry}
+          folders={folders}
           t={t}
           onTogglePin={(menuEntry) => {
             setMenuOpen(false);
             onTogglePin(menuEntry);
+          }}
+          onMoveToFolder={(menuEntry, folderId) => {
+            setMenuOpen(false);
+            onMoveToFolder(menuEntry, folderId);
+          }}
+          onRemoveFromFolder={(menuEntry) => {
+            setMenuOpen(false);
+            onRemoveFromFolder(menuEntry);
+          }}
+          onCreateFolder={() => {
+            setMenuOpen(false);
+            onCreateFolder(entry);
+          }}
+          onDeleteChat={(menuEntry) => {
+            setMenuOpen(false);
+            onDeleteChat(menuEntry);
           }}
         />
       ) : null}
@@ -174,6 +204,11 @@ export const ConversationListRow = memo(function ConversationListRow({
     && prev.t === next.t
     && prev.onSelect === next.onSelect
     && prev.onTogglePin === next.onTogglePin
+    && prev.onMoveToFolder === next.onMoveToFolder
+    && prev.onRemoveFromFolder === next.onRemoveFromFolder
+    && prev.onCreateFolder === next.onCreateFolder
+    && prev.onDeleteChat === next.onDeleteChat
+    && prev.folders === next.folders
     && prev.enterDelayMs === next.enterDelayMs;
 });
 
@@ -199,6 +234,7 @@ function areConversationEntriesEqual(left: ConversationEntry, right: Conversatio
     && left.isEncrypted === right.isEncrypted
     && left.pinnedAt === right.pinnedAt
     && left.pinKind === right.pinKind
+    && left.folderId === right.folderId
     && areEntryLastMessagesEqual(left.lastMessage, right.lastMessage);
 }
 
@@ -214,23 +250,6 @@ function areEntryLastMessagesEqual(left?: EntryLastMessage, right?: EntryLastMes
     && left.isOwn === right.isOwn
     && left.status === right.status
     && left.senderLabel === right.senderLabel;
-}
-
-function SavedAvatar() {
-  return (
-    <span className={styles.savedAvatar} aria-hidden="true">
-      <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-        <path
-          d="M5 5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16l-7-3.5L5 21V5Z"
-          fill="currentColor"
-          fillOpacity="0.18"
-          stroke="currentColor"
-          strokeWidth="1.6"
-          strokeLinejoin="round"
-        />
-      </svg>
-    </span>
-  );
 }
 
 function EncryptedBadge({ ariaLabel }: { readonly ariaLabel: string }) {
@@ -253,13 +272,13 @@ function PinnedBadge({ ariaLabel }: { readonly ariaLabel: string }) {
   return (
     <svg
       className={styles.pinBadge}
-      width="11"
-      height="11"
+      width="13"
+      height="13"
       viewBox="0 0 16 16"
       fill="currentColor"
       aria-label={ariaLabel}
     >
-      <path d="M9.55 1.4a.7.7 0 0 0-1.1 0L7.2 2.95l1.85 1.85L10.6 3.25a.7.7 0 0 0 0-1L9.55 1.4ZM6.5 3.65 3.85 6.3a1 1 0 0 0-.27.51l-.42 2.1 1.92-.38L7.7 5.9 6.5 3.65Zm.55 4.5L4.4 10.8l-2.5.5a.6.6 0 0 1-.7-.7l.5-2.5 2.65-2.65 2.7 2.7Zm.93-1.5L9.65 4.95l1.4 1.4-1.65 1.65-1.42-1.35Z" />
+      <path d="M9.828.722a.5.5 0 0 1 .354.146l4.95 4.95a.5.5 0 0 1 0 .707c-.48.48-1.072.588-1.503.588-.177 0-.335-.018-.46-.039l-3.134 3.134a5.927 5.927 0 0 1 .16 1.013c.046.702-.032 1.687-.72 2.375a.5.5 0 0 1-.707 0l-2.829-2.828-3.182 3.182a.5.5 0 0 1-.707-.707l3.182-3.182-2.828-2.829a.5.5 0 0 1 0-.707c.688-.688 1.673-.767 2.375-.72a5.922 5.922 0 0 1 1.013.16l3.134-3.133a2.772 2.772 0 0 1-.04-.461c0-.43.108-1.022.589-1.503a.5.5 0 0 1 .353-.146z" />
     </svg>
   );
 }

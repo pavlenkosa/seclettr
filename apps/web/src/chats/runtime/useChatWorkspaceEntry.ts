@@ -1,88 +1,25 @@
 import {
   useCallback,
-  useEffect,
   useMemo,
-  useRef,
   useState,
   type Dispatch,
   type SetStateAction,
 } from "react";
 import { useShallow } from "zustand/react/shallow";
-import { api } from "@/lib/api";
-import { sanitizeDisplayTextOrFallback } from "@/lib/display-text";
-import { logger } from "@/lib/logger.js";
-import { useGroupCallChatEntry } from "@/calls/group/runtime/useGroupCallChatEntry";
-import { useGlobalGroupCallAlerts } from "@/calls/group/runtime/useGlobalGroupCallAlerts";
 import { useMessagesStore, type Message } from "@/stores/messages";
-import { useGroupsStore, type GroupChatMessage } from "@/stores/groups";
-import { usePlainMessagesStore, usePlainGroupsStore, type PlainMessage } from "@/stores/plain";
-import { useSavedMessagesStore, type SavedMessage } from "@/stores/saved";
-import { useChatThreadRouting } from "./useChatThreadRouting";
+import { useGroupsStore } from "@/stores/groups";
+import { usePlainMessagesStore, usePlainGroupsStore } from "@/stores/plain";
+import { useSavedMessagesStore } from "@/stores/saved";
+import { useChatWorkspaceCallEntry } from "./useChatWorkspaceCallEntry";
+import { useChatWorkspaceRoutingBootstrap } from "./useChatWorkspaceRoutingBootstrap";
+import { useChatWorkspacePresenceEffects } from "./useChatWorkspacePresenceEffects";
+import { useChatWorkspaceProjection } from "./useChatWorkspaceProjection";
+import { useChatWorkspaceThreadActions } from "./useChatWorkspaceThreadActions";
 
 interface UseChatWorkspaceEntryOptions {
   userId: string | null;
   setMobileShowConversation: Dispatch<SetStateAction<boolean>>;
   setMobileCreateMenuOpen: Dispatch<SetStateAction<boolean>>;
-}
-
-interface GroupMessageProjectionCache {
-  sourceMessages: readonly GroupChatMessage[];
-  activeMessages: Message[];
-  senderLabels: Record<string, string>;
-}
-
-function toChatMessage(message: GroupChatMessage): Message {
-  return {
-    id: message.id,
-    senderId: message.senderDeviceId,
-    senderDeviceId: message.senderDeviceId,
-    content: message.content,
-    type: message.type ?? "text",
-    attachment: message.attachment,
-    timestamp: message.timestamp,
-    status: message.status,
-    isOwn: message.isOwn,
-    replyTo: message.replyTo,
-  };
-}
-
-function buildGroupMessageProjection(
-  sourceMessages: readonly GroupChatMessage[],
-  previous: GroupMessageProjectionCache | null
-): GroupMessageProjectionCache {
-  if (previous?.sourceMessages === sourceMessages) {
-    return previous;
-  }
-
-  const sharedLength = Math.min(previous?.sourceMessages.length ?? 0, sourceMessages.length);
-  let firstChangedIndex = 0;
-  while (
-    previous
-    && firstChangedIndex < sharedLength
-    && previous.sourceMessages[firstChangedIndex] === sourceMessages[firstChangedIndex]
-  ) {
-    firstChangedIndex += 1;
-  }
-
-  const activeMessages = previous
-    ? previous.activeMessages.slice(0, firstChangedIndex)
-    : [];
-  for (let index = firstChangedIndex; index < sourceMessages.length; index += 1) {
-    activeMessages.push(toChatMessage(sourceMessages[index]!));
-  }
-
-  const senderLabels: Record<string, string> = {};
-  for (const message of sourceMessages) {
-    if (!message.isOwn) {
-      senderLabels[message.id] = message.senderLabel;
-    }
-  }
-
-  return {
-    sourceMessages,
-    activeMessages,
-    senderLabels,
-  };
 }
 
 export function useChatWorkspaceEntry(options: UseChatWorkspaceEntryOptions) {
@@ -128,8 +65,6 @@ export function useChatWorkspaceEntry(options: UseChatWorkspaceEntryOptions) {
     createGroup: state.createGroup,
     retryGroupMessage: state.retryGroupMessage,
   })));
-  const groupMessageProjectionCacheRef = useRef<GroupMessageProjectionCache | null>(null);
-
   const {
     plainConversations,
     sendPlainText,
@@ -141,29 +76,6 @@ export function useChatWorkspaceEntry(options: UseChatWorkspaceEntryOptions) {
     sendPlainAttachment: state.sendAttachment,
     loadPlainHistory: state.loadHistory,
   })));
-
-  const upsertPlainConversation = useCallback(
-    (conv: { userId: string; username: string }) => {
-      usePlainMessagesStore.setState((s) => {
-        if (s.conversations[conv.userId]) return s;
-        return {
-          conversations: {
-            ...s.conversations,
-            [conv.userId]: {
-              userId: conv.userId,
-              username: conv.username,
-              messages: [],
-              lastMessageAt: 0,
-              unreadCount: 0,
-              hasMore: false,
-              historyLoaded: false,
-            },
-          },
-        };
-      });
-    },
-    []
-  );
 
   const {
     plainGroups,
@@ -185,140 +97,7 @@ export function useChatWorkspaceEntry(options: UseChatWorkspaceEntryOptions) {
 
   const savedMessages = useSavedMessagesStore((state) => state.messages);
   const addSavedMessage = useSavedMessagesStore((state) => state.addMessage);
-
-  const ensurePlainConversation = useCallback(
-    (peerUserId: string, peerUsername: string) => {
-      if (!plainConversations[peerUserId]) {
-        usePlainMessagesStore.setState((s) => ({
-          conversations: {
-            ...s.conversations,
-            [peerUserId]: {
-              userId: peerUserId,
-              username: peerUsername,
-              messages: [],
-              lastMessageAt: 0,
-              unreadCount: 0,
-              hasMore: false,
-              historyLoaded: false,
-            },
-          },
-        }));
-      }
-    },
-    [plainConversations]
-  );
-
-  const retryPlainMessage = useCallback(
-    (_conversationId: string, _messageId: string) => {
-      // Plain messages don't have a retry mechanism in the store yet — no-op
-    },
-    []
-  );
-
-  const retryPlainGroupMessage = useCallback(
-    (_groupId: string, _messageId: string) => {
-      // Plain group messages don't have a retry mechanism in the store yet — no-op
-    },
-    []
-  );
-
-  const {
-    routeConversationId,
-    routePlainConversationId,
-    handleBack,
-    handleSelectThread,
-  } = useChatThreadRouting({
-    conversations,
-    activeConversationId,
-    activeGroupId,
-    setActiveConversation,
-    setActiveGroup,
-    loadGroupMessages,
-    getGroupsState: useGroupsStore.getState,
-    plainConversations,
-    activePlainConversationId,
-    activePlainGroupId,
-    setActivePlainConversation,
-    setActivePlainGroup,
-    loadPlainGroupMessages,
-    savedThreadActive,
-    setSavedThreadActive,
-    setMobileShowConversation,
-    setMobileCreateMenuOpen,
-  });
-
-  useEffect(() => {
-    if (!routeConversationId) return;
-    if (conversations[routeConversationId]) return;
-    let cancelled = false;
-    const abortController = new AbortController();
-    api
-      .get<{ userId: string; username: string }>(
-        `/users/${encodeURIComponent(routeConversationId)}`,
-        { signal: abortController.signal }
-      )
-      .then((user) => {
-        if (cancelled) return;
-        upsertConversation({
-          userId: user.userId,
-          username: sanitizeDisplayTextOrFallback(user.username, user.userId),
-          messages: [],
-          lastMessageAt: 0,
-          unreadCount: 0,
-        });
-        setActiveConversation(user.userId);
-        setMobileShowConversation(true);
-      })
-      .catch((err) => {
-        if (cancelled) return;
-        logger.warn("[ChatPage] bootstrap direct deep-link failed", err);
-      });
-    return () => {
-      cancelled = true;
-      abortController.abort();
-    };
-  }, [
-    conversations,
-    routeConversationId,
-    setActiveConversation,
-    setMobileShowConversation,
-    upsertConversation,
-  ]);
-
-  useEffect(() => {
-    if (!routePlainConversationId) return;
-    if (plainConversations[routePlainConversationId]) return;
-    let cancelled = false;
-    const abortController = new AbortController();
-    api
-      .get<{ userId: string; username: string }>(
-        `/users/${encodeURIComponent(routePlainConversationId)}`,
-        { signal: abortController.signal }
-      )
-      .then((user) => {
-        if (cancelled) return;
-        upsertPlainConversation({
-          userId: user.userId,
-          username: sanitizeDisplayTextOrFallback(user.username, user.userId),
-        });
-        setActivePlainConversation(user.userId);
-        setMobileShowConversation(true);
-      })
-      .catch((err) => {
-        if (cancelled) return;
-        logger.warn("[ChatPage] bootstrap plain direct deep-link failed", err);
-      });
-    return () => {
-      cancelled = true;
-      abortController.abort();
-    };
-  }, [
-    plainConversations,
-    routePlainConversationId,
-    setActivePlainConversation,
-    setMobileShowConversation,
-    upsertPlainConversation,
-  ]);
+  const addSavedMessageWithAttachment = useSavedMessagesStore((state) => state.addMessageWithAttachment);
 
   const activeConversation = useMessagesStore(
     useCallback(
@@ -337,19 +116,6 @@ export function useChatWorkspaceEntry(options: UseChatWorkspaceEntryOptions) {
     : null;
   const activePlainGroup = activePlainGroupId ? plainGroups[activePlainGroupId] ?? null : null;
 
-  // Auto-load history when a plain-direct thread is opened or created via deep-link.
-  useEffect(() => {
-    if (!activePlainConversation || activePlainConversation.historyLoaded) return;
-    void loadPlainHistory(activePlainConversation.userId, activePlainConversation.username);
-  }, [activePlainConversation?.userId, activePlainConversation?.historyLoaded, loadPlainHistory]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  // Send read receipt when opening a plain-direct thread (or when history finishes loading).
-  useEffect(() => {
-    if (!activePlainConversation?.historyLoaded) return;
-    if (activePlainConversation.unreadCount === 0) return;
-    usePlainMessagesStore.getState().markRead(activePlainConversation.userId);
-  }, [activePlainConversation?.userId, activePlainConversation?.historyLoaded, activePlainConversation?.unreadCount]); // eslint-disable-line react-hooks/exhaustive-deps
-
   const activeThreadKind: "direct" | "group" | "plain-direct" | "plain-group" | "saved" | null =
     activeConversation
       ? "direct"
@@ -363,31 +129,61 @@ export function useChatWorkspaceEntry(options: UseChatWorkspaceEntryOptions) {
               ? "saved"
               : null;
 
-  const activeConversationUserId = activeConversation?.userId ?? null;
-  const activePeerIdentityAlertCount = Object.keys(
-    activeConversation?.peerIdentityAlertsByDevice ?? {}
-  ).length;
-  const directTrustBlocked = activePeerIdentityAlertCount > 0;
-  const activePresence = useMessagesStore(
-    useCallback(
-      (state) => (
-        activeConversationUserId
-          ? state.presenceByUser[activeConversationUserId]
-          : undefined
-      ),
-      [activeConversationUserId]
-    )
-  );
-  const activeTyping = useMessagesStore(
-    useCallback(
-      (state) => (
-        activeConversationUserId
-          ? state.typingByUser[activeConversationUserId]?.typing
-          : false
-      ),
-      [activeConversationUserId]
-    )
-  );
+  const {
+    upsertPlainConversation,
+    ensurePlainConversation,
+    handleRetryMessage,
+  } = useChatWorkspaceThreadActions({
+    plainConversations,
+    activeThreadKind,
+    activeConversationUserId: activeConversation?.userId ?? null,
+    activeGroupId,
+    activePlainConversationId,
+    activePlainGroupId,
+    retryDirectMessage,
+    retryGroupMessage,
+  });
+
+  const {
+    handleBack,
+    handleSelectThread,
+  } = useChatWorkspaceRoutingBootstrap({
+    conversations,
+    activeConversationId,
+    activeGroupId,
+    setActiveConversation,
+    setActiveGroup,
+    loadGroupMessages,
+    getGroupsState: useGroupsStore.getState,
+    plainConversations,
+    activePlainConversationId,
+    activePlainGroupId,
+    setActivePlainConversation,
+    setActivePlainGroup,
+    loadPlainGroupMessages,
+    savedThreadActive,
+    setSavedThreadActive,
+    setMobileShowConversation,
+    setMobileCreateMenuOpen,
+    upsertConversation,
+    upsertPlainConversation,
+  });
+
+  const {
+    activeConversationUserId,
+    activePeerIdentityAlertCount,
+    activePresence,
+    activeTyping,
+    directTrustBlocked,
+    plainActivePresence,
+    plainActiveTyping,
+  } = useChatWorkspacePresenceEffects({
+    activeConversation,
+    activePlainConversation,
+    fetchUserPresence,
+    loadPlainHistory,
+    markConversationRead,
+  });
 
   const {
     activeGroupCall,
@@ -399,114 +195,13 @@ export function useChatWorkspaceEntry(options: UseChatWorkspaceEntryOptions) {
     handleStartGroupCall,
     handleJoinActiveGroupCall,
     handleCloseGroupCallPanel,
-  } = useGroupCallChatEntry({
+    globalGroupCallAlerts,
+  } = useChatWorkspaceCallEntry({
     activeGroup,
+    activeGroupId,
     groups,
     userId,
   });
-
-  const globalGroupCallAlerts = useGlobalGroupCallAlerts(userId, activeGroupId);
-
-  useEffect(() => {
-    if (!activeConversationUserId) return;
-    void fetchUserPresence(activeConversationUserId);
-    void markConversationRead(activeConversationUserId);
-    const refreshTimer = setInterval(() => {
-      void fetchUserPresence(activeConversationUserId);
-    }, 30_000);
-    return () => clearInterval(refreshTimer);
-  }, [activeConversationUserId, fetchUserPresence, markConversationRead]);
-
-  const plainPeerUserId = activePlainConversation?.userId ?? null;
-  const plainActivePresence = useMessagesStore(
-    useCallback(
-      (state) => (plainPeerUserId ? state.presenceByUser[plainPeerUserId] : undefined),
-      [plainPeerUserId]
-    )
-  );
-  const plainActiveTyping = useMessagesStore(
-    useCallback(
-      (state) => (plainPeerUserId ? state.typingByUser[plainPeerUserId]?.typing : false),
-      [plainPeerUserId]
-    )
-  );
-
-  useEffect(() => {
-    if (!plainPeerUserId) return;
-    void fetchUserPresence(plainPeerUserId);
-    const refreshTimer = setInterval(() => {
-      void fetchUserPresence(plainPeerUserId);
-    }, 30_000);
-    return () => clearInterval(refreshTimer);
-  }, [plainPeerUserId, fetchUserPresence]);
-
-  const handleRetryMessage = useCallback(
-    (messageId: string) => {
-      if (activeThreadKind === "direct" && activeConversationUserId) {
-        void retryDirectMessage(activeConversationUserId, messageId);
-        return;
-      }
-      if (activeThreadKind === "group" && activeGroupId) {
-        void retryGroupMessage(activeGroupId, messageId);
-        return;
-      }
-      if (activeThreadKind === "plain-direct" && activePlainConversationId) {
-        void retryPlainMessage(activePlainConversationId, messageId);
-        return;
-      }
-      if (activeThreadKind === "plain-group" && activePlainGroupId) {
-        void retryPlainGroupMessage(activePlainGroupId, messageId);
-      }
-    },
-    [
-      activeConversationUserId,
-      activeGroupId,
-      activePlainConversationId,
-      activePlainGroupId,
-      activeThreadKind,
-      retryDirectMessage,
-      retryGroupMessage,
-      retryPlainMessage,
-      retryPlainGroupMessage,
-    ]
-  );
-
-  const activeGroupListId = activeGroup ? `group:${activeGroup.groupId}` : null;
-  const activePlainGroupListId = activePlainGroup ? `plain-group:${activePlainGroup.groupId}` : null;
-  const activeListId =
-    activeConversation
-      ? `direct:${activeConversation.userId}`
-      : activeGroupListId
-        ?? (activePlainConversation ? `plain-direct:${activePlainConversation.userId}` : null)
-        ?? activePlainGroupListId
-        ?? (savedThreadActive ? "saved:saved" : null);
-
-  const conversationEntries = useMemo(
-    () => Object.values(conversations),
-    [conversations]
-  );
-  const groupEntries = useMemo(() => Object.values(groups), [groups]);
-  const plainConversationEntries = useMemo(
-    () => Object.values(plainConversations),
-    [plainConversations]
-  );
-  const plainGroupEntries = useMemo(() => Object.values(plainGroups), [plainGroups]);
-
-  const activeGroupProjection = useMemo(() => {
-    if (!activeGroup) return null;
-    const nextProjection = buildGroupMessageProjection(
-      activeGroup.messages,
-      groupMessageProjectionCacheRef.current
-    );
-    groupMessageProjectionCacheRef.current = nextProjection;
-    return nextProjection;
-  }, [activeGroup]);
-
-  const plainActiveMessages = useMemo<PlainMessage[]>(() => {
-    if (activePlainConversation) return activePlainConversation.messages;
-    if (activePlainGroup) return activePlainGroup.messages;
-    return [];
-  }, [activePlainConversation, activePlainGroup]);
 
   const sendSavedMessage = useCallback(
     (content: string) => {
@@ -515,82 +210,34 @@ export function useChatWorkspaceEntry(options: UseChatWorkspaceEntryOptions) {
     [addSavedMessage]
   );
 
-  const savedActiveMessages = useMemo<Message[]>(
-    () =>
-      savedMessages.map((m: SavedMessage) => ({
-        id: m.id,
-        senderId: userId ?? "me",
-        senderDeviceId: userId ?? "me",
-        content: m.content,
-        type: "text" as const,
-        timestamp: m.timestamp,
-        status: "sent" as const,
-        isOwn: true,
-      })),
-    [savedMessages, userId]
+  const sendSavedFile = useCallback(
+    (file: File, options: { kind: "file" | "voice_note" | "video_note"; durationMs?: number; caption?: string }) =>
+      addSavedMessageWithAttachment(file, options),
+    [addSavedMessageWithAttachment]
   );
 
-  const activeMessages = useMemo<Message[]>(() => {
-    if (activeConversation) return activeConversation.messages;
-    if (activeGroupProjection) return activeGroupProjection.activeMessages;
-    if (savedThreadActive) return savedActiveMessages;
-    return plainActiveMessages.map((m) => ({
-      id: m.id,
-      senderId: m.senderId,
-      senderDeviceId: m.senderId,
-      content: m.content,
-      type: m.type === "text" ? "text" as const : m.type === "call" ? "call" as const : "attachment" as const,
-      call: m.call,
-      attachment: m.attachment
-        ? {
-            attachmentId: m.attachment.attachmentId,
-            key: "",
-            digest: "",
-            mimeType: m.attachment.contentType,
-            fileName: m.attachment.fileName,
-            size: m.attachment.size,
-            kind: (["voice_note", "video_note"].includes(m.type) ? m.type : "file") as "file" | "voice_note" | "video_note",
-            durationMs: m.attachment.durationMs,
-            mediaGroupId: m.attachment.mediaGroupId,
-            isPlain: true,
-            localUrl: m.attachment.localUrl,
-            uploadProgress: m.uploadProgress,
-            caption: m.content?.trim() || undefined,
-          }
-        : undefined,
-      timestamp: m.timestamp,
-      status: m.status,
-      isOwn: m.isOwn,
-      replyTo: m.replyTo,
-    }));
-  }, [activeConversation, activeGroupProjection, savedThreadActive, savedActiveMessages, plainActiveMessages]);
-
-  const plainGroupSenderLabels = useMemo<Record<string, string>>(() => {
-    if (!activePlainGroup) return {};
-    const labels: Record<string, string> = {};
-    for (const msg of activePlainGroup.messages) {
-      if (!msg.isOwn) {
-        // Match E2EE formatting (`@username`) so the bubble header looks the
-        // same whether the group is encrypted or cloud-stored.
-        const name = msg.senderName?.trim();
-        labels[msg.id] = name ? `@${name}` : "";
-      }
-    }
-    return labels;
-  }, [activePlainGroup]);
-
-  const groupSenderLabels =
-    activeGroupProjection?.senderLabels ?? (activePlainGroup ? plainGroupSenderLabels : undefined);
-
-  // Drives the "thread is opening, history not yet hydrated" skeleton in the
-  // message list. Only signal `true` when we have an active thread *and* its
-  // first-page history hasn't been fetched yet — otherwise the skeleton
-  // would stay visible for legitimately empty conversations.
-  const activeHistoryLoading: boolean = (
-    (activePlainConversation && activePlainConversation.historyLoaded === false) ||
-    (activePlainGroup && activePlainGroup.historyLoaded === false) ||
-    false
-  );
+  const {
+    activeHistoryLoading,
+    activeListId,
+    activeMessages,
+    conversationEntries,
+    groupEntries,
+    groupSenderLabels,
+    plainConversationEntries,
+    plainGroupEntries,
+  } = useChatWorkspaceProjection({
+    activeConversation,
+    activeGroup,
+    activePlainConversation,
+    activePlainGroup,
+    conversations,
+    groups,
+    plainConversations,
+    plainGroups,
+    savedThreadActive,
+    savedMessages,
+    userId,
+  });
 
   return {
     acceptPeerIdentityChange,
@@ -642,5 +289,6 @@ export function useChatWorkspaceEntry(options: UseChatWorkspaceEntryOptions) {
     savedThreadActive,
     savedMessages,
     sendSavedMessage,
+    sendSavedFile,
   };
 }

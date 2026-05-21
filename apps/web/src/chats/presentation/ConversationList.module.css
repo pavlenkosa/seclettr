@@ -14,17 +14,6 @@
   background: transparent;
 }
 
-.savedAvatar {
-  flex-shrink: 0;
-  width: 50px;
-  height: 50px;
-  border-radius: 50%;
-  background: color-mix(in srgb, var(--accent-primary, #6366f1) 16%, var(--surface-shell));
-  color: var(--accent-primary, #6366f1);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
 
 .empty {
   display: flex;
@@ -159,8 +148,8 @@
 .pinBadge {
   display: inline-block;
   flex-shrink: 0;
-  color: var(--text-secondary);
-  opacity: 0.85;
+  color: var(--accent);
+  opacity: 0.7;
   vertical-align: middle;
   margin-top: -1px;
 }
@@ -211,6 +200,63 @@
   outline: none;
 }
 
+.contextMenuItemDanger {
+  color: var(--danger);
+}
+
+.contextMenuItemDanger:hover,
+.contextMenuItemDanger:focus-visible {
+  background: color-mix(in srgb, var(--danger) 12%, transparent);
+}
+
+.contextMenuItemTrigger {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.contextMenuChevron {
+  flex-shrink: 0;
+  color: var(--text-secondary);
+  transition: transform var(--motion-duration-fast) var(--motion-ease-standard);
+}
+
+.contextMenuChevronOpen {
+  transform: rotate(90deg);
+}
+
+.contextMenuSubmenu {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows var(--motion-duration-fast) var(--motion-ease-standard);
+}
+
+.contextMenuSubmenuOpen {
+  grid-template-rows: 1fr;
+}
+
+.contextMenuSubmenuInner {
+  overflow: hidden;
+}
+
+.contextMenuSubItem {
+  padding-left: 1.1rem;
+  font-size: 0.81rem;
+  color: var(--text-secondary);
+}
+
+.contextMenuSubItem:hover,
+.contextMenuSubItem:focus-visible {
+  color: var(--text-primary);
+}
+
+.contextMenuSeparator {
+  height: 1px;
+  margin: 0.25rem 0.62rem;
+  background: color-mix(in srgb, var(--panel-border) 60%, transparent);
+}
+
 .time {
   font-size: 0.72rem;
   line-height: 1.2;
@@ -230,11 +276,18 @@
   min-width: 0;
 }
 
-.previewOwn {
+.youBadge {
   display: inline-flex;
   align-items: center;
-  gap: 0.2rem;
-  line-height: 1;
+  flex-shrink: 0;
+  padding: 0.05rem 0.3rem;
+  border-radius: 999px;
+  font-size: 0.68rem;
+  font-weight: 650;
+  line-height: 1.4;
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 14%, transparent);
+  margin-inline-end: 0.25rem;
 }
 
 .previewStatus {

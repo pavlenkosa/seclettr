@@ -11,6 +11,7 @@ export interface EntryLastMessage {
   attachment?: {
     kind?: "file" | "voice_note" | "video_note";
     mimeType: string;
+    fileName?: string;
   };
   call?: CallMessageMeta;
   isOwn: boolean;
@@ -29,6 +30,8 @@ export interface ConversationEntry {
   isEncrypted: boolean;
   pinnedAt?: number;
   pinKind?: PlainPinKind;
+  /** Non-null when the chat belongs to a folder. Populated for plain chats only. */
+  folderId?: string;
 }
 
 export interface ConversationSelection {
@@ -111,26 +114,38 @@ export function buildSavedEntry(
   };
 }
 
+type ChatFolderMap = Record<string, string>;
+
 export function buildConversationEntries({
   conversations,
   groups,
   pins,
   plainConversations,
   plainGroups,
+  chatFolderMap = {},
 }: {
   conversations: Conversation[];
   groups: GroupChat[];
   pins: PlainPinsMap;
   plainConversations: PlainConversation[];
   plainGroups: PlainGroup[];
+  chatFolderMap?: ChatFolderMap;
 }): ConversationEntry[] {
   const directEntries = conversations.map(mapDirectConversation);
   const groupEntries = groups.map(mapGroupConversation);
   const plainDirectEntries = plainConversations.map((conversation) =>
-    mapPlainConversation(conversation, pins[`dm:${conversation.userId}`]?.pinnedAt)
+    mapPlainConversation(
+      conversation,
+      pins[`dm:${conversation.userId}`]?.pinnedAt,
+      chatFolderMap[`dm:${conversation.userId}`]
+    )
   );
   const plainGroupEntries = plainGroups.map((group) =>
-    mapPlainGroup(group, pins[`group:${group.groupId}`]?.pinnedAt)
+    mapPlainGroup(
+      group,
+      pins[`group:${group.groupId}`]?.pinnedAt,
+      chatFolderMap[`group:${group.groupId}`]
+    )
   );
 
   return [...directEntries, ...groupEntries, ...plainDirectEntries, ...plainGroupEntries]
@@ -154,23 +169,35 @@ function getCallPreviewText(call: NonNullable<EntryLastMessage["call"]>, t: Conv
 }
 
 function getAttachmentPreviewText(last: EntryLastMessage, t: ConversationTranslateFn): string {
-  const attachment = last.attachment;
+  const { attachment, content } = last;
 
   if (attachment?.kind === "voice_note" || attachment?.mimeType.startsWith("audio/")) {
     return t("conversation.voiceNotePreview");
   }
 
-  if (attachment?.kind === "video_note" || attachment?.mimeType.startsWith("video/")) {
+  if (attachment?.kind === "video_note") {
     return t("conversation.videoNotePreview");
   }
 
-  if (last.content === "[attachment]") {
-    return t("conversation.attachmentPreview");
+  if (attachment?.mimeType === "image/gif") {
+    return t("conversation.gifPreview");
   }
 
-  return last.content === "[invalid attachment]"
+  if (attachment?.mimeType.startsWith("image/")) {
+    return t("conversation.photoPreview");
+  }
+
+  if (attachment?.mimeType.startsWith("video/")) {
+    return t("conversation.videoPreview");
+  }
+
+  if (content === "[attachment]" || content === "") {
+    return attachment?.fileName ?? t("conversation.attachmentPreview");
+  }
+
+  return content === "[invalid attachment]"
     ? t("conversation.invalidAttachmentPreview")
-    : last.content;
+    : content;
 }
 
 function mapDirectLastMessage(last: DirectConversationMessage | undefined): EntryLastMessage | undefined {
@@ -185,6 +212,7 @@ function mapDirectLastMessage(last: DirectConversationMessage | undefined): Entr
       ? {
         kind: last.attachment.kind,
         mimeType: last.attachment.mimeType,
+        fileName: last.attachment.fileName,
       }
       : undefined,
     call: last.call,
@@ -256,6 +284,7 @@ function mapPlainLastMessage(last: PlainConversation["messages"][number] | undef
       ? {
         kind: (["voice_note", "video_note"].includes(last.type) ? last.type : "file") as "file" | "voice_note" | "video_note",
         mimeType: last.attachment.contentType,
+        fileName: last.attachment.fileName,
       }
       : undefined,
     isOwn: last.isOwn,
@@ -265,7 +294,8 @@ function mapPlainLastMessage(last: PlainConversation["messages"][number] | undef
 
 function mapPlainConversation(
   conversation: PlainConversation,
-  pinnedAt: number | undefined
+  pinnedAt: number | undefined,
+  folderId: string | undefined
 ): ConversationEntry {
   return {
     key: `plain-direct:${conversation.userId}`,
@@ -278,14 +308,37 @@ function mapPlainConversation(
     isEncrypted: false,
     pinnedAt,
     pinKind: "dm",
+    folderId,
   };
 }
 
 function mapPlainGroupLastMessage(last: PlainGroup["messages"][number] | undefined): EntryLastMessage | undefined {
   if (!last) return undefined;
+  if (last.type === "call" && last.call) {
+    return {
+      type: "call",
+      content: "",
+      call: {
+        mode: last.call.mode,
+        direction: last.call.direction,
+        outcome: last.call.outcome,
+        durationSec: last.call.durationSec,
+      },
+      isOwn: last.isOwn,
+      status: last.status,
+      senderLabel: last.isOwn ? undefined : last.senderName,
+    };
+  }
   return {
     type: last.type === "text" ? "text" : "attachment",
     content: last.content,
+    attachment: last.attachment
+      ? {
+        kind: (["voice_note", "video_note"].includes(last.type) ? last.type : "file") as "file" | "voice_note" | "video_note",
+        mimeType: last.attachment.contentType,
+        fileName: last.attachment.fileName,
+      }
+      : undefined,
     isOwn: last.isOwn,
     status: last.status,
     senderLabel: last.isOwn ? undefined : last.senderName,
@@ -294,7 +347,8 @@ function mapPlainGroupLastMessage(last: PlainGroup["messages"][number] | undefin
 
 function mapPlainGroup(
   group: PlainGroup,
-  pinnedAt: number | undefined
+  pinnedAt: number | undefined,
+  folderId: string | undefined
 ): ConversationEntry {
   return {
     key: `plain-group:${group.groupId}`,
@@ -307,5 +361,6 @@ function mapPlainGroup(
     isEncrypted: false,
     pinnedAt,
     pinKind: "group",
+    folderId,
   };
 }

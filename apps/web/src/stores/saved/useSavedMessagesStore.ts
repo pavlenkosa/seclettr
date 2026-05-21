@@ -1,18 +1,35 @@
 import { create } from "zustand";
 import { logger } from "@/lib/logger";
 
+const MAX_ATTACHMENT_BYTES = 5 * 1024 * 1024; // 5 MB
+
+export interface SavedMessageAttachment {
+  kind: "file" | "voice_note" | "video_note";
+  mimeType: string;
+  fileName: string;
+  size: number;
+  durationMs?: number;
+  dataUrl: string;
+}
+
 export interface SavedMessage {
   id: string;
   content: string;
   timestamp: number;
+  attachment?: SavedMessageAttachment;
 }
 
 export interface SavedMessagesState {
   messages: SavedMessage[];
   /** Hydrate from localStorage for the given userId. */
   load: (userId: string) => void;
-  /** Append a new note. */
+  /** Append a new text note. */
   addMessage: (content: string) => void;
+  /** Append a new message with a file attachment. Resolves false if the file exceeds the size limit. */
+  addMessageWithAttachment: (
+    file: File,
+    options: { kind: "file" | "voice_note" | "video_note"; durationMs?: number; caption?: string }
+  ) => Promise<boolean>;
   /** Remove a note by id. */
   deleteMessage: (id: string) => void;
   /** Wipe in-memory state on logout. */
@@ -51,6 +68,15 @@ function load(userId: string): SavedMessage[] {
   }
 }
 
+function fileToDataUrl(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result as string);
+    reader.onerror = () => reject(reader.error);
+    reader.readAsDataURL(file);
+  });
+}
+
 let currentUserId: string | null = null;
 
 export const useSavedMessagesStore = create<SavedMessagesState>((set, get) => ({
@@ -72,6 +98,33 @@ export const useSavedMessagesStore = create<SavedMessagesState>((set, get) => ({
     const messages = [...get().messages, next];
     set({ messages });
     persist(currentUserId, messages);
+  },
+
+  async addMessageWithAttachment(file, { kind, durationMs, caption }) {
+    if (file.size > MAX_ATTACHMENT_BYTES) return false;
+    try {
+      const dataUrl = await fileToDataUrl(file);
+      const next: SavedMessage = {
+        id: crypto.randomUUID(),
+        content: caption ?? "",
+        timestamp: Date.now(),
+        attachment: {
+          kind,
+          mimeType: file.type,
+          fileName: file.name,
+          size: file.size,
+          durationMs,
+          dataUrl,
+        },
+      };
+      const messages = [...get().messages, next];
+      set({ messages });
+      persist(currentUserId, messages);
+      return true;
+    } catch (err) {
+      logger.error("[SavedMessages] addMessageWithAttachment failed", err);
+      return false;
+    }
   },
 
   deleteMessage(id) {

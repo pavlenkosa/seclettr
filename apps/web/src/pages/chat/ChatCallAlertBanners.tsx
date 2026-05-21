@@ -1,7 +1,7 @@
 import { memo } from "react";
 import type { GroupActiveCallEntry } from "@seclettr/protocol";
 import motionStyles from "@/components/ui/motion/Motion.module.css";
-import type { useDirectMissedCallAlerts } from "@/calls/direct/runtime/useDirectMissedCallAlerts";
+import type { useDirectMissedCallAlerts } from "@/calls/direct/runtime/session/useDirectMissedCallAlerts";
 import type {
   ChatPresence,
   RenderedCallAlerts,

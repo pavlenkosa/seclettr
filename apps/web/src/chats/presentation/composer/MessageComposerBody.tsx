@@ -127,10 +127,11 @@ function EmojiPickerControl({
       pickerId={emojiPickerId}
       searchQuery={emojiState.emojiSearchQuery}
       isSearchActive={emojiState.isEmojiSearchActive}
-      emojiTabs={emojiState.emojiTabs}
+      emojiGroups={emojiState.emojiGroups}
       activeEmojiGroupId={emojiState.activeEmojiGroupId}
       activeEmojiGroup={emojiState.activeEmojiGroup}
-      activeEmojiSubgroup={emojiState.activeEmojiSubgroup}
+      hasRecentEmojis={emojiState.hasRecentEmojis}
+      recentEmojiItems={emojiState.recentEmojiItems}
       visibleEmojiItems={emojiState.visibleEmojiItems}
       toggleButtonRef={emojiState.emojiToggleButtonRef}
       pickerRef={emojiState.emojiPickerRef}
@@ -139,8 +140,16 @@ function EmojiPickerControl({
       onToggleOpen={emojiState.handleEmojiToggleOpen}
       onSearchQueryChange={emojiState.setEmojiSearchQuery}
       onSelectEmojiGroup={emojiState.setActiveEmojiGroupId}
-      onSelectEmojiSubgroup={(subgroupId) => emojiState.setActiveEmojiSubgroupId(subgroupId)}
       onInsertEmoji={emojiState.insertEmoji}
+      isGifMode={emojiState.isGifMode}
+      isGifTabAvailable={emojiState.isGifTabAvailable}
+      gifQuery={emojiState.gifQuery}
+      gifResults={emojiState.gifResults}
+      isGifLoading={emojiState.isGifLoading}
+      isSendingGif={emojiState.isSendingGif}
+      onSetGifMode={emojiState.setGifMode}
+      onSetGifQuery={emojiState.setGifQuery}
+      onSendGif={emojiState.sendGif}
     />
   );
 }

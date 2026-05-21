@@ -114,6 +114,11 @@
     gap: 0.44rem;
   }
 
+  .headerSurface {
+    min-height: calc(var(--panel-header-height) + var(--safe-top));
+    padding-top: var(--safe-top);
+  }
+
   .header {
     gap: 0.52rem;
     padding: 0 0.44rem;

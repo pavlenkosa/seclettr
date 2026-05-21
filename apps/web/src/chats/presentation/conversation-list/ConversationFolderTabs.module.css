@@ -1,0 +1,111 @@
+/* ── Folder tab strip ───────────────────────────────────────────────────────── */
+
+.root {
+  position: relative;
+  flex-shrink: 0;
+  border-bottom: 1px solid var(--panel-border);
+}
+
+.tabs {
+  display: flex;
+  align-items: center;
+  gap: 0.1rem;
+  overflow-x: auto;
+  overflow-y: visible;
+  padding: 5px 6px 6px;
+  scrollbar-width: none;
+}
+
+.tabs::-webkit-scrollbar {
+  display: none;
+}
+
+/* ── Individual tab ─────────────────────────────────────────────────────────── */
+
+.tab {
+  flex-shrink: 0;
+  padding: 5px 12px;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: 0.82rem;
+  font-weight: 500;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background-color 140ms ease, color 140ms ease;
+  line-height: 1.35;
+  height: 30px;
+  display: flex;
+  align-items: center;
+}
+
+.tab:hover {
+  background: color-mix(in srgb, var(--accent) 10%, transparent);
+  color: var(--text-primary);
+}
+
+.tabActive {
+  background: var(--accent);
+  color: #fff;
+  font-weight: 600;
+}
+
+.tabActive:hover {
+  background: color-mix(in srgb, var(--accent) 88%, #000);
+}
+
+/* ── Add folder button ──────────────────────────────────────────────────────── */
+
+.addBtn {
+  flex-shrink: 0;
+  margin-left: 2px;
+}
+
+/* ── Context menu ────────────────────────────────────────────────────────────── */
+
+.menuBackdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+}
+
+.contextMenu {
+  position: fixed;
+  z-index: 41;
+  min-width: 9rem;
+  padding: 0.3rem;
+  border-radius: 12px;
+  border: 1px solid color-mix(in srgb, var(--panel-border) 88%, transparent);
+  background: var(--surface-shell-strong);
+  box-shadow: 0 4px 20px color-mix(in srgb, var(--color-black) 20%, transparent);
+}
+
+.menuItem {
+  width: 100%;
+  display: block;
+  padding: 0.46rem 0.62rem;
+  border: none;
+  background: transparent;
+  border-radius: 8px;
+  text-align: left;
+  font-size: 0.84rem;
+  color: var(--text-primary);
+  cursor: pointer;
+  transition: background-color 120ms ease;
+}
+
+.menuItem:hover,
+.menuItem:focus-visible {
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+  outline: none;
+}
+
+.menuItemDanger {
+  color: var(--color-danger, #ef4444);
+}
+
+.menuItemDanger:hover,
+.menuItemDanger:focus-visible {
+  background: color-mix(in srgb, var(--color-danger, #ef4444) 10%, transparent);
+}

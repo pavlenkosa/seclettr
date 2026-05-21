@@ -89,6 +89,7 @@ interface UseGroupCallPanelPresentationOptions {
 
 interface UseGroupCallPanelPresentationResult {
   lifecycleState: GroupCallLifecycleState;
+  isReconnecting: boolean;
   roomCode: string;
   title: string;
   statusLabel: string;
@@ -369,6 +370,7 @@ export function useGroupCallPanelPresentation({
 
   return {
     lifecycleState,
+    isReconnecting: lifecycleState === "reconnecting",
     roomCode,
     title,
     statusLabel,

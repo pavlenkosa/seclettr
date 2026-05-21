@@ -57,7 +57,7 @@ vi.mock("@/lib/push", () => ({
   getPushClientStatus: getPushClientStatusMock,
 }));
 
-import { usePushSettings } from "./usePushSettings";
+import { usePushSettings } from "../usePushSettings";
 
 interface HookValue extends ReturnType<typeof usePushSettings> {}
 

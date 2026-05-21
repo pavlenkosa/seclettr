@@ -41,6 +41,7 @@ export interface GroupCallPanelViewPropsBuildParams {
     readonly hasVisibleVideo: boolean;
     readonly hasRemoteScreenShare: boolean;
     readonly heroStatusLabel: string;
+    readonly isReconnecting: boolean;
     readonly heroStatusTone: ComponentProps<typeof GroupCallHeader>["heroStatusTone"];
     readonly detailsToggleLabel: string;
     readonly shouldUseStageLayout: boolean;

@@ -35,6 +35,8 @@ export interface WirePlainGroupMessage {
     size: number;
     durationMs?: number;
     mediaGroupId?: string;
+    /** Presigned download URL included in history responses. Use as localUrl. */
+    downloadUrl?: string;
   };
   replyTo?: { id: string; content: string; senderName?: string };
   createdAt: string;
@@ -86,6 +88,7 @@ export function wireToPlainGroupMessage(wire: WirePlainGroupMessage, myUserId: s
           size: wire.attachment.size,
           durationMs: wire.attachment.durationMs,
           mediaGroupId: wire.attachment.mediaGroupId,
+          localUrl: wire.attachment.downloadUrl,
         }
       : undefined,
     replyTo: wire.replyTo,

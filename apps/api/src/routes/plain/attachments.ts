@@ -94,7 +94,7 @@ function rewriteS3Url(url: string, requestOrigin?: string): string {
   }
 }
 
-async function buildDownloadUrl(storageKey: string, requestOrigin?: string): Promise<string> {
+export async function buildDownloadUrl(storageKey: string, requestOrigin?: string): Promise<string> {
   if (USE_IN_MEMORY) {
     return `https://in-memory.invalid/${encodeURIComponent(storageKey)}`;
   }

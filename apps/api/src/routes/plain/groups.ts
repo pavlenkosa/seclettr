@@ -21,6 +21,8 @@ import { publishPlainMessageToUser } from "../../services/plain-ws.js";
 import { getPushPreferences, sendPushToUser } from "../../services/push.js";
 import { buildGroupMessagePushPayload } from "../../services/push-payloads.js";
 import { hasActiveConnectionForUserAcrossCluster } from "../../services/websocket.js";
+import { buildDownloadUrl } from "./attachments.js";
+import { resolveBrowserOrigin } from "../../utils/request-origin.js";
 import {
   SendPlainMessageRequestSchema,
   EditPlainMessageRequestSchema,
@@ -78,6 +80,7 @@ interface PlainGroupMsgRow {
   att_content_type: string | null;
   att_file_name: string | null;
   att_size: string | null;
+  att_storage_key: string | null;
   reply_content: string | null;
   reply_sender_username: string | null;
 }
@@ -94,7 +97,7 @@ async function getActiveMembership(
   return row ?? null;
 }
 
-function buildGroupMsgWire(row: PlainGroupMsgRow) {
+function buildGroupMsgWire(row: PlainGroupMsgRow, downloadUrl?: string) {
   return {
     id: row.id,
     clientId: row.client_id,
@@ -111,6 +114,7 @@ function buildGroupMsgWire(row: PlainGroupMsgRow) {
           size: Number(row.att_size ?? 0),
           durationMs: row.duration_ms ?? undefined,
           mediaGroupId: row.media_group_id ?? undefined,
+          downloadUrl,
         }
       : undefined,
     replyTo: row.reply_to_id
@@ -143,6 +147,7 @@ const GROUP_HISTORY_SQL = `
     pa.content_type  AS att_content_type,
     pa.file_name     AS att_file_name,
     pa.encrypted_size AS att_size,
+    pa.storage_key   AS att_storage_key,
     rp.content       AS reply_content,
     ru.username      AS reply_sender_username
   FROM plain_messages pm
@@ -725,7 +730,16 @@ export async function plainGroupRoutes(fastify: FastifyInstance): Promise<void> 
       );
 
       const hasMore = rows.length > pageLimit;
-      const messages = rows.slice(0, pageLimit).map(buildGroupMsgWire);
+      const pageRows = rows.slice(0, pageLimit);
+      const origin = resolveBrowserOrigin(request.headers);
+      const messages = await Promise.all(
+        pageRows.map(async (row) => {
+          const downloadUrl = row.att_storage_key
+            ? await buildDownloadUrl(row.att_storage_key, origin).catch(() => undefined)
+            : undefined;
+          return buildGroupMsgWire(row, downloadUrl);
+        })
+      );
       const nextCursor = hasMore ? rows[pageLimit - 1]?.created_at : undefined;
 
       return reply.code(200).send({ messages, hasMore, nextCursor });

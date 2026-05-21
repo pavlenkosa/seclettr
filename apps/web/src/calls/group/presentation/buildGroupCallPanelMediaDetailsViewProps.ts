@@ -35,6 +35,7 @@ export function buildGroupCallPanelMediaDetailsViewProps({
 }: GroupCallPanelViewPropsBuildParams): GroupCallPanelMediaDetailsViewProps {
   return {
     mediaSectionProps: {
+      isReconnecting: presentation.isReconnecting,
       stageShellRef,
       shouldUseStageLayout: presentation.shouldUseStageLayout,
       stageTile: presentation.stageTile,

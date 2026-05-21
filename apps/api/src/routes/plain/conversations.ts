@@ -2,10 +2,93 @@
  * GET /plain/conversations → list all plain DM peers with last message timestamp
  */
 import type { FastifyInstance } from "fastify";
-import { requireAuth } from "../../middleware/auth.js";
+import { requireAuth, requireAuthOrBackgroundToken } from "../../middleware/auth.js";
 import { query } from "../../db/pool.js";
 
 export async function plainConversationRoutes(fastify: FastifyInstance): Promise<void> {
+  /**
+   * DELETE /plain/conversations/:peerId
+   * Soft-deletes all plain DM messages between the requester and peerId (for both sides),
+   * and removes any pin / folder-entry for the requester.
+   */
+  fastify.delete(
+    "/:peerId",
+    { preHandler: requireAuth },
+    async (request, reply) => {
+      const { sub: userId } = request.auth;
+      const { peerId } = request.params as { peerId: string };
+
+      await query(
+        `UPDATE plain_messages
+         SET deleted_at = now()
+         WHERE deleted_at IS NULL
+           AND recipient_user_id IS NOT NULL
+           AND (
+             (sender_user_id = $1 AND recipient_user_id = $2)
+             OR (sender_user_id = $2 AND recipient_user_id = $1)
+           )`,
+        [userId, peerId]
+      );
+
+      // Remove the requester's pin and any folder assignment for this DM
+      await query(
+        `DELETE FROM plain_chat_pins
+         WHERE user_id = $1 AND peer_kind = 'dm' AND peer_id = $2`,
+        [userId, peerId]
+      );
+
+      await query(
+        `DELETE FROM plain_chat_folder_entries
+         WHERE peer_kind = 'dm' AND peer_id = $2
+           AND folder_id IN (
+             SELECT id FROM plain_chat_folders WHERE user_id = $1
+           )`,
+        [userId, peerId]
+      );
+
+      return reply.send({ ok: true });
+    }
+  );
+
+  fastify.get(
+    "/unread-summary",
+    { preHandler: requireAuthOrBackgroundToken },
+    async (request, reply) => {
+      const { sub: userId } = request.auth;
+
+      const [dmRow, groupRow] = await Promise.all([
+        query<{ total: string }>(
+          `SELECT COALESCE(COUNT(*), 0) AS total
+           FROM plain_messages pm
+           WHERE pm.recipient_user_id = $1
+             AND pm.deleted_at IS NULL
+             AND NOT EXISTS (
+               SELECT 1 FROM plain_message_reads pmr
+               WHERE pmr.message_id = pm.id AND pmr.user_id = $1
+             )`,
+          [userId]
+        ),
+        query<{ total: string }>(
+          `SELECT COALESCE(COUNT(*), 0) AS total
+           FROM plain_messages pm
+           JOIN plain_group_members pgm ON pgm.group_id = pm.group_id
+             AND pgm.user_id = $1 AND pgm.removed_at IS NULL
+           WHERE pm.group_id IS NOT NULL
+             AND pm.sender_user_id != $1
+             AND pm.deleted_at IS NULL
+             AND NOT EXISTS (
+               SELECT 1 FROM plain_message_reads pmr
+               WHERE pmr.message_id = pm.id AND pmr.user_id = $1
+             )`,
+          [userId]
+        ),
+      ]);
+
+      const totalUnread = Number(dmRow[0]?.total ?? 0) + Number(groupRow[0]?.total ?? 0);
+      return reply.send({ totalUnread });
+    }
+  );
+
   fastify.get(
     "/",
     { preHandler: requireAuth },

@@ -1,4 +1,5 @@
 import { create } from "zustand";
+import { api } from "@/lib/api";
 import { wsClient } from "@/lib/websocket";
 import { useAuthStore } from "@/stores/auth";
 import type { PlainConversation, PlainReplyMeta } from "../types";
@@ -48,6 +49,9 @@ export interface PlainMessagesState {
 
   /** Delete a message */
   deleteMessage: (conversationUserId: string, messageId: string) => Promise<void>;
+
+  /** Delete an entire DM conversation (soft-deletes all messages for both sides) */
+  deleteConversation: (peerUserId: string) => Promise<void>;
 
   /** Record a completed call into the conversation history (local only, not persisted) */
   recordCallEvent: (params: {
@@ -117,6 +121,16 @@ export const usePlainMessagesStore = create<PlainMessagesState>((set, get) => {
     conversationKeyFor,
   });
 
+  async function deleteConversation(peerUserId: string) {
+    await api.delete(`/plain/conversations/${encodeURIComponent(peerUserId)}`);
+    // Remove from local store immediately
+    set((state) => {
+      const next = { ...state.conversations };
+      delete next[conversationKeyFor(peerUserId)];
+      return { conversations: next };
+    });
+  }
+
   return {
     conversations: {},
     wsConnected: wsClient.connected,
@@ -127,6 +141,7 @@ export const usePlainMessagesStore = create<PlainMessagesState>((set, get) => {
     sendAttachment,
     editMessage,
     deleteMessage,
+    deleteConversation,
     recordCallEvent,
     markRead,
     subscribe,

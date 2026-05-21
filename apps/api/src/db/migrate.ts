@@ -139,8 +139,20 @@ const baselineChecks: Record<string, () => Promise<boolean>> = {
   "017_group_crypto_epoch.sql": async () =>
     (await columnExists("groups", "crypto_epoch")) &&
     (await columnExists("group_messages", "crypto_epoch")),
+  "018_standalone_rooms.sql": async () =>
+    tableExists("room_invites"),
   "019_room_invite_token_hash.sql": async () =>
     columnExists("room_invites", "token_hash"),
+  "020_transfer_packages.sql": async () =>
+    tableExists("transfer_packages"),
+  "021_plain_chats.sql": async () =>
+    tableExists("plain_groups"),
+  "022_plain_attachment_lifecycle.sql": async () =>
+    indexExists("pa_deleted_at"),
+  "023_plain_chat_pins.sql": async () =>
+    tableExists("plain_chat_pins"),
+  "024_plain_chat_folders.sql": async () =>
+    tableExists("plain_chat_folders"),
 };
 
 async function baselineBootstrappedMigrations(files: string[]): Promise<void> {

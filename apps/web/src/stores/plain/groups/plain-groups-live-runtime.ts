@@ -1,5 +1,6 @@
 import type { StoreApi } from "zustand";
 import { wsClient } from "@/lib/websocket";
+import { showNativeGroupNotification } from "@/lib/native-notifications";
 import type { PlainGroupsState } from "./plain-groups-store";
 import {
   mergeGroupMessage,
@@ -38,7 +39,21 @@ export function createPlainGroupsLiveRuntime(
       const groupId = wire.groupId;
       if (!groupId) return;
       const msg = wireToPlainGroupMessage(wire, myUserId);
-      set((state) => ({ groups: mergeGroupMessage(state.groups, groupId, msg) }));
+      let resolvedGroupName = "";
+      set((state) => {
+        resolvedGroupName = state.groups[groupId]?.name ?? "";
+        return { groups: mergeGroupMessage(state.groups, groupId, msg) };
+      });
+
+      if (!msg.isOwn) {
+        void showNativeGroupNotification({
+          groupId,
+          groupName: resolvedGroupName,
+          senderUsername: wire.senderUsername ?? wire.senderUserId,
+          content: wire.content ?? "",
+          messageType: wire.messageType ?? "text",
+        });
+      }
       return;
     }
 

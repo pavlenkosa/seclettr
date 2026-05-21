@@ -1,8 +1,10 @@
-import React from "react";
+import React, { useState } from "react";
 import ReactDOM from "react-dom/client";
 import { App } from "./App";
 import { I18nProvider } from "./i18n";
 import { reportError } from "./lib/error-reporter.js";
+import { isNativePlatform, getNativeServerUrl } from "./lib/native-platform";
+import { NativeServerSetup } from "./pages/NativeServerSetup";
 import "./styles/global.css";
 
 globalThis.addEventListener("error", (event) => {
@@ -27,10 +29,21 @@ if ("serviceWorker" in navigator) {
 const root = document.getElementById("root");
 if (!root) throw new Error("Root element not found");
 
+function Root() {
+  const needsSetup = isNativePlatform() && !getNativeServerUrl();
+  const [configured, setConfigured] = useState(!needsSetup);
+
+  if (!configured) {
+    return <NativeServerSetup onConfigured={() => setConfigured(true)} />;
+  }
+
+  return <App />;
+}
+
 ReactDOM.createRoot(root).render(
   <React.StrictMode>
     <I18nProvider>
-      <App />
+      <Root />
     </I18nProvider>
   </React.StrictMode>
 );

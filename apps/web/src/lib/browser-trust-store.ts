@@ -1,11 +1,11 @@
 import {
   createEmptyTrustStore,
   type BrowserTrustIntegrityState,
-  type BrowserTrustStore,
   type StoredDeviceRegistration,
   type StoredSafetyVerificationRecord,
 } from "./browser-trust-store-sanitize";
 import { createBrowserTrustStorePersistenceRuntime } from "./browser-trust-store-persistence";
+import { createBrowserTrustStoreVerificationRuntime } from "./browser-trust-store-verification-runtime";
 
 const TRUST_STORE_PREFIX = "trust-store:v1";
 const TRUST_STORE_KEY = `${TRUST_STORE_PREFIX}:browser`;
@@ -26,6 +26,10 @@ const persistenceRuntime = createBrowserTrustStorePersistenceRuntime({
   deviceRegPrefix: DEVICE_REG_PREFIX,
   safetyVerificationPrefix: SAFETY_VERIFICATION_PREFIX,
   peerIdentityCachePrefix: PEER_IDENTITY_CACHE_PREFIX,
+});
+const verificationRuntime = createBrowserTrustStoreVerificationRuntime({
+  safetyVerificationPrefix: SAFETY_VERIFICATION_PREFIX,
+  persistenceRuntime,
 });
 
 export async function warmBrowserTrustStore(
@@ -107,7 +111,11 @@ export function getLegacyVerificationStorageKey(
   recipientUserId: string,
   peerDeviceId = "unknown-device"
 ): string {
-  return `${SAFETY_VERIFICATION_PREFIX}${myUserId}:${recipientUserId}:${peerDeviceId}`;
+  return verificationRuntime.getLegacyVerificationStorageKey(
+    myUserId,
+    recipientUserId,
+    peerDeviceId
+  );
 }
 
 export function getVerificationStorageKey(
@@ -116,7 +124,12 @@ export function getVerificationStorageKey(
   recipientUserId: string,
   peerDeviceId = "unknown-device"
 ): string {
-  return `${SAFETY_VERIFICATION_PREFIX}${myUserId}:${myDeviceId}:${recipientUserId}:${peerDeviceId}`;
+  return verificationRuntime.getVerificationStorageKey(
+    myUserId,
+    myDeviceId,
+    recipientUserId,
+    peerDeviceId
+  );
 }
 
 export async function getStoredSafetyVerificationRecord(
@@ -126,59 +139,13 @@ export async function getStoredSafetyVerificationRecord(
   peerDeviceId?: string,
   storageKey?: CryptoKey | null
 ): Promise<StoredSafetyVerificationRecord | null> {
-  const scopedKey = getVerificationStorageKey(
+  return verificationRuntime.getStoredSafetyVerificationRecord(
     myUserId,
     myDeviceId,
     recipientUserId,
-    peerDeviceId
-  );
-  const legacyKey = getLegacyVerificationStorageKey(
-    myUserId,
-    recipientUserId,
-    peerDeviceId
-  );
-  const store = await persistenceRuntime.loadTrustStore(storageKey);
-  const scopedRecord = store.safetyVerificationRecordsByKey[scopedKey];
-  if (scopedRecord) {
-    const degradedAtMs = Date.parse(store.integrityDegradedAt ?? "");
-    const verifiedAtMs = Date.parse(scopedRecord.verifiedAt);
-    if (
-      Number.isFinite(degradedAtMs) &&
-      (!Number.isFinite(verifiedAtMs) || verifiedAtMs < degradedAtMs)
-    ) {
-      return null;
-    }
-    return scopedRecord;
-  }
-
-  const legacyRecord = store.safetyVerificationRecordsByKey[legacyKey];
-  if (!legacyRecord) {
-    return null;
-  }
-
-  await persistenceRuntime.updateTrustStore(
-    (current) => {
-      const nextRecords = { ...current.safetyVerificationRecordsByKey };
-      nextRecords[scopedKey] = legacyRecord;
-      delete nextRecords[legacyKey];
-      return {
-        ...current,
-        safetyVerificationRecordsByKey: nextRecords,
-      };
-    },
+    peerDeviceId,
     storageKey
   );
-
-  const degradedAtMs = Date.parse(store.integrityDegradedAt ?? "");
-  const verifiedAtMs = Date.parse(legacyRecord.verifiedAt);
-  if (
-    Number.isFinite(degradedAtMs) &&
-    (!Number.isFinite(verifiedAtMs) || verifiedAtMs < degradedAtMs)
-  ) {
-    return null;
-  }
-
-  return legacyRecord;
 }
 
 export async function setStoredSafetyVerificationRecord(
@@ -189,38 +156,14 @@ export async function setStoredSafetyVerificationRecord(
   peerDeviceId?: string,
   storageKey?: CryptoKey | null
 ): Promise<StoredSafetyVerificationRecord> {
-  const record: StoredSafetyVerificationRecord = {
-    safetyHash,
-    verifiedAt: new Date().toISOString(),
-  };
-  const scopedKey = getVerificationStorageKey(
+  return verificationRuntime.setStoredSafetyVerificationRecord(
     myUserId,
     myDeviceId,
     recipientUserId,
-    peerDeviceId
-  );
-  const legacyKey = getLegacyVerificationStorageKey(
-    myUserId,
-    recipientUserId,
-    peerDeviceId
-  );
-
-  await persistenceRuntime.updateTrustStore(
-    (current) => {
-      const nextRecords = {
-        ...current.safetyVerificationRecordsByKey,
-        [scopedKey]: record,
-      };
-      delete nextRecords[legacyKey];
-      return {
-        ...current,
-        safetyVerificationRecordsByKey: nextRecords,
-      };
-    },
+    safetyHash,
+    peerDeviceId,
     storageKey
   );
-
-  return record;
 }
 
 export async function clearStoredSafetyVerificationRecord(
@@ -230,28 +173,11 @@ export async function clearStoredSafetyVerificationRecord(
   peerDeviceId?: string,
   storageKey?: CryptoKey | null
 ): Promise<void> {
-  const scopedKey = getVerificationStorageKey(
+  await verificationRuntime.clearStoredSafetyVerificationRecord(
     myUserId,
     myDeviceId,
     recipientUserId,
-    peerDeviceId
-  );
-  const legacyKey = getLegacyVerificationStorageKey(
-    myUserId,
-    recipientUserId,
-    peerDeviceId
-  );
-
-  await persistenceRuntime.updateTrustStore(
-    (current) => {
-      const nextRecords = { ...current.safetyVerificationRecordsByKey };
-      delete nextRecords[scopedKey];
-      delete nextRecords[legacyKey];
-      return {
-        ...current,
-        safetyVerificationRecordsByKey: nextRecords,
-      };
-    },
+    peerDeviceId,
     storageKey
   );
 }

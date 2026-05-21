@@ -1,9 +1,71 @@
-import { useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useI18n } from "@/i18n";
 import type { PushPreferencesDto, PushSubscriptionDto } from "@/lib/api";
 import { EntityRow, PillButton, SegmentedControl, StatusBadge } from "@/components/ui";
+import { isNativePlatform } from "@/lib/native-platform";
+import {
+  getNativeNotificationPermission,
+  requestNativeNotificationPermission,
+} from "@/lib/native-notifications";
 import { SettingsGroup, SettingsRow } from "./SettingsSectionPrimitives";
 import styles from "../SettingsSections.module.css";
+
+type NativePermission = "granted" | "denied" | "prompt" | "unsupported" | "loading";
+
+function NativeNotificationsGroup() {
+  const { t } = useI18n();
+  const [permission, setPermission] = useState<NativePermission>("loading");
+  const [requesting, setRequesting] = useState(false);
+
+  useEffect(() => {
+    void getNativeNotificationPermission().then(setPermission);
+  }, []);
+
+  const statusLabel = permission === "loading"
+    ? "…"
+    : permission === "granted"
+      ? t("settings.native.notifications.status.granted")
+      : permission === "denied"
+        ? t("settings.native.notifications.status.denied")
+        : t("settings.native.notifications.status.notRequested");
+
+  const isLoading = permission === "loading";
+  const canRequest = !isLoading && permission !== "granted" && permission !== "unsupported";
+
+  async function handleRequest() {
+    setRequesting(true);
+    const result = await requestNativeNotificationPermission();
+    setPermission(result);
+    setRequesting(false);
+  }
+
+  return (
+    <SettingsGroup
+      eyebrow={t("settings.groups.notifications.native")}
+      title={t("settings.groups.notifications.native.title")}
+      description={t("settings.groups.notifications.native.description")}
+      tone="accent"
+    >
+      <SettingsRow
+        label={t("settings.native.notifications.permission")}
+        description={statusLabel}
+      >
+        {canRequest ? (
+          <PillButton
+            type="button"
+            tone="accent"
+            appearance="soft"
+            size="sm"
+            disabled={requesting || isLoading}
+            onClick={() => void handleRequest()}
+          >
+            {t("settings.native.notifications.allow")}
+          </PillButton>
+        ) : null}
+      </SettingsRow>
+    </SettingsGroup>
+  );
+}
 
 const TOGGLE_OPTIONS = [
   { value: "on", label: "On" },
@@ -66,6 +128,8 @@ export function NotificationsSettingsSection({
 
   return (
     <div className={styles.groupStack}>
+      {isNativePlatform() ? <NativeNotificationsGroup /> : null}
+
       <SettingsGroup
         eyebrow={t("settings.groups.notifications.browser")}
         title={t("settings.groups.notifications.browser.title")}

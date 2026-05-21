@@ -12,7 +12,7 @@
   grid-template-columns: repeat(var(--bottom-dock-columns, 3), minmax(0, 1fr));
   align-items: center;
   gap: 0.56rem;
-  padding: 0.52rem max(0.72rem, env(safe-area-inset-left, 0px)) calc(0.56rem + env(safe-area-inset-bottom, 0px)) max(0.72rem, env(safe-area-inset-right, 0px));
+  padding: 0.52rem max(0.72rem, env(safe-area-inset-left, 0px)) 0.56rem max(0.72rem, env(safe-area-inset-right, 0px));
   border: 0;
   border-top: 1px solid color-mix(in srgb, var(--panel-border-soft) 82%, transparent);
   border-radius: 0;

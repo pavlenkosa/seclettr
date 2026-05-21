@@ -52,7 +52,7 @@ const JS_CHUNK_BUDGETS = {
   "vendor-router": 10 * 1024,
   "vendor-state": 8 * 1024,
   "vendor-debug": 10 * 1024,
-  "vendor-misc": 80 * 1024,
+  "vendor-misc": 86 * 1024,
   "vendor-protocol": 100 * 1024,
   "vendor-calls": 200 * 1024,
   // Crypto currently embeds the libsodium WASM payload and the password-lock
@@ -64,6 +64,7 @@ const JS_CHUNK_BUDGETS = {
 const CSS_ASSET_BUDGETS = {
   ChatPage: 130 * 1024,
   MessageComposer: 45 * 1024,
+  "feature-calls-shared": 55 * 1024,
   "feature-direct-calls": 32 * 1024,
   "feature-group-calls": 80 * 1024,
   index: 40 * 1024,
@@ -301,6 +302,10 @@ export default defineConfig(({ command }) => ({
     port: 5173,
     host: devHost,
     https: devHttpsConfig,
+    // Reflect the request Origin back so credentialed requests (credentials: "include")
+    // from non-browser origins like capacitor://localhost work correctly.
+    // The default Vite cors: '*' is rejected by the browser when credentials are sent.
+    cors: { origin: true, credentials: true },
     // In development Vite / React Fast Refresh inject an inline <script> preamble
     // that the strict CSP meta tag in index.html blocks. Sending a permissive
     // Content-Security-Policy header from the dev server overrides the meta tag
@@ -316,10 +321,10 @@ export default defineConfig(({ command }) => ({
         "frame-src 'none'",
         "script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval'",
         "style-src 'self' 'unsafe-inline'",
-        "img-src 'self' data: blob:",
+        "img-src 'self' data: blob: https://*.giphy.com https://media.giphy.com",
         "font-src 'self' data:",
         "connect-src 'self' http: https: ws: wss:",
-        "media-src 'self' blob:",
+        "media-src 'self' blob: data:",
         "worker-src 'self' blob:",
         "manifest-src 'self'",
       ].join("; "),

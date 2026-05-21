@@ -12,9 +12,19 @@
     "test:coverage": "vitest run --coverage --coverage.provider=v8 --coverage.reporter=lcov",
     "typecheck": "tsc --noEmit && tsc --noEmit -p tsconfig.node.json",
     "lint": "eslint src --ext .ts,.tsx",
-    "check:ui-style": "node scripts/check-ui-style.mjs"
+    "check:ui-style": "node scripts/check-ui-style.mjs",
+    "android:sync": "vite build --mode production && cap sync android",
+    "android:open": "cap open android",
+    "android:run": "cap run android"
   },
   "dependencies": {
+    "@capacitor/android": "^8.3.4",
+    "@capacitor/background-runner": "^3.0.0",
+    "@capacitor/camera": "^8.2.0",
+    "@capacitor/core": "^8.3.4",
+    "@capacitor/haptics": "^8.0.0",
+    "@capacitor/local-notifications": "^8.2.0",
+    "@capacitor/preferences": "^8.0.0",
     "@seclettr/crypto": "workspace:*",
     "@seclettr/protocol": "workspace:*",
     "libsodium-wrappers-sumo": "0.7.13",
@@ -26,6 +36,7 @@
     "zustand": "^4.5.0"
   },
   "devDependencies": {
+    "@capacitor/cli": "^8.3.4",
     "@types/libsodium-wrappers-sumo": "^0.7.8",
     "@types/node": "^20.11.0",
     "@types/react": "^18.2.0",

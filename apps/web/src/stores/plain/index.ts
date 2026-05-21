@@ -16,3 +16,6 @@ export type { PlainGroupsState } from "./groups/plain-groups-store";
 
 export { usePlainPinsStore } from "./pins/plain-pins-store";
 export type { PlainPin, PlainPinKind, PlainPinsState } from "./pins/plain-pins-store";
+
+export { usePlainFoldersStore } from "./folders/plain-folders-store";
+export type { PlainFolder, PlainFoldersState } from "./folders/plain-folders-store";

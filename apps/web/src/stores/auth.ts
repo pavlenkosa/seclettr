@@ -77,8 +77,22 @@ import {
   revokeServerSession,
   wipeLocalDeviceMaterial,
 } from "./auth-session-restore";
+import { isNativePlatform } from "@/lib/native-platform";
+import { nativeStorageSet, nativeStorageRemove } from "@/lib/native-storage";
 
 export type { AuthLifecycleState, AuthRecoveryReason, AuthState } from "./auth-types";
+
+const BACKGROUND_POLL_TOKEN_KEY = "sc:background_poll_token";
+
+async function fetchAndStoreBackgroundToken(): Promise<void> {
+  if (!isNativePlatform()) return;
+  try {
+    const { token } = await api.post<{ token: string }>("/auth/background-token");
+    await nativeStorageSet(BACKGROUND_POLL_TOKEN_KEY, token);
+  } catch {
+    // Non-critical — background runner just won't work until next login.
+  }
+}
 
 const OTK_BATCH_SIZE = 100;
 
@@ -199,6 +213,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         cryptoSyncReady: true,
       }));
       authRealtimeRuntime.activate(result.accessToken, "register");
+      void fetchAndStoreBackgroundToken();
     } catch (err) {
       set({ error: err instanceof Error ? err.message : "Registration failed" });
       throw err;
@@ -366,8 +381,11 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         cryptoSyncReady: true,
       }));
       authRealtimeRuntime.activate(result.accessToken, "login");
+      void fetchAndStoreBackgroundToken();
     } catch (err) {
-      set({ error: err instanceof Error ? err.message : "Login failed" });
+      const msg = err instanceof Error ? err.message : "Login failed";
+      console.error("[auth] login failed:", err);
+      set({ error: msg });
       throw err;
     }
   },
@@ -574,6 +592,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   },
 
   logout: async () => {
+    void nativeStorageRemove(BACKGROUND_POLL_TOKEN_KEY);
     await clearLocalSessionSecrets({
       storageKey: get().storageKey,
       teardownReason: "logout",

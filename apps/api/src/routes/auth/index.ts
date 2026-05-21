@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import type { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
 import argon2 from "argon2";
 import { nanoid } from "nanoid";
@@ -278,8 +279,8 @@ export async function authRoutes(fastify: FastifyInstance): Promise<void> {
 
     reply.setCookie("refresh_token", result.refreshToken, {
       httpOnly: true,
-      sameSite: "strict",
-      secure: config.COOKIE_SECURE,
+      sameSite: config.NODE_ENV === "development" ? "none" : "strict",
+      secure: config.NODE_ENV === "development" ? true : config.COOKIE_SECURE,
       path: "/",
       maxAge: config.REFRESH_TOKEN_TTL_DAYS * 86400,
     });
@@ -457,8 +458,8 @@ export async function authRoutes(fastify: FastifyInstance): Promise<void> {
 
     reply.setCookie("refresh_token", result.refreshToken, {
       httpOnly: true,
-      sameSite: "strict",
-      secure: config.COOKIE_SECURE,
+      sameSite: config.NODE_ENV === "development" ? "none" : "strict",
+      secure: config.NODE_ENV === "development" ? true : config.COOKIE_SECURE,
       path: "/",
       maxAge: config.REFRESH_TOKEN_TTL_DAYS * 86400,
     });
@@ -522,8 +523,8 @@ export async function authRoutes(fastify: FastifyInstance): Promise<void> {
 
     reply.setCookie("refresh_token", newRefreshToken, {
       httpOnly: true,
-      sameSite: "strict",
-      secure: config.COOKIE_SECURE,
+      sameSite: config.NODE_ENV === "development" ? "none" : "strict",
+      secure: config.NODE_ENV === "development" ? true : config.COOKIE_SECURE,
       path: "/",
       maxAge: config.REFRESH_TOKEN_TTL_DAYS * 86400,
     });
@@ -579,5 +580,19 @@ export async function authRoutes(fastify: FastifyInstance): Promise<void> {
       ipAddress: request.ip,
     });
     return { ok: true };
+  });
+
+  fastify.post("/background-token", { preHandler: requireAuth }, async (request, reply) => {
+    const { sub: userId, deviceId } = request.auth;
+    const token = nanoid(64);
+    const hash = createHash("sha256").update(token).digest("hex");
+    await query(
+      `INSERT INTO background_poll_tokens (user_id, device_id, token_hash)
+       VALUES ($1, $2, $3)
+       ON CONFLICT (user_id, device_id)
+       DO UPDATE SET token_hash = EXCLUDED.token_hash, created_at = now()`,
+      [userId, deviceId, hash]
+    );
+    return reply.send({ token });
   });
 }

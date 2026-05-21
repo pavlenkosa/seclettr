@@ -19,10 +19,10 @@
         frame-src 'none';
         script-src 'self' 'wasm-unsafe-eval';
         style-src 'self' 'unsafe-inline';
-        img-src 'self' data: blob:;
+        img-src 'self' data: blob: https://*.giphy.com https://*.giphy.com.cdn.cloudflare.net https://media.giphy.com;
         font-src 'self' data:;
         connect-src 'self' http: https: ws: wss:;
-        media-src 'self' blob:;
+        media-src 'self' blob: data:;
         worker-src 'self' blob:;
         manifest-src 'self';
       "

@@ -37,7 +37,6 @@ import { z, type ZodTypeAny } from "zod";
 import { refreshSessionAccessToken } from "./session";
 import { resolveApiBaseUrl } from "./runtime-config";
 
-const BASE_URL = resolveApiBaseUrl();
 export interface GroupCallParticipantDto {
   userId: string;
   username: string;
@@ -93,7 +92,7 @@ function buildRequestHeaders(options: RequestInit = {}): Headers {
 
 function sendBestEffortKeepalive(path: string, options: RequestInit = {}): void {
   const headers = buildRequestHeaders(options);
-  fetch(`${BASE_URL}${path}`, {
+  fetch(`${resolveApiBaseUrl()}${path}`, {
     ...options,
     headers,
     credentials: "include",
@@ -118,7 +117,7 @@ async function request<T>(
 ): Promise<T> {
   const headers = buildRequestHeaders(options);
 
-  const res = await fetch(`${BASE_URL}${path}`, {
+  const res = await fetch(`${resolveApiBaseUrl()}${path}`, {
     ...options,
     headers,
     credentials: "include",

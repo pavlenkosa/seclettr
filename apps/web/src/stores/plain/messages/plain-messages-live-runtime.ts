@@ -1,5 +1,6 @@
 import type { StoreApi } from "zustand";
 import { wsClient } from "@/lib/websocket";
+import { showNativeDmNotification } from "@/lib/native-notifications";
 import type { PlainMessage } from "../types";
 import type { PlainMessagesState } from "./plain-messages-store";
 import { mergeIncomingMessage, wireToPlainMessage, type WirePlainMessage } from "./plain-messages-wire";
@@ -58,6 +59,15 @@ export function createPlainMessagesLiveRuntime(deps: PlainMessagesLiveDeps): Pla
           peerUsername
         ),
       }));
+
+      if (!msg.isOwn) {
+        void showNativeDmNotification({
+          senderUserId: wire.senderUserId,
+          senderUsername: wire.senderUsername ?? wire.senderUserId,
+          content: wire.content ?? "",
+          messageType: wire.messageType ?? "text",
+        });
+      }
       return;
     }
 

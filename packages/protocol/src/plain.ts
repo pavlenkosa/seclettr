@@ -148,6 +148,43 @@ export const RenamePlainGroupRequestSchema = wireObject({
 });
 export type RenamePlainGroupRequest = z.infer<typeof RenamePlainGroupRequestSchema>;
 
+// ─── Chat Folders ─────────────────────────────────────────────────────────────
+
+export const MAX_FOLDER_NAME_LENGTH = 50;
+export const MAX_FOLDERS_PER_USER = 20;
+
+export const PlainChatFolderSchema = wireObject({
+  folderId: z.string().uuid(),
+  name: z.string().min(1).max(MAX_FOLDER_NAME_LENGTH),
+  displayOrder: z.number().int().nonnegative(),
+  createdAt: z.string().datetime(),
+  updatedAt: z.string().datetime(),
+});
+export type PlainChatFolder = z.infer<typeof PlainChatFolderSchema>;
+
+export const PlainChatFolderEntrySchema = wireObject({
+  folderId: z.string().uuid(),
+  peerKind: z.enum(["dm", "group"]),
+  peerId: z.string().uuid(),
+});
+export type PlainChatFolderEntry = z.infer<typeof PlainChatFolderEntrySchema>;
+
+export const PlainChatFolderListResponseSchema = wireObject({
+  folders: z.array(PlainChatFolderSchema),
+  entries: z.array(PlainChatFolderEntrySchema),
+});
+export type PlainChatFolderListResponse = z.infer<typeof PlainChatFolderListResponseSchema>;
+
+export const CreatePlainFolderRequestSchema = wireObject({
+  name: z.string().min(1).max(MAX_FOLDER_NAME_LENGTH),
+});
+export type CreatePlainFolderRequest = z.infer<typeof CreatePlainFolderRequestSchema>;
+
+export const RenamePlainFolderRequestSchema = wireObject({
+  name: z.string().min(1).max(MAX_FOLDER_NAME_LENGTH),
+});
+export type RenamePlainFolderRequest = z.infer<typeof RenamePlainFolderRequestSchema>;
+
 // ─── Pinned Chats ─────────────────────────────────────────────────────────────
 
 export const PlainChatPinKindSchema = z.enum(["dm", "group"]);

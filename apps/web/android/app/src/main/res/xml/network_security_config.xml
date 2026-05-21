@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Allows HTTPS connections to any host (including self-signed certs on self-hosted
+  instances). Users explicitly configure their server URL on first launch — they
+  are responsible for trusting its certificate.
+  Cleartext HTTP is disabled for security; self-hosted servers should use HTTPS.
+-->
+<network-security-config>
+  <base-config cleartextTrafficPermitted="false">
+    <trust-anchors>
+      <!-- System CAs -->
+      <certificates src="system" />
+      <!-- User-installed CAs — allows self-signed/private CA certs installed by the user -->
+      <certificates src="user" />
+    </trust-anchors>
+  </base-config>
+</network-security-config>

@@ -274,6 +274,7 @@ export async function plainMessageRoutes(fastify: FastifyInstance): Promise<void
             senderUserId: userId,
             senderUsername: senderUsername ?? null,
             hasAttachment: !!body.attachmentId,
+            messageText: body.messageType === "text" ? body.content : null,
             mediaSummary: {
               messageType: body.messageType,
               mimeType: attMeta?.content_type,

@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import { LanguageSwitcher } from "@/components/common/LanguageSwitcher";
 import { LabelPill } from "@/components/ui";
 import { useI18n } from "@/i18n";
-import { mapAuthErrorMessage, shouldShowAuthErrorDetails } from "@/lib/auth-errors";
+import { getAuthErrorCode, mapAuthErrorMessage, shouldShowAuthErrorDetails } from "@/lib/auth-errors";
 import { useAuthStore } from "@/stores/auth";
 import { AuthCard } from "./auth/AuthCard";
 import { AuthErrorNotice } from "./auth/AuthErrorNotice";
@@ -43,7 +43,7 @@ export function AuthPage() {
     && password.length >= 8;
   const friendlyError = mapAuthErrorMessage(error, t);
   const showTechnicalError = shouldShowAuthErrorDetails(error);
-  const errorDetail = showTechnicalError ? error : null;
+  const errorDetail = showTechnicalError ? error : getAuthErrorCode(error);
   const isLogin = mode === "login";
   const submitLabel = mode === "login" ? t("auth.submit.signIn") : t("auth.submit.createAccount");
 

@@ -152,6 +152,18 @@ self.addEventListener("push", (event) => {
 self.addEventListener("notificationclick", (event) => {
   event.notification.close();
   const data = event.notification.data || {};
+  const action = event.action || "";
+
+  if (action === "mark-read") {
+    event.waitUntil((async () => {
+      const allClients = await clients.matchAll({ type: "window", includeUncontrolled: true });
+      for (const client of allClients) {
+        client.postMessage({ type: "push:action", action: "mark-read", data });
+      }
+    })());
+    return;
+  }
+
   const targetUrl = normalizeTargetUrl(data.url);
 
   event.waitUntil((async () => {

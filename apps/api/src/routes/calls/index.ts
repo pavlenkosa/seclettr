@@ -22,7 +22,7 @@ import {
   createDirectCallLifecycleManager,
 } from "../../services/call-routing-state.js";
 import { getPushPreferences, sendPushToUser } from "../../services/push.js";
-import { buildCallInvitePushPayload, buildGroupCallStartedPushPayload } from "../../services/push-payloads.js";
+import { buildCallInvitePushPayload, buildGroupCallStartedPushPayload, buildMissedCallPushPayload } from "../../services/push-payloads.js";
 import { hasActiveConnectionForUserAcrossCluster } from "../../services/websocket.js";
 import { recordCallEvent, recordPushNotificationFailure } from "../../services/observability.js";
 import {
@@ -612,6 +612,43 @@ async function createOrJoinGroupCall(
     callerUserId: groupCall.callerUserId,
     created: true,
   };
+}
+
+function notifyCalleeAboutMissedCall(
+  request: FastifyRequest,
+  params: {
+    callerUserId: string;
+    calleeUserId: string;
+    callId: string;
+    callType: CreateCallBody["callType"];
+  }
+): void {
+  const { callerUserId, calleeUserId, callId, callType } = params;
+
+  void (async () => {
+    const callerRows = await query<{ username: string }>(
+      "SELECT username FROM users WHERE id = $1",
+      [callerUserId]
+    );
+    const callerUsername = callerRows[0]?.username ?? null;
+    const pushPreferences = await getPushPreferences(calleeUserId);
+    const payload = buildMissedCallPushPayload({
+      callerUserId,
+      callerUsername,
+      callId,
+      callType,
+      preferences: pushPreferences,
+    });
+    if (!payload) return;
+
+    await sendPushToUser(calleeUserId, payload);
+  })().catch((err) => {
+    request.log.warn(
+      { err, calleeUserId },
+      "push notification failed for missed call"
+    );
+    recordPushNotificationFailure();
+  });
 }
 
 function notifyOfflineDirectCalleeAboutInvite(
@@ -1255,6 +1292,21 @@ export async function callRoutes(fastify: FastifyInstance): Promise<void> {
           "Direct-call routing session missing during direct-hangup; using DB-backed fallback delivery"
         );
         await notifyDirectCallCounterpartDevices(call, userId, "call.hangup");
+      }
+
+      // When caller gives up on an unanswered call, send the callee a missed-call push.
+      if (
+        termination.ok &&
+        !termination.alreadyTerminal &&
+        termination.resultingStatus === "missed" &&
+        call.callee_user_id
+      ) {
+        notifyCalleeAboutMissedCall(request, {
+          callerUserId: call.caller_user_id,
+          calleeUserId: call.callee_user_id,
+          callId,
+          callType: call.call_type,
+        });
       }
 
       return { ok: true };

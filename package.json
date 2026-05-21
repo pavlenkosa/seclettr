@@ -59,7 +59,7 @@
       "serialize-javascript": ">=7.0.3"
     }
   },
-  "packageManager": "pnpm@8.15.0",
+  "packageManager": "pnpm@8.15.9",
   "dependencies": {
     "@tanstack/react-virtual": "^3.13.22"
   }

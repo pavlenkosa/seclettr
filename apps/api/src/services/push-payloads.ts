@@ -33,6 +33,8 @@ interface BuildDirectMessagePushPayloadArgs {
   senderUserId: string;
   senderUsername: string | null;
   hasAttachment: boolean;
+  /** Plain-only: actual message text to show in the push body (text messages only). */
+  messageText?: string | null;
   /** Plain-only: drives a typed body like "📷 Photo" instead of generic "attachment". */
   mediaSummary?: PushMediaSummary | null;
   preferences: PushPreferences;
@@ -43,10 +45,20 @@ interface BuildGroupMessagePushPayloadArgs {
   senderUsername: string | null;
   groupId: string;
   groupName: string | null;
+  /** Plain-only: actual message text to show in the push body (text messages only). */
+  messageText?: string | null;
   /** Plain-only: drives a typed body like "📷 Photo" instead of generic "attachment". */
   mediaSummary?: PushMediaSummary | null;
   preferences: PushPreferences;
 }
+
+const MAX_PUSH_TEXT_LEN = 200;
+
+function truncateText(text: string): string {
+  return text.length <= MAX_PUSH_TEXT_LEN ? text : text.slice(0, MAX_PUSH_TEXT_LEN) + "…";
+}
+
+const MARK_READ_ACTION = { action: "mark-read", title: "Mark as read" };
 
 /**
  * Returns a short, emoji-prefixed description for a plain message body, or
@@ -84,6 +96,7 @@ export function buildDirectMessagePushPayload({
   senderUserId,
   senderUsername,
   hasAttachment,
+  messageText,
   mediaSummary,
   preferences,
 }: BuildDirectMessagePushPayloadArgs): PushPayload | null {
@@ -95,19 +108,21 @@ export function buildDirectMessagePushPayload({
     ? `@${senderUsername}`
     : "Seclettr";
   const mediaLine = formatMediaSummary(mediaSummary);
-  const attachmentBody = preferences.showSender && senderUsername
-    ? `@${senderUsername} sent an encrypted attachment`
-    : "New encrypted attachment";
-  const messageBody = preferences.showSender && senderUsername
-    ? `@${senderUsername} sent an encrypted message`
-    : "New encrypted message";
   let body: string;
-  if (mediaLine) {
+  if (messageText && !hasAttachment) {
     body = preferences.showSender && senderUsername
-      ? `@${senderUsername}: ${mediaLine}`
-      : mediaLine;
+      ? truncateText(messageText)
+      : truncateText(messageText);
+  } else if (mediaLine) {
+    body = mediaLine;
+  } else if (hasAttachment) {
+    body = preferences.showSender && senderUsername
+      ? `@${senderUsername} sent an encrypted attachment`
+      : "New encrypted attachment";
   } else {
-    body = hasAttachment ? attachmentBody : messageBody;
+    body = preferences.showSender && senderUsername
+      ? `@${senderUsername} sent an encrypted message`
+      : "New encrypted message";
   }
 
   return {
@@ -116,6 +131,7 @@ export function buildDirectMessagePushPayload({
     tag: `msg:${senderUserId}`,
     timestamp: Date.now(),
     renotify: true,
+    actions: [MARK_READ_ACTION],
     data: {
       type: "message",
       fromUserId: senderUserId,
@@ -131,6 +147,7 @@ export function buildGroupMessagePushPayload({
   senderUsername,
   groupId,
   groupName,
+  messageText,
   mediaSummary,
   preferences,
 }: BuildGroupMessagePushPayloadArgs): PushPayload | null {
@@ -144,7 +161,11 @@ export function buildGroupMessagePushPayload({
     : normalizedGroupName;
   const mediaLine = formatMediaSummary(mediaSummary);
   let body: string;
-  if (mediaLine) {
+  if (messageText) {
+    body = preferences.showSender && senderUsername
+      ? `@${senderUsername}: ${truncateText(messageText)}`
+      : truncateText(messageText);
+  } else if (mediaLine) {
     body = preferences.showSender && senderUsername
       ? `@${senderUsername} in ${normalizedGroupName}: ${mediaLine}`
       : `${normalizedGroupName}: ${mediaLine}`;
@@ -160,6 +181,7 @@ export function buildGroupMessagePushPayload({
     tag: `group:${groupId}`,
     timestamp: Date.now(),
     renotify: true,
+    actions: [MARK_READ_ACTION],
     data: {
       type: "group_message",
       groupId,
@@ -248,6 +270,45 @@ export function buildCallInvitePushPayload({
     requireInteraction: true,
     data: {
       type: "call_invite",
+      callId,
+      callType,
+      fromUserId: callerUserId,
+      fromUsername: preferences.showSender ? (callerUsername ?? "") : "",
+      url: `/?chat=${encodeURIComponent(callerUserId)}`,
+    },
+  };
+}
+
+interface BuildMissedCallPushPayloadArgs {
+  callerUserId: string;
+  callerUsername: string | null;
+  callId: string;
+  callType: "audio" | "video";
+  preferences: PushPreferences;
+}
+
+export function buildMissedCallPushPayload({
+  callerUserId,
+  callerUsername,
+  callId,
+  callType,
+  preferences,
+}: BuildMissedCallPushPayloadArgs): PushPayload | null {
+  if (!preferences.callInvitesEnabled) return null;
+
+  const callLabel = callType === "video" ? "video call" : "voice call";
+  const title = "Missed call";
+  const body = preferences.showSender && callerUsername
+    ? `You missed a ${callLabel} from @${callerUsername}`
+    : `You missed an encrypted ${callLabel}`;
+
+  return {
+    title,
+    body,
+    tag: `call:${callId}`,
+    timestamp: Date.now(),
+    data: {
+      type: "missed_call",
       callId,
       callType,
       fromUserId: callerUserId,

@@ -265,7 +265,7 @@ type RejectCallTransitionResult =
 type HangupCallAlreadyTerminalResult = {
   ok: true;
   alreadyTerminal: true;
-  resultingStatus: "ended";
+  resultingStatus: "ended" | "missed";
   terminatedByRole: "caller" | "callee";
   notifiedDeviceIds: string[];
 };
@@ -273,7 +273,7 @@ type HangupCallAlreadyTerminalResult = {
 type HangupCallCommittedResult = {
   ok: true;
   alreadyTerminal: false;
-  resultingStatus: "ended";
+  resultingStatus: "ended" | "missed";
   terminatedByRole: "caller" | "callee";
   notifiedDeviceIds: string[];
 };
@@ -289,7 +289,7 @@ type HangupCallTransitionResult =
   | {
       ok: true;
       alreadyTerminal: false;
-      resultingStatus: "ended";
+      resultingStatus: "ended" | "missed";
       terminatedByRole: "caller" | "callee";
       targetDeviceIds: string[];
     };
@@ -1211,12 +1211,18 @@ export function createDirectCallLifecycleManager(
                 ? await resolveCalleeTargetDeviceIds(record, session)
                 : await resolveCallerTargetDeviceIds(record, session);
 
+            // Caller giving up on a ringing unanswered call → callee missed it.
+            const nextStatus: "ended" | "missed" =
+              terminatedByRole === "caller" && record.status === "ringing"
+                ? "missed"
+                : "ended";
+
             return {
-              mutation: { type: "status" as const, status: "ended" as const },
+              mutation: { type: "status" as const, status: nextStatus },
               result: {
                 ok: true as const,
                 alreadyTerminal: false,
-                resultingStatus: "ended" as const,
+                resultingStatus: nextStatus,
                 terminatedByRole,
                 targetDeviceIds,
               },
@@ -1242,7 +1248,7 @@ export function createDirectCallLifecycleManager(
       return {
         ok: true as const,
         alreadyTerminal: false,
-        resultingStatus: "ended" as const,
+        resultingStatus: transitionResult.resultingStatus,
         terminatedByRole: transitionResult.terminatedByRole,
         notifiedDeviceIds,
       };

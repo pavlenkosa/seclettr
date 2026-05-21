@@ -678,6 +678,7 @@ export async function plainGroupRoutes(fastify: FastifyInstance): Promise<void> 
               senderUsername: senderUsername ?? null,
               groupId,
               groupName: groupRow?.name ?? null,
+              messageText: body.messageType === "text" ? body.content : null,
               mediaSummary: {
                 messageType: body.messageType,
                 mimeType: attMeta?.content_type,

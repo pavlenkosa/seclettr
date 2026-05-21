@@ -1,4 +1,7 @@
 import { lazy, Suspense, useCallback, useEffect, useRef, useState, type ReactNode } from "react";
+import { initPushActionHandler, setAppBadge, getTotalUnreadCount } from "./lib/push-action-handler";
+import { initNativeNotifications } from "./lib/native-notifications";
+import { initNativeBackHandler } from "./lib/native-back-handler";
 import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import { useShallow } from "zustand/react/shallow";
 import { AppErrorFallback, ErrorBoundary } from "./components/common/ErrorBoundary";
@@ -154,15 +157,31 @@ export function App() {
 
 
   useEffect(() => {
+    initPushActionHandler();
+    void initNativeNotifications();
+    initNativeBackHandler();
+  }, []);
+
+  useEffect(() => {
     const stopMessagesListening = useMessagesStore.getState().startListening();
     const stopGroupsListening = useGroupsStore.getState().startListening();
     const stopPlainMessagesListening = usePlainMessagesStore.getState().subscribe();
     const stopPlainGroupsListening = usePlainGroupsStore.getState().subscribe();
+
+    const unsubBadgeDm = usePlainMessagesStore.subscribe(() => {
+      setAppBadge(getTotalUnreadCount());
+    });
+    const unsubBadgeGroups = usePlainGroupsStore.subscribe(() => {
+      setAppBadge(getTotalUnreadCount());
+    });
+
     return () => {
       stopMessagesListening();
       stopGroupsListening();
       stopPlainMessagesListening();
       stopPlainGroupsListening();
+      unsubBadgeDm();
+      unsubBadgeGroups();
     };
   }, []);
 

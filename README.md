@@ -1,219 +1,339 @@
-# Seclettr - Full-Stack E2EE Messenger
+<p align="center">
+  <img src="apps/web/public/favicon.svg" alt="Seclettr" width="120" height="120" />
+</p>
 
-Seclettr is a monorepo for an end-to-end encrypted messenger including a web client, API, and SFU calling service.
+<h1 align="center">Seclettr</h1>
 
-## Table of Contents
+<p align="center">
+  <a href="https://github.com/pavlenkosa/seclettr/actions/workflows/ci.yml">
+    <img src="https://github.com/pavlenkosa/seclettr/actions/workflows/ci.yml/badge.svg?branch=dev%2Fmain" alt="CI" />
+  </a>
+  <a href="https://github.com/pavlenkosa/seclettr/actions/workflows/release-bundle.yml">
+    <img src="https://github.com/pavlenkosa/seclettr/actions/workflows/release-bundle.yml/badge.svg?branch=dev%2Fmain" alt="Release Bundle" />
+  </a>
+  <img src="https://img.shields.io/badge/version-1.1.0--beta-2563eb" alt="Version 1.1.0-beta" />
+  <img src="https://img.shields.io/badge/license-Apache%202.0-0f766e" alt="License Apache-2.0" />
+  <img src="https://img.shields.io/badge/node-%3E%3D22-1f2937" alt="Node >= 22" />
+  <img src="https://img.shields.io/badge/pnpm-%3E%3D8-f59e0b" alt="pnpm >= 8" />
+  <img src="https://img.shields.io/badge/React-Vite-0f172a" alt="React + Vite" />
+  <img src="https://img.shields.io/badge/Fastify-WebSocket-111827" alt="Fastify + WebSocket" />
+  <img src="https://img.shields.io/badge/mediasoup-SFU-1d4ed8" alt="mediasoup SFU" />
+</p>
 
-- [Features](#features)
-- [Installation](#installation)
-  - [Requirements](#requirements)
-  - [Initial Development Setup](#initial-development-setup)
-- [Development](#development)
-  - [Core Commands](#core-commands)
-  - [Testing](#testing)
-- [Release and Deployment](#release-and-deployment)
-  - [Build Release Bundle](#build-release-bundle)
-  - [Automatic GitHub Release Artifacts](#automatic-github-release-artifacts)
-  - [Installer Modes](#installer-modes)
-  - [Step-by-Step Deployment Guide](#step-by-step-deployment-guide)
-- [Contributing](#contributing)
-  - [PR Rules](#pr-rules)
-  - [Pre-Submit Checks](#pre-submit-checks)
-- [Legal Notice](#legal-notice)
-- [License](#license)
+> Self-hostable messaging and calling stack with encrypted chats, explicit plain-chat flows, direct/group/room calls, and one deployable monorepo for web, API, and SFU services.
 
-## Features
+> [!IMPORTANT]
+> Seclettr is currently `1.1.0-beta` and under active development. The encrypted messaging model is implemented in the client stack, but the server still handles the metadata and transport needed for routing, storage, presence, attachments, and calls. Call media protection depends on the selected call-security mode and on browser/runtime compatibility.
 
-### What Is Included
+## Why Seclettr
 
-- `apps/web`: browser client (React + Vite) with desktop and mobile chat layouts.
-- `apps/api`: HTTP + WebSocket backend (Fastify) for auth, messaging, groups, calls, attachments, push.
-- `apps/sfu`: mediasoup-based SFU for group call media routing.
-- `packages/protocol`: shared wire contracts (Zod schemas + TypeScript types) used by web/api/sfu.
-- `packages/crypto`: crypto helpers and protocol primitives used by the client and server flows.
+Seclettr is built for teams that want one cohesive stack instead of stitching together separate chat, calling, guest-room, and deployment projects.
 
-### Messaging and Daily Use
+What makes it interesting today:
 
-- Direct encrypted chats with:
-  - delivery/read acknowledgements;
-  - typing and online presence signals;
-  - message search in active threads;
-  - offline catch-up via pending message delivery.
-- Encrypted media and files in direct chats:
-  - generic encrypted file attachments;
+- encrypted direct chats and encrypted group chats live next to explicit plain-chat flows instead of pretending every conversation has the same trust model;
+- direct calls, SFU-backed group calls, and shareable guest room calls exist in the same product surface;
+- the repo already includes the operational layer: web client, Fastify API, mediasoup SFU, protocol package, crypto package, release bundle flow, and installer modes;
+- the web app is not just a desktop browser client: it also has an Android Capacitor shell with native-notification and background-runner integration points.
+
+This is still a beta codebase, but it is already broader than a typical “just encrypted DMs” or “just a call demo” open-source repo.
+
+## Product Preview
+
+<p align="center">
+  <img src="assets/readme/chat-live.png" alt="Seclettr desktop chat workspace with a live plain-chat thread, sidebar, and composer" width="100%" />
+</p>
+
+<p align="center">
+  <em>Desktop chat workspace from the live development stack.</em>
+</p>
+
+<p align="center">
+  <img src="assets/readme/chat-emoji-live.png" alt="Seclettr chat composer with the emoji picker open" width="49%" />
+  <img src="assets/readme/media-dialog-live.png" alt="Seclettr media send dialog with image previews and compression options" width="49%" />
+</p>
+
+<p align="center">
+  <em>Composer depth: emoji, attachments, previews, and send-quality controls.</em>
+</p>
+
+<p align="center">
+  <img src="assets/readme/mobile-chat-live.png" alt="Seclettr mobile chat thread view" width="32%" />
+  <img src="assets/readme/folders-live.png" alt="Seclettr plain-chat pin and folder actions" width="32%" />
+  <img src="assets/readme/room-live.png" alt="Seclettr public room invite screen" width="32%" />
+</p>
+
+<p align="center">
+  <em>Mobile thread view, plain-chat organization actions, and the public room-call entry flow.</em>
+</p>
+
+## What Ships Today
+
+### Messaging
+
+- Encrypted 1:1 chats with:
+  - delivery and read acknowledgements;
+  - typing and presence signals;
+  - optimistic local state with reconciliation after server confirmation;
+  - attachment, voice-note, and video-note flows.
+- Encrypted group chats with:
+  - membership and role model (`owner` / `admin` / `member`);
+  - sender-key based group-message flows;
+  - group history replay and live updates.
+- Explicit plain chats and plain groups with their own API/runtime path:
+  - plain direct messages;
+  - plain group threads;
+  - plain attachment endpoints;
+  - per-user pins and folders for plain chats/groups.
+- Media UX in chat:
+  - file attachments;
+  - inline image/video rendering;
+  - grouped media albums;
   - voice notes;
   - video notes;
-  - digest checks before decrypt/download to detect corrupted payloads.
-- Group chats with:
-  - member roster and role model (`owner` / `admin` / `member`);
-  - encrypted sender-key group history replay;
-  - membership-aware live updates.
+  - sender-side and recipient-side attachment runtime.
 
-### Security Model
+### Calls
 
-- End-to-end encrypted messaging model: payload encryption happens on client devices.
-- Device-based identity model:
-  - per-device key material provisioning;
-  - signed prekey rotation and one-time prekey replenishment;
-  - local trust checks with explicit re-verify flow when peer identity changes.
-- Optional app lock with local 4-digit PIN and inactivity auto-lock.
-- Call security modes in UI (`compatibility` / `balanced` / `strict`) for frame-level media protection strategy.
+- Direct 1:1 audio/video calls with authenticated signaling.
+- Group audio/video calls over a mediasoup-based SFU.
+- Standalone room calls with invite links and guest join flow.
+- Screen sharing across call surfaces.
+- Minimized/docked call surfaces in the web UI.
+- Missed-call and call-history event surfaces in chat.
+- Call-security mode selection in the client (`compatibility`, `balanced`, `strict`).
 
-### Calls and Real-Time
+### Web and Client Experience
 
-- Direct 1:1 audio/video calls with authenticated signaling over WebSocket.
-- Group audio/video calls:
-  - live participant roster;
-  - join/leave and active-call discovery endpoints;
-  - stage-focused layout for active media.
-- Screen sharing support in call UIs (with dedicated stage/viewer controls).
-- Missed-call tracking surfaces (direct and group) on next session.
-
-### Notifications, UX, and Client Runtime
-
+- React + Vite web client with desktop and mobile chat layouts.
+- English and Russian localization.
 - Browser push notifications with per-category preferences:
-  - direct messages;
-  - group messages;
-  - call invites;
-  - sender visibility in notification content.
-- Built-in language support: English and Russian.
-- Service worker registration for push runtime (`/push-sw.js`).
-- Error boundary and client-error reporting endpoint for runtime diagnostics.
+  - direct encrypted messages;
+  - encrypted group messages;
+  - direct call invites;
+  - sender visibility in notification text.
+- Local app-lock flow with passcode-based lock screen.
+- Optional Android shell through Capacitor with:
+  - native-notification permission flow;
+  - native back-button integration;
+  - background unread-check runner hooks;
+  - local native storage bridge helpers.
 
-### Deployment and Operations
+### Backend, Protocol, and Operations
 
+- Fastify API for auth, messaging, groups, attachments, calls, rooms, push, and plain-chat routes.
+- Shared protocol package with Zod contracts and TypeScript types used by web, API, and SFU.
+- Dedicated crypto package for messaging/session/attachment primitives.
+- mediasoup SFU service for group-call media routing.
 - Docker-based local development stack.
-- Release bundle flow with prebuilt images and installer script.
-- Installer deployment modes:
-  - `full`: web + backend + infra;
-  - `backend`: backend + infra;
-  - `web`: web-only mode (can target external backend URLs).
-- Health and readiness endpoints (`/health/live`, `/health/ready`) and Prometheus-style metrics endpoint (`/metrics`).
+- Release bundle generation with prebuilt images and installer scripts.
+- Health and readiness endpoints plus metrics endpoint.
 
-## Installation
+## Feature Matrix
+
+| Surface | Implemented today |
+| --- | --- |
+| Encrypted direct messaging | Yes |
+| Encrypted group messaging | Yes |
+| Plain direct chats | Yes |
+| Plain groups | Yes |
+| Plain chat pins and folders | Yes |
+| File attachments | Yes |
+| Voice notes | Yes |
+| Video notes | Yes |
+| Direct 1:1 calls | Yes |
+| SFU-backed group calls | Yes |
+| Shareable room calls with guests | Yes |
+| Screen sharing | Yes |
+| Browser push notifications | Yes |
+| Android Capacitor shell hooks | Yes |
+| Release bundle / installer flow | Yes |
+
+## Security Model at a Glance
+
+Seclettr should be described carefully, not magically.
+
+- Encrypted messaging:
+  - message payload encryption is performed on client devices;
+  - direct encrypted messaging uses an X3DH/Double Ratchet-style session stack in the project codebase;
+  - encrypted group messaging uses a sender-key style group flow.
+- Plain chats:
+  - plain DMs and plain groups are explicit product surfaces;
+  - they are not the same thing as encrypted chats and should be treated differently operationally and in docs.
+- Attachments:
+  - encrypted attachment flows exist for encrypted chats;
+  - plain attachment flows exist separately for plain chats/groups.
+- Calls:
+  - the project exposes multiple call-security modes;
+  - media protection behavior depends on call mode and browser/runtime support;
+  - do not read this README as a promise that every call is always using the strongest media mode on every browser.
+
+What this README is intentionally **not** claiming:
+
+- full metadata privacy;
+- full Signal compatibility;
+- zero-knowledge auth;
+- formally verified cryptography;
+- internal service TLS everywhere by default;
+- horizontally scalable SFU room-state today.
+
+If you need the deployment path, legal framing, or a more operator-oriented setup guide, use:
+
+- [DEPLOYMENT.md](DEPLOYMENT.md)
+- [LEGAL_NOTICE.md](LEGAL_NOTICE.md)
+- [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md)
+
+## Monorepo Layout
+
+| Path | Role |
+| --- | --- |
+| `apps/web` | React + Vite client |
+| `apps/api` | Fastify HTTP + WebSocket backend |
+| `apps/sfu` | mediasoup-based SFU |
+| `packages/protocol` | Shared Zod contracts and TS types |
+| `packages/crypto` | Crypto and protocol helpers |
+| `packages/utils` | Shared utilities |
+| `infra` | Compose files, nginx, migrations, env templates |
+| `tests/e2e` | Playwright smoke coverage |
+
+## Web App Structure
+
+The web client is no longer a single chat page with a few helpers around it. It is a layered product surface with explicit auth, chat, plain-chat, call, room, and native-shell concerns.
+
+```mermaid
+flowchart LR
+  App["App.tsx<br/>boot + routing + lock screen + native hooks"] --> Auth["/auth + /auth/recovery<br/>session restore / device recovery"]
+  App --> Room["/room/:token<br/>public room invite + guest join"]
+  App --> Chat["ChatPage.tsx<br/>main authenticated workspace"]
+
+  Chat --> Sidebar["Sidebar + thread routing + overlays"]
+  Chat --> Composer["Composer cluster<br/>text / files / voice / video notes"]
+  Chat --> Presentation["Message list + conversation list + modals"]
+  Chat --> Calls["Call surfaces<br/>direct / group / room / docked"]
+
+  Composer --> ChatRuntime["chats/runtime/**<br/>workspace and interaction hooks"]
+  Presentation --> ChatRuntime
+  Sidebar --> ChatRuntime
+
+  ChatRuntime --> Stores["Zustand stores<br/>auth / messages / groups / plain / saved"]
+  Calls --> CallRuntime["calls/**<br/>model / runtime / presentation"]
+
+  Stores --> Api["lib/api + WebSocket + push + native bridges"]
+  CallRuntime --> Api
+  Api --> Backend["Fastify API + WebSocket"]
+  CallRuntime --> SFU["mediasoup SFU<br/>group / room media routing"]
+```
+
+### Current Web-App State
+
+- `App.tsx` is a stable boot shell: auth restore, lock screen, push/native init, and route gating already have clear ownership.
+- `apps/web/src/calls/**` is broad but now meaningfully clustered by `direct / group / room / shared`, with the main remaining product risk around browser-specific call recovery.
+- `apps/web/src/chats/**` and `apps/web/src/stores/**` remain the biggest ongoing quality frontier:
+  - message-list rendering seam;
+  - residual `stores/messages` orchestration tail;
+  - `ChatPage.tsx` page-shell density;
+  - chat CSS ownership cleanup.
+- The client already supports both encrypted and explicit plain-chat surfaces, plus a public room-call entry flow and optional Android Capacitor hooks.
+
+## Deployment Modes
+
+Seclettr already ships with multiple deployment shapes instead of only a single “works on my laptop” path.
+
+- `full`
+  - web + API + SFU + infra
+- `backend`
+  - API + SFU + infra
+- `web`
+  - web-only mode targeting external backend URLs
+
+Operationally relevant traits already present in the repo:
+
+- Docker Compose dev stack;
+- release bundle build flow;
+- installer/update scripts;
+- HTTP and TLS modes;
+- self-signed fallback path plus support for user-provided certs;
+- no-domain / custom-port friendly deployment model;
+- health and metrics surfaces.
+
+For first-time operators, use [DEPLOYMENT.md](DEPLOYMENT.md).
+
+## Development
 
 ### Requirements
 
 - Node.js `>= 22`
-- pnpm `>= 8` (repo currently uses `pnpm@8.15.0`)
-- Docker + Docker Compose (for local stack and release deployment)
-
-### Initial Development Setup
-
-1. Clone the repository.
-2. Install dependencies:
-   ```bash
-   pnpm install --frozen-lockfile
-   ```
-3. Start the development stack:
-   ```bash
-   pnpm dev
-   ```
-
-## Development
+- pnpm `>= 8`
+- Docker + Docker Compose plugin
 
 ### Core Commands
 
 | Command | Description |
 | --- | --- |
-| `pnpm dev` | Start local development stack |
-| `pnpm dev:down` | Stop local development stack |
-| `pnpm build` | Build all apps/packages |
-| `pnpm typecheck` | Run TypeScript checks across workspace |
-| `pnpm lint` | Run lint checks |
-| `pnpm test` | Run workspace test targets |
-| `pnpm verify:release` | Run release verification suite |
-| `pnpm test:e2e -- --project=chromium` | Run Chromium smoke e2e |
-| `pnpm licenses:third-party` | Regenerate third-party license inventory |
+| `pnpm dev` | Start the local development stack |
+| `pnpm dev:down` | Stop the local development stack |
+| `pnpm build` | Build workspace apps and packages |
+| `pnpm typecheck` | Run workspace TypeScript checks |
+| `pnpm lint` | Run workspace lint targets |
+| `pnpm test` | Run workspace tests |
+| `pnpm verify:release` | Run the release verification suite |
+| `pnpm test:e2e -- --project=chromium` | Run Chromium e2e smoke |
+| `pnpm release:build` | Build a release bundle |
 
-### Testing
+### Initial Local Setup
 
-- Unit/API integration:
-  - `pnpm --filter @seclettr/api test:unit`
-  - `pnpm --filter @seclettr/api test:integration`
-- Web tests:
-  - `pnpm --filter @seclettr/web test`
-- SFU tests:
-  - `pnpm --filter @seclettr/sfu test`
+```bash
+pnpm install --frozen-lockfile
+pnpm dev
+```
 
-## Release and Deployment
+### Useful Narrow Checks
 
-### Build Release Bundle
+```bash
+pnpm --filter @seclettr/web exec tsc --noEmit --pretty false
+pnpm --filter @seclettr/web test
+pnpm --filter @seclettr/api typecheck
+pnpm --filter @seclettr/sfu typecheck
+```
+
+## Release and Distribution
+
+### Build a Release Bundle
 
 ```bash
 pnpm release:build
 ```
 
-Output: an archive in `artifacts/` with prebuilt images and runtime files.
+This produces a release archive with runtime files and prebuilt images in `artifacts/`.
 
-### Automatic GitHub Release Artifacts
+### GitHub Snapshot Artifacts
 
-For every successful push to `main` (after CI passes), GitHub Actions builds a release bundle automatically and publishes:
+The repo also has a GitHub-driven snapshot flow that can publish downloadable release artifacts after CI.
 
-- an Actions artifact (`seclettr-release-<sha>`);
-- a GitHub prerelease entry (`Seclettr Main Snapshot (<sha>)`) with downloadable assets.
-
-Workflow files:
+Relevant workflows:
 
 - `.github/workflows/ci.yml`
 - `.github/workflows/release-bundle.yml`
 
-### Installer Modes
+## Current Caveats
 
-From the unpacked release bundle:
+This project has real functionality today, but it is still fair to call out the current limits:
 
-```bash
-./install.sh --interactive
-```
-
-Non-interactive modes:
-
-```bash
-# Full stack: web + backend + infra
-./install.sh --mode full --network tls
-
-# Backend + infra only
-./install.sh --mode backend --non-interactive
-
-# Web only (external backend)
-./install.sh --mode web --network http \
-  --web-api-url https://api.example.com/api \
-  --web-sfu-url https://api.example.com/sfu
-```
-
-### Step-by-Step Deployment Guide
-
-- [DEPLOYMENT.md](DEPLOYMENT.md)
+- the project is still beta and actively being refactored in several runtime-heavy areas;
+- the SFU room-state model is currently single-node in practice;
+- advanced call media-protection behavior is still sensitive to browser/runtime differences;
+- the codebase contains both encrypted and plain-chat surfaces, so docs and product behavior must keep those boundaries explicit.
 
 ## Contributing
 
-### PR Rules
+- Keep PRs scoped.
+- Do not mix refactors, behavior changes, and cosmetic cleanup unless the slice genuinely belongs together.
+- Be precise with security and deployment claims.
+- Prefer product slices over repo-wide rewrites.
 
-- Keep PRs small and focused.
-- Do not mix bugfixes, refactors, and cosmetic edits in one PR.
-- Include regression risk and validation plan in PR description.
-- Never commit secrets, keys, or build artifacts.
+## Legal and License
 
-### Pre-Submit Checks
-
-```bash
-pnpm typecheck
-pnpm lint
-pnpm verify:release
-pnpm test:e2e -- --project=chromium
-```
-
-## Legal Notice
-
-- Usage disclaimer and legal notice: [LEGAL_NOTICE.md](LEGAL_NOTICE.md).
-- This notice supplements, but does not replace, [LICENSE](LICENSE).
-
-## License
-
-- Project license: [LICENSE](LICENSE) (Apache-2.0).
-- Legal notice and usage disclaimer: [LEGAL_NOTICE.md](LEGAL_NOTICE.md).
-- Copyright notice: [NOTICE](NOTICE).
-- Third-party inventory: [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
-- Protocol package licensing:
-  - [packages/protocol/LICENSE](packages/protocol/LICENSE)
-  - [packages/protocol/NOTICE](packages/protocol/NOTICE)
+- License: [LICENSE](LICENSE) (Apache-2.0)
+- Legal notice: [LEGAL_NOTICE.md](LEGAL_NOTICE.md)
+- Copyright notice: [NOTICE](NOTICE)
+- Third-party notices: [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md)

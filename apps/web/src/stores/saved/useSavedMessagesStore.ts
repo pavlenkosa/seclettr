@@ -9,6 +9,7 @@ export interface SavedMessageAttachment {
   fileName: string;
   size: number;
   durationMs?: number;
+  mediaGroupId?: string;
   dataUrl: string;
 }
 
@@ -28,7 +29,7 @@ export interface SavedMessagesState {
   /** Append a new message with a file attachment. Resolves false if the file exceeds the size limit. */
   addMessageWithAttachment: (
     file: File,
-    options: { kind: "file" | "voice_note" | "video_note"; durationMs?: number; caption?: string }
+    options: { kind: "file" | "voice_note" | "video_note"; durationMs?: number; caption?: string; mediaGroupId?: string }
   ) => Promise<boolean>;
   /** Remove a note by id. */
   deleteMessage: (id: string) => void;
@@ -100,7 +101,7 @@ export const useSavedMessagesStore = create<SavedMessagesState>((set, get) => ({
     persist(currentUserId, messages);
   },
 
-  async addMessageWithAttachment(file, { kind, durationMs, caption }) {
+  async addMessageWithAttachment(file, { kind, durationMs, caption, mediaGroupId }) {
     if (file.size > MAX_ATTACHMENT_BYTES) return false;
     try {
       const dataUrl = await fileToDataUrl(file);
@@ -114,6 +115,7 @@ export const useSavedMessagesStore = create<SavedMessagesState>((set, get) => ({
           fileName: file.name,
           size: file.size,
           durationMs,
+          mediaGroupId,
           dataUrl,
         },
       };

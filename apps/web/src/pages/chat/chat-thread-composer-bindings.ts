@@ -164,8 +164,8 @@ export function buildChatThreadComposerBindings({
       onSendText: async (text) => {
         sendSavedMessage(text);
       },
-      onSendFile: async (file, _mediaGroupId, caption) => {
-        await sendSavedFile(file, { kind: "file", caption });
+      onSendFile: async (file, mediaGroupId, caption) => {
+        await sendSavedFile(file, { kind: "file", caption, mediaGroupId });
       },
       onSendVoiceBlob: async (blob, durationMs) => {
         await sendSavedFile(createComposerMediaNoteFile(blob, "voice"), {

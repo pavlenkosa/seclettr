@@ -167,6 +167,7 @@ export function useChatWorkspaceProjection(
                 size: attachment.size,
                 kind: attachment.kind,
                 durationMs: attachment.durationMs,
+                mediaGroupId: attachment.mediaGroupId,
                 isPlain: true,
                 localUrl: attachment.dataUrl,
               }

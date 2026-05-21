@@ -211,7 +211,7 @@ export function useChatWorkspaceEntry(options: UseChatWorkspaceEntryOptions) {
   );
 
   const sendSavedFile = useCallback(
-    (file: File, options: { kind: "file" | "voice_note" | "video_note"; durationMs?: number; caption?: string }) =>
+    (file: File, options: { kind: "file" | "voice_note" | "video_note"; durationMs?: number; caption?: string; mediaGroupId?: string }) =>
       addSavedMessageWithAttachment(file, options),
     [addSavedMessageWithAttachment]
   );

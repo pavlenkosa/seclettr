@@ -11,6 +11,7 @@
  */
 import { useEffect } from "react";
 import type { RemoteMediaSlot } from "@/calls/direct/model/call-media-slots";
+import type { CallMediaSource, LastIncomingMediaState } from "@/calls/direct/model/call-media-state";
 import type { UseDirectCallSessionLifecycleOptions } from "./direct-call-session-lifecycle-shared";
 
 interface UseDirectCallFrameModeRecoveryOptions extends Pick<
@@ -24,6 +25,9 @@ interface UseDirectCallFrameModeRecoveryOptions extends Pick<
   | "remoteScreenSlot"
   | "remoteCameraStreamRef"
   | "remoteScreenStreamRef"
+  | "remoteAudioRef"
+  | "remoteAudioStreamRef"
+  | "lastIncomingMediaStateRef"
   | "setActive"
   | "configureDirectCallFrameCrypto"
   | "pushNotice"
@@ -31,6 +35,10 @@ interface UseDirectCallFrameModeRecoveryOptions extends Pick<
   | "frameModeRecoveryTimerRef"
   | "frameModeRecoveryAttemptedCallIdRef"
 > {}
+
+interface AudioPlaybackSnapshot {
+  readonly currentTime: number;
+}
 
 async function runFrameModeRecoveryFallback({
   activeRef,
@@ -81,6 +89,65 @@ function hasLiveVideoTrack(stream: MediaStream | null): boolean {
   )));
 }
 
+function hasLiveAudioTrack(stream: MediaStream | null): boolean {
+  return Boolean(stream?.getAudioTracks().some((track) => (
+    track.readyState === "live" &&
+    track.enabled !== false
+  )));
+}
+
+function captureAudioPlaybackSnapshot(
+  audioElement: HTMLAudioElement | null,
+  stream: MediaStream | null
+): AudioPlaybackSnapshot | null {
+  if (!audioElement || !stream || audioElement.srcObject !== stream) {
+    return null;
+  }
+
+  return {
+    currentTime: Number.isFinite(audioElement.currentTime) ? audioElement.currentTime : 0,
+  };
+}
+
+function isRemoteAudioExpected(
+  lastIncomingMediaState: Record<CallMediaSource, LastIncomingMediaState | null>
+): boolean {
+  const micState = lastIncomingMediaState.mic;
+  if (!micState) {
+    return true;
+  }
+
+  return micState.state === "on";
+}
+
+function isAudioPlaybackStalled(params: {
+  audioElement: HTMLAudioElement | null;
+  stream: MediaStream | null;
+  initialSnapshot: AudioPlaybackSnapshot | null;
+}): boolean {
+  if (!hasLiveAudioTrack(params.stream)) {
+    return false;
+  }
+
+  const audioElement = params.audioElement;
+  if (!audioElement || !params.stream || audioElement.srcObject !== params.stream) {
+    return true;
+  }
+
+  if (audioElement.error || audioElement.ended) {
+    return true;
+  }
+
+  const hasReadableData = audioElement.readyState >= HTMLMediaElement.HAVE_CURRENT_DATA;
+  const baselineTime = params.initialSnapshot?.currentTime ?? 0;
+  const madeTimelineProgress = audioElement.currentTime > baselineTime + 0.05;
+  if (!hasReadableData) {
+    return true;
+  }
+
+  return audioElement.paused && !madeTimelineProgress;
+}
+
 function isFrameModeRecoveryCandidate({
   remoteReady,
   slot,
@@ -116,6 +183,10 @@ function isFrameModeRecoveryCandidate({
 }
 
 function shouldAttemptFrameModeRecovery({
+  lastIncomingMediaState,
+  remoteAudioElement,
+  remoteAudioSnapshot,
+  remoteAudioStream,
   remoteCameraSlot,
   remoteCameraStream,
   remoteScreenReady,
@@ -123,6 +194,10 @@ function shouldAttemptFrameModeRecovery({
   remoteScreenStream,
   remoteVideoReady,
 }: {
+  readonly lastIncomingMediaState: Record<CallMediaSource, LastIncomingMediaState | null>;
+  readonly remoteAudioElement: HTMLAudioElement | null;
+  readonly remoteAudioSnapshot: AudioPlaybackSnapshot | null;
+  readonly remoteAudioStream: MediaStream | null;
   readonly remoteCameraSlot: RemoteMediaSlot;
   readonly remoteCameraStream: MediaStream | null;
   readonly remoteScreenReady: boolean;
@@ -140,7 +215,15 @@ function shouldAttemptFrameModeRecovery({
       remoteReady: remoteScreenReady,
       slot: remoteScreenSlot,
       stream: remoteScreenStream,
-    })
+    }) ||
+    (
+      isRemoteAudioExpected(lastIncomingMediaState) &&
+      isAudioPlaybackStalled({
+        audioElement: remoteAudioElement,
+        stream: remoteAudioStream,
+        initialSnapshot: remoteAudioSnapshot,
+      })
+    )
   );
 }
 
@@ -154,6 +237,9 @@ export function useDirectCallFrameModeRecovery({
   remoteScreenSlot,
   remoteCameraStreamRef,
   remoteScreenStreamRef,
+  remoteAudioRef,
+  remoteAudioStreamRef,
+  lastIncomingMediaStateRef,
   setActive,
   configureDirectCallFrameCrypto,
   pushNotice,
@@ -183,22 +269,30 @@ export function useDirectCallFrameModeRecovery({
       return;
     }
 
-    if (!shouldAttemptFrameModeRecovery({
-      remoteCameraSlot,
-      remoteCameraStream: remoteCameraStreamRef.current,
-      remoteScreenReady,
-      remoteScreenSlot,
-      remoteScreenStream: remoteScreenStreamRef.current,
-      remoteVideoReady,
-    })) {
-      return;
-    }
-
     const callId = active.callId;
     const peerUserId = active.peerUserId;
     const peerDeviceId = active.peerDeviceId;
+    const remoteAudioSnapshot = captureAudioPlaybackSnapshot(
+      remoteAudioRef.current,
+      remoteAudioStreamRef.current
+    );
     frameModeRecoveryAttemptedCallIdRef.current = callId;
     frameModeRecoveryTimerRef.current = globalThis.window.setTimeout(() => {
+      if (!shouldAttemptFrameModeRecovery({
+        lastIncomingMediaState: lastIncomingMediaStateRef.current,
+        remoteAudioElement: remoteAudioRef.current,
+        remoteAudioSnapshot,
+        remoteAudioStream: remoteAudioStreamRef.current,
+        remoteCameraSlot,
+        remoteCameraStream: remoteCameraStreamRef.current,
+        remoteScreenReady,
+        remoteScreenSlot,
+        remoteScreenStream: remoteScreenStreamRef.current,
+        remoteVideoReady,
+      })) {
+        return;
+      }
+
       void runFrameModeRecoveryFallback({
         activeRef,
         callId,
@@ -225,7 +319,10 @@ export function useDirectCallFrameModeRecovery({
     configureDirectCallFrameCrypto,
     frameModeRecoveryAttemptedCallIdRef,
     frameModeRecoveryTimerRef,
+    lastIncomingMediaStateRef,
     pushNotice,
+    remoteAudioRef,
+    remoteAudioStreamRef,
     remoteCameraSlot,
     remoteCameraStreamRef,
     remoteScreenReady,

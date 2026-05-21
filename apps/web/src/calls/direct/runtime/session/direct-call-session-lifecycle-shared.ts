@@ -142,6 +142,7 @@ export type UseDirectCallSessionLifecycleOptions =
     frameModeRecoveryTimerRef: MutableRefObject<number | null>;
     frameModeRecoveryAttemptedCallIdRef: MutableRefObject<string | null>;
     incomingRingtoneRef: MutableRefObject<HTMLAudioElement | null>;
+    outgoingRingtoneRef: MutableRefObject<HTMLAudioElement | null>;
     disconnectResetTimerRef: MutableRefObject<number | null>;
     disconnectRecoveryAttemptedRef: MutableRefObject<boolean>;
   };

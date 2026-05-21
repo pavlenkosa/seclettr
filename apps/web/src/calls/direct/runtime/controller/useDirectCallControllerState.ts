@@ -104,6 +104,7 @@ export function useDirectCallControllerState() {
   const localScreenPreviewStreamRef = useRef<MediaStream | null>(null);
   const noticeTimerRef = useRef<number | null>(null);
   const incomingRingtoneRef = useRef<HTMLAudioElement | null>(null);
+  const outgoingRingtoneRef = useRef<HTMLAudioElement | null>(null);
   const incomingRef = useRef<IncomingCall | null>(null);
   const acceptingIncomingCallRef = useRef<IncomingCall | null>(null);
   const activeRef = useRef<ActiveCall | null>(null);
@@ -269,6 +270,7 @@ export function useDirectCallControllerState() {
     activeHangupButtonRef,
     noticeTimerRef,
     incomingRingtoneRef,
+    outgoingRingtoneRef,
     ...dragging,
   };
 

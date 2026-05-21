@@ -27,6 +27,7 @@ import { clearDirectCallNegotiationState } from "./setup/direct-call-setup-share
 import { type DirectCallFinishSession } from "./direct-call-runtime-types";
 import { useDirectCallFrameModeRecovery } from "./session/useDirectCallFrameModeRecovery";
 import { useDirectCallIncomingRingtone } from "./session/useDirectCallIncomingRingtone";
+import { useDirectCallOutgoingRingtone } from "./session/useDirectCallOutgoingRingtone";
 
 function detachVideoElements(refs: DirectCallLifecycleVideoElementRefs): void {
   if (refs.localVideoRef.current) refs.localVideoRef.current.srcObject = null;
@@ -122,12 +123,17 @@ export function useDirectCallSessionLifecycle(options: UseDirectCallSessionLifec
     isCurrentActiveCallContext,
     configureDirectCallFrameCrypto,
     incomingRingtoneRef,
+    outgoingRingtoneRef,
     t,
   } = options;
 
   const { stopIncomingRingtone } = useDirectCallIncomingRingtone({
     incomingCallId,
     incomingRingtoneRef,
+  });
+  const { stopOutgoingRingtone } = useDirectCallOutgoingRingtone({
+    active,
+    outgoingRingtoneRef,
   });
 
   const stopLocalMedia = useCallback(() => {
@@ -200,6 +206,7 @@ export function useDirectCallSessionLifecycle(options: UseDirectCallSessionLifec
       directCallLifecycleTokenRef.current
     );
     stopIncomingRingtone();
+    stopOutgoingRingtone();
     closePeerConnection();
     clearOutgoingMediaStateTrackBindingsRef.current();
     stopLocalMedia();
@@ -254,6 +261,7 @@ export function useDirectCallSessionLifecycle(options: UseDirectCallSessionLifec
     setIncoming,
     setIsMinimized,
     stopIncomingRingtone,
+    stopOutgoingRingtone,
     stopLocalMedia,
   ]);
 
@@ -301,6 +309,9 @@ export function useDirectCallSessionLifecycle(options: UseDirectCallSessionLifec
     remoteScreenSlot,
     remoteCameraStreamRef,
     remoteScreenStreamRef,
+    remoteAudioRef,
+    remoteAudioStreamRef,
+    lastIncomingMediaStateRef,
     setActive,
     configureDirectCallFrameCrypto,
     pushNotice,
@@ -313,6 +324,7 @@ export function useDirectCallSessionLifecycle(options: UseDirectCallSessionLifec
     return () => {
       resetRemoteMediaRuntime();
       stopIncomingRingtone();
+      stopOutgoingRingtone();
       outgoingIceBatchReset();
       closePeerConnection();
       stopLocalMedia();

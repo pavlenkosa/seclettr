@@ -3,7 +3,7 @@
 This file is auto-generated from workspace production dependencies.
 Source: `pnpm licenses list --prod --json`.
 
-- Total production packages: 305
+- Total production packages: 312
 - Packages without detected local license file: 30
 
 ## License Summary
@@ -15,7 +15,7 @@ Source: `pnpm licenses list --prod --json`.
 | BlueOak-1.0.0 | 7 |
 | BSD-3-Clause | 4 |
 | ISC | 27 |
-| MIT | 165 |
+| MIT | 172 |
 | MPL-2.0 | 1 |
 
 ## Package Inventory
@@ -66,6 +66,13 @@ Source: `pnpm licenses list --prod --json`.
 | @aws-sdk/util-user-agent-node | 3.972.10 | Apache-2.0 | https://github.com/aws/aws-sdk-js-v3/tree/main/packages-internal/util-user-agent-node | node_modules/.pnpm/@aws-sdk+util-user-agent-node@3.972.10/node_modules/@aws-sdk/util-user-agent-node/LICENSE | AWS SDK for JavaScript Team |
 | @aws-sdk/xml-builder | 3.972.5 | Apache-2.0 | https://github.com/aws/aws-sdk-js-v3/tree/main/packages-internal/xml-builder | node_modules/.pnpm/@aws-sdk+xml-builder@3.972.5/node_modules/@aws-sdk/xml-builder/LICENSE | AWS SDK for JavaScript Team |
 | @aws/lambda-invoke-store | 0.2.3 | Apache-2.0 | https://github.com/awslabs/aws-lambda-invoke-store | node_modules/.pnpm/@aws+lambda-invoke-store@0.2.3/node_modules/@aws/lambda-invoke-store/LICENSE | Amazon Web Services |
+| @capacitor/android | 8.3.4 | MIT | https://capacitorjs.com | node_modules/.pnpm/@capacitor+android@8.3.4_@capacitor+core@8.3.4/node_modules/@capacitor/android/LICENSE | Ionic Team |
+| @capacitor/background-runner | 3.0.0 | MIT | https://github.com/ionic-team/capacitor-background-runner#readme | node_modules/.pnpm/@capacitor+background-runner@3.0.0_@capacitor+core@8.3.4/node_modules/@capacitor/background-runner/LICENSE | Ionic Team |
+| @capacitor/camera | 8.2.0 | MIT | https://github.com/ionic-team/capacitor-camera#readme | node_modules/.pnpm/@capacitor+camera@8.2.0_@capacitor+core@8.3.4/node_modules/@capacitor/camera/LICENSE | Ionic |
+| @capacitor/core | 8.3.4 | MIT | https://capacitorjs.com | node_modules/.pnpm/@capacitor+core@8.3.4/node_modules/@capacitor/core/LICENSE | Ionic Team |
+| @capacitor/haptics | 8.0.2 | MIT | https://github.com/ionic-team/capacitor-haptics#readme | node_modules/.pnpm/@capacitor+haptics@8.0.2_@capacitor+core@8.3.4/node_modules/@capacitor/haptics/LICENSE | Ionic |
+| @capacitor/local-notifications | 8.2.0 | MIT | https://github.com/ionic-team/capacitor-plugins#readme | node_modules/.pnpm/@capacitor+local-notifications@8.2.0_@capacitor+core@8.3.4/node_modules/@capacitor/local-notifications/LICENSE | Ionic |
+| @capacitor/preferences | 8.0.1 | MIT | https://github.com/ionic-team/capacitor-plugins#readme | node_modules/.pnpm/@capacitor+preferences@8.0.1_@capacitor+core@8.3.4/node_modules/@capacitor/preferences/LICENSE | Ionic |
 | @epic-web/invariant | 1.0.0 | MIT | https://github.com/epicweb-dev/invariant#readme | - | Kent C. Dodds |
 | @fastify/accept-negotiator | 1.1.0 | MIT | https://github.com/fastify/accept-negotiator#readme | node_modules/.pnpm/@fastify+accept-negotiator@1.1.0/node_modules/@fastify/accept-negotiator/LICENSE | Aras Abbasi |
 | @fastify/ajv-compiler | 3.6.0 | MIT | https://github.com/fastify/ajv-compiler#readme | node_modules/.pnpm/@fastify+ajv-compiler@3.6.0/node_modules/@fastify/ajv-compiler/LICENSE | Manuel Spigolon |

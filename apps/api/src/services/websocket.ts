@@ -352,7 +352,13 @@ export async function registerWebSocketHandler(
 
         case "typing.start":
         case "typing.stop":
-          void forwardTypingSignal(fastify, client, msg.targetUserId, msg.type);
+          void forwardTypingSignal(
+            fastify,
+            client,
+            msg.targetUserId,
+            msg.type,
+            (msg as { chatKind?: "plain" | "e2ee" }).chatKind
+          );
           break;
 
         case "call.offer":

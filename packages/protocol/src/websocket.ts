@@ -40,6 +40,8 @@ const CallSignalAuthSchema = versionedWireObject(1, {
 const wsEnvelope = <TShape extends z.ZodRawShape>(shape: TShape) =>
   versionedWireObject(WS_PROTOCOL_VERSION, shape);
 
+const DirectChatKindSchema = z.enum(["e2ee", "plain"]);
+
 export const WsClientMessageSchema = z.discriminatedUnion("type", [
   wsEnvelope({
     type: z.literal("ping"),
@@ -56,10 +58,12 @@ export const WsClientMessageSchema = z.discriminatedUnion("type", [
   wsEnvelope({
     type: z.literal("typing.start"),
     targetUserId: z.string().uuid(),
+    chatKind: DirectChatKindSchema.optional(),
   }),
   wsEnvelope({
     type: z.literal("typing.stop"),
     targetUserId: z.string().uuid(),
+    chatKind: DirectChatKindSchema.optional(),
   }),
   wsEnvelope({
     type: z.literal("call.offer"),
@@ -67,6 +71,7 @@ export const WsClientMessageSchema = z.discriminatedUnion("type", [
     targetUserId: z.string().uuid(),
     sdp: z.string(),
     callType: z.enum(["audio", "video"]),
+    chatKind: DirectChatKindSchema.optional(),
     mediaEncryption: CallMediaEncryptionOfferSchema.optional(),
     features: DirectCallFeaturesSchema.optional(),
     auth: CallSignalAuthSchema.optional(),
@@ -250,6 +255,7 @@ export const WsServerMessageSchema = z.discriminatedUnion("type", [
     targetUserId: z.string().uuid().optional(),
     sdp: z.string(),
     callType: z.enum(["audio", "video"]),
+    chatKind: DirectChatKindSchema.optional(),
     mediaEncryption: CallMediaEncryptionOfferSchema.optional(),
     features: DirectCallFeaturesSchema.optional(),
     auth: CallSignalAuthSchema.optional(),
@@ -429,11 +435,13 @@ export const WsServerMessageSchema = z.discriminatedUnion("type", [
     type: z.literal("typing.start"),
     senderUserId: z.string().uuid(),
     senderDeviceId: z.string().uuid(),
+    chatKind: DirectChatKindSchema.optional(),
   }),
   wsEnvelope({
     type: z.literal("typing.stop"),
     senderUserId: z.string().uuid(),
     senderDeviceId: z.string().uuid(),
+    chatKind: DirectChatKindSchema.optional(),
   }),
   wsEnvelope({
     type: z.literal("presence.update"),

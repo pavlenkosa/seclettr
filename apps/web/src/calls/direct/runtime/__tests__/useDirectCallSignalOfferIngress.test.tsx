@@ -116,4 +116,56 @@ describe("useDirectCallSignalOfferIngress", () => {
       offerSdp: "offer-sdp",
     } satisfies Partial<IncomingCall>));
   });
+
+  it("prefers advertised inbound chat kind over local conversation heuristic", () => {
+    messagesState.conversations = {
+      "peer-mixed": { id: "peer-mixed" },
+    };
+    plainMessagesState.conversations = {
+      "peer-mixed": { id: "peer-mixed" },
+    };
+
+    const callChatKindRef = { current: null as "plain" | "e2ee" | null };
+    const capture = vi.fn();
+
+    function Harness() {
+      const handlers = useDirectCallSignalOfferIngress({
+        activeRef: { current: null },
+        incomingRef: { current: null },
+        acceptingIncomingCallRef: { current: null },
+        setActive: vi.fn(),
+        setIncoming: vi.fn(),
+        setIsMinimized: vi.fn(),
+        ensureConversationUsername: vi.fn(async () => null),
+        resetMinimizedDockState: vi.fn(),
+        resolvePeerLabel: (userId: string) => userId,
+        callChatKindRef,
+        rejectIncomingCall: vi.fn(),
+        debugCallMedia: vi.fn(),
+      });
+      capture(handlers);
+      return null;
+    }
+
+    act(() => {
+      root.render(<Harness />);
+    });
+
+    const handlers = capture.mock.calls[0][0] as ReturnType<typeof useDirectCallSignalOfferIngress>;
+
+    act(() => {
+      handlers.handleIncomingOfferSignal({
+        type: "call.offer",
+        callId: "call-mixed",
+        callerUserId: "peer-mixed",
+        callerDeviceId: "device-mixed",
+        targetUserId: "user-1",
+        sdp: "offer-sdp",
+        callType: "audio",
+        chatKind: "plain",
+      });
+    });
+
+    expect(callChatKindRef.current).toBe("plain");
+  });
 });

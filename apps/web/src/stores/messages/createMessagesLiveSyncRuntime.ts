@@ -40,13 +40,18 @@ export function createMessagesLiveSyncRuntime({
     }, 0) as unknown as number;
   }
 
-  function setTypingState(senderUserId: string, typing: boolean): void {
+  function setTypingState(
+    senderUserId: string,
+    typing: boolean,
+    chatKind?: "plain" | "e2ee"
+  ): void {
     set((state) => ({
       typingByUser: {
         ...state.typingByUser,
         [senderUserId]: {
           typing,
           updatedAt: Date.now(),
+          chatKind,
         },
       },
     }));
@@ -66,6 +71,7 @@ export function createMessagesLiveSyncRuntime({
             [senderUserId]: {
               typing: false,
               updatedAt: Date.now(),
+              chatKind,
             },
           },
         }));
@@ -299,9 +305,17 @@ export function createMessagesLiveSyncRuntime({
       } else if (message.type === "message.read") {
         updateOwnMessageStatus(message.messageId, message.clientMessageId, "read");
       } else if (message.type === "typing.start") {
-        setTypingState(message.senderUserId, true);
+        setTypingState(
+          message.senderUserId,
+          true,
+          (message as { chatKind?: "plain" | "e2ee" }).chatKind
+        );
       } else if (message.type === "typing.stop") {
-        setTypingState(message.senderUserId, false);
+        setTypingState(
+          message.senderUserId,
+          false,
+          (message as { chatKind?: "plain" | "e2ee" }).chatKind
+        );
       } else if (message.type === "presence.update") {
         set((state) => ({
           presenceByUser: {

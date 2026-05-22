@@ -7,6 +7,7 @@ const TYPING_HEARTBEAT_MS = 2000;
 interface UseChatComposerTypingSignalOptions {
   recipientUserId?: string;
   groupId?: string;
+  chatKind?: "plain" | "e2ee";
 }
 
 interface UseChatComposerTypingSignalResult {
@@ -18,6 +19,7 @@ interface UseChatComposerTypingSignalResult {
 export function useChatComposerTypingSignal({
   recipientUserId,
   groupId,
+  chatKind,
 }: UseChatComposerTypingSignalOptions): UseChatComposerTypingSignalResult {
   const sendTypingSignal = useMessagesStore((state) => state.sendTypingSignal);
   const isGroupComposer = typeof groupId === "string" && groupId.length > 0;
@@ -35,7 +37,7 @@ export function useChatComposerTypingSignal({
   const stopTyping = useCallback(() => {
     clearTypingTimer();
     if (isGroupComposer || !recipientUserId || !typingActiveRef.current) return;
-    sendTypingSignal(recipientUserId, false);
+    sendTypingSignal(recipientUserId, false, chatKind);
     typingActiveRef.current = false;
     lastTypingStartSentAtRef.current = 0;
   }, [clearTypingTimer, isGroupComposer, recipientUserId, sendTypingSignal]);
@@ -49,7 +51,7 @@ export function useChatComposerTypingSignal({
 
   const handleTypingState = useCallback(
     (nextValue: string) => {
-      if (isGroupComposer || !recipientUserId) return;
+      if (isGroupComposer || !recipientUserId || !chatKind) return;
       if (nextValue.length === 0) {
         stopTyping();
         return;
@@ -59,23 +61,23 @@ export function useChatComposerTypingSignal({
         !typingActiveRef.current ||
         now - lastTypingStartSentAtRef.current >= TYPING_HEARTBEAT_MS
       ) {
-        sendTypingSignal(recipientUserId, true);
+        sendTypingSignal(recipientUserId, true, chatKind);
         typingActiveRef.current = true;
         lastTypingStartSentAtRef.current = now;
       }
       scheduleTypingStop();
     },
-    [isGroupComposer, recipientUserId, scheduleTypingStop, sendTypingSignal, stopTyping]
+    [chatKind, isGroupComposer, recipientUserId, scheduleTypingStop, sendTypingSignal, stopTyping]
   );
 
   const cleanupTypingSignal = useCallback(() => {
     clearTypingTimer();
-    if (!isGroupComposer && recipientUserId && typingActiveRef.current) {
-      sendTypingSignal(recipientUserId, false);
+    if (!isGroupComposer && recipientUserId && chatKind && typingActiveRef.current) {
+      sendTypingSignal(recipientUserId, false, chatKind);
       typingActiveRef.current = false;
       lastTypingStartSentAtRef.current = 0;
     }
-  }, [clearTypingTimer, isGroupComposer, recipientUserId, sendTypingSignal]);
+  }, [chatKind, clearTypingTimer, isGroupComposer, recipientUserId, sendTypingSignal]);
 
   return { cleanupTypingSignal, handleTypingState, stopTyping };
 }

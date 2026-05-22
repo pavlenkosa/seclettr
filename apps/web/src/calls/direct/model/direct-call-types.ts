@@ -28,6 +28,7 @@ type CallAnswerMediaEncryption = {
 };
 
 export type IncomingCallOfferSignal = Extract<WsServerMessage, { type: "call.offer" }> & {
+  chatKind?: "plain" | "e2ee";
   mediaEncryption?: CallOfferMediaEncryption;
 };
 

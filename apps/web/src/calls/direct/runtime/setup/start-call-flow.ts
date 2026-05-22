@@ -396,6 +396,7 @@ export async function runStartCallFlow(
       targetUserId: peerUserId,
       sdp: offer.sdp,
       callType,
+      chatKind: callChatKindRef.current ?? undefined,
       mediaEncryption: offerWithEphemeral,
       features: DIRECT_CALL_FEATURES,
       auth: offerAuth ?? undefined,

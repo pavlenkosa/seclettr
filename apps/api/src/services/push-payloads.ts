@@ -110,9 +110,8 @@ export function buildDirectMessagePushPayload({
   const mediaLine = formatMediaSummary(mediaSummary);
   let body: string;
   if (messageText && !hasAttachment) {
-    body = preferences.showSender && senderUsername
-      ? truncateText(messageText)
-      : truncateText(messageText);
+    // When showSender is off the user has chosen privacy mode — hide content too.
+    body = preferences.showSender ? truncateText(messageText) : "New message";
   } else if (mediaLine) {
     body = mediaLine;
   } else if (hasAttachment) {

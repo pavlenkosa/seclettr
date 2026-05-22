@@ -72,6 +72,7 @@ describe("useChatWorkspacePresenceEffects", () => {
         "user-1": {
           typing: true,
           updatedAt: 2,
+          chatKind: "e2ee",
         },
       },
     });
@@ -139,6 +140,7 @@ describe("useChatWorkspacePresenceEffects", () => {
         peer: {
           typing: false,
           updatedAt: 11,
+          chatKind: "e2ee",
         },
       },
     });
@@ -195,5 +197,41 @@ describe("useChatWorkspacePresenceEffects", () => {
     });
 
     expect(plainMarkRead).toHaveBeenCalledWith("peer");
+  });
+
+  it("does not surface plain typing inside encrypted direct workspace state", () => {
+    useMessagesStore.setState({
+      presenceByUser: {},
+      typingByUser: {
+        "user-1": {
+          typing: true,
+          updatedAt: 2,
+          chatKind: "plain",
+        },
+      },
+    });
+
+    act(() => {
+      root.render(
+        <HookHarness
+          hookRef={hookRef}
+          options={{
+            activeConversation: {
+              userId: "user-1",
+              username: "alice",
+              messages: [],
+              lastMessageAt: 0,
+              unreadCount: 0,
+            } as Conversation,
+            activePlainConversation: null,
+            fetchUserPresence: vi.fn().mockResolvedValue(undefined),
+            loadPlainHistory: vi.fn().mockResolvedValue(undefined),
+            markConversationRead: vi.fn().mockResolvedValue(undefined),
+          }}
+        />
+      );
+    });
+
+    expect(hookRef.current?.activeTyping).toBe(false);
   });
 });

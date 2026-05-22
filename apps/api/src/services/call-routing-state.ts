@@ -14,6 +14,7 @@ type DirectCallOfferFeatures = Extract<
   WsClientMessage,
   { type: "call.offer" }
 >["features"];
+type DirectCallOfferChatKind = "plain" | "e2ee" | undefined;
 type DirectCallType = Extract<
   WsClientMessage,
   { type: "call.offer" }
@@ -51,6 +52,7 @@ interface DirectCallAuthorityTransition<T> {
 
 export interface PendingDirectCallOffer {
   callType: DirectCallType;
+  chatKind?: DirectCallOfferChatKind;
   sdp: string;
   auth?: DirectCallOfferAuth;
   mediaEncryption?: DirectCallOfferMediaEncryption;
@@ -132,6 +134,7 @@ function buildReplayableOffer(
     targetUserId: session.calleeUserId,
     sdp: session.offer.sdp,
     callType: session.offer.callType,
+    ...(session.offer.chatKind ? { chatKind: session.offer.chatKind } : {}),
     ...(session.offer.mediaEncryption
       ? { mediaEncryption: session.offer.mediaEncryption }
       : {}),

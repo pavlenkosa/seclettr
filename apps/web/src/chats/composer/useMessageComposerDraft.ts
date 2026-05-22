@@ -97,8 +97,9 @@ export function useMessageComposerDraft({
   const trimmedText = text.trim();
 
   const { handleTypingState, stopTyping, cleanupTypingSignal } = useChatComposerTypingSignal({
-    recipientUserId,
+    recipientUserId: onSendTextOverride ? undefined : recipientUserId,
     groupId,
+    chatKind: onSendTextOverride ? undefined : "e2ee",
   });
   const { sendTextMessage: sendTextMessageStore, sendFileAttachment: sendFileAttachmentStore } =
     useChatComposerMessageActions({

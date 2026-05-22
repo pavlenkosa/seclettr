@@ -22,7 +22,15 @@ import { logger } from "@/lib/logger.js";
  * renegotiation routing, or ICE/media-state ingress.
  */
 
-function resolveInboundCallChatKind(callerUserId: string): "plain" | "e2ee" | null {
+function resolveInboundCallChatKind(params: {
+  callerUserId: string;
+  advertisedChatKind?: "plain" | "e2ee";
+}): "plain" | "e2ee" | null {
+  if (params.advertisedChatKind) {
+    return params.advertisedChatKind;
+  }
+
+  const { callerUserId } = params;
   const hasE2ee = !!useMessagesStore.getState().conversations[callerUserId];
   const hasPlain = !!usePlainMessagesStore.getState().conversations[callerUserId];
   if (hasPlain && !hasE2ee) return "plain";
@@ -114,7 +122,10 @@ export function useDirectCallSignalOfferIngress({
       mediaEncryptionOffer: message.mediaEncryption ?? resolveLegacyDirectCallMediaEncryptionOffer(),
       supportsRenegotiationV1: !!message.features?.renegotiationV1,
     });
-    callChatKindRef.current = resolveInboundCallChatKind(message.callerUserId);
+    callChatKindRef.current = resolveInboundCallChatKind({
+      callerUserId: message.callerUserId,
+      advertisedChatKind: message.chatKind,
+    });
     setIsMinimized(false);
     resetMinimizedDockState();
   }, [

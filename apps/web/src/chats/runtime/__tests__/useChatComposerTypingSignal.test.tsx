@@ -36,10 +36,12 @@ function HookHarness(props: {
   hookRef: MutableRefObject<HookValue | null>;
   recipientUserId?: string;
   groupId?: string;
+  chatKind?: "plain" | "e2ee";
 }) {
   props.hookRef.current = useChatComposerTypingSignal({
     recipientUserId: props.recipientUserId,
     groupId: props.groupId,
+    chatKind: props.chatKind,
   });
   return null;
 }
@@ -76,7 +78,7 @@ describe("useChatComposerTypingSignal", () => {
   it("refreshes typing.start while the user keeps typing longer than the remote TTL", () => {
     act(() => {
       root.render(
-        <HookHarness hookRef={hookRef} recipientUserId="user-peer" />
+        <HookHarness hookRef={hookRef} recipientUserId="user-peer" chatKind="e2ee" />
       );
     });
 
@@ -87,7 +89,8 @@ describe("useChatComposerTypingSignal", () => {
     expect(messageStoreState.sendTypingSignal).toHaveBeenNthCalledWith(
       1,
       "user-peer",
-      true
+      true,
+      "e2ee"
     );
 
     act(() => {
@@ -106,7 +109,8 @@ describe("useChatComposerTypingSignal", () => {
     expect(messageStoreState.sendTypingSignal).toHaveBeenNthCalledWith(
       2,
       "user-peer",
-      true
+      true,
+      "e2ee"
     );
 
     act(() => {
@@ -122,7 +126,8 @@ describe("useChatComposerTypingSignal", () => {
     expect(messageStoreState.sendTypingSignal).toHaveBeenCalledTimes(3);
     expect(messageStoreState.sendTypingSignal).toHaveBeenLastCalledWith(
       "user-peer",
-      false
+      false,
+      "e2ee"
     );
   });
 
@@ -134,6 +139,19 @@ describe("useChatComposerTypingSignal", () => {
     act(() => {
       hookRef.current?.handleTypingState("hello");
       hookRef.current?.handleTypingState("");
+    });
+
+    expect(messageStoreState.sendTypingSignal).not.toHaveBeenCalled();
+  });
+
+  it("does not emit typing signals without explicit chat kind", () => {
+    act(() => {
+      root.render(<HookHarness hookRef={hookRef} recipientUserId="user-peer" />);
+    });
+
+    act(() => {
+      hookRef.current?.handleTypingState("hello");
+      hookRef.current?.cleanupTypingSignal();
     });
 
     expect(messageStoreState.sendTypingSignal).not.toHaveBeenCalled();

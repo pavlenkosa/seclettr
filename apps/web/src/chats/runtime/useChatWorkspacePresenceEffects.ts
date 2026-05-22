@@ -50,7 +50,10 @@ export function useChatWorkspacePresenceEffects(
     useCallback(
       (state) => (
         activeConversationUserId
-          ? state.typingByUser[activeConversationUserId]?.typing
+          ? (
+            state.typingByUser[activeConversationUserId]?.typing
+            && (state.typingByUser[activeConversationUserId]?.chatKind ?? "e2ee") === "e2ee"
+          )
           : false
       ),
       [activeConversationUserId]
@@ -74,12 +77,8 @@ export function useChatWorkspacePresenceEffects(
       [plainPeerUserId]
     )
   );
-  const plainActiveTyping = useMessagesStore(
-    useCallback(
-      (state) => (plainPeerUserId ? state.typingByUser[plainPeerUserId]?.typing : false),
-      [plainPeerUserId]
-    )
-  );
+  // Plain chats have no server-side typing signal infrastructure — always false.
+  const plainActiveTyping = false;
 
   useEffect(() => {
     if (!activePlainConversation || activePlainConversation.historyLoaded) return;

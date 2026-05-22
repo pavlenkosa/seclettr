@@ -57,6 +57,7 @@ type CallMediaStateMessage = Extract<
   { type: "call.media_state" }
 >;
 type CallOfferMessageCompat = CallOfferMessage & {
+  chatKind?: "plain" | "e2ee";
   mediaEncryption?: CallMediaEncryptionOffer;
   features?: DirectCallFeatures;
 };
@@ -753,6 +754,7 @@ export function createDirectCallSignalRouter(
     targetUserId: msg.targetUserId,
     sdp: msg.sdp,
     callType: msg.callType,
+    ...(msg.chatKind ? { chatKind: msg.chatKind } : {}),
     ...(msg.mediaEncryption ? { mediaEncryption: msg.mediaEncryption } : {}),
     ...(msg.features ? { features: msg.features } : {}),
     auth: msg.auth,

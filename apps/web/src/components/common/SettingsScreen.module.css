@@ -28,6 +28,8 @@
 
 .headerAction {
   flex-shrink: 0;
+  --icon-button-border-base: color-mix(in srgb, var(--icon-btn-border) 82%, transparent);
+  --icon-button-bg-base: color-mix(in srgb, var(--icon-btn-bg) 70%, transparent);
 }
 
 .title {
@@ -87,15 +89,19 @@
 
 .accountInfo {
   min-width: 0;
-  --info-stack-gap: 0.16rem;
-  --info-stack-row-gap: 0.22rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.14rem;
 }
 
-.accountAppliedNote {
-  color: var(--text-secondary);
-  font-size: 0.74rem;
-  line-height: 1.45;
-  white-space: normal;
+.accountHandle {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--text-primary);
+  font-size: 0.9rem;
+  font-weight: 680;
+  line-height: 1.25;
 }
 
 .sectionList {
@@ -241,6 +247,9 @@
   font-weight: 650;
   line-height: 1.35;
   text-align: right;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 /* === loading === */

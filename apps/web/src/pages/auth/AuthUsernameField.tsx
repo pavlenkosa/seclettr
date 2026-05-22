@@ -1,3 +1,14 @@
+/**
+ * AuthUsernameField — labeled username input with built-in validation attributes.
+ *
+ * Owns:
+ *   - `<label>` + `InputField` wiring with `htmlFor` / `id` association.
+ *   - Hardcoded validation constraints (3–32 chars, `[a-zA-Z0-9._-]+`).
+ *   - `autoComplete="username"`, `autoCapitalize/Correct/spellCheck` hardening.
+ *   - `aria-invalid` flag driven by the parent's validation state.
+ *
+ * Does not own validation logic, error display, or form submission.
+ */
 import type { ChangeEventHandler } from "react";
 import { InputField } from "@/components/ui";
 import styles from "../AuthPage.module.css";

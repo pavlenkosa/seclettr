@@ -1,3 +1,13 @@
+/**
+ * AuthCard — branded card shell used by all auth screens (login, registration, recovery).
+ *
+ * Owns:
+ *   - App logo mark + name header with optional action slot (e.g., language picker).
+ *   - Structured title / subtitle / body / footer layout within a raised `SurfacePanel`.
+ *
+ * Does not own form logic, validation, store interactions, or navigation.
+ * Pass form controls as `body` and submit/link actions as `footer`.
+ */
 import type { ReactNode } from "react";
 import { SeclettrMark } from "@/components/common/SeclettrMark";
 import { SurfacePanel } from "@/components/ui";

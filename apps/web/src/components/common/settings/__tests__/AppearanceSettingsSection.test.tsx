@@ -44,8 +44,14 @@ describe("AppearanceSettingsSection", () => {
           setLocale={setLocale}
           themeMode="dark"
           accentColor="blue"
+          fontSize="md"
+          customThemeBg="#0b1526"
+          customThemeAccent="#3b82f6"
           setThemeMode={setThemeMode}
           setAccentColor={setAccentColor}
+          setFontSize={vi.fn()}
+          setCustomThemeBg={vi.fn()}
+          setCustomThemeAccent={vi.fn()}
         />
       );
     });

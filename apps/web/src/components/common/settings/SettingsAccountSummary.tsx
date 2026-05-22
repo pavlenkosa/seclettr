@@ -1,28 +1,18 @@
-import { InfoStack, SurfacePanel } from "@/components/ui";
+import { SurfacePanel } from "@/components/ui";
 import styles from "../SettingsScreen.module.css";
 
 interface SettingsAccountSummaryProps {
   readonly username?: string | null;
-  readonly eyebrow: string;
-  readonly appliedInstantlyLabel: string;
 }
 
-export function SettingsAccountSummary({
-  username,
-  eyebrow,
-  appliedInstantlyLabel,
-}: Readonly<SettingsAccountSummaryProps>) {
+export function SettingsAccountSummary({ username }: Readonly<SettingsAccountSummaryProps>) {
   return (
     <SurfacePanel className={styles.accountPanel} tone="strong" padding="md" radius="lg">
       <div className={styles.accountRow}>
         <span className={styles.accountAvatar} aria-hidden="true">{getInitials(username)}</span>
-        <InfoStack
-          className={styles.accountInfo}
-          eyebrow={eyebrow}
-          title={username || eyebrow}
-          meta={appliedInstantlyLabel}
-          metaClassName={styles.accountAppliedNote}
-        />
+        <div className={styles.accountInfo}>
+          <span className={styles.accountHandle}>@{username || "me"}</span>
+        </div>
       </div>
     </SurfacePanel>
   );

@@ -1,6 +1,7 @@
 import { useI18n } from "@/i18n";
 import { InlineNotice, type StatusBadgeTone } from "@/components/ui";
 import { resolvePushStatusLabel, type UsePushSettingsResult } from "../usePushSettings";
+import { useHapticsSettings } from "@/ui-settings";
 import { NotificationsSettingsSection } from "./NotificationsSettingsSection";
 import styles from "../SettingsSections.module.css";
 
@@ -20,6 +21,7 @@ export function NotificationsSettingsSectionContainer({
   handlePreferenceToggle,
 }: Readonly<UsePushSettingsResult>) {
   const { t } = useI18n();
+  const { vibrationEnabled, setVibrationEnabled } = useHapticsSettings();
 
   const pushStatusLabel = resolvePushStatusLabel(pushStatus, t);
   const browserPushValue = pushStatus?.browserEnabled && pushStatus.subscribed ? "on" : "off";
@@ -34,9 +36,11 @@ export function NotificationsSettingsSectionContainer({
         pushPreferences={pushPreferences}
         pushSubscriptions={pushSubscriptions}
         pushBusy={pushBusy}
+        vibrationEnabled={vibrationEnabled}
         onBrowserPushToggle={handleBrowserPushToggle}
         onDeletePushSubscription={handleDeletePushSubscription}
         onPreferenceToggle={handlePreferenceToggle}
+        onVibrationToggle={setVibrationEnabled}
       />
 
       {pushError ? (

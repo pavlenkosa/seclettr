@@ -62,9 +62,11 @@ describe("NotificationsSettingsSection", () => {
             },
           ]}
           pushBusy={false}
+          vibrationEnabled="on"
           onBrowserPushToggle={onBrowserPushToggle}
           onDeletePushSubscription={onDeletePushSubscription}
           onPreferenceToggle={onPreferenceToggle}
+          onVibrationToggle={vi.fn()}
         />
       );
     });

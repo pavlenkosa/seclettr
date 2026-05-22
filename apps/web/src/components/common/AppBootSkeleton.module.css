@@ -1,5 +1,11 @@
-/* Boot splash. Centred brand + indeterminate progress. Theme-aware via
-   surface / accent / text tokens. */
+@keyframes appBootIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes appBootSpin {
+  to { transform: rotate(360deg); }
+}
 
 .shell {
   display: flex;
@@ -17,20 +23,17 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 0.94rem;
-  max-width: 280px;
-  width: 100%;
-  text-align: center;
+  gap: 1rem;
+  animation: appBootIn 280ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
 }
 
 .mark {
-  width: 84px;
-  height: 84px;
+  width: 72px;
+  height: 72px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   color: var(--accent);
-  animation: appBootMarkBreathe 2.4s ease-in-out infinite;
 }
 
 .mark :global(svg) {
@@ -39,63 +42,24 @@
   display: block;
 }
 
-@keyframes appBootMarkBreathe {
-  0%, 100% { opacity: 0.7; transform: scale(1); }
-  50%      { opacity: 1;   transform: scale(1.04); }
-}
-
 .brand {
-  font-size: 1.18rem;
+  font-size: 1.12rem;
   font-weight: 700;
   letter-spacing: -0.01em;
   color: var(--text-primary);
 }
 
-/* Indeterminate progress bar — a 40%-wide pill slides across the track. */
-
-.bar {
-  position: relative;
-  width: 100%;
-  max-width: 220px;
-  height: 4px;
-  border-radius: 999px;
-  background: color-mix(in srgb, var(--surface-shell-strong) 92%, transparent);
-  overflow: hidden;
-}
-
-.barFill {
-  position: absolute;
-  top: 0;
-  bottom: 0;
-  left: 0;
-  width: 40%;
-  border-radius: inherit;
-  background: linear-gradient(
-    90deg,
-    transparent 0%,
-    var(--accent) 50%,
-    transparent 100%
-  );
-  animation: appBootBarSlide 1.4s ease-in-out infinite;
-}
-
-@keyframes appBootBarSlide {
-  from { transform: translateX(-100%); }
-  to   { transform: translateX(280%); }
-}
-
-.hint {
-  font-size: 0.84rem;
-  color: var(--text-secondary);
-  letter-spacing: 0.01em;
+.spinner {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: 2px solid color-mix(in srgb, var(--accent) 22%, transparent);
+  border-top-color: var(--accent);
+  animation: appBootSpin 0.8s linear infinite;
+  margin-top: 0.25rem;
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .mark { animation: none; opacity: 0.85; }
-  .barFill {
-    animation: none;
-    width: 40%;
-    background: var(--accent);
-    opacity: 0.6;
-  }
+  .stack { animation: none; }
+  .spinner { animation: none; border-color: var(--accent); opacity: 0.6; }
 }

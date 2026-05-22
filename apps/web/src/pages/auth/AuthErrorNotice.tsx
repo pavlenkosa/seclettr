@@ -1,3 +1,15 @@
+/**
+ * AuthErrorNotice — dismissible error banner displayed below the auth form on failure.
+ *
+ * Owns:
+ *   - Rendering a `role="alert"` `InlineNotice` when `message` is non-null.
+ *   - Exposing a forwarded `ref` so the parent can programmatically focus the notice
+ *     for accessibility (scroll-into-view after a failed submission).
+ *   - Optional `detail` secondary line for technical context.
+ *
+ * Does not own error state, retry logic, or form reset behavior.
+ * Renders nothing when `message` is null — safe to mount unconditionally.
+ */
 import { forwardRef } from "react";
 import { InlineNotice } from "@/components/ui";
 import styles from "../AuthPage.module.css";

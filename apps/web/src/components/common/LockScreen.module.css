@@ -124,6 +124,33 @@
   cursor: not-allowed;
 }
 
+.biometricBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.42rem;
+  width: 100%;
+  min-height: 40px;
+  padding: 0 1.2rem;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--accent) 10%, transparent);
+  border: 1px solid color-mix(in srgb, var(--accent) 28%, transparent);
+  color: var(--accent);
+  font-size: 0.84rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background var(--motion-duration-fast) ease, opacity var(--motion-duration-fast) ease;
+}
+
+.biometricBtn:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--accent) 18%, transparent);
+}
+
+.biometricBtn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
 .logoutBtn {
   display: flex;
   align-items: center;

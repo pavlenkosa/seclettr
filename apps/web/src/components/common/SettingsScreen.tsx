@@ -1,3 +1,19 @@
+/**
+ * SettingsScreen — settings shell and section orchestrator.
+ *
+ * Owns:
+ *   - top-level settings navigation between appearance / notifications /
+ *     security sections
+ *   - mobile detail-frame behavior
+ *   - lazy loading of section bodies
+ *   - wiring shared settings state hooks into the active section
+ *
+ * Does not own:
+ *   - individual section business logic
+ *   - auth/session state
+ *   - app-level routing
+ *   - reusable field primitive contracts
+ */
 import {
   lazy,
   Suspense,
@@ -64,8 +80,14 @@ export function SettingsScreen({
   const {
     themeMode,
     accentColor,
+    fontSize,
+    customThemeBg,
+    customThemeAccent,
     setThemeMode,
     setAccentColor,
+    setFontSize,
+    setCustomThemeBg,
+    setCustomThemeAccent,
   } = useAppearanceSettings();
   const {
     callSecurityMode,
@@ -90,10 +112,9 @@ export function SettingsScreen({
       id: "appearance",
       title: t("settings.sections.appearance"),
       description: t("settings.sections.appearance.description"),
-      summary: [
-        t(`settings.theme.${themeMode}`),
-        t(`settings.colors.${accentColor}`),
-      ].join(" · "),
+      summary: themeMode === "custom"
+        ? [t("settings.theme.custom"), customThemeBg].join(" · ")
+        : [t(`settings.theme.${themeMode}`), t(`settings.colors.${accentColor}`)].join(" · "),
       icon: <SparklesIcon />,
     },
     {
@@ -117,6 +138,7 @@ export function SettingsScreen({
     accentColor,
     autoDecryptMedia,
     callSecurityMode,
+    customThemeBg,
     notificationsSummary,
     t,
     themeMode,
@@ -147,8 +169,14 @@ export function SettingsScreen({
           setLocale={setLocale}
           themeMode={themeMode}
           accentColor={accentColor}
+          fontSize={fontSize}
+          customThemeBg={customThemeBg}
+          customThemeAccent={customThemeAccent}
           setThemeMode={setThemeMode}
           setAccentColor={setAccentColor}
+          setFontSize={setFontSize}
+          setCustomThemeBg={setCustomThemeBg}
+          setCustomThemeAccent={setCustomThemeAccent}
         />
       ) : null}
 
@@ -181,16 +209,13 @@ export function SettingsScreen({
 
       <div className={styles.layout} data-detail-open={isMobileViewport && mobileDetailOpen ? "true" : "false"}>
         <aside className={styles.menuPane}>
-          <SettingsAccountSummary
-            username={username}
-            eyebrow={t("settings.title")}
-            appliedInstantlyLabel={t("settings.appliedInstantly")}
-          />
+          <SettingsAccountSummary username={username} />
           <SettingsSectionNav
             sections={sectionEntries}
             activeSection={activeSection}
             onSelect={handleSectionClick}
             ariaLabel={t("settings.sections.ariaLabel")}
+            note={t("settings.appliedInstantly")}
           />
         </aside>
 

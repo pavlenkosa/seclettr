@@ -9,7 +9,13 @@ import { useAuthStore } from "@/stores/auth";
 import { useMessagesStore } from "@/stores/messages";
 import { useGroupsStore } from "@/stores/groups";
 import { CALL_MEDIA_DEBUG_ENABLED_KEY } from "@/calls/shared/media/call-media-debug";
+import { GroupCallNotice } from "@/calls/group/presentation/GroupCallNotice";
 import { StorageInspector } from "./StorageInspector";
+import { StatusBadge } from "./ui/feedback/StatusBadge";
+import { LabelPill } from "./ui/feedback/LabelPill";
+import { IconPill } from "./ui/actions/IconPill";
+import { SecurityModeBadge } from "./ui/feedback/SecurityModeBadge";
+import { InlineNotice } from "./ui/feedback/InlineNotice";
 import styles from "./DevToolsPanel.module.css";
 
 type CallDebugWindow = Window & {
@@ -169,6 +175,14 @@ export function DevToolsPanel() {
   const [mockCount, setMockCount] = useState(5);
   const [chatMockCount, setChatMockCount] = useState(20);
   const [showStorage, setShowStorage] = useState(false);
+  const [showBadges, setShowBadges] = useState(false);
+  const [mockCallNotice, setMockCallNotice] = useState<{
+    callType: "audio" | "video";
+    status: "ringing" | "active";
+  } | null>(null);
+  const [mockMissedGroupBanner, setMockMissedGroupBanner] = useState(false);
+  const [mockOtherGroupBanner, setMockOtherGroupBanner] = useState(false);
+  const [mockMissedDirectBanner, setMockMissedDirectBanner] = useState(false);
   const [callDebugEnabled, setCallDebugEnabled] = useState(() => (
     localStorage.getItem(CALL_MEDIA_DEBUG_ENABLED_KEY) === "1"
   ));
@@ -366,6 +380,141 @@ export function DevToolsPanel() {
             )}
           </div>
 
+          {/* ── Call UI preview ───────────────────────── */}
+          <div className={styles.section}>
+            <div className={styles.sectionLabel}>GroupCallNotice</div>
+            <div className={styles.btnRow}>
+              {(["audio", "video"] as const).map((ct) =>
+                (["ringing", "active"] as const).map((st) => {
+                  const active = mockCallNotice?.callType === ct && mockCallNotice?.status === st;
+                  return (
+                    <button
+                      key={`${ct}-${st}`}
+                      onClick={() => setMockCallNotice(active ? null : { callType: ct, status: st })}
+                      className={`${styles.btn} ${styles.btnFlex} ${active ? styles.btnSuccess : styles.btnMuted}`}
+                      style={{ fontSize: 10 }}
+                    >
+                      {ct === "video" ? "📹" : "📞"} {st}
+                    </button>
+                  );
+                })
+              )}
+            </div>
+            {mockCallNotice && (
+              <div className={styles.callNoticePreview}>
+                <GroupCallNotice
+                  callType={mockCallNotice.callType}
+                  status={mockCallNotice.status}
+                  callerLabel="alice"
+                  participantCount={3}
+                  onJoin={() => setMockCallNotice(null)}
+                />
+              </div>
+            )}
+          </div>
+
+          <div className={styles.section}>
+            <div className={styles.sectionLabel}>Alert banners (fixed, top-center)</div>
+            <div className={styles.btnRow}>
+              <button
+                onClick={() => setMockMissedGroupBanner((v) => !v)}
+                className={`${styles.btn} ${styles.btnFlex} ${mockMissedGroupBanner ? styles.btnSuccess : styles.btnMuted}`}
+                style={{ fontSize: 10 }}
+              >
+                Пропущенный
+              </button>
+              <button
+                onClick={() => setMockOtherGroupBanner((v) => !v)}
+                className={`${styles.btn} ${styles.btnFlex} ${mockOtherGroupBanner ? styles.btnSuccess : styles.btnMuted}`}
+                style={{ fontSize: 10 }}
+              >
+                Другая группа
+              </button>
+              <button
+                onClick={() => setMockMissedDirectBanner((v) => !v)}
+                className={`${styles.btn} ${styles.btnFlex} ${mockMissedDirectBanner ? styles.btnSuccess : styles.btnMuted}`}
+                style={{ fontSize: 10 }}
+              >
+                Пропущен 1:1
+              </button>
+            </div>
+          </div>
+
+          {/* ── Badge showcase ────────────────────────── */}
+          <div className={styles.section}>
+            <button
+              onClick={() => setShowBadges((v) => !v)}
+              className={`${styles.btnToggle} ${showBadges ? styles.btnToggleActive : ""}`}
+            >
+              {showBadges ? "▲ Hide badges" : "▼ Badge showcase"}
+            </button>
+            {showBadges && (
+              <div style={{ marginTop: 10, display: "flex", flexDirection: "column", gap: 10 }}>
+                <div>
+                  <div className={styles.sectionLabel}>StatusBadge — tones (sm)</div>
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: 6, alignItems: "center" }}>
+                    <StatusBadge tone="neutral">neutral</StatusBadge>
+                    <StatusBadge tone="accent">accent</StatusBadge>
+                    <StatusBadge tone="success">success</StatusBadge>
+                    <StatusBadge tone="warning">warning</StatusBadge>
+                    <StatusBadge tone="danger">danger</StatusBadge>
+                  </div>
+                </div>
+                <div>
+                  <div className={styles.sectionLabel}>StatusBadge — sizes · dot · icon</div>
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: 6, alignItems: "center" }}>
+                    <StatusBadge size="sm">sm</StatusBadge>
+                    <StatusBadge size="md">md</StatusBadge>
+                    <StatusBadge size="lg">lg</StatusBadge>
+                    <StatusBadge tone="success" dot>dot</StatusBadge>
+                    <StatusBadge tone="accent" icon="🔒">icon</StatusBadge>
+                  </div>
+                </div>
+                <div>
+                  <div className={styles.sectionLabel}>LabelPill — default</div>
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: 6, alignItems: "center" }}>
+                    <LabelPill size="xs">xs</LabelPill>
+                    <LabelPill size="sm">sm</LabelPill>
+                    <LabelPill size="md">md</LabelPill>
+                  </div>
+                </div>
+                <div>
+                  <div className={styles.sectionLabel}>LabelPill — overlay</div>
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: 6, alignItems: "center", background: "#1a1a2e", padding: "6px 8px", borderRadius: 4 }}>
+                    <LabelPill tone="overlay" size="xs">xs</LabelPill>
+                    <LabelPill tone="overlay" size="sm">sm</LabelPill>
+                    <LabelPill tone="overlay" size="md">md</LabelPill>
+                  </div>
+                </div>
+                <div>
+                  <div className={styles.sectionLabel}>IconPill</div>
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: 6, alignItems: "center" }}>
+                    <IconPill icon="🔒" size="sm">sm</IconPill>
+                    <IconPill icon="📹" size="md">md</IconPill>
+                  </div>
+                </div>
+                <div>
+                  <div className={styles.sectionLabel}>SecurityModeBadge</div>
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: 6, alignItems: "center" }}>
+                    <SecurityModeBadge tone="frame">Frame</SecurityModeBadge>
+                    <SecurityModeBadge tone="transport">Transport</SecurityModeBadge>
+                  </div>
+                </div>
+                <div>
+                  <div className={styles.sectionLabel}>InlineNotice — sm / md</div>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                    <InlineNotice tone="info" size="sm">info · sm</InlineNotice>
+                    <InlineNotice tone="warning" size="sm">warning · sm</InlineNotice>
+                    <InlineNotice tone="error" size="sm">error · sm</InlineNotice>
+                    <InlineNotice tone="info" size="md">info · md</InlineNotice>
+                    <InlineNotice tone="warning" size="md">warning · md</InlineNotice>
+                    <InlineNotice tone="error" size="md">error · md</InlineNotice>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+
           {/* ── Actions ───────────────────────────────── */}
           <div className={styles.btnGroup}>
             <button
@@ -410,6 +559,35 @@ export function DevToolsPanel() {
       >
         ⚙
       </button>
+
+      {(mockMissedGroupBanner || mockOtherGroupBanner || mockMissedDirectBanner) && (
+        <div className={styles.mockAlertOverlay}>
+          {mockMissedGroupBanner && (
+            <div className={`${styles.mockAlertBanner} ${styles.mockAlertBannerMissed}`} role="alert">
+              <span className={styles.mockAlertText}>Пропущенный групповой звонок</span>
+              <div style={{ display: "flex", gap: "0.36rem", flexShrink: 0 }}>
+                <button className={styles.mockAlertDismiss} onClick={() => setMockMissedGroupBanner(false)}>Скрыть</button>
+              </div>
+            </div>
+          )}
+          {mockOtherGroupBanner && (
+            <div className={styles.mockAlertBanner} role="alert">
+              <span className={styles.mockAlertText}>Идёт звонок в Design Reviews</span>
+              <div style={{ display: "flex", gap: "0.36rem", flexShrink: 0 }}>
+                <button className={styles.mockAlertBtn} onClick={() => setMockOtherGroupBanner(false)}>Перейти</button>
+              </div>
+            </div>
+          )}
+          {mockMissedDirectBanner && (
+            <div className={`${styles.mockAlertBanner} ${styles.mockAlertBannerMissed}`} role="alert">
+              <span className={styles.mockAlertText}>Пропущенный звонок от alice</span>
+              <div style={{ display: "flex", gap: "0.36rem", flexShrink: 0 }}>
+                <button className={styles.mockAlertDismiss} onClick={() => setMockMissedDirectBanner(false)}>Скрыть</button>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }

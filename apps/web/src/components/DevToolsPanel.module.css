@@ -215,3 +215,80 @@
 .storageWrap {
   margin-top: 8px;
 }
+
+/* ── Mock call UI preview ─────────────────────────────────────────────────── */
+
+/* GroupCallNotice preview — inline in panel */
+.callNoticePreview {
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  border: 1px solid var(--border);
+  margin-top: 6px;
+  font-family: var(--font-sans, system-ui, sans-serif);
+}
+
+/* Floating call alert banners — position: fixed, same look as ChatPage */
+.mockAlertOverlay {
+  position: fixed;
+  top: 0.6rem;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 390;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  width: max-content;
+  max-width: min(440px, calc(100vw - 2rem));
+  font-family: var(--font-sans, system-ui, sans-serif);
+}
+
+.mockAlertBanner {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.36rem 0.46rem 0.36rem 1rem;
+  background: var(--surface-shell-strong, var(--bg-secondary));
+  border: 1px solid color-mix(in srgb, var(--panel-border-soft, var(--border)) 80%, transparent);
+  border-radius: 999px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.28), 0 1px 4px rgba(0, 0, 0, 0.1);
+  color: var(--text-primary);
+  font-size: 0.8rem;
+  font-weight: 500;
+}
+
+.mockAlertBannerMissed {
+  border-color: color-mix(in srgb, var(--danger, #ef4444) 40%, transparent);
+}
+
+.mockAlertText {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  line-height: 1.25;
+}
+
+.mockAlertBtn {
+  padding: 0.24rem 0.7rem;
+  border: none;
+  border-radius: 999px;
+  background: var(--accent);
+  color: #fff;
+  font-size: 0.74rem;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.mockAlertDismiss {
+  padding: 0.24rem 0.7rem;
+  border: 1px solid color-mix(in srgb, var(--panel-border-soft, var(--border)) 80%, transparent);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: 0.74rem;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+}

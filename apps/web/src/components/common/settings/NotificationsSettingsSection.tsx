@@ -7,6 +7,7 @@ import {
   getNativeNotificationPermission,
   requestNativeNotificationPermission,
 } from "@/lib/native-notifications";
+import { isVibrationSupported } from "@/lib/native-haptics";
 import { SettingsGroup, SettingsRow } from "./SettingsSectionPrimitives";
 import styles from "../SettingsSections.module.css";
 
@@ -79,9 +80,11 @@ interface NotificationsSettingsSectionProps {
   readonly pushPreferences: PushPreferencesDto;
   readonly pushSubscriptions: PushSubscriptionDto[];
   readonly pushBusy: boolean;
+  readonly vibrationEnabled: "on" | "off";
   readonly onBrowserPushToggle: (nextValue: "on" | "off") => Promise<void>;
   readonly onDeletePushSubscription: (subscriptionId: string) => Promise<void>;
   readonly onPreferenceToggle: <K extends keyof PushPreferencesDto>(key: K, nextValue: "on" | "off") => Promise<void>;
+  readonly onVibrationToggle: (nextValue: "on" | "off") => void;
 }
 
 function formatPushSubscriptionLabel(
@@ -103,9 +106,11 @@ export function NotificationsSettingsSection({
   pushPreferences,
   pushSubscriptions,
   pushBusy,
+  vibrationEnabled,
   onBrowserPushToggle,
   onDeletePushSubscription,
   onPreferenceToggle,
+  onVibrationToggle,
 }: NotificationsSettingsSectionProps) {
   const { t } = useI18n();
 
@@ -284,6 +289,27 @@ export function NotificationsSettingsSection({
           </div>
         )}
       </SettingsGroup>
+
+      {isVibrationSupported() ? (
+        <SettingsGroup
+          eyebrow={t("settings.groups.feedback")}
+          title={t("settings.groups.feedback.title")}
+          description={t("settings.groups.feedback.description")}
+        >
+          <SettingsRow
+            label={t("settings.haptics.vibration")}
+            description={t("settings.haptics.vibration.description")}
+          >
+            <SegmentedControl
+              value={vibrationEnabled}
+              onChange={onVibrationToggle}
+              ariaLabel={t("settings.haptics.vibration")}
+              grouped
+              options={togglePushOptions}
+            />
+          </SettingsRow>
+        </SettingsGroup>
+      ) : null}
     </div>
   );
 }

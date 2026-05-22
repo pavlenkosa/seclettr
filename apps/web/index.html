@@ -35,9 +35,20 @@
     <link rel="manifest" href="/manifest.webmanifest" />
     <meta name="referrer" content="no-referrer" />
     <title>Seclettr</title>
+    <!--
+      Immediate first-paint background that matches the dark default and
+      flips to light when the system prefers it. The theme-preboot.js script
+      below refines this with the user's saved preference from localStorage.
+    -->
+    <style>
+      body { background: #0b1526; }
+      @media (prefers-color-scheme: light) { body { background: #eef3fa; } }
+    </style>
   </head>
   <body>
     <div id="root"></div>
+    <!-- Synchronous: applies data-theme/data-accent from localStorage before React mounts. -->
+    <script src="/theme-preboot.js"></script>
     <script src="/runtime-config.js"></script>
     <script type="module" src="/src/main.tsx"></script>
   </body>

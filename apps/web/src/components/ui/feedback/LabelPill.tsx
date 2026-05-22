@@ -11,7 +11,7 @@
 import type { HTMLAttributes, ReactNode } from "react";
 import styles from "./LabelPill.module.css";
 
-type LabelPillTone = "default" | "overlay";
+type LabelPillTone = "default" | "overlay" | "warning";
 type LabelPillSize = "xs" | "sm" | "md";
 
 export interface LabelPillProps extends Readonly<HTMLAttributes<HTMLSpanElement>> {

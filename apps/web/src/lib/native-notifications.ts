@@ -22,6 +22,23 @@ interface CapacitorGlobal {
 
 let _initialized = false;
 
+interface NativeNotifPrefs {
+  directMessagesEnabled: boolean;
+  groupMessagesEnabled: boolean;
+  showSender: boolean;
+}
+
+let _prefs: NativeNotifPrefs = {
+  directMessagesEnabled: true,
+  groupMessagesEnabled: true,
+  showSender: true,
+};
+
+/** Called by usePushSettings whenever preferences are loaded or updated. */
+export function setNativeNotificationPreferences(prefs: NativeNotifPrefs): void {
+  _prefs = prefs;
+}
+
 // Access the plugin through the Capacitor global injected by the native bridge —
 // avoids bundling @capacitor/local-notifications into the web build entirely.
 function getPlugin(): LocalNotificationsPlugin | null {
@@ -89,14 +106,17 @@ export async function showNativeDmNotification(params: {
   content: string;
   messageType: string;
 }): Promise<void> {
+  if (!_prefs.directMessagesEnabled) return;
   const plugin = getPlugin();
   if (!plugin) return;
   if (!(await ensurePermission())) return;
 
   const { senderUserId, senderUsername, content, messageType } = params;
-  const title = `@${senderUsername}`;
+  const title = _prefs.showSender ? `@${senderUsername}` : "Seclettr";
   let body: string;
-  if (messageType === "text") {
+  if (!_prefs.showSender) {
+    body = "New message";
+  } else if (messageType === "text") {
     body = truncate(content);
   } else if (messageType === "voice_note") {
     body = "🎤 Voice message";
@@ -125,6 +145,7 @@ export async function showNativeGroupNotification(params: {
   content: string;
   messageType: string;
 }): Promise<void> {
+  if (!_prefs.groupMessagesEnabled) return;
   const plugin = getPlugin();
   if (!plugin) return;
   if (!(await ensurePermission())) return;
@@ -132,7 +153,9 @@ export async function showNativeGroupNotification(params: {
   const { groupId, groupName, senderUsername, content, messageType } = params;
   const title = groupName || "Group";
   let body: string;
-  if (messageType === "text") {
+  if (!_prefs.showSender) {
+    body = "New group message";
+  } else if (messageType === "text") {
     body = `@${senderUsername}: ${truncate(content)}`;
   } else if (messageType === "voice_note") {
     body = `@${senderUsername}: 🎤 Voice message`;

@@ -12,6 +12,7 @@ import {
 } from "@/lib/current-device-crypto-material";
 import { api } from "@/lib/api";
 import { logger } from "@/lib/logger.js";
+import { useAuthStore } from "@/stores/auth";
 import type {
   CachedPeerDevicePublicKeys,
   CurrentDeviceCallAuthSigner,
@@ -20,13 +21,12 @@ import type {
 
 const peerDevicePublicKeyCache = new Map<string, CachedPeerDevicePublicKeys>();
 
-export async function loadAuthStoreState() {
-  const { useAuthStore } = await import("@/stores/auth");
+export function loadAuthStoreState() {
   return useAuthStore.getState();
 }
 
 export async function loadCurrentCallAuthSigner(): Promise<CurrentDeviceCallAuthSigner | null> {
-  const { storageKey, userId, deviceId } = await loadAuthStoreState();
+  const { storageKey, userId, deviceId } = loadAuthStoreState();
   if (!storageKey || !userId || !deviceId) {
     logger.warn("[call-auth] loadCurrentCallAuthSigner: auth store missing fields", {
       hasStorageKey: !!storageKey,

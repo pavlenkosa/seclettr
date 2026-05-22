@@ -1,27 +1,48 @@
+/**
+ * App — top-level web shell and route gate.
+ *
+ * Owns:
+ *   - initial app boot skeleton and route gating
+ *   - auth/lock/recovery route decisions
+ *   - one-shot session restore kickoff
+ *   - app-level realtime listener attachment
+ *   - lazy route prefetching and devtools visibility
+ *   - non-blocking client runtime bootstrap for push/native bridges
+ *
+ * Does not own:
+ *   - auth lifecycle semantics
+ *   - chat page runtime
+ *   - room/direct/group call runtime
+ *   - settings/chat presentation internals
+ */
 import { lazy, Suspense, useCallback, useEffect, useRef, useState, type ReactNode } from "react";
-import { initPushActionHandler, setAppBadge, getTotalUnreadCount } from "./lib/push-action-handler";
-import { initNativeNotifications } from "./lib/native-notifications";
-import { initNativeBackHandler } from "./lib/native-back-handler";
 import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import { useShallow } from "zustand/react/shallow";
 import { AppErrorFallback, ErrorBoundary } from "./components/common/ErrorBoundary";
 import { AppBootSkeleton } from "./components/common/AppBootSkeleton";
-import { LockScreen } from "./components/common/LockScreen";
 import { useI18n } from "./i18n";
+import { startAppRealtimeListeners } from "./lib/app-realtime-bootstrap";
+import { logger } from "./lib/logger.js";
 import { useInactivityLock } from "./lib/useInactivityLock";
-import { AuthPage } from "./pages/AuthPage";
-import { AuthRecoveryPage } from "./pages/AuthRecoveryPage";
-import { RoomJoinPage } from "./pages/RoomJoinPage";
 import { useAuthStore } from "./stores/auth";
-import { useMessagesStore } from "./stores/messages";
-import { useGroupsStore } from "./stores/groups";
-import { usePlainMessagesStore, usePlainGroupsStore } from "./stores/plain";
 
 /** 15 minutes — configurable in Settings (future). */
 const LOCK_TIMEOUT_MS = 15 * 60 * 1000;
 
 const ChatPage = lazy(() =>
   import("./pages/ChatPage").then(({ ChatPage: C }) => ({ default: C }))
+);
+const AuthPage = lazy(() =>
+  import("./pages/AuthPage").then(({ AuthPage: C }) => ({ default: C }))
+);
+const AuthRecoveryPage = lazy(() =>
+  import("./pages/AuthRecoveryPage").then(({ AuthRecoveryPage: C }) => ({ default: C }))
+);
+const RoomJoinPage = lazy(() =>
+  import("./pages/RoomJoinPage").then(({ RoomJoinPage: C }) => ({ default: C }))
+);
+const LockScreen = lazy(() =>
+  import("./components/common/LockScreen").then(({ LockScreen: C }) => ({ default: C }))
 );
 const DevToolsPanel = import.meta.env.DEV
   ? lazy(() => import("./components/DevToolsPanel").then(({ DevToolsPanel: C }) => ({ default: C })))
@@ -35,7 +56,6 @@ const DEVTOOLS_VISIBILITY_KEY = "seclettr.devtools.visible.v1";
 interface AppRouteElementsOptions {
   readonly hasActiveSession: boolean;
   readonly shouldForceRecovery: boolean;
-  readonly loadingFallback: ReactNode;
 }
 
 function readDevToolsVisibility(): boolean {
@@ -81,13 +101,36 @@ function renderAuthRouteElement({
 
   return hasActiveSession
     ? <Navigate to="/" replace />
-    : <AuthPage />;
+    : (
+      <Suspense fallback={null}>
+        <AuthPage />
+      </Suspense>
+    );
+}
+
+function renderAuthRecoveryRouteElement({
+  hasActiveSession,
+}: Pick<AppRouteElementsOptions, "hasActiveSession">): ReactNode {
+  return hasActiveSession
+    ? <Navigate to="/" replace />
+    : (
+      <Suspense fallback={null}>
+        <AuthRecoveryPage />
+      </Suspense>
+    );
+}
+
+function renderRoomJoinRouteElement(_loadingFallback: ReactNode): ReactNode {
+  return (
+    <Suspense fallback={null}>
+      <RoomJoinPage />
+    </Suspense>
+  );
 }
 
 function renderChatRouteElement({
   hasActiveSession,
   shouldForceRecovery,
-  loadingFallback,
 }: AppRouteElementsOptions): ReactNode {
   if (shouldForceRecovery) {
     return <Navigate to="/auth/recovery" replace />;
@@ -95,7 +138,7 @@ function renderChatRouteElement({
 
   return hasActiveSession
     ? (
-      <Suspense fallback={loadingFallback}>
+      <Suspense fallback={null}>
         <ChatPage />
       </Suspense>
     )
@@ -141,9 +184,11 @@ export function App() {
 
   const [isDevToolsVisible, setIsDevToolsVisible] = useState(() => readDevToolsVisibility());
   const hasStarted = useRef(false);
-  // Skeleton mirrors the chat layout (sidebar + thread mark) so the boot →
-  // app transition is visually continuous, not a stark text-only screen.
-  const loadingFallback = <AppBootSkeleton />;
+  // bootFallback: shown only during initial session restore and the lock screen Suspense boundary.
+  // routeFallback: null — route chunks are prefetched immediately so Suspense resolves instantly;
+  //   using null avoids the skeleton appearing a second time and re-triggering its entry animation.
+  const bootFallback = <AppBootSkeleton />;
+  const loadingFallback = bootFallback;
 
   const handleLock = useCallback(() => {
     void lock();
@@ -155,39 +200,52 @@ export function App() {
     onLock: handleLock,
   });
 
-
   useEffect(() => {
-    initPushActionHandler();
-    void initNativeNotifications();
-    initNativeBackHandler();
+    let cancelled = false;
+
+    void import("./lib/app-client-runtime-bootstrap")
+      .then(({ initAppClientRuntime }) => {
+        if (!cancelled) {
+          initAppClientRuntime();
+        }
+      })
+      .catch((error) => {
+        logger.error("[app] failed to initialize app client runtime", error);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  // Prefetch route chunks immediately so they are ready before isBootstrapping flips
+  // to false — this prevents Suspense fallbacks from showing and avoids a second
+  // skeleton appearance after the boot skeleton dismisses.
+  useEffect(() => {
+    void import("./pages/ChatPage");
+    void import("./pages/AuthPage");
+    void import("./pages/AuthRecoveryPage");
+    void import("./pages/RoomJoinPage");
   }, []);
 
   useEffect(() => {
-    const stopMessagesListening = useMessagesStore.getState().startListening();
-    const stopGroupsListening = useGroupsStore.getState().startListening();
-    const stopPlainMessagesListening = usePlainMessagesStore.getState().subscribe();
-    const stopPlainGroupsListening = usePlainGroupsStore.getState().subscribe();
+    let stopRealtimeListeners: (() => void) | null = null;
 
-    const unsubBadgeDm = usePlainMessagesStore.subscribe(() => {
-      setAppBadge(getTotalUnreadCount());
-    });
-    const unsubBadgeGroups = usePlainGroupsStore.subscribe(() => {
-      setAppBadge(getTotalUnreadCount());
-    });
+    try {
+      stopRealtimeListeners = startAppRealtimeListeners();
+    } catch (error) {
+      logger.error("[app] failed to attach realtime listeners", error);
+    }
 
     return () => {
-      stopMessagesListening();
-      stopGroupsListening();
-      stopPlainMessagesListening();
-      stopPlainGroupsListening();
-      unsubBadgeDm();
-      unsubBadgeGroups();
+      stopRealtimeListeners?.();
     };
   }, []);
 
   useEffect(() => {
     if (hasStarted.current) return;
     hasStarted.current = true;
+
     void tryRestoreSession();
   }, [tryRestoreSession]);
 
@@ -217,18 +275,20 @@ export function App() {
 
   if (isSessionLocked) {
     return (
-      <LockScreen
-        username={username}
-        isUnlocking={isUnlocking}
-        pinWrong={authError === "pin_wrong"}
-        onUnlock={(pin) => {
-          clearError();
-          void unlock(pin);
-        }}
-        onLogout={() => {
-          void logout();
-        }}
-      />
+      <Suspense fallback={loadingFallback}>
+        <LockScreen
+          username={username}
+          isUnlocking={isUnlocking}
+          pinWrong={authError === "pin_wrong"}
+          onUnlock={(pin) => {
+            clearError();
+            void unlock(pin);
+          }}
+          onLogout={() => {
+            void logout();
+          }}
+        />
+      </Suspense>
     );
   }
 
@@ -238,6 +298,8 @@ export function App() {
 
   return (
     <ErrorBoundary FallbackComponent={AppErrorFallback}>
+      {/* Key forces a fresh mount (and thus fade-in) each time we leave the boot skeleton. */}
+      <div key="app-shell" style={{ display: "contents", animation: "appShellFadeIn 220ms ease both" }}>
       <BrowserRouter>
         <Routes>
           {UIKitPage ? (
@@ -253,22 +315,22 @@ export function App() {
 
           <Route
             path="/room/:token"
-            element={<RoomJoinPage />}
+            element={renderRoomJoinRouteElement(null)}
           />
 
           <Route
             path="/auth/recovery"
-            element={hasActiveSession ? <Navigate to="/" replace /> : <AuthRecoveryPage />}
+            element={renderAuthRecoveryRouteElement({ hasActiveSession })}
           />
 
           <Route
             path="/auth"
-            element={renderAuthRouteElement({ hasActiveSession, shouldForceRecovery, loadingFallback })}
+            element={renderAuthRouteElement({ hasActiveSession, shouldForceRecovery })}
           />
 
           <Route
             path="/*"
-            element={renderChatRouteElement({ hasActiveSession, shouldForceRecovery, loadingFallback })}
+            element={renderChatRouteElement({ hasActiveSession, shouldForceRecovery })}
           />
         </Routes>
       </BrowserRouter>
@@ -278,6 +340,7 @@ export function App() {
           <DevToolsPanel />
         </Suspense>
       ) : null}
+      </div>
     </ErrorBoundary>
   );
 }

@@ -1,11 +1,16 @@
-import React, { useState } from "react";
+import React, { lazy, Suspense, useState } from "react";
 import ReactDOM from "react-dom/client";
 import { App } from "./App";
-import { I18nProvider } from "./i18n";
+import { I18nProvider, resolveInitialLocale } from "./i18n";
+import { ensureLocaleMessages } from "./i18n/messages";
 import { reportError } from "./lib/error-reporter.js";
 import { isNativePlatform, getNativeServerUrl } from "./lib/native-platform";
-import { NativeServerSetup } from "./pages/NativeServerSetup";
+import { AppBootSkeleton } from "./components/common/AppBootSkeleton";
 import "./styles/global.css";
+
+const NativeServerSetup = lazy(() =>
+  import("./pages/NativeServerSetup").then(({ NativeServerSetup: Component }) => ({ default: Component }))
+);
 
 globalThis.addEventListener("error", (event) => {
   reportError(event.error ?? event.message, "globalThis.onerror");
@@ -26,15 +31,28 @@ if ("serviceWorker" in navigator) {
   }
 }
 
+// Patch React internals before the first render so wdyr can trace re-renders.
+// When the package is absent the import resolves to a no-op stub (see vite.config.ts).
+if (import.meta.env.DEV) {
+  await import("./lib/why-did-you-render");
+}
+
 const root = document.getElementById("root");
 if (!root) throw new Error("Root element not found");
+
+const initialLocale = resolveInitialLocale();
+const initialMessages = await ensureLocaleMessages(initialLocale);
 
 function Root() {
   const needsSetup = isNativePlatform() && !getNativeServerUrl();
   const [configured, setConfigured] = useState(!needsSetup);
 
   if (!configured) {
-    return <NativeServerSetup onConfigured={() => setConfigured(true)} />;
+    return (
+      <Suspense fallback={<AppBootSkeleton />}>
+        <NativeServerSetup onConfigured={() => setConfigured(true)} />
+      </Suspense>
+    );
   }
 
   return <App />;
@@ -42,7 +60,7 @@ function Root() {
 
 ReactDOM.createRoot(root).render(
   <React.StrictMode>
-    <I18nProvider>
+    <I18nProvider initialLocale={initialLocale} initialMessages={initialMessages}>
       <Root />
     </I18nProvider>
   </React.StrictMode>

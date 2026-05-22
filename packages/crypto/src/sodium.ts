@@ -1,13 +1,24 @@
-import _sodium from "libsodium-wrappers-sumo";
+type SodiumModuleNamespace = typeof import("libsodium-wrappers-sumo");
+type SodiumModule = SodiumModuleNamespace extends { default: infer T }
+  ? T
+  : SodiumModuleNamespace;
 
-let initialised = false;
+let sodiumPromise: Promise<SodiumModule> | null = null;
 
-export async function ensureSodium(): Promise<typeof _sodium> {
-  if (!initialised) {
-    await _sodium.ready;
-    initialised = true;
-  }
-  return _sodium;
+function resolveSodiumModule(module: SodiumModuleNamespace): SodiumModule {
+  return (("default" in module ? module.default : module) as SodiumModule);
 }
 
-export type Sodium = typeof _sodium;
+export async function ensureSodium(): Promise<SodiumModule> {
+  if (!sodiumPromise) {
+    sodiumPromise = import("libsodium-wrappers-sumo").then(async (module) => {
+      const sodium = resolveSodiumModule(module);
+      await sodium.ready;
+      return sodium;
+    });
+  }
+
+  return sodiumPromise;
+}
+
+export type Sodium = Awaited<ReturnType<typeof ensureSodium>>;

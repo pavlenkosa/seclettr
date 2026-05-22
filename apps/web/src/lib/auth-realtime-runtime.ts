@@ -12,7 +12,7 @@ interface CachedWsTicket {
 
 interface AuthRealtimeRuntimeOptions {
   onAccessTokenRefreshed: (accessToken: string) => void;
-  onSessionRefreshFailed: () => void;
+  onSessionRefreshFailed: () => void | Promise<void>;
 }
 
 export interface AuthRealtimeRuntime {
@@ -83,13 +83,13 @@ export function createAuthRealtimeRuntime(
     try {
       const newToken = await refreshSessionAccessToken();
       if (!newToken) {
-        options.onSessionRefreshFailed();
+        await options.onSessionRefreshFailed();
         return null;
       }
       options.onAccessTokenRefreshed(newToken);
       return newToken;
     } catch {
-      options.onSessionRefreshFailed();
+      await options.onSessionRefreshFailed();
       return null;
     }
   });

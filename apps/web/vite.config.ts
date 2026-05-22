@@ -11,6 +11,17 @@ const pkg = JSON.parse(fs.readFileSync(new URL("./package.json", import.meta.url
 const require = createRequire(import.meta.url);
 const libsodiumWrappersPath = require.resolve("libsodium-wrappers-sumo");
 const mediasoupClientPath = require.resolve("mediasoup-client");
+
+// Resolve to the real package when installed; fall back to a no-op stub so
+// environments that haven't run `pnpm install` (e.g. Docker containers) still
+// boot without crashing. The full tracing behaviour is available on the host
+// where the package is present.
+let wdyrResolved: string | null = null;
+try {
+  wdyrResolved = require.resolve("@welldone-software/why-did-you-render");
+} catch {
+  // Not installed — stub it at Vite resolution time.
+}
 const devApiHost = process.env["VITE_DEV_API_HOST"] ?? "127.0.0.1";
 const devApiPort = Number(process.env["VITE_DEV_API_PORT"] ?? "3001");
 const devSfuHost = process.env["VITE_DEV_SFU_HOST"] ?? devApiHost;
@@ -47,7 +58,8 @@ const JS_CHUNK_BUDGETS = {
   MessageComposer: 260 * 1024,
   MediaSendDialog: 60 * 1024,
   "composer-emoji-data": 260 * 1024,
-  "feature-calls-shared": 120 * 1024,
+  "feature-calls-shared-ui": 80 * 1024,
+  "feature-calls-shared-runtime": 96 * 1024,
   "feature-direct-calls": 380 * 1024,
   "feature-group-calls": 400 * 1024,
   RoomCallPanel: 160 * 1024,
@@ -58,20 +70,33 @@ const JS_CHUNK_BUDGETS = {
   "vendor-misc": 86 * 1024,
   "vendor-protocol": 100 * 1024,
   "vendor-calls": 200 * 1024,
-  // Crypto currently embeds the libsodium WASM payload and the password-lock
-  // KDF dependencies. Keep this high enough for the current baseline, but low
-  // enough to catch accidental crypto/runtime imports into the eager path.
-  "vendor-crypto": 1_120 * 1024,
+  "vendor-crypto": 220 * 1024,
+  // The libsodium wrapper and its WASM payload are intentionally isolated into
+  // a lazy chunk so auth/chat/call boot paths don't eagerly download them.
+  "vendor-sodium": 1_024 * 1024,
 } as const;
 
 const CSS_ASSET_BUDGETS = {
   ChatPage: 130 * 1024,
   MessageComposer: 45 * 1024,
-  "feature-calls-shared": 55 * 1024,
+  "feature-calls-shared-ui": 55 * 1024,
   "feature-direct-calls": 32 * 1024,
   "feature-group-calls": 80 * 1024,
   index: 40 * 1024,
 } as const;
+
+const DIRECT_CALL_ACTIVE_CHUNK_MATCHERS = [
+  "/src/calls/direct/presentation/components/directcallactiveoverlay.tsx",
+  "/src/calls/direct/presentation/components/directcallactiveminimized.tsx",
+  "/src/calls/direct/presentation/components/directcallcontrols.tsx",
+  "/src/calls/direct/presentation/components/directcallfloatingpreview.tsx",
+  "/src/calls/direct/presentation/components/directcallsecuritypanel.tsx",
+  "/src/calls/direct/presentation/components/directcallstage.tsx",
+  "/src/calls/direct/presentation/components/directcallstageviewerdialog.tsx",
+  "/src/calls/direct/presentation/components/callsecuritycard.tsx",
+  "/src/calls/direct/presentation/components/direct-call-video-constraints.ts",
+  "/src/calls/direct/presentation/usedirectcallstagepresentation.ts",
+] as const;
 
 const STATIC_ASSET_BUDGETS = {
   "seclettr-marimba": 1_700 * 1024,
@@ -201,8 +226,20 @@ function resolveManualChunk(id: string): string | undefined {
     return "composer-emoji-data";
   }
 
-  if (id.includes("/src/calls/shared/")) {
-    return "feature-calls-shared";
+  if (id.includes("/src/calls/shared/presentation/")) {
+    return "feature-calls-shared-ui";
+  }
+
+  if (
+    id.includes("/src/calls/shared/media/")
+    || id.includes("/src/calls/shared/crypto/")
+    || id.includes("/src/calls/shared/model/")
+  ) {
+    return "feature-calls-shared-runtime";
+  }
+
+  if (DIRECT_CALL_ACTIVE_CHUNK_MATCHERS.some((pattern) => normalizedId.includes(pattern))) {
+    return "feature-direct-calls-active-ui";
   }
 
   if (id.includes("/src/calls/direct/")) {
@@ -213,11 +250,11 @@ function resolveManualChunk(id: string): string | undefined {
     return "feature-group-calls";
   }
 
-  if (
-    id.includes("/packages/crypto/")
-    || id.includes("libsodium-wrappers-sumo")
-    || normalizedId.includes("sodium")
-  ) {
+  if (id.includes("libsodium-wrappers-sumo") || normalizedId.includes("sodium")) {
+    return "vendor-sodium";
+  }
+
+  if (id.includes("/packages/crypto/")) {
     return "vendor-crypto";
   }
 
@@ -299,6 +336,10 @@ export default defineConfig(({ command }) => ({
       "@": path.resolve(__dirname, "./src"),
       "libsodium-wrappers-sumo": libsodiumWrappersPath,
       "mediasoup-client": mediasoupClientPath,
+      // When the real package is absent, alias to a no-op so the app boots.
+      ...(wdyrResolved === null
+        ? { "@welldone-software/why-did-you-render": path.resolve(__dirname, "./src/lib/wdyr-stub.ts") }
+        : {}),
     },
   },
   server: {
@@ -387,7 +428,10 @@ export default defineConfig(({ command }) => ({
   build: {
     target: "es2022",
     sourcemap: buildSourcemap,
-    chunkSizeWarningLimit: 800,
+    // Vite's generic warning threshold is lower than our explicit bundle budget
+    // policy and flags the isolated lazy sodium/WASM chunk even when the eager
+    // app graph is healthy. Keep the stricter plugin budgets as the gate.
+    chunkSizeWarningLimit: 1_100,
     rollupOptions: {
       onwarn(warning, warn) {
         if (warning.code === "CIRCULAR_DEPENDENCY" || warning.message?.startsWith("Circular chunk:")) return;

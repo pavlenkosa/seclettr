@@ -1,10 +1,13 @@
-import { useEffect, useRef, useState } from "react";
+import { lazy, Suspense, useEffect, useRef, useState } from "react";
 import { useParams } from "react-router-dom";
 import { api } from "@/lib/api";
-import { RoomCallPanel } from "@/calls/room/RoomCallPanel";
 import type { RoomJoinPreviewResponse, RoomJoinResponse } from "@seclettr/protocol";
 import type { RoomCallSession } from "@/calls/room/room-call-bootstrap";
 import styles from "./RoomJoinPage.module.css";
+
+const RoomCallPanel = lazy(() =>
+  import("@/calls/room/RoomCallPanel").then(({ RoomCallPanel: Component }) => ({ default: Component }))
+);
 
 type PageState =
   | { phase: "loading" }
@@ -105,10 +108,12 @@ export function RoomJoinPage() {
   if (state.phase === "in-call") {
     return (
       <div className={styles.callRoot}>
-        <RoomCallPanel
-          session={state.session}
-          onLeave={() => setState({ phase: "left" })}
-        />
+        <Suspense fallback={<p className={styles.stateText}>Loading room call…</p>}>
+          <RoomCallPanel
+            session={state.session}
+            onLeave={() => setState({ phase: "left" })}
+          />
+        </Suspense>
       </div>
     );
   }

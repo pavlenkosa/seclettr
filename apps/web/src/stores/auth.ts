@@ -13,26 +13,6 @@
  *  3. Rotate refresh token and resume runtime transports
  */
 import { create } from "zustand";
-import { api } from "@/lib/api";
-import {
-  generateIdentityBundle,
-  generateSignedPreKey,
-  generateOneTimePreKeys,
-  storeEncrypted,
-  loadDecrypted,
-  toBase64Url,
-} from "@seclettr/crypto";
-import {
-  type StoredDeviceKeys,
-  hasUsableDeviceKeys,
-  normalizeStoredDeviceKeys,
-  toCurrentDeviceCryptoMaterial,
-} from "./auth-device-keys";
-import {
-  AUTH_PROTOCOL_VERSION,
-  type RegisterResponse,
-  type LoginResponse,
-} from "@seclettr/protocol";
 import {
   ensureExportableStorageKey,
   getOrCreateStorageKey,
@@ -41,15 +21,6 @@ import {
   removeStorageKeyPinProtection,
   unlockPersistedStorageKey,
 } from "@/lib/storage-key";
-import {
-  markCurrentDeviceCryptoMaterialSynced,
-} from "@/lib/current-device-crypto-material";
-import {
-  getOrCreateStoredRegistrationId,
-  getStoredDeviceRegistration,
-  setStoredDeviceRegistration,
-  type StoredDeviceRegistration,
-} from "@/lib/browser-trust-store";
 import { createAuthRealtimeRuntime } from "@/lib/auth-realtime-runtime";
 import { setSessionAccessToken } from "@/lib/session";
 import { logger } from "@/lib/logger.js";
@@ -60,10 +31,6 @@ import {
   setPinHash,
   verifyPin,
 } from "@/lib/app-lock-password";
-import { useMessagesStore } from "@/stores/messages";
-import { useGroupsStore } from "@/stores/groups";
-import { usePlainMessagesStore, usePlainGroupsStore, usePlainPinsStore } from "@/stores/plain";
-import { clearPlainAttachmentBlobCache } from "@/chats/runtime/plain-attachment-blob-cache";
 import type { AuthState } from "./auth-types";
 import {
   buildLockedState,
@@ -72,42 +39,30 @@ import {
   buildSignedOutState,
 } from "./auth-state-builders";
 import {
-  clearRatchetSessions,
   resolveRestoredSession,
   revokeServerSession,
   wipeLocalDeviceMaterial,
 } from "./auth-session-restore";
-import { isNativePlatform } from "@/lib/native-platform";
-import { nativeStorageSet, nativeStorageRemove } from "@/lib/native-storage";
+import { nativeStorageRemove } from "@/lib/native-storage";
+import { storePinBiometric, clearPinBiometric } from "@/lib/native-biometric";
 
 export type { AuthLifecycleState, AuthRecoveryReason, AuthState } from "./auth-types";
 
 const BACKGROUND_POLL_TOKEN_KEY = "sc:background_poll_token";
-
-async function fetchAndStoreBackgroundToken(): Promise<void> {
-  if (!isNativePlatform()) return;
-  try {
-    const { token } = await api.post<{ token: string }>("/auth/background-token");
-    await nativeStorageSet(BACKGROUND_POLL_TOKEN_KEY, token);
-  } catch {
-    // Non-critical — background runner just won't work until next login.
-  }
-}
-
-const OTK_BATCH_SIZE = 100;
 
 function suspendRealtimeSession(source: string): void {
   authRealtimeRuntime.suspend(source);
   setSessionAccessToken(null);
 }
 
-function clearEphemeralRuntimeState(): void {
-  useMessagesStore.getState().reset();
-  useGroupsStore.getState().reset();
-  usePlainMessagesStore.getState().reset();
-  usePlainGroupsStore.getState().reset();
-  usePlainPinsStore.getState().reset();
-  clearPlainAttachmentBlobCache();
+async function clearEphemeralRuntimeState(): Promise<void> {
+  const { clearFullRuntimeState } = await import("./auth-runtime-reset");
+  clearFullRuntimeState();
+}
+
+async function clearEncryptedRuntimeState(): Promise<void> {
+  const { clearEncryptedRuntimeState: clearEncryptedState } = await import("./auth-runtime-reset");
+  clearEncryptedState();
 }
 
 async function clearLocalSessionSecrets(params: {
@@ -119,7 +74,7 @@ async function clearLocalSessionSecrets(params: {
   await revokeServerSession();
   setSessionAccessToken(null);
   await wipeLocalDeviceMaterial(params);
-  clearEphemeralRuntimeState();
+  await clearEphemeralRuntimeState();
 }
 
 export const useAuthStore = create<AuthState>((set, get) => ({
@@ -141,79 +96,22 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     set({ error: null, authRecoveryReason: null, authOperation: "idle" });
     try {
       const { key: storageKey, volatile: storageKeyVolatile } = await getOrCreateStorageKey();
-
-      const identity = await generateIdentityBundle();
-      const registrationId = await getOrCreateStoredRegistrationId(storageKey);
-      const spkId = 1;
-      const spk = await generateSignedPreKey(spkId, identity.signingKeyPair.privateKey);
-      const otks = await generateOneTimePreKeys(1, OTK_BATCH_SIZE);
-
-      const result = await api.post<RegisterResponse>("/auth/register", {
-        version: AUTH_PROTOCOL_VERSION,
+      const authCredentialRuntime = await import("./auth-login-register-runtime");
+      const result = await authCredentialRuntime.runRegisterFlow({
         username,
         password,
-        device: {
-          name: deviceName,
-          identityKeyPublic: toBase64Url(identity.dhKeyPair.publicKey),
-          signingKeyPublic: toBase64Url(identity.signingKeyPair.publicKey),
-          registrationId,
-          signedPreKey: {
-            id: spkId,
-            publicKey: toBase64Url(spk.publicKey),
-            signature: toBase64Url(spk.signature),
-          },
-          oneTimePreKeys: otks.map(otk => ({
-            id: otk.id,
-            publicKey: toBase64Url(otk.publicKey),
-          })),
-        },
-      });
-
-      const otkPrivateKeys: Record<number, string> = {};
-      for (const otk of otks) {
-        otkPrivateKeys[otk.id] = toBase64Url(otk.privateKey);
-      }
-      const deviceKeys: StoredDeviceKeys = {
-        dhPrivateKey: toBase64Url(identity.dhKeyPair.privateKey),
-        dhPublicKey: toBase64Url(identity.dhKeyPair.publicKey),
-        signingPrivateKey: toBase64Url(identity.signingKeyPair.privateKey),
-        signingPublicKey: toBase64Url(identity.signingKeyPair.publicKey),
-        signedPreKeyPriv: toBase64Url(spk.privateKey),
-        signedPreKeyPub: toBase64Url(spk.publicKey),
-        signedPreKeySig: toBase64Url(spk.signature),
-        signedPreKeyId: spkId,
-        otkPrivateKeys,
-      };
-      await storeEncrypted(storageKey, `device:${result.deviceId}:keys`, deviceKeys);
-
-      const regRecord: StoredDeviceRegistration = {
-        deviceId: result.deviceId,
-        registrationId,
-        spkId,
-      };
-      await setStoredDeviceRegistration(username, regRecord, storageKey);
-      markCurrentDeviceCryptoMaterialSynced(
-        toCurrentDeviceCryptoMaterial({
-          userId: result.userId,
-          deviceId: result.deviceId,
-          deviceKeys,
-        })
-      );
-
-      setSessionAccessToken(result.accessToken);
-      clearLegacyLockSnapshotStorage();
-      set(buildReadyState({
-        userId: result.userId,
-        deviceId: result.deviceId,
-        username,
-        accessToken: result.accessToken,
-        identityDhKeyPair: identity.dhKeyPair,
+        deviceName,
         storageKey,
         storageKeyVolatile,
-        cryptoSyncReady: true,
-      }));
-      authRealtimeRuntime.activate(result.accessToken, "register");
-      void fetchAndStoreBackgroundToken();
+      });
+
+      setSessionAccessToken(result.session.accessToken);
+      clearLegacyLockSnapshotStorage();
+      set(buildReadyState(result.session));
+      authRealtimeRuntime.activate(result.session.accessToken, result.activationReason);
+      if (result.shouldFetchBackgroundToken) {
+        void authCredentialRuntime.fetchAndStoreBackgroundToken();
+      }
     } catch (err) {
       set({ error: err instanceof Error ? err.message : "Registration failed" });
       throw err;
@@ -224,164 +122,22 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     set({ error: null, authRecoveryReason: null, authOperation: "idle" });
     try {
       const { key: storageKey, volatile: storageKeyVolatile } = await getOrCreateStorageKey();
-
-      // ── Reuse path: same browser / same username ───────────────────────────
-      // If we have a saved device registration for this username with complete
-      // keys in IDB, reuse the same identity. This is critical for E2EE
-      // continuity: senders who already have our public keys will use OTKs
-      // that we generated in a prior session. Regenerating the identity each
-      // login destroys the private halves → X3DH fails on the receiver side.
-      const savedReg = await getStoredDeviceRegistration(username, storageKey);
-      if (savedReg) {
-        const existingKeys = await loadDecrypted<StoredDeviceKeys>(
-          storageKey,
-          `device:${savedReg.deviceId}:keys`
-        );
-
-        if (!hasUsableDeviceKeys(existingKeys)) {
-          throw new Error(
-            "Local secure keys for this device are missing. Use recovery to reset local secure data and sign in again."
-          );
-        }
-
-        const normalized = await normalizeStoredDeviceKeys(existingKeys);
-        const normalizedKeys = normalized.deviceKeys;
-
-        // Generate fresh OTKs to top-up the server pool.
-        // Use IDs beyond the existing range to avoid collisions.
-        const existingOtkIds = Object.keys(normalizedKeys.otkPrivateKeys).map(Number);
-        const maxOtkId = existingOtkIds.length > 0 ? Math.max(...existingOtkIds) : 0;
-        const newOtkStartId = maxOtkId + 1000;
-        const topupOtks = await generateOneTimePreKeys(newOtkStartId, OTK_BATCH_SIZE);
-
-        const result = await api.post<LoginResponse>("/auth/login", {
-          version: AUTH_PROTOCOL_VERSION,
-          username,
-          password,
-          device: {
-            name: deviceName,
-            identityKeyPublic: normalizedKeys.dhPublicKey!,
-            signingKeyPublic: normalizedKeys.signingPublicKey!,
-            registrationId: savedReg.registrationId,
-            signedPreKey: {
-              id: normalizedKeys.signedPreKeyId,
-              publicKey: normalizedKeys.signedPreKeyPub!,
-              signature: normalizedKeys.signedPreKeySig!,
-            },
-            oneTimePreKeys: topupOtks.map(otk => ({
-              id: otk.id,
-              publicKey: toBase64Url(otk.publicKey),
-            })),
-          },
-        });
-
-        await clearRatchetSessions("login");
-
-        for (const otk of topupOtks) {
-          normalizedKeys.otkPrivateKeys[otk.id] = toBase64Url(otk.privateKey);
-        }
-        await storeEncrypted(storageKey, `device:${result.deviceId}:keys`, normalizedKeys);
-        markCurrentDeviceCryptoMaterialSynced(
-          toCurrentDeviceCryptoMaterial({
-            userId: result.userId,
-            deviceId: result.deviceId,
-            deviceKeys: normalizedKeys,
-          })
-        );
-
-        setSessionAccessToken(result.accessToken);
-        clearLegacyLockSnapshotStorage();
-        set(buildReadyState({
-          userId: result.userId,
-          deviceId: result.deviceId,
-          username: result.user.username,
-          accessToken: result.accessToken,
-          identityDhKeyPair: normalized.identityDhKeyPair,
-          storageKey,
-          storageKeyVolatile,
-          cryptoSyncReady: true,
-        }));
-        authRealtimeRuntime.activate(result.accessToken, "login-reuse");
-        return;
-      }
-
-      // ── Fresh path: first login on this browser, or IDB was cleared ────────
-      const identity = await generateIdentityBundle();
-      const registrationId = await getOrCreateStoredRegistrationId(storageKey);
-      const spkIdBuf = new Uint32Array(1);
-      crypto.getRandomValues(spkIdBuf);
-      const spkId = (spkIdBuf[0]! % 1000000) + 1;
-      const spk = await generateSignedPreKey(spkId, identity.signingKeyPair.privateKey);
-      const otks = await generateOneTimePreKeys(spkId * 1000, OTK_BATCH_SIZE);
-
-      const result = await api.post<LoginResponse>("/auth/login", {
-        version: AUTH_PROTOCOL_VERSION,
+      const authCredentialRuntime = await import("./auth-login-register-runtime");
+      const result = await authCredentialRuntime.runLoginFlow({
         username,
         password,
-        device: {
-          name: deviceName,
-          identityKeyPublic: toBase64Url(identity.dhKeyPair.publicKey),
-          signingKeyPublic: toBase64Url(identity.signingKeyPair.publicKey),
-          registrationId,
-          signedPreKey: {
-            id: spkId,
-            publicKey: toBase64Url(spk.publicKey),
-            signature: toBase64Url(spk.signature),
-          },
-          oneTimePreKeys: otks.map(otk => ({
-            id: otk.id,
-            publicKey: toBase64Url(otk.publicKey),
-          })),
-        },
-      });
-
-      await clearRatchetSessions("login");
-
-      const loginOtkPrivateKeys: Record<number, string> = {};
-      for (const otk of otks) {
-        loginOtkPrivateKeys[otk.id] = toBase64Url(otk.privateKey);
-      }
-      const freshDeviceKeys: StoredDeviceKeys = {
-        dhPrivateKey: toBase64Url(identity.dhKeyPair.privateKey),
-        dhPublicKey: toBase64Url(identity.dhKeyPair.publicKey),
-        signingPrivateKey: toBase64Url(identity.signingKeyPair.privateKey),
-        signingPublicKey: toBase64Url(identity.signingKeyPair.publicKey),
-        signedPreKeyPriv: toBase64Url(spk.privateKey),
-        signedPreKeyPub: toBase64Url(spk.publicKey),
-        signedPreKeySig: toBase64Url(spk.signature),
-        signedPreKeyId: spkId,
-        otkPrivateKeys: loginOtkPrivateKeys,
-      };
-      await storeEncrypted(storageKey, `device:${result.deviceId}:keys`, freshDeviceKeys);
-
-      const regRecord: StoredDeviceRegistration = {
-        deviceId: result.deviceId,
-        registrationId,
-        spkId,
-      };
-      await setStoredDeviceRegistration(username, regRecord, storageKey);
-      markCurrentDeviceCryptoMaterialSynced(
-        toCurrentDeviceCryptoMaterial({
-          userId: result.userId,
-          deviceId: result.deviceId,
-          deviceKeys: freshDeviceKeys,
-        })
-      );
-
-      setSessionAccessToken(result.accessToken);
-      clearLegacyLockSnapshotStorage();
-      set(buildReadyState({
-        userId: result.userId,
-        deviceId: result.deviceId,
-        username: result.user.username,
-        accessToken: result.accessToken,
-        identityDhKeyPair: identity.dhKeyPair,
+        deviceName,
         storageKey,
         storageKeyVolatile,
-        cryptoSyncReady: true,
-      }));
-      authRealtimeRuntime.activate(result.accessToken, "login");
-      void fetchAndStoreBackgroundToken();
+      });
+
+      setSessionAccessToken(result.session.accessToken);
+      clearLegacyLockSnapshotStorage();
+      set(buildReadyState(result.session));
+      authRealtimeRuntime.activate(result.session.accessToken, result.activationReason);
+      if (result.shouldFetchBackgroundToken) {
+        void authCredentialRuntime.fetchAndStoreBackgroundToken();
+      }
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Login failed";
       console.error("[auth] login failed:", err);
@@ -468,8 +224,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     // Clear crypto key material and decrypted message data from memory.
     // This ensures sensitive message content is wiped from RAM on lock,
     // providing data protection — not just a UI barrier.
-    useMessagesStore.getState().reset();
-    useGroupsStore.getState().reset();
+    await clearEncryptedRuntimeState();
     set({
       accessToken: null,
       identityDhKeyPair: null,
@@ -574,6 +329,8 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     } = await ensureExportableStorageKey(state.storageKey);
     await protectPersistedStorageKeyWithPin(exportableStorageKey, pin);
     await setPinHash(pin);
+    // Store PIN in biometric secure enclave so FaceID/TouchID/Fingerprint can retrieve it.
+    void storePinBiometric(pin);
     set({
       pinEnabled: true,
       storageKey: exportableStorageKey,
@@ -588,6 +345,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     }
     await clearPin();
     clearLegacyLockSnapshotStorage();
+    void clearPinBiometric();
     set({ pinEnabled: false });
   },
 
@@ -617,13 +375,17 @@ const authRealtimeRuntime = createAuthRealtimeRuntime({
   onAccessTokenRefreshed: (accessToken) => {
     useAuthStore.setState({ accessToken });
   },
-  onSessionRefreshFailed: () => {
+  onSessionRefreshFailed: async () => {
     // Session cookie expired or server rejected the refresh.  Suspend the WS
     // and move to signed_out WITHOUT touching IDB — device E2EE key material
     // must never be wiped on a transient network failure.  The user can
     // re-authenticate and resume from existing keys (reuse path in login()).
     suspendRealtimeSession("session-refresh-failed");
-    clearEphemeralRuntimeState();
+    try {
+      await clearEphemeralRuntimeState();
+    } catch (error) {
+      logger.error("[auth] failed to clear runtime state after session refresh failure", error);
+    }
     useAuthStore.setState({ ...buildSignedOutState(), pinEnabled: false });
   },
 });

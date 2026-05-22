@@ -30,6 +30,9 @@ importers:
       '@playwright/test':
         specifier: ^1.40.0
         version: 1.58.2
+      '@welldone-software/why-did-you-render':
+        specifier: ^8
+        version: 8.0.3(react@18.3.1)
       turbo:
         specifier: ^2.0.0
         version: 2.8.10
@@ -249,6 +252,9 @@ importers:
       '@vitest/coverage-v8':
         specifier: 1.6.1
         version: 1.6.1(vitest@1.6.1)
+      '@welldone-software/why-did-you-render':
+        specifier: ^8
+        version: 8.0.3(react@18.3.1)
       eslint:
         specifier: 8.57.0
         version: 8.57.0
@@ -4297,6 +4303,15 @@ packages:
       pretty-format: 29.7.0
     dev: true
 
+  /@welldone-software/why-did-you-render@8.0.3(react@18.3.1):
+    resolution: {integrity: sha512-bb5bKPMStYnocyTBVBu4UTegZdBqzV1mPhxc0UIV/S43KFUSRflux9gvzJfu2aM4EWLJ3egTvdjOi+viK+LKGA==}
+    peerDependencies:
+      react: ^18
+    dependencies:
+      lodash: 4.17.23
+      react: 18.3.1
+    dev: true
+
   /@xmldom/xmldom@0.9.10:
     resolution: {integrity: sha512-A9gOqLdi6cV4ibazAjcQufGj0B1y/vDqYrcuP6d/6x8P27gRS8643Dj9o1dEKtB6O7fwxb2FgBmJS2mX7gpvdw==}
     engines: {node: '>=14.6'}
@@ -6550,7 +6565,6 @@ packages:
     hasBin: true
     dependencies:
       js-tokens: 4.0.0
-    dev: false
 
   /loupe@2.3.7:
     resolution: {integrity: sha512-zSMINGVYkdpYSOBmLi0D1Uo7JU9nVdQKrHxC8eYlV+9YKK9WePqAlL7lSlorG/U2Fw1w0hTBmaa/jrQ3UbPHtA==}
@@ -7259,7 +7273,6 @@ packages:
     engines: {node: '>=0.10.0'}
     dependencies:
       loose-envify: 1.4.0
-    dev: false
 
   /readable-stream@3.6.2:
     resolution: {integrity: sha512-9u/sniCrY3D5WdsERHzHE4G2YCXqoG5FTHUiCC4SIbr6XcLZBY05ya9EKjYek9O5xOAwjGq+1JdGBAS7Q9ScoA==}

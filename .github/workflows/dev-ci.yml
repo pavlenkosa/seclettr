@@ -127,3 +127,85 @@ jobs:
       - run: pnpm verify:release
 
       - run: pnpm --filter @seclettr/api test:unit
+
+  security-audit:
+    needs: repo-hygiene
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 8.15.0
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      - run: pnpm audit:prod:gate
+
+  api-integration:
+    needs: verify
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_DB: seclettr
+          POSTGRES_USER: seclettr
+          POSTGRES_PASSWORD: ${{ github.run_id }}-${{ github.run_attempt }}
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U seclettr -d seclettr"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 20
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 20
+
+    env:
+      DATABASE_URL: postgresql://seclettr:${{ github.run_id }}-${{ github.run_attempt }}@127.0.0.1:5432/seclettr
+      REDIS_URL: redis://127.0.0.1:6379
+      JWT_SECRET: "ci-jwt-secret-for-testing-only-1234567890"
+      NODE_ENV: test
+      ALLOW_PUBLIC_REGISTRATION: true
+      TURN_SECRET: ci-turn-secret-0123456789
+      TURN_DOMAIN: localhost
+      S3_ENDPOINT: http://127.0.0.1:9000
+      S3_BUCKET: seclettr-attachments
+      S3_ACCESS_KEY: minioadmin
+      S3_SECRET_KEY: minioadmin
+
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 8.15.0
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      - run: pnpm --filter @seclettr/crypto build
+
+      - run: pnpm --filter @seclettr/protocol build
+
+      - run: pnpm --filter @seclettr/api db:migrate
+
+      - run: pnpm --filter @seclettr/api test:integration

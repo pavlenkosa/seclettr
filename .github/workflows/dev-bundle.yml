@@ -102,20 +102,16 @@ jobs:
           RELEASE_INFO_PATH="${STAGE_DIR}/RELEASE_INFO.txt"
           DEPLOY_DOC_PATH="${STAGE_DIR}/DEPLOY.md"
           DEPLOYMENT_GUIDE_PATH="${STAGE_DIR}/DEPLOYMENT.md"
-          DEPLOYMENT_GUIDE_RU_PATH="${STAGE_DIR}/DEPLOYMENT.ru.md"
-
           [[ -f "${CHECKSUM_PATH}" ]]             || { echo "Checksum file missing: ${CHECKSUM_PATH}";               exit 1; }
           [[ -f "${RELEASE_INFO_PATH}" ]]         || { echo "RELEASE_INFO missing: ${RELEASE_INFO_PATH}";            exit 1; }
           [[ -f "${DEPLOY_DOC_PATH}" ]]           || { echo "DEPLOY.md missing: ${DEPLOY_DOC_PATH}";                 exit 1; }
           [[ -f "${DEPLOYMENT_GUIDE_PATH}" ]]     || { echo "DEPLOYMENT.md missing: ${DEPLOYMENT_GUIDE_PATH}";       exit 1; }
-          [[ -f "${DEPLOYMENT_GUIDE_RU_PATH}" ]]  || { echo "DEPLOYMENT.ru.md missing: ${DEPLOYMENT_GUIDE_RU_PATH}"; exit 1; }
 
           echo "archive_path=${ARCHIVE_PATH}"                        >> "$GITHUB_OUTPUT"
           echo "checksum_path=${CHECKSUM_PATH}"                      >> "$GITHUB_OUTPUT"
           echo "release_info_path=${RELEASE_INFO_PATH}"              >> "$GITHUB_OUTPUT"
           echo "deploy_doc_path=${DEPLOY_DOC_PATH}"                  >> "$GITHUB_OUTPUT"
           echo "deployment_guide_path=${DEPLOYMENT_GUIDE_PATH}"      >> "$GITHUB_OUTPUT"
-          echo "deployment_guide_ru_path=${DEPLOYMENT_GUIDE_RU_PATH}" >> "$GITHUB_OUTPUT"
           echo "archive_name=$(basename "${ARCHIVE_PATH}")"          >> "$GITHUB_OUTPUT"
 
       - name: Upload dev artifact
@@ -129,7 +125,6 @@ jobs:
             ${{ steps.bundle.outputs.release_info_path }}
             ${{ steps.bundle.outputs.deploy_doc_path }}
             ${{ steps.bundle.outputs.deployment_guide_path }}
-            ${{ steps.bundle.outputs.deployment_guide_ru_path }}
 
       - name: Publish summary
         shell: bash

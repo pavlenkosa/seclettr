@@ -233,3 +233,24 @@ hash_file() {
     shasum -a 256 "$file_path" >"${file_path}.sha256"
   fi
 }
+
+run_with_retries() {
+  local attempts="$1"
+  local delay_sec="$2"
+  shift 2
+
+  local attempt
+  for ((attempt = 1; attempt <= attempts; attempt += 1)); do
+    if "$@"; then
+      return 0
+    fi
+
+    if [[ "$attempt" -eq "$attempts" ]]; then
+      return 1
+    fi
+
+    log_warn "Command failed (attempt ${attempt}/${attempts}): $*"
+    log_warn "Retrying in ${delay_sec}s..."
+    sleep "$delay_sec"
+  done
+}

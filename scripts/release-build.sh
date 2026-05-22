@@ -96,7 +96,8 @@ build_image() {
   local dockerfile_path="$2"
 
   log_step "Building $image_name:$IMAGE_TAG"
-  docker_cli build -f "$dockerfile_path" -t "$image_name:$IMAGE_TAG" "$ROOT_DIR"
+  run_with_retries 3 5 docker_cli build -f "$dockerfile_path" -t "$image_name:$IMAGE_TAG" "$ROOT_DIR" \
+    || die "Failed to build $image_name:$IMAGE_TAG after repeated attempts"
 }
 
 ensure_local_image() {

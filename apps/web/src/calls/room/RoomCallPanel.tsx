@@ -38,10 +38,23 @@ function hasEnabledLiveAudioTrack(stream: MediaStream | null): boolean {
 }
 
 /**
- * Room-call container: owns join/share/leave/media-toggle runtime, SFU
- * bootstrap, participant polling, and minimized-dock state. Visual subpanels
- * (invite card, participants, state notice, media grid, minimized dock) live
- * in sibling `RoomCall*` presentation files; this file stays the orchestrator.
+ * RoomCallPanel — room-call shell and room-session orchestrator.
+ *
+ * Owns:
+ *   - room join/leave/end-for-everyone lifecycle
+ *   - SFU bootstrap and teardown for the active room session
+ *   - local audio/video/screen-share toggles and device switching
+ *   - participant polling, host kick flow, and minimized-dock state
+ *   - assembly of room-specific presentation subpanels
+ *
+ * Does not own:
+ *   - shared group/direct call presentation primitives
+ *   - SFU transport implementation internals
+ *   - generic app-level routing/auth behavior
+ *
+ * Note:
+ *   Visual subpanels live in sibling `RoomCall*` files; this file stays the
+ *   room-call orchestration root.
  */
 export function RoomCallPanel({ session, onLeave }: Props) {
   const { t } = useI18n();

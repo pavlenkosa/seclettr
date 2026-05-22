@@ -10,7 +10,7 @@ interface GroupCallDetailsMember {
   username: string;
 }
 
-interface GroupCallDetailsDrawerProps {
+export interface GroupCallDetailsDrawerProps {
   readonly isOpen: boolean;
   readonly inline?: boolean;
   readonly roomCode: string;

@@ -725,8 +725,6 @@ export function useDirectCallController() {
     notice,
     isMinimized,
     isSecurityCardOpen,
-    localSupportsFrameEncryption,
-    callSecurityMode,
     resolvePeerLabel,
     t,
     incomingOverlayRef,

@@ -1,14 +1,20 @@
-import type { ComponentProps } from "react";
+import { lazy, Suspense, type ComponentProps } from "react";
 import { createPortal } from "react-dom";
 import type { GroupCallRemoteMedia } from "@/calls/group/runtime/sfu";
 import { CallAudioOutputProvider } from "@/calls/shared/media/audio-output/CallAudioOutputProvider";
 import { CallControlsDock } from "@/calls/shared/presentation/CallControlsDock";
 import { CallPanelShell } from "@/calls/shared/presentation/CallPanelShell";
 import { GroupCallControls } from "@/calls/group/presentation/components/GroupCallControls";
-import { GroupCallDetailsDrawer } from "@/calls/group/presentation/components/GroupCallDetailsDrawer";
 import { GroupCallHeader } from "@/calls/group/presentation/components/GroupCallHeader";
 import { GroupCallMediaSection } from "@/calls/group/presentation/components/GroupCallMediaSection";
 import { GroupCallRemoteAudioTargets } from "@/calls/group/presentation/components/GroupCallRemoteAudioTargets";
+import type { GroupCallDetailsDrawerProps } from "@/calls/group/presentation/components/GroupCallDetailsDrawer";
+
+const GroupCallDetailsDrawer = lazy(() =>
+  import("@/calls/group/presentation/components/GroupCallDetailsDrawer").then(({ GroupCallDetailsDrawer }) => ({
+    default: GroupCallDetailsDrawer,
+  }))
+);
 
 interface GroupCallPanelShellViewProps {
   readonly remoteMedia: GroupCallRemoteMedia[];
@@ -20,7 +26,7 @@ interface GroupCallPanelShellViewProps {
   readonly bottomDockClassName?: string;
   readonly headerProps: ComponentProps<typeof GroupCallHeader>;
   readonly mediaSectionProps: ComponentProps<typeof GroupCallMediaSection>;
-  readonly detailsDrawerProps: ComponentProps<typeof GroupCallDetailsDrawer>;
+  readonly detailsDrawerProps: GroupCallDetailsDrawerProps;
   readonly controlsProps: ComponentProps<typeof GroupCallControls>;
 }
 
@@ -53,7 +59,11 @@ export function GroupCallPanelShellView({
           </div>
         </div>
 
-        <GroupCallDetailsDrawer {...detailsDrawerProps} />
+        {detailsDrawerProps.isOpen || detailsDrawerProps.inline ? (
+          <Suspense fallback={null}>
+            <GroupCallDetailsDrawer {...detailsDrawerProps} />
+          </Suspense>
+        ) : null}
 
         <CallControlsDock className={bottomDockClassName}>
           <GroupCallControls {...controlsProps} />

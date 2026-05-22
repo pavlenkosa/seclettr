@@ -4,16 +4,26 @@ import type {
   PointerEventHandler,
   RefObject,
 } from "react";
+import { lazy, Suspense } from "react";
 import type { DirectCallMediaEncryptionMode } from "@/calls/direct/model/call-media-encryption-negotiation";
 import type { DirectCallStageSceneState } from "@/calls/direct/presentation/useDirectCallStagePresentation";
 import type { VideoResolution } from "@/calls/shared/presentation/CallDevicePicker";
 import { InlineNotice } from "@/components/ui";
 
-import { DirectCallActiveMinimized } from "./DirectCallActiveMinimized";
-import { DirectCallActiveOverlay } from "./DirectCallActiveOverlay";
 import { DirectCallIncomingMinimized } from "./DirectCallIncomingMinimized";
 import { DirectCallIncomingOverlay } from "./DirectCallIncomingOverlay";
 import styles from "@/calls/direct/presentation/DirectCallPanel.module.css";
+
+const DirectCallActiveMinimized = lazy(() =>
+  import("./DirectCallActiveMinimized").then(({ DirectCallActiveMinimized }) => ({
+    default: DirectCallActiveMinimized,
+  }))
+);
+const DirectCallActiveOverlay = lazy(() =>
+  import("./DirectCallActiveOverlay").then(({ DirectCallActiveOverlay }) => ({
+    default: DirectCallActiveOverlay,
+  }))
+);
 
 type DirectCallSurface =
   | "hidden"
@@ -99,9 +109,6 @@ interface DirectCallSurfaceRendererProps {
   readonly isSecurityCardOpen: boolean;
   readonly callSecurityToggleLabel: string;
   readonly callSecurityStatusLabel: string;
-  readonly callSecurityModeText: string;
-  readonly showTransportModeInfo: boolean;
-  readonly transportModeInfoLabel: string;
   readonly muteToggleAriaLabel: string;
   readonly muteToggleLabel: string;
   readonly videoToggleAriaLabel: string;
@@ -209,9 +216,6 @@ export function DirectCallSurfaceRenderer({
   isSecurityCardOpen,
   callSecurityToggleLabel,
   callSecurityStatusLabel,
-  callSecurityModeText,
-  showTransportModeInfo,
-  transportModeInfoLabel,
   muteToggleAriaLabel,
   muteToggleLabel,
   videoToggleAriaLabel,
@@ -322,125 +326,126 @@ export function DirectCallSurfaceRenderer({
 
     if (active && surface === "active-minimized") {
       return (
-        <DirectCallActiveMinimized
-          minimizedDockRef={minimizedDockRef}
-          remoteAudioRef={remoteAudioRef}
-          isDraggingMinimizedDock={isDraggingMinimizedDock}
-          style={minimizedDockInlineStyle}
-          minimizedDialogAriaLabel={minimizedDialogAriaLabel}
-          dragAriaLabel={dragAriaLabel}
-          onStartDrag={onStartMinimizedDockDrag}
-          onMoveDrag={onMoveMinimizedDock}
-          onStopDrag={onStopMinimizedDockDrag}
-          activeMinimizedSummaryRef={activeMinimizedSummaryRef}
-          peerInitials={peerDisplayInitials}
-          peerDisplayName={peerDisplayName}
-          callStateText={activeCallStateText}
-          duration={active.duration}
-          durationStartedAtMs={active.durationStartedAtMs}
-          openDetailsAriaLabel={openDetailsAriaLabel}
-          muted={active.muted}
-          muteAriaLabel={muteToggleAriaLabel}
-          expandAriaLabel={expandAriaLabel}
-          endAriaLabel={endAriaLabel}
-          onOpenDetails={onOpenActiveDetails}
-          onToggleMute={onToggleMute}
-          onHangup={onHangup}
-        />
+        <Suspense fallback={null}>
+          <DirectCallActiveMinimized
+            minimizedDockRef={minimizedDockRef}
+            remoteAudioRef={remoteAudioRef}
+            isDraggingMinimizedDock={isDraggingMinimizedDock}
+            style={minimizedDockInlineStyle}
+            minimizedDialogAriaLabel={minimizedDialogAriaLabel}
+            dragAriaLabel={dragAriaLabel}
+            onStartDrag={onStartMinimizedDockDrag}
+            onMoveDrag={onMoveMinimizedDock}
+            onStopDrag={onStopMinimizedDockDrag}
+            activeMinimizedSummaryRef={activeMinimizedSummaryRef}
+            peerInitials={peerDisplayInitials}
+            peerDisplayName={peerDisplayName}
+            callStateText={activeCallStateText}
+            duration={active.duration}
+            durationStartedAtMs={active.durationStartedAtMs}
+            openDetailsAriaLabel={openDetailsAriaLabel}
+            muted={active.muted}
+            muteAriaLabel={muteToggleAriaLabel}
+            expandAriaLabel={expandAriaLabel}
+            endAriaLabel={endAriaLabel}
+            onOpenDetails={onOpenActiveDetails}
+            onToggleMute={onToggleMute}
+            onHangup={onHangup}
+          />
+        </Suspense>
       );
     }
 
     if (active && surface === "active-fullscreen") {
       return (
-        <DirectCallActiveOverlay
-          activeOverlayRef={activeOverlayRef}
-          remoteAudioRef={remoteAudioRef}
-          remoteCameraProbeRef={remoteCameraProbeRef}
-          remoteScreenProbeRef={remoteScreenProbeRef}
-          localPreviewShellRef={localPreviewShellRef}
-          localScreenPreviewShellRef={localScreenPreviewShellRef}
-          localVideoRef={localVideoRef}
-          localScreenPreviewRef={localScreenPreviewRef}
-          activeHangupButtonRef={activeHangupButtonRef}
-          shouldRenderLocalCameraPreview={shouldRenderLocalCameraPreview}
-          activeScreenSharing={active.screenSharing}
-          isDraggingLocalPreview={isDraggingLocalPreview}
-          isResizingLocalPreview={isResizingLocalPreview}
-          isDraggingLocalScreenPreview={isDraggingLocalScreenPreview}
-          localPreviewStyle={localPreviewStyle}
-          localScreenPreviewStyle={localScreenPreviewStyle}
-          hasRemoteVisualMedia={hasRemoteVisualMedia}
-          remoteScreenStream={remoteScreenStream}
-          remoteVideoRef={remoteVideoRef}
-          remoteVideoCompanionRef={remoteVideoCompanionRef}
-          remoteScreenVideoRef={remoteScreenVideoRef}
-          remoteScreenCompanionRef={remoteScreenCompanionRef}
-          stageScene={stageScene}
-          peerDisplayName={peerDisplayName}
-          peerInitials={peerDisplayInitials}
-          callStateText={activeCallStateText}
-          duration={active.duration}
-          durationStartedAtMs={active.durationStartedAtMs}
-          cameraStageLabel={cameraStageLabel}
-          screenStageLabel={screenStageLabel}
-          enterFullscreenLabel={enterFullscreenLabel}
-          exitFullscreenLabel={exitFullscreenLabel}
-          closeViewerLabel={closeViewerLabel}
-          stopWatchingScreenLabel={stopWatchingScreenLabel}
-          screenViewerDialogAriaLabel={screenViewerDialogAriaLabel}
-          showCameraOnStageLabel={showCameraOnStageLabel}
-          showScreenOnStageLabel={showScreenOnStageLabel}
-          isSecurityCardOpen={isSecurityCardOpen}
-          callSecurityToggleLabel={callSecurityToggleLabel}
-          callSecurityStatusLabel={callSecurityStatusLabel}
-          callMediaEncryptionModeLabel={callSecurityModeText}
-          e2eeActive={active.e2eeActive}
-          showTransportModeInfo={showTransportModeInfo}
-          transportModeInfoLabel={transportModeInfoLabel}
-          mediaEncryptionMode={active.mediaEncryptionMode}
-          verificationCode={active.verificationCode}
-          verificationHash={active.verificationHash}
-          verificationError={active.verificationError}
-          canSwitchCamera={active.canSwitchCamera}
-          isSwitchingCamera={active.isSwitchingCamera}
-          muted={active.muted}
-          videoOff={active.videoOff}
-          screenSharing={active.screenSharing}
-          muteAriaLabel={muteToggleAriaLabel}
-          muteLabel={muteToggleLabel}
-          cameraAriaLabel={videoToggleAriaLabel}
-          cameraLabel={videoToggleLabel}
-          switchCameraLabel={switchCameraLabel}
-          resizePreviewLabel={resizePreviewLabel}
-          screenShareAriaLabel={screenShareToggleAriaLabel}
-          screenShareLabel={screenShareToggleLabel}
-          endAriaLabel={endAriaLabel}
-          endLabel={endLabel}
-          youLabel={youLabel}
-          screenSharingLabel={screenSharingLabel}
-          inProgressAriaLabel={inProgressAriaLabel}
-          minimizeAriaLabel={minimizeAriaLabel}
-          onMinimize={onActiveMinimize}
-          onToggleSecurityCard={onToggleSecurityCard}
-          onStartLocalPreviewDrag={onStartLocalPreviewDrag}
-          onMoveLocalPreview={onMoveLocalPreview}
-          onStopLocalPreviewDrag={onStopLocalPreviewDrag}
-          onStartLocalPreviewResize={onStartLocalPreviewResize}
-          onMoveLocalPreviewResize={onMoveLocalPreviewResize}
-          onStopLocalPreviewResize={onStopLocalPreviewResize}
-          onStartLocalScreenPreviewDrag={onStartLocalScreenPreviewDrag}
-          onMoveLocalScreenPreview={onMoveLocalScreenPreview}
-          onStopLocalScreenPreviewDrag={onStopLocalScreenPreviewDrag}
-          onSwitchCamera={onSwitchCamera}
-          onToggleMute={onToggleMute}
-          onToggleVideo={onToggleVideo}
-          onToggleScreenShare={onToggleScreenShare}
-          selectedScreenResolution={selectedScreenResolution}
-          onSelectScreenResolution={onSelectScreenResolution}
-          onHangup={onHangup}
-          localStream={localStream ?? null}
-          cameraSenderRef={cameraSenderRef ?? { current: null }}
-        />
+        <Suspense fallback={null}>
+          <DirectCallActiveOverlay
+            activeOverlayRef={activeOverlayRef}
+            remoteAudioRef={remoteAudioRef}
+            remoteCameraProbeRef={remoteCameraProbeRef}
+            remoteScreenProbeRef={remoteScreenProbeRef}
+            localPreviewShellRef={localPreviewShellRef}
+            localScreenPreviewShellRef={localScreenPreviewShellRef}
+            localVideoRef={localVideoRef}
+            localScreenPreviewRef={localScreenPreviewRef}
+            activeHangupButtonRef={activeHangupButtonRef}
+            shouldRenderLocalCameraPreview={shouldRenderLocalCameraPreview}
+            activeScreenSharing={active.screenSharing}
+            isDraggingLocalPreview={isDraggingLocalPreview}
+            isResizingLocalPreview={isResizingLocalPreview}
+            isDraggingLocalScreenPreview={isDraggingLocalScreenPreview}
+            localPreviewStyle={localPreviewStyle}
+            localScreenPreviewStyle={localScreenPreviewStyle}
+            hasRemoteVisualMedia={hasRemoteVisualMedia}
+            remoteScreenStream={remoteScreenStream}
+            remoteVideoRef={remoteVideoRef}
+            remoteVideoCompanionRef={remoteVideoCompanionRef}
+            remoteScreenVideoRef={remoteScreenVideoRef}
+            remoteScreenCompanionRef={remoteScreenCompanionRef}
+            stageScene={stageScene}
+            peerDisplayName={peerDisplayName}
+            peerInitials={peerDisplayInitials}
+            callStateText={activeCallStateText}
+            duration={active.duration}
+            durationStartedAtMs={active.durationStartedAtMs}
+            cameraStageLabel={cameraStageLabel}
+            screenStageLabel={screenStageLabel}
+            enterFullscreenLabel={enterFullscreenLabel}
+            exitFullscreenLabel={exitFullscreenLabel}
+            closeViewerLabel={closeViewerLabel}
+            stopWatchingScreenLabel={stopWatchingScreenLabel}
+            screenViewerDialogAriaLabel={screenViewerDialogAriaLabel}
+            showCameraOnStageLabel={showCameraOnStageLabel}
+            showScreenOnStageLabel={showScreenOnStageLabel}
+            isSecurityCardOpen={isSecurityCardOpen}
+            callSecurityToggleLabel={callSecurityToggleLabel}
+            callSecurityStatusLabel={callSecurityStatusLabel}
+            e2eeActive={active.e2eeActive}
+            mediaEncryptionMode={active.mediaEncryptionMode}
+            verificationCode={active.verificationCode}
+            verificationHash={active.verificationHash}
+            verificationError={active.verificationError}
+            canSwitchCamera={active.canSwitchCamera}
+            isSwitchingCamera={active.isSwitchingCamera}
+            muted={active.muted}
+            videoOff={active.videoOff}
+            screenSharing={active.screenSharing}
+            muteAriaLabel={muteToggleAriaLabel}
+            muteLabel={muteToggleLabel}
+            cameraAriaLabel={videoToggleAriaLabel}
+            cameraLabel={videoToggleLabel}
+            switchCameraLabel={switchCameraLabel}
+            resizePreviewLabel={resizePreviewLabel}
+            screenShareAriaLabel={screenShareToggleAriaLabel}
+            screenShareLabel={screenShareToggleLabel}
+            endAriaLabel={endAriaLabel}
+            endLabel={endLabel}
+            youLabel={youLabel}
+            screenSharingLabel={screenSharingLabel}
+            inProgressAriaLabel={inProgressAriaLabel}
+            minimizeAriaLabel={minimizeAriaLabel}
+            onMinimize={onActiveMinimize}
+            onToggleSecurityCard={onToggleSecurityCard}
+            onStartLocalPreviewDrag={onStartLocalPreviewDrag}
+            onMoveLocalPreview={onMoveLocalPreview}
+            onStopLocalPreviewDrag={onStopLocalPreviewDrag}
+            onStartLocalPreviewResize={onStartLocalPreviewResize}
+            onMoveLocalPreviewResize={onMoveLocalPreviewResize}
+            onStopLocalPreviewResize={onStopLocalPreviewResize}
+            onStartLocalScreenPreviewDrag={onStartLocalScreenPreviewDrag}
+            onMoveLocalScreenPreview={onMoveLocalScreenPreview}
+            onStopLocalScreenPreviewDrag={onStopLocalScreenPreviewDrag}
+            onSwitchCamera={onSwitchCamera}
+            onToggleMute={onToggleMute}
+            onToggleVideo={onToggleVideo}
+            onToggleScreenShare={onToggleScreenShare}
+            selectedScreenResolution={selectedScreenResolution}
+            onSelectScreenResolution={onSelectScreenResolution}
+            onHangup={onHangup}
+            localStream={localStream ?? null}
+            cameraSenderRef={cameraSenderRef ?? { current: null }}
+          />
+        </Suspense>
       );
     }
 

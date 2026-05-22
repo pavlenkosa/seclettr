@@ -1,4 +1,10 @@
-import { CallStageViewerDialog } from "@/calls/shared/presentation/CallStageViewerDialog";
+import { lazy, Suspense } from "react";
+
+const LazyCallStageViewerDialog = lazy(() =>
+  import("@/calls/shared/presentation/CallStageViewerDialog").then(({ CallStageViewerDialog }) => ({
+    default: CallStageViewerDialog,
+  }))
+);
 
 interface DirectCallStageViewerDialogProps {
   readonly isOpen: boolean;
@@ -29,19 +35,25 @@ export function DirectCallStageViewerDialog({
   onClose,
   onStopWatchingScreen,
 }: DirectCallStageViewerDialogProps) {
+  if (!isOpen || !stream) {
+    return null;
+  }
+
   return (
-    <CallStageViewerDialog
-      isOpen={isOpen}
-      stream={stream}
-      title={peerDisplayName}
-      eyebrow={screenStageLabel}
-      dialogAriaLabel={dialogAriaLabel}
-      enterFullscreenLabel={enterFullscreenLabel}
-      exitFullscreenLabel={exitFullscreenLabel}
-      closeLabel={closeViewerLabel}
-      stopWatchingLabel={stopWatchingScreenLabel}
-      onClose={onClose}
-      onStopWatching={onStopWatchingScreen}
-    />
+    <Suspense fallback={null}>
+      <LazyCallStageViewerDialog
+        isOpen={isOpen}
+        stream={stream}
+        title={peerDisplayName}
+        eyebrow={screenStageLabel}
+        dialogAriaLabel={dialogAriaLabel}
+        enterFullscreenLabel={enterFullscreenLabel}
+        exitFullscreenLabel={exitFullscreenLabel}
+        closeLabel={closeViewerLabel}
+        stopWatchingLabel={stopWatchingScreenLabel}
+        onClose={onClose}
+        onStopWatching={onStopWatchingScreen}
+      />
+    </Suspense>
   );
 }

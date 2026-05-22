@@ -9,6 +9,7 @@ import styles from "./AudioOutputSelector.module.css";
 
 interface AudioOutputSelectorProps {
   readonly compact?: boolean;
+  readonly hideLabel?: boolean;
   readonly className?: string;
 }
 
@@ -157,6 +158,7 @@ function AudioOutputPromptButton({
  */
 export function AudioOutputSelector({
   compact = false,
+  hideLabel = false,
   className = "",
 }: AudioOutputSelectorProps) {
   const { t } = useI18n();
@@ -198,13 +200,18 @@ export function AudioOutputSelector({
         className,
       ].filter(Boolean).join(" ")}
     >
-      <div className={styles.header}>
-        {/* Use id-based label so both native fallback and custom Listbox can reference it */}
-        <span id={`${fieldId}-label`} className={styles.title}>
+      {hideLabel ? (
+        <span id={`${fieldId}-label`} className={styles.srOnly}>
           {t("call.audioOutput.label")}
         </span>
-        {compact ? null : <p className={styles.description}>{helperText}</p>}
-      </div>
+      ) : (
+        <div className={styles.header}>
+          <span id={`${fieldId}-label`} className={styles.title}>
+            {t("call.audioOutput.label")}
+          </span>
+          {compact ? null : <p className={styles.description}>{helperText}</p>}
+        </div>
+      )}
 
       <AudioOutputField
         activeOption={activeOption}

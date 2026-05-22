@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback, useRef, type CSSProperties, type PointerEvent as ReactPointerEvent, type RefObject, type MutableRefObject } from "react";
+import { useEffect, useLayoutEffect, useState, useCallback, useRef, type CSSProperties, type PointerEvent as ReactPointerEvent, type RefObject, type MutableRefObject } from "react";
 import type { DirectCallMediaEncryptionMode } from "@/calls/direct/model/call-media-encryption-negotiation";
 import type { DirectCallStageSceneState } from "@/calls/direct/presentation/useDirectCallStagePresentation";
 import { DirectCallControls } from "./DirectCallControls";
@@ -12,11 +12,11 @@ import { useCallInputDevices } from "@/calls/shared/media/input-devices/useCallI
 import type { VideoResolution } from "@/calls/shared/presentation/CallDevicePicker";
 import { CallDurationText } from "@/calls/shared/presentation/CallDurationText";
 import {
+  LockIcon,
   MinimizeIcon,
-  PhoneIcon,
   SwitchCameraIcon,
 } from "@/calls/shared/presentation/CallIcons";
-import { HeaderBar, IconButton, IconPill, InfoStack } from "@/components/ui";
+import { HeaderBar, IconButton, InfoStack } from "@/components/ui";
 
 import styles from "@/calls/direct/presentation/DirectCallPanel.module.css";
 
@@ -61,10 +61,7 @@ interface DirectCallActiveOverlayProps {
   readonly isSecurityCardOpen: boolean;
   readonly callSecurityToggleLabel: string;
   readonly callSecurityStatusLabel: string;
-  readonly callMediaEncryptionModeLabel: string;
   readonly e2eeActive: boolean;
-  readonly showTransportModeInfo: boolean;
-  readonly transportModeInfoLabel: string;
   readonly mediaEncryptionMode: DirectCallMediaEncryptionMode;
   readonly verificationCode: string | null;
   readonly verificationHash: string | null;
@@ -158,10 +155,7 @@ export function DirectCallActiveOverlay({
   isSecurityCardOpen,
   callSecurityToggleLabel,
   callSecurityStatusLabel,
-  callMediaEncryptionModeLabel,
   e2eeActive,
-  showTransportModeInfo,
-  transportModeInfoLabel,
   mediaEncryptionMode,
   verificationCode,
   verificationHash,
@@ -214,6 +208,24 @@ export function DirectCallActiveOverlay({
   screenSettingsAriaLabel,
 }: DirectCallActiveOverlayProps) {
   const [selectedVideoResolution, setSelectedVideoResolution] = useState<VideoResolution>("720p");
+  const callHeaderRef = useRef<HTMLDivElement>(null);
+  const [securitySheetTop, setSecuritySheetTop] = useState<number | null>(null);
+
+  useLayoutEffect(() => {
+    const el = callHeaderRef.current;
+    if (!el) return;
+    setSecuritySheetTop(Math.round(el.getBoundingClientRect().bottom) + 8);
+  });
+
+  useEffect(() => {
+    const measure = () => {
+      const el = callHeaderRef.current;
+      if (!el) return;
+      setSecuritySheetTop(Math.round(el.getBoundingClientRect().bottom) + 8);
+    };
+    window.addEventListener("resize", measure, { passive: true });
+    return () => window.removeEventListener("resize", measure);
+  }, []);
 
   const {
     micDevices,
@@ -337,23 +349,34 @@ export function DirectCallActiveOverlay({
       <video ref={remoteCameraProbeRef} autoPlay playsInline muted className={styles.mediaProbe}><track kind="captions" /></video>
       <video ref={remoteScreenProbeRef} autoPlay playsInline muted className={styles.mediaProbe}><track kind="captions" /></video>
 
+      <div ref={callHeaderRef}>
       <HeaderBar
         className={styles.callHeader}
         stackCenterOnNarrow
-        leading={(
-          <IconPill className={styles.modeChip} icon={<PhoneIcon />} size="sm">
-            {inProgressAriaLabel}
-          </IconPill>
-        )}
         center={(
           <InfoStack
             className={styles.callHeaderSummary}
             align="center"
             title={peerDisplayName}
             titleAccessory={callHeaderDuration}
-            meta={callHeaderMeta}
+            meta={(
+              <button
+                type="button"
+                onClick={onToggleSecurityCard}
+                className={[
+                  styles.callEncryptionBadge,
+                  e2eeActive ? styles.callEncryptionBadgeSecure : styles.callEncryptionBadgePending,
+                  isSecurityCardOpen ? styles.callEncryptionBadgeOpen : "",
+                ].filter(Boolean).join(" ")}
+                aria-pressed={isSecurityCardOpen}
+                aria-label={callSecurityToggleLabel}
+              >
+                <LockIcon />
+                <span>{callSecurityStatusLabel}</span>
+              </button>
+            )}
             titleClassName={styles.callHeaderTitle}
-            metaClassName={styles.callHeaderMeta}
+            metaClassName={styles.callHeaderMetaRow}
           />
         )}
         trailing={(
@@ -367,6 +390,25 @@ export function DirectCallActiveOverlay({
           </IconButton>
         )}
       />
+      </div>
+
+      {isSecurityCardOpen ? (
+        <div
+          className={styles.callSecuritySheet}
+          style={securitySheetTop !== null ? { top: `${securitySheetTop}px` } : undefined}
+        >
+          <DirectCallSecurityPanel
+            onToggle={onToggleSecurityCard}
+            callSecurityToggleLabel={callSecurityToggleLabel}
+            callSecurityStatusLabel={callSecurityStatusLabel}
+            e2eeActive={e2eeActive}
+            mediaEncryptionMode={mediaEncryptionMode}
+            verificationCode={verificationCode}
+            verificationHash={verificationHash}
+            verificationError={verificationError}
+          />
+        </div>
+      ) : null}
 
       <div
         className={[
@@ -395,29 +437,11 @@ export function DirectCallActiveOverlay({
           showScreenOnStageLabel={showScreenOnStageLabel}
           peerHasAudio={peerHasAudio}
         />
-
-        <div className={styles.callSecuritySection}>
-          <DirectCallSecurityPanel
-            isOpen={isSecurityCardOpen}
-            onToggle={onToggleSecurityCard}
-            callSecurityToggleLabel={callSecurityToggleLabel}
-            callSecurityStatusLabel={callSecurityStatusLabel}
-            callMediaEncryptionModeLabel={callMediaEncryptionModeLabel}
-            e2eeActive={e2eeActive}
-            showTransportModeInfo={showTransportModeInfo}
-            transportModeInfoLabel={transportModeInfoLabel}
-            mediaEncryptionMode={mediaEncryptionMode}
-            verificationCode={verificationCode}
-            verificationHash={verificationHash}
-            verificationError={verificationError}
-          />
-          {hasAudioOutputControls ? (
-            <div className={styles.audioOutputStrip}>
-              <AudioOutputSelector compact />
-            </div>
-          ) : null}
-        </div>
       </div>
+
+      {hasAudioOutputControls ? (
+        <AudioOutputSelector compact hideLabel className={styles.callAudioOutputBar} />
+      ) : null}
 
       {shouldRenderLocalCameraPreview ? (
         <DirectCallFloatingPreview

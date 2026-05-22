@@ -3,10 +3,13 @@ import { CallControlButton } from "@/calls/shared/presentation/CallControlButton
 import { CallControlsDock } from "@/calls/shared/presentation/CallControlsDock";
 import { CallDevicePicker, type VideoResolution } from "@/calls/shared/presentation/CallDevicePicker";
 import type { InputDeviceOption } from "@/calls/shared/media/input-devices/useCallInputDevices";
-import { CameraIcon, HangupIcon, MuteIcon, ScreenShareIcon } from "@/calls/shared/presentation/CallIcons";
+import { CameraIcon, HangupIcon, MuteIcon, ScreenShareIcon, SpeakerIcon } from "@/calls/shared/presentation/CallIcons";
+import { useNativeSpeakerToggle } from "@/calls/shared/media/audio-output/useNativeSpeakerToggle";
 import styles from "@/calls/direct/presentation/DirectCallPanel.module.css";
 
 interface DirectCallControlsProps {
+  readonly speakerAriaLabel?: string;
+  readonly speakerLabel?: string;
   readonly muted: boolean;
   readonly videoOff: boolean;
   readonly screenSharing: boolean;
@@ -47,6 +50,8 @@ const canScreenShare =
   typeof navigator.mediaDevices?.getDisplayMedia === "function";
 
 export function DirectCallControls({
+  speakerAriaLabel = "Speaker",
+  speakerLabel = "Speaker",
   muted,
   videoOff,
   screenSharing,
@@ -81,6 +86,8 @@ export function DirectCallControls({
   onSelectVideoResolution,
   onSelectScreenResolution,
 }: DirectCallControlsProps) {
+  const { supported: speakerSupported, speakerOn, toggle: toggleSpeaker } = useNativeSpeakerToggle();
+
   return (
     <CallControlsDock className={styles.controlsDock}>
       <CallDevicePicker
@@ -150,6 +157,20 @@ export function DirectCallControls({
             aria-pressed={screenSharing}
           />
         </CallDevicePicker>
+      ) : null}
+
+      {speakerSupported ? (
+        <CallControlButton
+          onClick={toggleSpeaker}
+          className={styles.controlBtn}
+          active={!speakerOn}
+          icon={<SpeakerIcon speakerOn={speakerOn} />}
+          label={speakerLabel}
+          collapseLabelOnNarrow
+          compactOnNarrow
+          aria-label={speakerAriaLabel}
+          aria-pressed={speakerOn}
+        />
       ) : null}
 
       <CallControlButton

@@ -35,8 +35,6 @@ describe("buildDirectCallPresentationState", () => {
       incoming,
       isMinimized: true,
       isSecurityCardOpen: false,
-      localSupportsFrameEncryption: true,
-      callSecurityMode: "balanced",
       t,
       resolvePeerLabel,
     });
@@ -78,8 +76,6 @@ describe("buildDirectCallPresentationState", () => {
       incoming: null,
       isMinimized: false,
       isSecurityCardOpen: true,
-      localSupportsFrameEncryption: true,
-      callSecurityMode: "balanced",
       t,
       resolvePeerLabel,
     });
@@ -89,8 +85,6 @@ describe("buildDirectCallPresentationState", () => {
     expect(presentation.peerDisplayName).toBe("Seclettr Peer");
     expect(presentation.peerDisplayInitials).toBe("SP");
     expect(presentation.callSecurityStatusLabel).toBe("callSecurity.pending");
-    expect(presentation.callMediaEncryptionModeLabel).toBe("callSecurity.mode.transport");
-    expect(presentation.showTransportModeInfo).toBe(true);
     expect(presentation.callSecurityToggleLabel).toBe("callSecurity.hideCode");
     expect(presentation.activeCallStateText).toBe("1:01");
     expect(presentation.muteToggleLabel).toBe("call.unmute");

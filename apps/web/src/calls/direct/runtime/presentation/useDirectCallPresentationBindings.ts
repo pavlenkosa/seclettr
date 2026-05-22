@@ -4,7 +4,6 @@ import {
   type PointerEventHandler,
   type RefObject,
 } from "react";
-import type { CallSecurityMode } from "@/ui-settings";
 import { buildDirectCallPresentationState } from "@/calls/direct/model/direct-call-presentation";
 import { useDirectCallStagePresentation } from "@/calls/direct/presentation/useDirectCallStagePresentation";
 import type {
@@ -22,8 +21,6 @@ interface UseDirectCallPresentationBindingsOptions {
   notice: CallNotice | null;
   isMinimized: boolean;
   isSecurityCardOpen: boolean;
-  localSupportsFrameEncryption: boolean;
-  callSecurityMode: CallSecurityMode;
   resolvePeerLabel: (userId: string, fallbackLabel?: string) => string;
   t: Translate;
   incomingOverlayRef: RefObject<HTMLDivElement>;
@@ -96,8 +93,6 @@ export function useDirectCallPresentationBindings({
   notice,
   isMinimized,
   isSecurityCardOpen,
-  localSupportsFrameEncryption,
-  callSecurityMode,
   resolvePeerLabel,
   t,
   incomingOverlayRef,
@@ -173,8 +168,6 @@ export function useDirectCallPresentationBindings({
     incoming,
     isMinimized,
     isSecurityCardOpen,
-    localSupportsFrameEncryption,
-    callSecurityMode,
     t,
     resolvePeerLabel,
   }), [
@@ -182,8 +175,6 @@ export function useDirectCallPresentationBindings({
     incoming,
     isMinimized,
     isSecurityCardOpen,
-    localSupportsFrameEncryption,
-    callSecurityMode,
     t,
     resolvePeerLabel,
   ]);
@@ -196,8 +187,6 @@ export function useDirectCallPresentationBindings({
     incomingPeerInitials,
     incomingMinimizedMetaText,
     callSecurityStatusLabel,
-    callMediaEncryptionModeLabel,
-    showTransportModeInfo,
     callSecurityToggleLabel,
     activeCallStateText,
     muteToggleAriaLabel,
@@ -293,9 +282,6 @@ export function useDirectCallPresentationBindings({
     isSecurityCardOpen,
     callSecurityToggleLabel,
     callSecurityStatusLabel,
-    callSecurityModeText: callMediaEncryptionModeLabel,
-    showTransportModeInfo,
-    transportModeInfoLabel: t("callSecurity.transportPeerUnsupported"),
     muteToggleAriaLabel,
     muteToggleLabel,
     videoToggleAriaLabel,

@@ -161,6 +161,49 @@ export function ShieldIcon() {
   );
 }
 
+export function SpeakerIcon({ speakerOn }: { readonly speakerOn: boolean }) {
+  if (speakerOn) {
+    return (
+      <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden="true">
+        <path
+          d="M3.75 6.75H6L9 3.75v10.5l-3-3H3.75A.75.75 0 0 1 3 10.5v-3A.75.75 0 0 1 3.75 6.75Z"
+          stroke="currentColor"
+          strokeWidth="1.5"
+          strokeLinejoin="round"
+        />
+        <path
+          d="M12 6.75a3.75 3.75 0 0 1 0 4.5M13.5 5.25a6 6 0 0 1 0 7.5"
+          stroke="currentColor"
+          strokeWidth="1.5"
+          strokeLinecap="round"
+        />
+      </svg>
+    );
+  }
+
+  return (
+    <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden="true">
+      <path
+        d="M3.75 6.75H6L9 3.75v10.5l-3-3H3.75A.75.75 0 0 1 3 10.5v-3A.75.75 0 0 1 3.75 6.75Z"
+        stroke="currentColor"
+        strokeWidth="1.5"
+        strokeLinejoin="round"
+      />
+      <path d="M12 6.75l4.5 4.5M16.5 6.75L12 11.25" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+export function LockIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+      <rect x="3" y="7.5" width="10" height="7" rx="2" stroke="currentColor" strokeWidth="1.5" />
+      <path d="M5.5 7.5V5.5a2.5 2.5 0 0 1 5 0v2" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+      <circle cx="8" cy="11" r="1" fill="currentColor" />
+    </svg>
+  );
+}
+
 export function MuteIcon({ muted }: { readonly muted: boolean }) {
   if (muted) {
     return (

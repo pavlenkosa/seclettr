@@ -61,25 +61,33 @@ function StageFallback({
   peerDisplayName,
   peerHasAudio,
   peerInitials,
+  callStateText,
 }: {
   readonly isAudioOnlyStage: boolean;
   readonly peerDisplayName: string;
   readonly peerHasAudio: boolean;
   readonly peerInitials: string;
+  readonly callStateText: string;
 }) {
   if (!isAudioOnlyStage) return null;
   return (
-    <CallMediaAvatarFallback
-      label={peerDisplayName}
-      initials={peerInitials}
-      className={styles.stagePlaceholder}
-      avatarClassName={styles.audioAvatar}
-      pulseClassName={styles.stageAudioPulse}
-      pulseActiveClassName={styles.stageAudioPulseActive}
-      hasAudio={peerHasAudio}
-      isSpeaking={false}
-      speakingVariant="primary-stage"
-    />
+    <>
+      <CallMediaAvatarFallback
+        label={peerDisplayName}
+        initials={peerInitials}
+        className={styles.stagePlaceholder}
+        avatarClassName={styles.audioAvatar}
+        pulseClassName={styles.stageAudioPulse}
+        pulseActiveClassName={styles.stageAudioPulseActive}
+        hasAudio={peerHasAudio}
+        isSpeaking={false}
+        speakingVariant="primary-stage"
+      />
+      <span className={styles.stagePlaceholderName} aria-hidden="true">{peerDisplayName}</span>
+      {callStateText ? (
+        <span className={styles.stagePlaceholderStatus} aria-hidden="true">{callStateText}</span>
+      ) : null}
+    </>
   );
 }
 
@@ -302,6 +310,7 @@ export function DirectCallStage({
             peerDisplayName={peerDisplayName}
             peerHasAudio={peerHasAudio}
             peerInitials={peerInitials}
+            callStateText={callStateText}
           />
         )}
         overlayTopStart={stageLayout.stageSource === "audio" ? null : (

@@ -95,10 +95,14 @@ type MessageRowCapabilities = Readonly<{
   canDelete: boolean;
   canForward: boolean;
 }>;
-type MessageRowContentProps = Readonly<{
-  presentation: MessageListRowPresentation;
+type MessageRowViewModel = Readonly<{
   kind: MessageBodyKind;
   capabilities: MessageRowCapabilities;
+  copyText?: string;
+}>;
+type MessageRowContentProps = Readonly<{
+  presentation: MessageListRowPresentation;
+  viewModel: MessageRowViewModel;
   activeMediaKey: string | null;
   onActiveMediaChange: (next: string | null) => void;
   onRetry?: (messageId: string) => void;
@@ -130,6 +134,10 @@ function canCopyMessage(message: MessageListRowMessage, kind: MessageBodyKind): 
   return kind === "text" && Boolean(message.content) && !message.content.startsWith("[");
 }
 
+function canForwardMessage(message: MessageListRowMessage, kind: MessageBodyKind): boolean {
+  return kind === "text" && Boolean(message.content) && !message.content.startsWith("[");
+}
+
 function resolveMessageRowCapabilities(
   message: MessageListRowMessage,
   kind: MessageBodyKind,
@@ -140,10 +148,39 @@ function resolveMessageRowCapabilities(
     // Delete is offered when the row owns a delete handler AND the message is
     // own (sender). The store / API enforces the actual permission server-side.
     canDelete: Boolean(handlers.onDelete) && message.isOwn,
-    canForward: Boolean(handlers.onForward)
-      && kind === "text"
-      && Boolean(message.content)
-      && !message.content.startsWith("["),
+    canForward: Boolean(handlers.onForward) && canForwardMessage(message, kind),
+  };
+}
+
+function resolveMessageContextCopyText(
+  message: MessageListRowMessage,
+  capabilities: MessageRowCapabilities
+): string | undefined {
+  return capabilities.canCopy ? (message.content ?? undefined) : undefined;
+}
+
+function buildBubbleClassName(message: MessageListRowMessage, kind: MessageBodyKind, isHighlighted: boolean): string {
+  return [
+    styles.bubble,
+    message.isOwn ? styles.bubbleOwn : styles.bubbleTheirs,
+    kind === "voice" ? styles.voiceBubble : "",
+    kind === "media" || kind === "mediaGroup" ? styles.mediaBubble : "",
+    isHighlighted ? styles.bubbleHighlighted : "",
+  ].join(" ");
+}
+
+function resolveMessageRowViewModel(
+  message: MessageListRowMessage,
+  hasMediaGroup: boolean,
+  handlers: Pick<Props, "onDelete" | "onForward">
+): MessageRowViewModel {
+  const kind = getMessageBodyKind(message, hasMediaGroup);
+  const capabilities = resolveMessageRowCapabilities(message, kind, handlers);
+
+  return {
+    kind,
+    capabilities,
+    copyText: resolveMessageContextCopyText(message, capabilities),
   };
 }
 
@@ -369,13 +406,7 @@ function MessageBubble({
 }: MessageBubbleProps) {
   const { message } = presentation;
   const showMeta = !usesInlineAttachmentMeta(kind);
-  const bubbleClassName = [
-    styles.bubble,
-    message.isOwn ? styles.bubbleOwn : styles.bubbleTheirs,
-    kind === "voice" ? styles.voiceBubble : "",
-    kind === "media" || kind === "mediaGroup" ? styles.mediaBubble : "",
-    isHighlighted ? styles.bubbleHighlighted : "",
-  ].join(" ");
+  const bubbleClassName = buildBubbleClassName(message, kind, isHighlighted);
 
   return (
     <div className={bubbleClassName}>
@@ -410,8 +441,7 @@ function MessageRowFrame({
 
 function MessageRowContent({
   presentation,
-  kind,
-  capabilities,
+  viewModel,
   activeMediaKey,
   onActiveMediaChange,
   onRetry,
@@ -423,6 +453,7 @@ function MessageRowContent({
   t,
 }: MessageRowContentProps) {
   const { message } = presentation;
+  const { kind, capabilities, copyText } = viewModel;
 
   const handleContextAction = useCallback((action: MessageContextMenuAction) => {
     if (action.kind === "reply") {
@@ -450,7 +481,7 @@ function MessageRowContent({
       canCopy={capabilities.canCopy}
       canForward={capabilities.canForward}
       canDelete={capabilities.canDelete}
-      copyText={capabilities.canCopy ? (message.content ?? undefined) : undefined}
+      copyText={copyText}
     >
       <MessageRowFrame presentation={presentation}>
         <MessageBubble
@@ -483,8 +514,10 @@ export const MessageListRow = memo(function MessageListRow({
 }: Props) {
   const { message } = presentation;
   const hasMediaGroup = (presentation.mediaGroupMessages?.length ?? 0) > 1;
-  const kind = getMessageBodyKind(message, hasMediaGroup);
-  const capabilities = resolveMessageRowCapabilities(message, kind, { onDelete, onForward });
+  const viewModel = resolveMessageRowViewModel(message, hasMediaGroup, {
+    onDelete,
+    onForward,
+  });
   const entryStyle = {
     "--message-enter-delay": `${Math.min(enterDelayMs, 160)}ms`,
   } as CSSProperties;
@@ -494,8 +527,7 @@ export const MessageListRow = memo(function MessageListRow({
       <DateSeparator presentation={presentation} />
       <MessageRowContent
         presentation={presentation}
-        kind={kind}
-        capabilities={capabilities}
+        viewModel={viewModel}
         activeMediaKey={activeMediaKey}
         onActiveMediaChange={onActiveMediaChange}
         onRetry={onRetry}
@@ -512,6 +544,7 @@ export const MessageListRow = memo(function MessageListRow({
   return (
     prev.presentation === next.presentation &&
     prev.activeMediaKey === next.activeMediaKey &&
+    prev.onActiveMediaChange === next.onActiveMediaChange &&
     prev.onRetry === next.onRetry &&
     prev.onReply === next.onReply &&
     prev.onDelete === next.onDelete &&

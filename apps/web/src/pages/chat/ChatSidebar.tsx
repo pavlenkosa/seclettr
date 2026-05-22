@@ -6,7 +6,7 @@ import type { SavedMessage } from "@/stores/saved";
 import { useI18n } from "@/i18n";
 import { ConversationList } from "@/chats/presentation/ConversationList";
 import { SeclettrMark } from "@/components/common/SeclettrMark";
-import { IconButton, InputField } from "@/components/ui";
+import { IconButton, IconNewGroup, IconPlus, IconSearch, IconSettings, InputField } from "@/components/ui";
 
 import styles from "./ChatSidebar.module.css";
 
@@ -118,9 +118,7 @@ export function ChatSidebar({
             title={t("chat.newConversation")}
             aria-label={t("chat.newConversation")}
           >
-            <svg width="16" height="16" viewBox="0 0 18 18" fill="none">
-              <path d="M9 3v12M3 9h12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-            </svg>
+            <IconPlus size={16} strokeWidth={2} />
           </IconButton>
 
           <IconButton
@@ -130,12 +128,7 @@ export function ChatSidebar({
             title={t("group.create.open")}
             aria-label={t("group.create.open")}
           >
-            <svg width="16" height="16" viewBox="0 0 18 18" fill="none">
-              <circle cx="6.2" cy="6.2" r="2.2" stroke="currentColor" strokeWidth="1.5" />
-              <circle cx="11.8" cy="7.2" r="1.8" stroke="currentColor" strokeWidth="1.5" />
-              <path d="M2.8 13.3c.7-1.7 2.1-2.7 3.9-2.7s3.1 1 3.8 2.7" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
-              <path d="M14.6 11.8v4M12.6 13.8h4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
-            </svg>
+            <IconNewGroup size={16} />
           </IconButton>
 
           <span className={`${styles.actionDivider} ${styles.desktopOnlyAction}`} aria-hidden="true" />
@@ -147,12 +140,7 @@ export function ChatSidebar({
             title={t("chat.settings")}
             aria-label={t("chat.settings")}
           >
-            <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-              <path
-                fill="currentColor"
-                d="M9.405 1.05c-.413-1.4-2.397-1.4-2.81 0l-.101.345a1.464 1.464 0 0 1-2.105.872l-.312-.164c-1.265-.666-2.669.738-2.003 2.003l.164.312c.446.847.023 1.89-.872 2.105l-.345.101c-1.4.413-1.4 2.397 0 2.81l.345.101c.895.214 1.318 1.258.872 2.105l-.164.312c-.666 1.265.738 2.669 2.003 2.003l.312-.164a1.464 1.464 0 0 1 2.105.872l.101.345c.413 1.4 2.397 1.4 2.81 0l.101-.345a1.464 1.464 0 0 1 2.105-.872l.312.164c1.265.666 2.669-.738 2.003-2.003l-.164-.312a1.464 1.464 0 0 1 .872-2.105l.345-.101c1.4-.413 1.4-2.397 0-2.81l-.345-.101a1.464 1.464 0 0 1-.872-2.105l.164-.312c.666-1.265-.738-2.669-2.003-2.003l-.312.164a1.464 1.464 0 0 1-2.105-.872l-.101-.345ZM8 5.43a2.57 2.57 0 1 1 0 5.14 2.57 2.57 0 0 1 0-5.14Z"
-              />
-            </svg>
+            <IconSettings size={16} />
           </IconButton>
 
           {canLock ? (
@@ -200,12 +188,7 @@ export function ChatSidebar({
           wrapperClassName={styles.searchField}
           className={styles.searchInput}
           size="pill"
-          leading={(
-            <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-              <circle cx="6.5" cy="6.5" r="4.5" stroke="currentColor" strokeWidth="1.5" />
-              <path d="M10.5 10.5L14 14" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
-            </svg>
-          )}
+          leading={<IconSearch size={14} />}
         />
         {searchQuery && (
           <IconButton

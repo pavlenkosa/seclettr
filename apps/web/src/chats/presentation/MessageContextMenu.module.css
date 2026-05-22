@@ -30,16 +30,13 @@
   left: var(--menu-x);
   top: var(--menu-y);
   z-index: 200;
-  min-width: 164px;
+  min-width: 180px;
   max-width: calc(100vw - 16px);
   padding: 0.32rem;
   border-radius: 14px;
   border: 1px solid color-mix(in srgb, var(--panel-border) 88%, transparent);
   background: var(--surface-shell-strong);
   overflow: clip;
-  box-shadow:
-    0 4px 16px rgb(0 0 0 / 0.12),
-    0 1px 4px rgb(0 0 0 / 0.06);
 }
 
 .item {
@@ -63,7 +60,7 @@
 
 .item svg {
   flex-shrink: 0;
-  opacity: 0.72;
+  opacity: 0.82;
 }
 
 .item:hover {

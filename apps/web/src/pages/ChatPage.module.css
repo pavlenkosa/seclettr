@@ -202,14 +202,14 @@
 .callAlertBanners {
   position: fixed;
   top: 0.6rem;
-  left: 50%;
-  transform: translateX(-50%);
+  left: 1rem;
+  right: 1rem;
   z-index: 390;
   display: flex;
   flex-direction: column;
+  align-items: center;
   gap: 0.4rem;
-  width: max-content;
-  max-width: min(440px, calc(100vw - 2rem));
+  width: auto;
 }
 
 .callAlertBannersBelowNotice {
@@ -220,11 +220,12 @@
   display: flex;
   align-items: center;
   gap: 0.6rem;
+  width: max-content;
+  max-width: min(440px, calc(100vw - 2rem));
   padding: 0.36rem 0.46rem 0.36rem 1rem;
   background: var(--surface-shell-strong);
   border: 1px solid color-mix(in srgb, var(--panel-border-soft) 80%, transparent);
   border-radius: 999px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.28), 0 1px 4px rgba(0, 0, 0, 0.1);
   color: var(--text-primary);
   font-size: 0.8rem;
   font-weight: 500;

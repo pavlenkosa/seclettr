@@ -96,8 +96,6 @@ export function useChatWorkspaceEntry(options: UseChatWorkspaceEntryOptions) {
   const [savedThreadActive, setSavedThreadActive] = useState(false);
 
   const savedMessages = useSavedMessagesStore((state) => state.messages);
-  const addSavedMessage = useSavedMessagesStore((state) => state.addMessage);
-  const addSavedMessageWithAttachment = useSavedMessagesStore((state) => state.addMessageWithAttachment);
 
   const activeConversation = useMessagesStore(
     useCallback(
@@ -205,15 +203,15 @@ export function useChatWorkspaceEntry(options: UseChatWorkspaceEntryOptions) {
 
   const sendSavedMessage = useCallback(
     (content: string) => {
-      addSavedMessage(content);
+      useSavedMessagesStore.getState().addMessage(content);
     },
-    [addSavedMessage]
+    []
   );
 
   const sendSavedFile = useCallback(
     (file: File, options: { kind: "file" | "voice_note" | "video_note"; durationMs?: number; caption?: string; mediaGroupId?: string }) =>
-      addSavedMessageWithAttachment(file, options),
-    [addSavedMessageWithAttachment]
+      useSavedMessagesStore.getState().addMessageWithAttachment(file, options),
+    []
   );
 
   const {

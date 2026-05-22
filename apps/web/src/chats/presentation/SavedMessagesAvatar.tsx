@@ -1,3 +1,13 @@
+/**
+ * SavedMessagesAvatar — themed bookmark avatar used for the Saved Messages thread entry.
+ *
+ * Owns:
+ *   - Rendering a bookmark/ribbon SVG glyph inside a styled circular container.
+ *   - Scaling the icon proportionally to the `size` prop.
+ *   - Marking the element `aria-hidden` since the parent row provides the accessible label.
+ *
+ * Does not own saved-messages store access, routing, or list-row layout.
+ */
 import styles from "./SavedMessagesAvatar.module.css";
 
 interface SavedMessagesAvatarProps {

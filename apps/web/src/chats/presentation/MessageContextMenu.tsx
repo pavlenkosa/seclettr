@@ -2,6 +2,7 @@ import {
   memo,
   useCallback,
   useEffect,
+  useId,
   useLayoutEffect,
   useRef,
   useState,
@@ -9,6 +10,7 @@ import {
   type ReactNode,
 } from "react";
 import { useI18n } from "@/i18n";
+import { hapticSelection } from "@/lib/native-haptics";
 import { useAnimatedPresence } from "@/lib/hooks";
 import { MOTION_DURATION_MS } from "@/lib/motion";
 import motionStyles from "@/components/ui/motion/Motion.module.css";
@@ -36,8 +38,20 @@ interface MenuPosition {
 const LONG_PRESS_DELAY_MS = 500;
 
 /**
- * Wraps a message bubble and exposes a right-click (desktop) / long-press (mobile)
- * context menu with Reply and Copy actions.
+ * MessageContextMenu — interaction wrapper that surfaces a floating action menu
+ * for a message bubble.
+ *
+ * Owns:
+ *   - Right-click (desktop) and long-press (mobile, 500 ms) gesture detection.
+ *   - Menu open/close animation via `useAnimatedPresence`.
+ *   - Viewport clamping so the menu never escapes screen edges.
+ *   - Keyboard navigation (↑ ↓ Home End Escape) within the menu.
+ *   - Copy-to-clipboard with 1 s "Copied ✓" feedback state.
+ *   - Broadcasting a custom DOM event so simultaneous menus auto-close each other.
+ *   - Focus restoration to the previously focused element on close.
+ *
+ * Does not own reply/forward/delete business logic — those are forwarded to `onAction`.
+ * Does not own the message bubble markup inside `children`.
  */
 export const MessageContextMenu = memo(function MessageContextMenu({
   children,
@@ -48,6 +62,7 @@ export const MessageContextMenu = memo(function MessageContextMenu({
   canForward = false,
   canDelete = false,
 }: Props) {
+  const menuId = useId();
   const { t } = useI18n();
   const [menuPos, setMenuPos] = useState<MenuPosition | null>(null);
   const [mountedMenuPos, setMountedMenuPos] = useState<MenuPosition | null>(null);
@@ -71,6 +86,10 @@ export const MessageContextMenu = memo(function MessageContextMenu({
   });
 
   const openMenu = useCallback((x: number, y: number) => {
+    // Notify other instances to close before we open (synchronous dispatch).
+    document.dispatchEvent(
+      new CustomEvent("seclettr:context-menu-open", { detail: { id: menuId } }),
+    );
     previousFocusRef.current = document.activeElement instanceof HTMLElement
       ? document.activeElement
       : null;
@@ -78,7 +97,7 @@ export const MessageContextMenu = memo(function MessageContextMenu({
     const nextPosition = { x, y };
     setMountedMenuPos(nextPosition);
     setMenuPos(nextPosition);
-  }, []);
+  }, [menuId]);
 
   const clearCopyResetTimer = useCallback(() => {
     if (copyResetTimerRef.current !== null) {
@@ -93,6 +112,23 @@ export const MessageContextMenu = memo(function MessageContextMenu({
     setMenuPos(null);
   }, [clearCopyResetTimer]);
 
+  // Close this instance when another context menu opens elsewhere.
+  useEffect(() => {
+    const handler = (e: Event) => {
+      if ((e as CustomEvent<{ id: string }>).detail.id !== menuId) closeMenu();
+    };
+    document.addEventListener("seclettr:context-menu-open", handler);
+    return () => document.removeEventListener("seclettr:context-menu-open", handler);
+  }, [menuId, closeMenu]);
+
+  // Close when the message list scrolls (menu stays fixed while content moves).
+  useEffect(() => {
+    if (!menuPos) return;
+    const onScroll = () => closeMenu();
+    document.addEventListener("scroll", onScroll, { capture: true, passive: true });
+    return () => document.removeEventListener("scroll", onScroll, { capture: true });
+  }, [menuPos, closeMenu]);
+
   const handleContextMenu = useCallback((e: React.MouseEvent) => {
     e.preventDefault();
     openMenu(e.clientX, e.clientY);
@@ -105,6 +141,7 @@ export const MessageContextMenu = memo(function MessageContextMenu({
     const { clientX, clientY } = touch;
     longPressTimerRef.current = globalThis.setTimeout(() => {
       if (!touchMovedRef.current) {
+        hapticSelection();
         openMenu(clientX, clientY);
       }
     }, LONG_PRESS_DELAY_MS) as unknown as number;
@@ -193,6 +230,27 @@ export const MessageContextMenu = memo(function MessageContextMenu({
     };
   }, [clearCopyResetTimer]);
 
+  const handleMenuKeyDown = useCallback((e: React.KeyboardEvent<HTMLDivElement>) => {
+    const items = Array.from(
+      menuRef.current?.querySelectorAll<HTMLButtonElement>('button[role="menuitem"]') ?? []
+    );
+    if (items.length === 0) return;
+    const currentIndex = items.indexOf(document.activeElement as HTMLButtonElement);
+    if (e.key === "ArrowDown") {
+      e.preventDefault();
+      items[(currentIndex + 1) % items.length]?.focus();
+    } else if (e.key === "ArrowUp") {
+      e.preventDefault();
+      items[(currentIndex - 1 + items.length) % items.length]?.focus();
+    } else if (e.key === "Home") {
+      e.preventDefault();
+      items[0]?.focus();
+    } else if (e.key === "End") {
+      e.preventDefault();
+      items[items.length - 1]?.focus();
+    }
+  }, []);
+
   const handleAction = useCallback((kind: MessageContextMenuAction["kind"]) => {
     if (kind === "copy" && copyText) {
       if (!navigator.clipboard?.writeText) {
@@ -240,6 +298,7 @@ export const MessageContextMenu = memo(function MessageContextMenu({
             isClosing ? motionStyles.popoverOut : motionStyles.popoverIn,
           ].join(" ")}
           style={{ "--menu-x": `${mountedMenuPos.x}px`, "--menu-y": `${mountedMenuPos.y}px` } as CSSProperties}
+          onKeyDown={handleMenuKeyDown}
         >
           {canReply && (
             <button
@@ -248,8 +307,8 @@ export const MessageContextMenu = memo(function MessageContextMenu({
               className={styles.item}
               onClick={() => handleAction("reply")}
             >
-              <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-                <path d="M1 8L6 3v3c4 0 7 2 8 6-1.5-2-4-3-8-3v3L1 8z" fill="currentColor" />
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                <path d="M1 8l5-5v3c4.5 0 7.5 2 8.5 6.5-1.5-2.5-4-3.5-8.5-3.5V12L1 8z" fill="currentColor" />
               </svg>
               {t("message.context.reply")}
             </button>
@@ -258,17 +317,17 @@ export const MessageContextMenu = memo(function MessageContextMenu({
             <button
               role="menuitem"
               type="button"
-              className={`${styles.item} ${copied ? styles.itemCopied : ""}`}
+              className={styles.item}
               onClick={() => handleAction("copy")}
             >
               {copied ? (
-                <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-                  <path d="M2 8l4 4 8-8" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                  <path d="M2 8.5l3.5 3.5 8.5-8.5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
                 </svg>
               ) : (
-                <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
                   <rect x="5" y="5" width="9" height="9" rx="2" stroke="currentColor" strokeWidth="1.5" />
-                  <path d="M3 11H2a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1h8a1 1 0 0 1 1 1v1" stroke="currentColor" strokeWidth="1.5" />
+                  <path d="M3 11H2a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1h8a1 1 0 0 1 1 1v1" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
                 </svg>
               )}
               {copied ? t("message.context.copied") : t("message.context.copy")}
@@ -281,8 +340,8 @@ export const MessageContextMenu = memo(function MessageContextMenu({
               className={styles.item}
               onClick={() => handleAction("forward")}
             >
-              <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-                <path d="M9 3l5 4-5 4V8c-3.5 0-6 1.5-7 4 .5-4 3-7 7-7V3z" fill="currentColor" />
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                <path d="M15 8l-5-5v3C5.5 6 2.5 8 1.5 12.5 3 10 5.5 9 10 9v3l5-4z" fill="currentColor" />
               </svg>
               {t("message.context.forward")}
             </button>
@@ -297,7 +356,7 @@ export const MessageContextMenu = memo(function MessageContextMenu({
               className={`${styles.item} ${styles.itemDanger}`}
               onClick={() => handleAction("delete")}
             >
-              <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
                 <path d="M3 4h10M6 4V2.7a.7.7 0 0 1 .7-.7h2.6a.7.7 0 0 1 .7.7V4M5 4l.7 9.3a.7.7 0 0 0 .7.7h3.2a.7.7 0 0 0 .7-.7L11 4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
               </svg>
               {t("message.context.delete")}

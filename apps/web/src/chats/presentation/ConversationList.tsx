@@ -1,3 +1,17 @@
+/**
+ * ConversationList — scrollable thread list rendered inside the chat sidebar.
+ *
+ * Owns:
+ *   - Merging E2EE conversations, groups, plain conversations, plain groups, and saved
+ *     messages into a single sorted entry list.
+ *   - Folder tab bar and folder creation/rename dialog.
+ *   - Per-entry context menu (move to folder, delete chat).
+ *   - Loading skeleton placeholders while history is bootstrapping.
+ *   - Empty-state indicator when no threads exist.
+ *
+ * Does not own search filtering, sidebar layout, routing/navigation, or store mutations
+ * beyond the folder and delete operations exposed via `useConversationListState`.
+ */
 import type { Conversation } from "@/stores/messages";
 import type { GroupChat } from "@/stores/groups";
 import type { PlainConversation, PlainGroup } from "@/stores/plain";

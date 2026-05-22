@@ -105,12 +105,8 @@
   position: absolute;
   inset: 0;
   pointer-events: none;
-  background: linear-gradient(
-    to bottom,
-    transparent 0%,
-    color-mix(in srgb, var(--bg-primary) 70%, transparent) 35%,
-    color-mix(in srgb, var(--bg-primary) 96%, transparent) 100%
-  );
+  background: color-mix(in srgb, var(--bg-primary) 94%, transparent);
+  opacity: 0.82;
 }
 
 .empty {

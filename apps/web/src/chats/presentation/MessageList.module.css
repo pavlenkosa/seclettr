@@ -1684,9 +1684,7 @@ button.quotedBubble {
   bottom: 0;
   right: 0;
   padding: 3px 7px 5px;
-  background: rgb(0 0 0 / 0.42);
-  backdrop-filter: blur(6px);
-  -webkit-backdrop-filter: blur(6px);
+  background: rgb(8 18 32 / 0.78);
   color: #fff;
   font-size: 0.68rem;
   font-weight: 600;
@@ -1751,9 +1749,7 @@ button.quotedBubble {
   bottom: 0;
   right: 0;
   padding: 2px 6px 4px;
-  background: rgb(0 0 0 / 0.38);
-  backdrop-filter: blur(4px);
-  -webkit-backdrop-filter: blur(4px);
+  background: rgb(8 18 32 / 0.74);
   border-radius: 6px 0 14px 0;
   color: #fff;
   font-size: 0.64rem;
@@ -1849,24 +1845,18 @@ button.quotedBubble {
   to { transform: rotate(360deg); }
 }
 
-/* Moving-gradient skeleton shimmer — slides left-to-right like Telegram. */
+/* Placeholder pulse while encrypted media preview is still unresolved. */
 .inlineMediaShimmer {
   position: absolute;
   inset: 0;
   border-radius: inherit;
-  background: linear-gradient(
-    90deg,
-    transparent 0%,
-    color-mix(in srgb, var(--bg-primary) 55%, transparent) 50%,
-    transparent 100%
-  );
-  background-size: 300% 100%;
-  animation: inlineMediaShimmerSlide 1.5s linear infinite;
+  background: color-mix(in srgb, var(--bg-primary) 26%, transparent);
+  animation: inlineMediaShimmerPulse 1.35s var(--motion-ease-standard) infinite alternate;
 }
 
-@keyframes inlineMediaShimmerSlide {
-  from { background-position: 150% center; }
-  to   { background-position: -150% center; }
+@keyframes inlineMediaShimmerPulse {
+  from { opacity: 0.36; }
+  to { opacity: 0.7; }
 }
 
 @media (prefers-reduced-motion: reduce) {

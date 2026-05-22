@@ -104,6 +104,20 @@ function areSenderLabelsCompatible(
   );
 }
 
+function canReusePreviousPresentationState(params: {
+  previousState?: MessageRowPresentationCache | null;
+  senderLabels?: Record<string, string>;
+  locale: string;
+}): boolean {
+  const { previousState, senderLabels, locale } = params;
+
+  return Boolean(
+    previousState
+    && previousState.locale === locale
+    && areSenderLabelsCompatible(previousState.senderLabels, senderLabels)
+  );
+}
+
 export function formatTime(ms: number, locale: string): string {
   return new Date(ms).toLocaleTimeString(locale, { hour: "numeric", minute: "2-digit" });
 }
@@ -296,6 +310,15 @@ function appendRowToState(
   });
 }
 
+function createEmptyBuildState(): MessageRowBuildState {
+  return {
+    rows: [],
+    rowBounds: [],
+    rowIndexByMessageId: new Map<string, number>(),
+    rowIdByMessageId: new Map<string, string>(),
+  };
+}
+
 function buildMessageRowPresentationCache(params: {
   messages: Message[];
   senderLabels?: Record<string, string>;
@@ -305,10 +328,7 @@ function buildMessageRowPresentationCache(params: {
 }): MessageRowPresentationCache {
   const { messages, senderLabels, locale, t, previousState } = params;
 
-  if (
-    previousState?.locale === locale
-    && areSenderLabelsCompatible(previousState?.senderLabels, senderLabels)
-  ) {
+  if (previousState && canReusePreviousPresentationState({ previousState, senderLabels, locale })) {
     const incrementalReuseState = resolveIncrementalReuseBaseState({
       previousState,
       nextMessages: messages,
@@ -329,12 +349,7 @@ function buildMessageRowPresentationCache(params: {
   }
 
   return appendMessageRows({
-    baseState: {
-      rows: [],
-      rowBounds: [],
-      rowIndexByMessageId: new Map<string, number>(),
-      rowIdByMessageId: new Map<string, string>(),
-    },
+    baseState: createEmptyBuildState(),
     messages,
     senderLabels,
     locale,
@@ -343,12 +358,11 @@ function buildMessageRowPresentationCache(params: {
   });
 }
 
-function resolveIncrementalReuseBaseState(params: {
-  previousState: MessageRowPresentationCache;
+function findFirstChangedMessageIndex(params: {
+  previousMessages: Message[];
   nextMessages: Message[];
-}): IncrementalReuseBaseState | null {
-  const { previousState, nextMessages } = params;
-  const previousMessages = previousState.sourceMessages;
+}): number {
+  const { previousMessages, nextMessages } = params;
   const sharedLength = Math.min(previousMessages.length, nextMessages.length);
   let firstChangedIndex = 0;
 
@@ -359,17 +373,15 @@ function resolveIncrementalReuseBaseState(params: {
     firstChangedIndex += 1;
   }
 
-  if (firstChangedIndex === previousMessages.length && firstChangedIndex === nextMessages.length) {
-    return null;
-  }
+  return firstChangedIndex;
+}
 
-  const rebuildAnchorIndex = Math.max(0, firstChangedIndex - 1);
-  const rebuildAnchorMessage = previousMessages[rebuildAnchorIndex] ?? null;
-  const rebuildAnchorRowIndex = rebuildAnchorMessage
-    ? previousState.rowIndexByMessageId.get(rebuildAnchorMessage.id) ?? 0
-    : 0;
-  const rebuildStartIndex = previousState.rowBounds[rebuildAnchorRowIndex]?.startIndex ?? 0;
-  const reusableRowCount = rebuildStartIndex > 0 ? rebuildAnchorRowIndex : 0;
+function cloneReusablePrefixState(params: {
+  previousState: MessageRowPresentationCache;
+  reusableRowCount: number;
+  rebuildStartIndex: number;
+}): IncrementalReuseBaseState {
+  const { previousState, reusableRowCount, rebuildStartIndex } = params;
   const rows = previousState.rows.slice(0, reusableRowCount);
   const rowBounds = previousState.rowBounds.slice(0, reusableRowCount);
   const rowIndexByMessageId = new Map<string, number>();
@@ -389,6 +401,36 @@ function resolveIncrementalReuseBaseState(params: {
     rowIdByMessageId,
     rebuildStartIndex,
   };
+}
+
+function resolveIncrementalReuseBaseState(params: {
+  previousState: MessageRowPresentationCache;
+  nextMessages: Message[];
+}): IncrementalReuseBaseState | null {
+  const { previousState, nextMessages } = params;
+  const previousMessages = previousState.sourceMessages;
+  const firstChangedIndex = findFirstChangedMessageIndex({
+    previousMessages,
+    nextMessages,
+  });
+
+  if (firstChangedIndex === previousMessages.length && firstChangedIndex === nextMessages.length) {
+    return null;
+  }
+
+  const rebuildAnchorIndex = Math.max(0, firstChangedIndex - 1);
+  const rebuildAnchorMessage = previousMessages[rebuildAnchorIndex] ?? null;
+  const rebuildAnchorRowIndex = rebuildAnchorMessage
+    ? previousState.rowIndexByMessageId.get(rebuildAnchorMessage.id) ?? 0
+    : 0;
+  const rebuildStartIndex = previousState.rowBounds[rebuildAnchorRowIndex]?.startIndex ?? 0;
+  const reusableRowCount = rebuildStartIndex > 0 ? rebuildAnchorRowIndex : 0;
+
+  return cloneReusablePrefixState({
+    previousState,
+    reusableRowCount,
+    rebuildStartIndex,
+  });
 }
 
 function appendMessageRows(params: {

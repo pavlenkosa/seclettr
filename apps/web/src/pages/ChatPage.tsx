@@ -1,4 +1,20 @@
-import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
+/**
+ * ChatPage — authenticated messenger shell orchestration root.
+ *
+ * Owns:
+ *   - authenticated chat layout assembly across sidebar, thread pane, alerts,
+ *     call panels, forwarding overlay, and room-create flow
+ *   - lazy loading boundaries for demand-only chat/settings/room surfaces
+ *   - top-level wiring between auth identity, workspace entry, UI state, and
+ *     page-local helper hooks
+ *
+ * Does not own:
+ *   - message store transport/runtime internals
+ *   - direct/group/room call media/signaling logic
+ *   - message-list row rendering
+ *   - settings screen internals
+ */
+import { lazy, Suspense, useCallback, useEffect, useMemo, useRef } from "react";
 import { useShallow } from "zustand/react/shallow";
 import { useAuthStore } from "@/stores/auth";
 import { usePlainMessagesStore, usePlainGroupsStore } from "@/stores/plain";
@@ -19,26 +35,56 @@ import { useI18n } from "@/i18n";
 import { useAnimatedPresence, useIsMobileViewport } from "@/lib/hooks";
 import { ErrorBoundary, ThreadErrorFallback } from "@/components/common/ErrorBoundary";
 import { ConnectionBanner } from "@/components/common/ConnectionBanner";
-import { SettingsScreen } from "@/components/common/SettingsScreen";
 import { ChatSidebar } from "./chat/ChatSidebar";
 import { ChatMobileTabBar } from "./chat/ChatMobileTabBar";
-import { ChatThreadActionButtons } from "./chat/ChatThreadActionButtons";
 import { useSidebarResize } from "./chat/useSidebarResize";
 import type { MessageComposerHandle } from "@/chats/presentation/MessageComposer";
 import { ChatNotice } from "./chat/ChatNotice";
 import { ChatCallAlertBanners } from "./chat/ChatCallAlertBanners";
-import { ChatThreadHeader } from "./chat/ChatThreadHeader";
 import { ChatThreadView } from "./chat/ChatThreadView";
-import { ChatThreadComposer } from "./chat/ChatThreadComposer";
 import { ChatCallPanels } from "./chat/ChatCallPanels";
 import { ChatMainLayout } from "./chat/ChatMainLayout";
-import { ChatModals } from "./chat/ChatModals";
-import { ForwardPickerModal, type ForwardTarget } from "@/chats/presentation/modals/ForwardPickerModal";
-import { CreateRoomDialog } from "./chat/CreateRoomDialog";
-import type { RoomCallSession } from "@/calls/room/room-call-bootstrap";
 import type { WorkspaceEntryState } from "./chat/chat-page-types";
+import { useChatPageAlertState } from "./chat/useChatPageAlertState";
+import { useChatPageForwarding } from "./chat/useChatPageForwarding";
+import { useChatPageRoomState } from "./chat/useChatPageRoomState";
 import styles from "./ChatPage.module.css";
 
+const SettingsScreen = lazy(() =>
+  import("@/components/common/SettingsScreen").then(({ SettingsScreen: Component }) => ({
+    default: Component,
+  }))
+);
+const ChatModals = lazy(() =>
+  import("./chat/ChatModals").then(({ ChatModals: Component }) => ({
+    default: Component,
+  }))
+);
+const ForwardPickerModal = lazy(() =>
+  import("@/chats/presentation/modals/ForwardPickerModal").then(({ ForwardPickerModal: Component }) => ({
+    default: Component,
+  }))
+);
+const CreateRoomDialog = lazy(() =>
+  import("./chat/CreateRoomDialog").then(({ CreateRoomDialog: Component }) => ({
+    default: Component,
+  }))
+);
+const ChatThreadActionButtons = lazy(() =>
+  import("./chat/ChatThreadActionButtons").then(({ ChatThreadActionButtons: Component }) => ({
+    default: Component,
+  }))
+);
+const ChatThreadHeader = lazy(() =>
+  import("./chat/ChatThreadHeader").then(({ ChatThreadHeader: Component }) => ({
+    default: Component,
+  }))
+);
+const ChatThreadComposer = lazy(() =>
+  import("./chat/ChatThreadComposer").then(({ ChatThreadComposer: Component }) => ({
+    default: Component,
+  }))
+);
 const RoomCallPanel = lazy(() =>
   import("@/calls/room/RoomCallPanel").then(({ RoomCallPanel: Component }) => ({
     default: Component,
@@ -108,16 +154,14 @@ export function ChatPage() {
     }))
   );
   const isMobileViewport = useIsMobileViewport();
-  const [createRoomOpen, setCreateRoomOpen] = useState(false);
-  const [activeRoomSession, setActiveRoomSession] = useState<RoomCallSession | null>(null);
-  const handleOpenCreateRoom = useCallback(() => setCreateRoomOpen(true), []);
-  const handleCloseCreateRoom = useCallback(() => setCreateRoomOpen(false), []);
-  const handleLeaveRoom = useCallback(() => setActiveRoomSession(null), []);
-
-  useEffect(() => {
-    (globalThis as Record<string, unknown>).__scCreateRoom = handleOpenCreateRoom;
-    return () => { delete (globalThis as Record<string, unknown>).__scCreateRoom; };
-  }, [handleOpenCreateRoom]);
+  const {
+    createRoomOpen,
+    activeRoomSession,
+    handleOpenCreateRoom,
+    handleCloseCreateRoom,
+    handleLeaveRoom,
+    handleRoomCreated,
+  } = useChatPageRoomState();
   const directCallPanelRef = useRef<DirectCallPanelHandle>(null);
   const messageComposerRef = useRef<MessageComposerHandle>(null);
   const workspaceUiState = useChatWorkspaceUiState();
@@ -188,29 +232,17 @@ export function ChatPage() {
 
   const { missedDirectCalls, dismissMissedDirectCall } = useDirectMissedCallAlerts(userId);
 
-  const chatNoticePresence = useAnimatedPresence({
-    isOpen: Boolean(workspaceUiState.chatNotice),
-    durationMs: 200,
+  const {
+    chatNoticePresence,
+    callAlertBannersPresence,
+    renderedNoticeText,
+    renderedCallAlerts,
+  } = useChatPageAlertState({
+    workspaceUiState,
+    missedCall,
+    globalGroupCallAlerts,
+    missedDirectCalls,
   });
-  const callAlertsVisible = Boolean(
-    missedCall || globalGroupCallAlerts.length > 0 || missedDirectCalls.length > 0
-  );
-  const callAlertBannersPresence = useAnimatedPresence({
-    isOpen: callAlertsVisible,
-    durationMs: 200,
-  });
-
-  const lastChatNoticeRef = useRef<string | null>(null);
-  if (workspaceUiState.chatNotice) {
-    lastChatNoticeRef.current = workspaceUiState.chatNotice;
-  }
-  const callAlertSnapshotRef = useRef({ missedCall, globalGroupCallAlerts, missedDirectCalls });
-  if (callAlertsVisible) {
-    callAlertSnapshotRef.current = { missedCall, globalGroupCallAlerts, missedDirectCalls };
-  }
-  const renderedCallAlerts = callAlertsVisible
-    ? { missedCall, globalGroupCallAlerts, missedDirectCalls }
-    : callAlertSnapshotRef.current;
 
   const security = useChatSecurityWorkspace({
     activeConversationUserId,
@@ -304,58 +336,24 @@ export function ChatPage() {
     deletePlainDmMessage,
     deletePlainGroupMessage,
   ]);
-
-  // Forward message: collect plain-only targets (plain-direct + plain-group),
-  // show picker, then send forwarded text with attribution to the chosen thread.
-  const [forwardMessageId, setForwardMessageId] = useState<string | null>(null);
-
-  const forwardTargets = useMemo<ForwardTarget[]>(() => {
-    const savedTarget: ForwardTarget = { kind: "saved", id: "saved", name: t("saved.title") };
-    const dmTargets: ForwardTarget[] = plainConversationEntries.map((c) => ({
-      kind: "plain-direct" as const,
-      id: c.userId,
-      name: c.username,
-    }));
-    const groupTargets: ForwardTarget[] = plainGroupEntries.map((g) => ({
-      kind: "plain-group" as const,
-      id: g.groupId,
-      name: g.name,
-    }));
-    const rest = [...dmTargets, ...groupTargets].sort((a, b) => a.name.localeCompare(b.name));
-    return [savedTarget, ...rest];
-  }, [plainConversationEntries, plainGroupEntries, t]);
-
-  const handleForwardMessage = useCallback((messageId: string) => {
-    setForwardMessageId(messageId);
-  }, []);
-
-  const handleForwardSend = useCallback((target: ForwardTarget) => {
-    const message = activeMessages.find((m) => m.id === forwardMessageId);
-    if (!message || !message.content) return;
-    const senderLabel = message.isOwn
-      ? `@${username ?? "me"}`
-      : (groupSenderLabels?.[message.id] ?? `@${activePlainConversation?.username ?? "unknown"}`);
-    const attribution = t("forward.attribution", { sender: senderLabel });
-    const text = `${attribution}\n\n${message.content}`;
-    if (target.kind === "saved") {
-      void sendSavedMessage(text);
-    } else if (target.kind === "plain-direct") {
-      void sendPlainText(target.id, target.name, text);
-    } else {
-      void sendPlainGroupText(target.id, text);
-    }
-    setForwardMessageId(null);
-  }, [
-    activeMessages,
+  const {
     forwardMessageId,
+    forwardTargets,
+    handleForwardMessage,
+    handleCloseForwardPicker,
+    handleForwardSend,
+  } = useChatPageForwarding({
+    activeMessages,
     username,
     groupSenderLabels,
     activePlainConversation,
-    t,
+    plainConversationEntries,
+    plainGroupEntries,
     sendSavedMessage,
     sendPlainText,
     sendPlainGroupText,
-  ]);
+    t,
+  });
 
   const directPresenceLabel = useMemo(
     () => resolveDirectPresenceLabel({ activeConversationUserId, activeTyping, activePresence, locale, t }),
@@ -380,68 +378,82 @@ export function ChatPage() {
 
   const showGroupCallNotice =
     activeThreadKind === "group" && activeGroupCall !== null && groupCallNoticeSurface === "banner";
+  const shouldRenderChatModals =
+    workspaceUiState.showNewChat
+    || workspaceUiState.showChatTypePicker
+    || workspaceUiState.showNewGroup
+    || workspaceUiState.showGroupMembers
+    || security.showSecurity
+    || security.groupSecurityTarget !== null;
+  const hasActiveThread = activeThreadKind !== null;
 
   // ── Render ────────────────────────────────────────────────────────────────
 
-  const threadChromeActions = (
-    <ChatThreadActionButtons
-      activeThreadKind={activeThreadKind}
-      groupCallDisabled={groupCallSession !== null}
-      isSearchOpen={threadPaneState.messageSearchOpen}
-      isMediaPanelOpen={threadPaneState.mediaPanelOpen}
-      onOpenSecurity={security.openSecurity}
-      onStartDirectCall={interactions.handleStartCall}
-      onStartGroupCall={handleStartGroupCall}
-      onOpenGroupMembers={interactions.handleOpenGroupMembers}
-      onToggleSearch={threadPaneState.handleToggleSearch}
-      onToggleMediaPanel={threadPaneState.handleToggleMediaPanel}
-    />
-  );
+  const threadChromeActions = hasActiveThread ? (
+    <Suspense fallback={null}>
+      <ChatThreadActionButtons
+        activeThreadKind={activeThreadKind}
+        groupCallDisabled={groupCallSession !== null}
+        isSearchOpen={threadPaneState.messageSearchOpen}
+        isMediaPanelOpen={threadPaneState.mediaPanelOpen}
+        onOpenSecurity={security.openSecurity}
+        onStartDirectCall={interactions.handleStartCall}
+        onStartGroupCall={handleStartGroupCall}
+        onOpenGroupMembers={interactions.handleOpenGroupMembers}
+        onToggleSearch={threadPaneState.handleToggleSearch}
+        onToggleMediaPanel={threadPaneState.handleToggleMediaPanel}
+      />
+    </Suspense>
+  ) : null;
 
-  const threadChrome = (
-    <ChatThreadHeader
-      activeThreadKind={activeThreadKind}
-      activeConversation={activeConversation}
-      activeGroup={activeGroup}
-      activePlainConversation={activePlainConversation}
-      activePlainGroup={activePlainGroup}
-      directPresenceLabel={directPresenceLabel}
-      plainDirectPresenceLabel={plainDirectPresenceLabel}
-      security={security}
-      t={t}
-      handleBack={handleBack}
-      threadChromeActions={threadChromeActions}
-      handleOpenGroupMembers={interactions.handleOpenGroupMembers}
-      activeGroupCall={activeGroupCall}
-      showGroupCallNotice={showGroupCallNotice}
-      activeGroupCallCallerLabel={activeGroupCallCallerLabel}
-      activeGroupCallParticipantIds={activeGroupCallParticipantIds}
-      handleJoinActiveGroupCall={handleJoinActiveGroupCall}
-    />
-  );
+  const threadChrome = hasActiveThread ? (
+    <Suspense fallback={null}>
+      <ChatThreadHeader
+        activeThreadKind={activeThreadKind}
+        activeConversation={activeConversation}
+        activeGroup={activeGroup}
+        activePlainConversation={activePlainConversation}
+        activePlainGroup={activePlainGroup}
+        directPresenceLabel={directPresenceLabel}
+        plainDirectPresenceLabel={plainDirectPresenceLabel}
+        security={security}
+        t={t}
+        handleBack={handleBack}
+        threadChromeActions={threadChromeActions}
+        handleOpenGroupMembers={interactions.handleOpenGroupMembers}
+        activeGroupCall={activeGroupCall}
+        showGroupCallNotice={showGroupCallNotice}
+        activeGroupCallCallerLabel={activeGroupCallCallerLabel}
+        activeGroupCallParticipantIds={activeGroupCallParticipantIds}
+        handleJoinActiveGroupCall={handleJoinActiveGroupCall}
+      />
+    </Suspense>
+  ) : null;
 
-  const threadComposer = (
-    <ChatThreadComposer
-      activeThreadKind={activeThreadKind}
-      activeConversation={activeConversation}
-      activeGroup={activeGroup}
-      activePlainConversation={activePlainConversation}
-      activePlainGroup={activePlainGroup}
-      directTrustBlocked={directTrustBlocked}
-      t={t}
-      security={security}
-      activeListId={activeListId}
-      messageComposerRef={messageComposerRef}
-      onComposerFocusChange={interactions.handleComposerFocusChange}
-      threadPaneState={threadPaneState}
-      sendPlainText={sendPlainText}
-      sendPlainAttachment={sendPlainAttachment}
-      sendPlainGroupText={sendPlainGroupText}
-      sendPlainGroupAttachment={sendPlainGroupAttachment}
-      sendSavedMessage={sendSavedMessage}
-      sendSavedFile={sendSavedFile}
-    />
-  );
+  const threadComposer = hasActiveThread ? (
+    <Suspense fallback={<div className={styles.composerLazyFallback} aria-hidden="true" />}>
+      <ChatThreadComposer
+        activeThreadKind={activeThreadKind}
+        activeConversation={activeConversation}
+        activeGroup={activeGroup}
+        activePlainConversation={activePlainConversation}
+        activePlainGroup={activePlainGroup}
+        directTrustBlocked={directTrustBlocked}
+        t={t}
+        security={security}
+        activeListId={activeListId}
+        messageComposerRef={messageComposerRef}
+        onComposerFocusChange={interactions.handleComposerFocusChange}
+        threadPaneState={threadPaneState}
+        sendPlainText={sendPlainText}
+        sendPlainAttachment={sendPlainAttachment}
+        sendPlainGroupText={sendPlainGroupText}
+        sendPlainGroupAttachment={sendPlainGroupAttachment}
+        sendSavedMessage={sendSavedMessage}
+        sendSavedFile={sendSavedFile}
+      />
+    </Suspense>
+  ) : null;
 
   const sidebar = (
     <ErrorBoundary FallbackComponent={ThreadErrorFallback}>
@@ -505,20 +517,22 @@ export function ChatPage() {
     />
   );
 
-  const settingsScreen = (
-    <SettingsScreen
-      username={username}
-      isMobileViewport={isMobileViewport}
-      onClose={workspaceUiState.closeSettings}
-    />
-  );
+  const settingsScreen = workspaceUiState.showSettings ? (
+    <Suspense fallback={<div className={styles.modalLazyFallback} aria-hidden="true" />}>
+      <SettingsScreen
+        username={username}
+        isMobileViewport={isMobileViewport}
+        onClose={workspaceUiState.closeSettings}
+      />
+    </Suspense>
+  ) : null;
 
   return (
     <div ref={rootRef} className={styles.root}>
       <ConnectionBanner />
       <ChatNotice
         presence={chatNoticePresence}
-        noticeText={workspaceUiState.chatNotice ?? lastChatNoticeRef.current}
+        noticeText={renderedNoticeText}
       />
       <ChatCallAlertBanners
         presence={callAlertBannersPresence}
@@ -546,46 +560,41 @@ export function ChatPage() {
         startResize={startResize}
         resetWidth={resetWidth}
       />
-      <ChatModals
-        workspaceUiState={workspaceUiState}
-        interactions={interactions}
-        createGroup={createGroup}
-        createPlainGroup={createPlainGroup}
-        handleSelectThread={handleSelectThread}
-        activeGroup={activeGroup}
-        activePlainGroup={activePlainGroup}
-        userId={userId}
-        security={security}
-        activeConversation={activeConversation}
-        acceptPeerIdentityChange={acceptPeerIdentityChange}
-      />
+      {shouldRenderChatModals ? (
+        <Suspense fallback={<div className={styles.modalLazyFallback} aria-hidden="true" />}>
+          <ChatModals
+            workspaceUiState={workspaceUiState}
+            interactions={interactions}
+            createGroup={createGroup}
+            createPlainGroup={createPlainGroup}
+            handleSelectThread={handleSelectThread}
+            activeGroup={activeGroup}
+            activePlainGroup={activePlainGroup}
+            userId={userId}
+            security={security}
+            activeConversation={activeConversation}
+            acceptPeerIdentityChange={acceptPeerIdentityChange}
+          />
+        </Suspense>
+      ) : null}
       {createRoomOpen && (
-        <CreateRoomDialog
-          onClose={handleCloseCreateRoom}
-          onRoomCreated={(res, callType) => {
-            handleCloseCreateRoom();
-            if (!userId || !deviceId || !username) return;
-            setActiveRoomSession({
-              callId: res.callId,
-              callType,
-              participantId: userId,
-              deviceId,
-              displayName: username,
-              isGuest: false,
-              isHost: true,
-              guestToken: null,
-              sfuBaseUrl: null,
-              inviteUrl: res.inviteUrl,
-            });
-          }}
-        />
+        <Suspense fallback={<div className={styles.modalLazyFallback} aria-hidden="true" />}>
+          <CreateRoomDialog
+            onClose={handleCloseCreateRoom}
+            onRoomCreated={(res, callType) =>
+              handleRoomCreated({ res, callType, userId, deviceId, username })
+            }
+          />
+        </Suspense>
       )}
       {forwardMessageId !== null && (
-        <ForwardPickerModal
-          targets={forwardTargets}
-          onClose={() => setForwardMessageId(null)}
-          onSelect={handleForwardSend}
-        />
+        <Suspense fallback={<div className={styles.modalLazyFallback} aria-hidden="true" />}>
+          <ForwardPickerModal
+            targets={forwardTargets}
+            onClose={handleCloseForwardPicker}
+            onSelect={handleForwardSend}
+          />
+        </Suspense>
       )}
       {activeRoomSession && (
         <Suspense fallback={<div className={styles.modalLazyFallback} aria-hidden="true" />}>

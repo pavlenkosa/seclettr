@@ -428,7 +428,6 @@
   border-radius: 20px;
   border: 1px solid color-mix(in srgb, var(--panel-border-soft) 88%, transparent);
   background: color-mix(in srgb, var(--surface-float) 98%, var(--bg-secondary));
-  box-shadow: 0 8px 32px rgb(0 0 0 / 0.14), 0 2px 8px rgb(0 0 0 / 0.08);
 }
 
 .emojiSearchWrap {
@@ -485,8 +484,8 @@
   top: 0;
   z-index: 2;
   padding: 0.32rem 0.12rem 0.24rem;
-  background: color-mix(in srgb, var(--surface-float) 96%, transparent);
-  backdrop-filter: blur(4px);
+  background: color-mix(in srgb, var(--surface-float) 98%, var(--bg-secondary));
+  border-bottom: 1px solid color-mix(in srgb, var(--panel-border-soft) 68%, transparent);
   font-size: 0.7rem;
   font-weight: 600;
   color: var(--text-secondary);

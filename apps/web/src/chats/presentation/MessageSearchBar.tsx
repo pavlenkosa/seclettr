@@ -1,5 +1,17 @@
+/**
+ * MessageSearchBar — inline search bar for navigating message history matches.
+ *
+ * Owns:
+ *   - Search query input with auto-focus on mount.
+ *   - Match counter display ("3 / 12" or "no results").
+ *   - Previous / next navigation buttons.
+ *   - Keyboard shortcuts: Enter → next, Shift+Enter → prev, Escape → close.
+ *
+ * Does not own match computation, scroll-to-match behavior, or panel visibility state.
+ */
 import { memo, useEffect, useRef } from "react";
 import { useI18n } from "@/i18n";
+import { IconSearch } from "@/components/ui";
 import styles from "./MessageSearchBar.module.css";
 
 interface Props {
@@ -33,10 +45,7 @@ export const MessageSearchBar = memo(function MessageSearchBar({
 
   return (
     <div className={styles.bar} role="search" aria-label={t("chat.search.ariaLabel")}>
-      <svg className={styles.icon} width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-        <circle cx="6.5" cy="6.5" r="4.5" stroke="currentColor" strokeWidth="1.5" />
-        <path d="M10.5 10.5L14 14" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
-      </svg>
+      <IconSearch size={14} className={styles.icon} />
 
       <input
         ref={inputRef}

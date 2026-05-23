@@ -37,13 +37,16 @@ vi.mock("@/lib/api", () => ({
   },
 }));
 
-vi.mock("@/stores/groups/group-helpers", () => ({
+vi.mock("@/stores/groups/group-message-mapping", () => ({
   canonicalizeGroupHistoryEnvelope: canonicalizeGroupHistoryEnvelopeMock,
   parseTimestamp: parseTimestampMock,
-  scheduleGroupLabelRefresh: scheduleGroupLabelRefreshMock,
   toGroupMessage: toGroupMessageMock,
   toGroupMessageResult: toGroupMessageResultMock,
   toProcessedMessageKey: toProcessedMessageKeyMock,
+}));
+
+vi.mock("@/stores/groups/group-display-helpers", () => ({
+  scheduleGroupLabelRefresh: scheduleGroupLabelRefreshMock,
   formatUnknownGroupName: (groupId: string) => `Group ${groupId.slice(0, 8)}`,
   GROUP_UNKNOWN_SENDER_LABEL: "Participant",
 }));

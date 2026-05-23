@@ -11,7 +11,7 @@ import {
   uploadFormDataWithProgress,
 } from "@/lib/upload-progress";
 import { encryptGroupAttachmentEnvelope } from "@/lib/group-sender-key";
-import { formatSenderLabel } from "./group-helpers";
+import { formatSenderLabel } from "./group-display-helpers";
 import {
   buildGroupMessagePayload,
   clientMessageIdForOptimisticId,

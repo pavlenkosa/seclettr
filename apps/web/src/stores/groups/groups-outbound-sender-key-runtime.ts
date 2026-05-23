@@ -1,7 +1,7 @@
 import type { PlaintextSenderKeyDistributionMessage } from "@seclettr/protocol";
 import {
   ensureSenderKeyDistributedToGroupMembers,
-} from "./group-helpers";
+} from "./group-sender-key-distribution";
 import type { GroupMember } from "./types";
 
 interface CreateGroupsOutboundSenderKeyRuntimeOptions {

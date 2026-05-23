@@ -8,8 +8,8 @@ import { api } from "@/lib/api";
 import {
   fetchGroupDetails,
   fetchGroupMemberDeviceLabels,
-  toGroupChat,
-} from "./group-helpers";
+} from "./group-roster-runtime";
+import { toGroupChat } from "./group-display-helpers";
 import type {
   GetGroupsState,
   GroupChat,

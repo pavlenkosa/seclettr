@@ -64,15 +64,21 @@ vi.mock("@/lib/websocket", () => ({
   },
 }));
 
-vi.mock("@/stores/groups/group-helpers", () => ({
+vi.mock("@/stores/groups/group-roster-runtime", () => ({
   fetchGroupDetails: fetchGroupDetailsMock,
+}));
+
+vi.mock("@/stores/groups/group-display-helpers", () => ({
   formatUnknownGroupName: (groupId: string) => `Group ${groupId.slice(0, 8)}`,
   scheduleGroupLabelRefresh: scheduleGroupLabelRefreshMock,
   toGroupChat: toGroupChatMock,
+  GROUP_UNKNOWN_SENDER_LABEL: "Participant",
+}));
+
+vi.mock("@/stores/groups/group-message-mapping", () => ({
   toGroupMessage: toGroupMessageMock,
   toGroupMessageResult: toGroupMessageResultMock,
   toProcessedMessageKey: toProcessedMessageKeyMock,
-  GROUP_UNKNOWN_SENDER_LABEL: "Participant",
 }));
 
 vi.mock("@/stores/groups/group-pending-decrypt-queue", () => ({

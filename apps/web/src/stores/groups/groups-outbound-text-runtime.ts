@@ -3,7 +3,7 @@ import type {
   SendGroupMessageResponse,
 } from "@seclettr/protocol";
 import { encryptGroupTextEnvelope } from "@/lib/group-sender-key";
-import { formatSenderLabel } from "./group-helpers";
+import { formatSenderLabel } from "./group-display-helpers";
 import {
   buildGroupMessagePayload,
   createLocalMessageIdentifiers,

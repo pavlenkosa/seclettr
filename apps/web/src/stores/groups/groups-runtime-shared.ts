@@ -1,6 +1,6 @@
 import { useAuthStore } from "@/stores/auth";
 import { trimTrackedMessageIds } from "@/stores/messages/inbound-tracking";
-import { formatUnknownGroupName } from "./group-helpers";
+import { formatUnknownGroupName } from "./group-display-helpers";
 import type { GroupChat } from "./groups-store-runtime-types";
 
 const MAX_PROCESSED_GROUP_MESSAGE_KEYS = 5_000;

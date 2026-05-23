@@ -42,9 +42,12 @@ vi.mock("@/lib/api", () => ({
   },
 }));
 
-vi.mock("@/stores/groups/group-helpers", () => ({
+vi.mock("@/stores/groups/group-roster-runtime", () => ({
   fetchGroupDetails: fetchGroupDetailsMock,
   fetchGroupMemberDeviceLabels: fetchGroupMemberDeviceLabelsMock,
+}));
+
+vi.mock("@/stores/groups/group-display-helpers", () => ({
   toGroupChat: toGroupChatMock,
 }));
 

@@ -60,7 +60,9 @@ export class SeclettrWebSocket {
   private intentionalClose = false;
   private authErrorHandler: (() => Promise<string | null>) | null = null;
   private authRefreshInFlight: Promise<string | null> | null = null;
-  private readonly wsUrl: string;
+  // Resolved lazily on first connect() so that the native-server URL set in
+  // localStorage after module init (NativeServerSetup flow) is picked up.
+  private wsUrl: string | null = null;
   private readonly queuedOutboundMessages: QueuedOutboundMessage[] = [];
   private readonly defaultQueueTtlMs = 15_000;
   private readonly maxQueuedMessages = 200;
@@ -71,11 +73,12 @@ export class SeclettrWebSocket {
    */
   private bufferedCallOffer: { msg: WsServerMessage; receivedAt: number } | null = null;
 
-  constructor(wsUrl = resolveWsUrl()) {
-    this.wsUrl = wsUrl;
-  }
+  constructor(private readonly fixedWsUrl?: string) {}
 
   connect(accessToken: string): void {
+    // Recompute URL on every explicit connect so the native-server URL from
+    // localStorage (which may have been set after module init) is always used.
+    this.wsUrl = this.fixedWsUrl ?? resolveWsUrl();
     // Close any previous connection cleanly before opening a new one.
     // Without this, the abandoned old WS fires onclose → scheduleReconnect → infinite loop.
     if (this.ws && this.ws.readyState !== WebSocket.CLOSED) {
@@ -195,7 +198,7 @@ export class SeclettrWebSocket {
     }
     if (this.intentionalClose || this.token !== accessToken) return;
 
-    this.ws = new WebSocket(this.wsUrl, [
+    this.ws = new WebSocket(this.wsUrl!, [
       WS_CLIENT_PROTOCOL,
       `${WS_AUTH_PROTOCOL_PREFIX}${wsAuthToken}`,
     ]);

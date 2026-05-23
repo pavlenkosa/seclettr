@@ -60,6 +60,7 @@ const JS_CHUNK_BUDGETS = {
   "composer-emoji-data": 260 * 1024,
   "feature-calls-shared-ui": 80 * 1024,
   "feature-calls-shared-runtime": 96 * 1024,
+  "shared-realtime": 40 * 1024,
   "feature-direct-calls": 380 * 1024,
   "feature-group-calls": 400 * 1024,
   RoomCallPanel: 160 * 1024,
@@ -84,19 +85,6 @@ const CSS_ASSET_BUDGETS = {
   "feature-group-calls": 80 * 1024,
   index: 40 * 1024,
 } as const;
-
-const DIRECT_CALL_ACTIVE_CHUNK_MATCHERS = [
-  "/src/calls/direct/presentation/components/directcallactiveoverlay.tsx",
-  "/src/calls/direct/presentation/components/directcallactiveminimized.tsx",
-  "/src/calls/direct/presentation/components/directcallcontrols.tsx",
-  "/src/calls/direct/presentation/components/directcallfloatingpreview.tsx",
-  "/src/calls/direct/presentation/components/directcallsecuritypanel.tsx",
-  "/src/calls/direct/presentation/components/directcallstage.tsx",
-  "/src/calls/direct/presentation/components/directcallstageviewerdialog.tsx",
-  "/src/calls/direct/presentation/components/callsecuritycard.tsx",
-  "/src/calls/direct/presentation/components/direct-call-video-constraints.ts",
-  "/src/calls/direct/presentation/usedirectcallstagepresentation.ts",
-] as const;
 
 const STATIC_ASSET_BUDGETS = {
   "seclettr-marimba": 1_700 * 1024,
@@ -238,8 +226,12 @@ function resolveManualChunk(id: string): string | undefined {
     return "feature-calls-shared-runtime";
   }
 
-  if (DIRECT_CALL_ACTIVE_CHUNK_MATCHERS.some((pattern) => normalizedId.includes(pattern))) {
-    return "feature-direct-calls-active-ui";
+  // WebSocket client must live in a shared chunk that precedes both call
+  // feature chunks. Without this, Rollup absorbs it into feature-group-calls
+  // while stores/auth (in feature-direct-calls) calls wsClient.setAuthErrorHandler
+  // at module-init time → TDZ crash on the circular chunk evaluation order.
+  if (id.includes("/src/lib/websocket")) {
+    return "shared-realtime";
   }
 
   if (id.includes("/src/calls/direct/")) {

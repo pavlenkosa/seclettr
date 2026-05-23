@@ -133,6 +133,27 @@ export function NotificationsSettingsSection({
 
   return (
     <div className={styles.groupStack}>
+      {isVibrationSupported() ? (
+        <SettingsGroup
+          eyebrow={t("settings.groups.feedback")}
+          title={t("settings.groups.feedback.title")}
+          description={t("settings.groups.feedback.description")}
+        >
+          <SettingsRow
+            label={t("settings.haptics.vibration")}
+            description={t("settings.haptics.vibration.description")}
+          >
+            <SegmentedControl
+              value={vibrationEnabled}
+              onChange={onVibrationToggle}
+              ariaLabel={t("settings.haptics.vibration")}
+              grouped
+              options={togglePushOptions}
+            />
+          </SettingsRow>
+        </SettingsGroup>
+      ) : null}
+
       {isNativePlatform() ? <NativeNotificationsGroup /> : null}
 
       <SettingsGroup
@@ -289,27 +310,6 @@ export function NotificationsSettingsSection({
           </div>
         )}
       </SettingsGroup>
-
-      {isVibrationSupported() ? (
-        <SettingsGroup
-          eyebrow={t("settings.groups.feedback")}
-          title={t("settings.groups.feedback.title")}
-          description={t("settings.groups.feedback.description")}
-        >
-          <SettingsRow
-            label={t("settings.haptics.vibration")}
-            description={t("settings.haptics.vibration.description")}
-          >
-            <SegmentedControl
-              value={vibrationEnabled}
-              onChange={onVibrationToggle}
-              ariaLabel={t("settings.haptics.vibration")}
-              grouped
-              options={togglePushOptions}
-            />
-          </SettingsRow>
-        </SettingsGroup>
-      ) : null}
     </div>
   );
 }

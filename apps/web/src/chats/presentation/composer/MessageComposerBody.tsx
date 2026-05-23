@@ -110,6 +110,7 @@ function ComposerTextArea({
         rows={1}
         maxLength={65536}
         aria-label={ariaLabel}
+        enterKeyHint="send"
       />
     </div>
   );
@@ -166,13 +167,13 @@ function IdleComposerControls({
   return (
     <>
       <AttachmentButton draft={draft} attachTitle={attachTitle} attachLabel={attachLabel} />
-      <EmojiPickerControl emojiPickerId={emojiPickerId} draft={draft} emojiState={emojiState} />
       <ComposerTextArea
         draft={draft}
         emojiState={emojiState}
         placeholder={placeholder}
         ariaLabel={textareaLabel}
       />
+      <EmojiPickerControl emojiPickerId={emojiPickerId} draft={draft} emojiState={emojiState} />
     </>
   );
 }

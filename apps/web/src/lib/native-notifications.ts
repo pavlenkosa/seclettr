@@ -132,7 +132,7 @@ export async function showNativeDmNotification(params: {
       title,
       body,
       extra: { type: "dm", senderUserId, url: `/?chat=${encodeURIComponent(senderUserId)}` },
-      smallIcon: "ic_stat_icon_config_sample",
+      smallIcon: "ic_stat_notification",
       iconColor: "#4f8ef7",
     }],
   });
@@ -171,7 +171,7 @@ export async function showNativeGroupNotification(params: {
       title,
       body,
       extra: { type: "group", groupId, url: `/?group=${encodeURIComponent(groupId)}` },
-      smallIcon: "ic_stat_icon_config_sample",
+      smallIcon: "ic_stat_notification",
       iconColor: "#4f8ef7",
     }],
   });

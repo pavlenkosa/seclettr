@@ -1,4 +1,4 @@
-import type { RefObject } from "react";
+import { useEffect, useRef, type RefObject } from "react";
 
 import type { MessageReplyMeta } from "@/stores/messages";
 import { MessageComposerPrimaryActions, MessageComposerVideoRecordingOverlay, type RecordMode } from "../../composer";
@@ -90,8 +90,28 @@ export function MessageComposerShell({
   composerError,
   dialogState,
 }: MessageComposerShellProps) {
+  const composerRef = useRef<HTMLDivElement>(null);
+
+  // Track actual composer height so the fixed-position emoji picker on mobile
+  // (which uses bottom: calc(safe-area + var(--composer-height, 72px))) always
+  // sits above the composer, even when the textarea is multiline.
+  useEffect(() => {
+    const el = composerRef.current;
+    if (!el) return;
+    const observer = new ResizeObserver(() => {
+      el.style.setProperty("--composer-height", `${Math.round(el.offsetHeight)}px`);
+    });
+    observer.observe(el);
+    return () => {
+      observer.disconnect();
+    };
+  }, []);
+
   return (
-    <div className={`${styles.composer} ${isTextFocused ? styles.composerFocused : ""}`}>
+    <div
+      ref={composerRef}
+      className={`${styles.composer} ${isTextFocused ? styles.composerFocused : ""}`}
+    >
       <ReplyPreview
         replyTo={replyTo}
         onClearReply={onClearReply}

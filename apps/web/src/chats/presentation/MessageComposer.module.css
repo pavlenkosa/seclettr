@@ -28,7 +28,7 @@
   position: relative;
   z-index: 41;
   display: flex;
-  align-items: center;
+  align-items: flex-end;
   inline-size: 100%;
   max-inline-size: 100%;
   min-inline-size: 0;
@@ -201,7 +201,7 @@
   min-width: 0;
   min-height: 40px;
   display: flex;
-  align-items: center;
+  align-items: flex-end;
   padding: 0 0.08rem 0 0.02rem;
 }
 
@@ -271,13 +271,11 @@
 .emojiShell {
   position: relative;
   flex-shrink: 0;
-  align-self: center;
   min-inline-size: 0;
 }
 
 /* Migrated: shared IconButton wrapper for secondary composer actions. */
 .secondaryBtn {
-  align-self: center;
   --icon-button-size: 40px;
   --icon-button-shadow-base: none;
   --icon-button-shadow-hover-base: none;
@@ -291,7 +289,6 @@
   justify-content: center;
   gap: 0.34rem;
   flex-shrink: 0;
-  align-self: center;
 }
 
 .primaryActions {
@@ -377,7 +374,6 @@
   padding: 0;
   border: 1px solid color-mix(in srgb, var(--icon-btn-border) 92%, transparent);
   line-height: 0;
-  align-self: center;
   transition:
     background-color var(--motion-duration-fast) var(--motion-ease-standard),
     border-color var(--motion-duration-fast) var(--motion-ease-standard),
@@ -411,7 +407,7 @@
 /* Feature-local: emoji/GIF picker — Telegram-style layout with bottom tab bar. */
 .emojiPicker {
   position: absolute;
-  left: 0;
+  right: 0;
   bottom: calc(100% + 0.5rem);
   z-index: 20;
   width: min(21rem, calc(100vw - 1rem));
@@ -692,7 +688,6 @@
   padding: 0;
   border: 1px solid color-mix(in srgb, var(--icon-btn-border) 92%, transparent);
   line-height: 0;
-  align-self: center;
   transition:
     background-color var(--motion-duration-fast) var(--motion-ease-standard),
     border-color var(--motion-duration-fast) var(--motion-ease-standard),
@@ -732,7 +727,6 @@
   flex-shrink: 0;
   padding: 0;
   line-height: 0;
-  align-self: center;
   border: 1px solid color-mix(in srgb, var(--accent) 56%, transparent);
   transition:
     background-color var(--motion-duration-fast) var(--motion-ease-standard),
@@ -1160,7 +1154,7 @@
     position: fixed;
     left: 0.5rem;
     right: 0.5rem;
-    bottom: calc(env(safe-area-inset-bottom, 0px) + 72px);
+    bottom: calc(env(safe-area-inset-bottom, 0px) + var(--composer-height, 72px));
     width: auto;
     inline-size: auto;
     max-inline-size: none;

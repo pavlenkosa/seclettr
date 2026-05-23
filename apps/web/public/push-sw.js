@@ -66,8 +66,12 @@ function getStringPayloadValue(value, fallback) {
   return typeof value === "string" ? value : fallback;
 }
 
-function getNotificationAsset(value) {
+function getNotificationIcon(value) {
   return isNonEmptyString(value) ? value : "/favicon.svg";
+}
+
+function getNotificationBadge(value) {
+  return isNonEmptyString(value) ? value : "/notification-badge.svg";
 }
 
 function getNotificationMaxActions() {
@@ -98,8 +102,8 @@ function buildNotificationOptions(payload) {
     body: getStringPayloadValue(payload.body, "New message"),
     tag: getStringPayloadValue(payload.tag, "seclettr-message"),
     data: payload.data && typeof payload.data === "object" ? payload.data : {},
-    icon: getNotificationAsset(payload.icon),
-    badge: getNotificationAsset(payload.badge),
+    icon: getNotificationIcon(payload.icon),
+    badge: getNotificationBadge(payload.badge),
   };
 
   if (typeof payload.timestamp === "number") {

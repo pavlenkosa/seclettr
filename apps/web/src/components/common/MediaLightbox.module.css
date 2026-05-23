@@ -260,7 +260,7 @@
 
 @media (max-width: 720px) {
   .toolbar {
-    padding: 0.72rem 0.88rem;
+    padding: calc(env(safe-area-inset-top, 0px) + 0.72rem) 0.88rem 0.72rem;
   }
 
   .navBtn {
@@ -269,10 +269,10 @@
 
   .content {
     padding:
-      calc(3.5rem + env(safe-area-inset-top))
-      0.85rem
-      calc(4rem + env(safe-area-inset-bottom))
-      0.85rem;
+      calc(4.5rem + env(safe-area-inset-top, 0px))
+      env(safe-area-inset-right, 0.85rem)
+      calc(4.5rem + env(safe-area-inset-bottom, 0px))
+      env(safe-area-inset-left, 0.85rem);
   }
 
   .mediaStage {
@@ -313,7 +313,7 @@
   }
 
   .overlayWithCaption .content {
-    padding-bottom: calc(6.5rem + env(safe-area-inset-bottom));
+    padding-bottom: calc(6.5rem + env(safe-area-inset-bottom, 0px));
   }
 
   .overlayWithCaption .mobileSequenceHint {

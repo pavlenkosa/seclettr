@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { AUTH_ERROR_CODES } from "../auth-error-codes";
 import { mapAuthErrorMessage, shouldShowAuthErrorDetails } from "../auth-errors";
 
 const translate = (key: string) => key;
@@ -39,10 +40,17 @@ describe("mapAuthErrorMessage", () => {
 
   it("maps local e2ee keys are missing", () => {
     expect(mapAuthErrorMessage("Local e2ee keys are missing", translate)).toBe("auth.error.localKeysMissing");
+    expect(mapAuthErrorMessage(AUTH_ERROR_CODES.localKeysMissing, translate)).toBe("auth.error.localKeysMissing");
   });
 
   it("maps session restore failed unexpectedly", () => {
     expect(mapAuthErrorMessage("Session restore failed unexpectedly", translate)).toBe("auth.error.restoreUnexpected");
+    expect(mapAuthErrorMessage(AUTH_ERROR_CODES.restoreUnexpected, translate)).toBe("auth.error.restoreUnexpected");
+  });
+
+  it("maps internal auth fallback codes", () => {
+    expect(mapAuthErrorMessage(AUTH_ERROR_CODES.registrationFailed, translate)).toBe("auth.error.generic");
+    expect(mapAuthErrorMessage(AUTH_ERROR_CODES.loginFailed, translate)).toBe("auth.error.generic");
   });
 
   it("falls back to generic for unknown errors", () => {
@@ -74,6 +82,10 @@ describe("shouldShowAuthErrorDetails", () => {
   });
 
   it("returns false for known errors even in dev mode", () => {
+    expect(shouldShowAuthErrorDetails(AUTH_ERROR_CODES.registrationFailed)).toBe(false);
+    expect(shouldShowAuthErrorDetails(AUTH_ERROR_CODES.loginFailed)).toBe(false);
+    expect(shouldShowAuthErrorDetails(AUTH_ERROR_CODES.localKeysMissing)).toBe(false);
+    expect(shouldShowAuthErrorDetails(AUTH_ERROR_CODES.restoreUnexpected)).toBe(false);
     expect(shouldShowAuthErrorDetails("invalid credentials")).toBe(false);
     expect(shouldShowAuthErrorDetails("too many auth requests")).toBe(false);
     expect(shouldShowAuthErrorDetails("session expired")).toBe(false);

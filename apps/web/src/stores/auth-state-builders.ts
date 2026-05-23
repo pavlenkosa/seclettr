@@ -1,3 +1,4 @@
+import type { AuthErrorCode } from "@/lib/auth-error-codes";
 import type {
   AuthLockedSnapshot,
   AuthReadySnapshot,
@@ -44,7 +45,7 @@ export function buildReadyState(
 
 export function buildRecoveryRequiredState(
   reason: AuthRecoveryReason,
-  error: string
+  error: AuthErrorCode
 ): Pick<AuthState, SignedOutStateFields> {
   return {
     userId: null,

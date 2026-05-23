@@ -1,4 +1,5 @@
 import type { KeyPair } from "@seclettr/crypto";
+import type { AuthErrorCode } from "@/lib/auth-error-codes";
 
 export type AuthLifecycleState =
   | "signed_out"
@@ -37,7 +38,7 @@ export type RestoreSessionResult =
   | {
       outcome: "recovery_required";
       reason: AuthRecoveryReason;
-      error: string;
+      errorCode: AuthErrorCode;
     };
 
 export type SignedOutStateFields =
@@ -67,7 +68,7 @@ export interface AuthState {
   authLifecycle: AuthLifecycleState;
   authRecoveryReason: AuthRecoveryReason | null;
   authOperation: AuthOperationState;
-  error: string | null;
+  error: string | AuthErrorCode | null;
 
   /** True when a PIN passcode is required to unlock. */
   pinEnabled: boolean;

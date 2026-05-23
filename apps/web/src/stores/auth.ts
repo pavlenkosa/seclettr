@@ -13,6 +13,7 @@
  *  3. Rotate refresh token and resume runtime transports
  */
 import { create } from "zustand";
+import { AUTH_ERROR_CODES } from "@/lib/auth-error-codes";
 import {
   ensureExportableStorageKey,
   getOrCreateStorageKey,
@@ -113,7 +114,12 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         void authCredentialRuntime.fetchAndStoreBackgroundToken();
       }
     } catch (err) {
-      set({ error: err instanceof Error ? err.message : "Registration failed" });
+      set({
+        error:
+          err instanceof Error
+            ? err.message
+            : AUTH_ERROR_CODES.registrationFailed,
+      });
       throw err;
     }
   },
@@ -139,7 +145,8 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         void authCredentialRuntime.fetchAndStoreBackgroundToken();
       }
     } catch (err) {
-      const msg = err instanceof Error ? err.message : "Login failed";
+      const msg =
+        err instanceof Error ? err.message : AUTH_ERROR_CODES.loginFailed;
       console.error("[auth] login failed:", err);
       set({ error: msg });
       throw err;
@@ -173,7 +180,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         if (!pinEnabled) {
           set(buildRecoveryRequiredState(
             "unexpected_restore_failure",
-            "Session restore found a locked storage key without an active PIN configuration. Reset local device data and sign in again."
+            AUTH_ERROR_CODES.restoreUnexpected
           ));
           return false;
         }
@@ -186,7 +193,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         clearLegacyLockSnapshotStorage();
         set(buildRecoveryRequiredState(
           restoreResult.reason,
-          restoreResult.error
+          restoreResult.errorCode
         ));
         return false;
       }
@@ -202,7 +209,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       suspendRealtimeSession("restore-error");
       set(buildRecoveryRequiredState(
         "unexpected_restore_failure",
-        "Session restore failed unexpectedly. Use recovery to clear local secure data or sign in again."
+        AUTH_ERROR_CODES.restoreUnexpected
       ));
       return false;
     }
@@ -288,7 +295,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         clearLegacyLockSnapshotStorage();
         set(buildRecoveryRequiredState(
           restoreResult.reason,
-          restoreResult.error
+          restoreResult.errorCode
         ));
         return false;
       }
@@ -297,7 +304,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         suspendRealtimeSession("unlock-locked");
         set(buildRecoveryRequiredState(
           "unexpected_restore_failure",
-          "Session unlock returned to the locked state unexpectedly. Reset local device data and sign in again."
+          AUTH_ERROR_CODES.restoreUnexpected
         ));
         return false;
       }
@@ -312,7 +319,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       suspendRealtimeSession("unlock-error");
       set(buildRecoveryRequiredState(
         "unexpected_restore_failure",
-        "Session restore failed unexpectedly. Use recovery to clear local secure data or sign in again."
+        AUTH_ERROR_CODES.restoreUnexpected
       ));
       return false;
     }

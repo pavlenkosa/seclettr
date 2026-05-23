@@ -1,4 +1,5 @@
 import type { TranslationParams } from "@/i18n/messages";
+import { AUTH_ERROR_CODES, isAuthErrorCode } from "./auth-error-codes";
 
 type TranslateFn = (key: string, params?: TranslationParams) => string;
 const IS_DEV = import.meta.env.DEV;
@@ -14,6 +15,10 @@ function shortHash(s: string): string {
 
 export function getAuthErrorCode(error: string | null): string | null {
   if (!error) return null;
+  if (error === AUTH_ERROR_CODES.registrationFailed) return "AUTH_08";
+  if (error === AUTH_ERROR_CODES.loginFailed) return "AUTH_09";
+  if (error === AUTH_ERROR_CODES.localKeysMissing) return "AUTH_06";
+  if (error === AUTH_ERROR_CODES.restoreUnexpected) return "AUTH_07";
   const n = error.toLowerCase();
   if (n.includes("invalid credentials")) return "AUTH_01";
   if (n.includes("too many auth requests") || n.includes("too many refresh requests")) return "AUTH_02";
@@ -27,6 +32,18 @@ export function getAuthErrorCode(error: string | null): string | null {
 
 export function mapAuthErrorMessage(error: string | null, t: TranslateFn): string | null {
   if (!error) return null;
+  if (error === AUTH_ERROR_CODES.registrationFailed) {
+    return t("auth.error.generic");
+  }
+  if (error === AUTH_ERROR_CODES.loginFailed) {
+    return t("auth.error.generic");
+  }
+  if (error === AUTH_ERROR_CODES.localKeysMissing) {
+    return t("auth.error.localKeysMissing");
+  }
+  if (error === AUTH_ERROR_CODES.restoreUnexpected) {
+    return t("auth.error.restoreUnexpected");
+  }
   const normalized = error.toLowerCase();
 
   if (normalized.includes("invalid credentials")) {
@@ -57,6 +74,7 @@ export function mapAuthErrorMessage(error: string | null, t: TranslateFn): strin
 export function shouldShowAuthErrorDetails(error: string | null): boolean {
   if (!error) return false;
   if (!IS_DEV) return false;
+  if (isAuthErrorCode(error)) return false;
   const normalized = error.toLowerCase();
   return !(
     normalized.includes("invalid credentials")

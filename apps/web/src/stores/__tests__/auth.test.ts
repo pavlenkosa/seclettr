@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { KeyPair } from "@seclettr/crypto";
+import { AUTH_ERROR_CODES } from "@/lib/auth-error-codes";
 
 const mockApiPost = vi.fn();
 const mockApiGet = vi.fn();
@@ -306,7 +307,7 @@ describe("useAuthStore auth lifecycle", () => {
     expect(state.authLifecycle).toBe("recovery_required");
     expect(state.authRecoveryReason).toBe("missing_local_keys");
     expect(state.authOperation).toBe("idle");
-    expect(state.error).toContain("Local E2EE keys are missing");
+    expect(state.error).toBe(AUTH_ERROR_CODES.localKeysMissing);
   });
 
   it("classifies unexpected restore failures into recovery_required instead of a vague restore flag", async () => {
@@ -325,7 +326,7 @@ describe("useAuthStore auth lifecycle", () => {
     expect(restored).toBe(false);
     expect(state.authLifecycle).toBe("recovery_required");
     expect(state.authRecoveryReason).toBe("unexpected_restore_failure");
-    expect(state.error).toContain("Session restore failed unexpectedly");
+    expect(state.error).toBe(AUTH_ERROR_CODES.restoreUnexpected);
   });
 
   it("attempts current-device crypto repair during restore with the normalized public bundle", async () => {

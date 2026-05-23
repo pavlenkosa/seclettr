@@ -104,7 +104,7 @@ jobs:
 
       - uses: pnpm/action-setup@v4
         with:
-          version: 8.15.0
+          version: 8.15.9
 
       - uses: actions/setup-node@v5
         with:
@@ -140,7 +140,7 @@ jobs:
 
       - uses: pnpm/action-setup@v4
         with:
-          version: 8.15.0
+          version: 8.15.9
 
       - uses: actions/setup-node@v5
         with:
@@ -196,7 +196,7 @@ jobs:
 
       - uses: pnpm/action-setup@v4
         with:
-          version: 8.15.0
+          version: 8.15.9
 
       - uses: actions/setup-node@v5
         with:
@@ -223,7 +223,7 @@ jobs:
 
       - uses: pnpm/action-setup@v4
         with:
-          version: 8.15.0
+          version: 8.15.9
 
       - uses: actions/setup-node@v5
         with:

@@ -6,7 +6,6 @@ import {
   useId,
   useImperativeHandle,
 } from "react";
-import type { GifResult } from "../composer/composer-gif-service";
 import { useI18n } from "@/i18n";
 import { hapticImpactLight } from "@/lib/native-haptics";
 import type { MessageReplyMeta } from "@/stores/messages";

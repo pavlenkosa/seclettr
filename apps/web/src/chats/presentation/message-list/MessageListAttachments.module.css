@@ -142,6 +142,12 @@
   background: rgb(0 0 0 / 0.5);
   gap: 0.5rem;
   padding: 0.75rem;
+  transition: opacity 220ms var(--motion-ease-standard);
+}
+
+.inlineMediaUploadOverlay[data-exiting="true"] {
+  opacity: 0;
+  pointer-events: none;
 }
 
 .uploadRing {

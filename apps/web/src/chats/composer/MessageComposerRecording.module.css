@@ -247,7 +247,7 @@
 
 .recordingVoiceWaveform {
   display: flex;
-  align-items: end;
+  align-items: flex-end;
   gap: 2px;
   height: 18px;
   width: 100%;
@@ -259,6 +259,7 @@
   flex: 1 1 0;
   min-width: 3px;
   height: calc(100% * var(--recording-wave-level));
+  min-height: 3px;
   border-radius: 999px;
   background: color-mix(in srgb, var(--danger) 72%, white 10%);
 }

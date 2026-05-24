@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useI18n } from "@/i18n";
 import { useSecuritySettings } from "@/ui-settings";
 import { useFileAttachmentRuntime } from "@/chats/runtime/useFileAttachmentRuntime";
-import { useUploadProgress } from "@/chats/runtime/useUploadProgress";
+import { useExitingUploadProgress } from "@/chats/runtime/useUploadProgress";
 import { MediaLightbox } from "@/components/common/MediaLightbox";
 import { InlineNotice } from "@/components/ui";
 import type { Message } from "@/stores/messages";
@@ -134,7 +134,12 @@ export function InlineMediaAttachment({ msg, isOwn }: InlineMediaAttachmentProps
     messageId: msg.id,
   });
   const [lightboxOpen, setLightboxOpen] = useState(false);
-  const { progress: uploadProgress, cancel: cancelUpload } = useUploadProgress(msg.id);
+  const {
+    progress: uploadProgress,
+    displayProgress: uploadDisplayProgress,
+    isExiting: uploadExiting,
+    cancel: cancelUpload,
+  } = useExitingUploadProgress(msg.id);
 
   const plainLocalUrl = msg.attachment?.isPlain ? msg.attachment.localUrl ?? null : null;
   const previewUrl = plainLocalUrl ?? hookPreviewUrl;
@@ -170,7 +175,7 @@ export function InlineMediaAttachment({ msg, isOwn }: InlineMediaAttachmentProps
   useEffect(() => {
     if (
       (autoDecryptMedia === "on" || !!msg.attachment?.isPlain) &&
-      uploadProgress === null &&
+      uploadProgress === null && // use raw progress so decrypt starts immediately on upload done
       !previewUrl &&
       !loading &&
       !errorCause
@@ -180,7 +185,7 @@ export function InlineMediaAttachment({ msg, isOwn }: InlineMediaAttachmentProps
   }, [autoDecryptMedia, decryptAndPreview, errorCause, loading, msg.attachment?.attachmentId, msg.attachment?.isPlain, previewUrl, uploadProgress]);
 
   const handleTap = async () => {
-    if (uploadProgress !== null) return;
+    if (uploadDisplayProgress !== null) return; // block tap during upload and exit fade
     if (previewUrl) {
       setLightboxOpen(true);
       return;
@@ -200,7 +205,7 @@ export function InlineMediaAttachment({ msg, isOwn }: InlineMediaAttachmentProps
           type="button"
           className={styles.inlineMediaBtn}
           onClick={() => void handleTap()}
-          disabled={uploadProgress !== null || (loading && !previewUrl)}
+          disabled={uploadDisplayProgress !== null || (loading && !previewUrl)}
           aria-label={t(isVideo ? "message.media.tapToPlayVideo" : "message.media.tapToViewImage")}
         >
           {showPlaceholder ? (
@@ -235,11 +240,12 @@ export function InlineMediaAttachment({ msg, isOwn }: InlineMediaAttachmentProps
           ) : null}
         </button>
 
-        {uploadProgress === null ? mediaMetaOverlay : (
+        {uploadDisplayProgress === null ? mediaMetaOverlay : (
           <InlineAttachmentUploadOverlay
-            progress={uploadProgress}
+            progress={uploadDisplayProgress}
             onCancel={cancelUpload}
             ariaLabel={t("message.upload.cancel")}
+            exiting={uploadExiting}
           />
         )}
       </div>

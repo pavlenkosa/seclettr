@@ -1,6 +1,7 @@
+import type { CSSProperties } from "react";
 import { useI18n } from "@/i18n";
 import { useFileAttachmentRuntime } from "@/chats/runtime/useFileAttachmentRuntime";
-import { useUploadProgress } from "@/chats/runtime/useUploadProgress";
+import { useExitingUploadProgress } from "@/chats/runtime/useUploadProgress";
 import { InlineNotice } from "@/components/ui";
 import type { Message } from "@/stores/messages";
 import { formatAttachmentSize, resolveAttachmentErrorMessage } from "./message-attachment-shared";
@@ -20,7 +21,11 @@ export function FileAttachment({ msg }: { readonly msg: Message }) {
     attachment: msg.attachment,
     messageId: msg.id,
   });
-  const { progress, cancel } = useUploadProgress(msg.id);
+  const {
+    displayProgress: progress,
+    isExiting: uploadExiting,
+    cancel,
+  } = useExitingUploadProgress(msg.id);
 
   const isPlain = !!msg.attachment?.isPlain;
   const error = resolveAttachmentErrorMessage("file", errorCause, t, isPlain);
@@ -37,7 +42,10 @@ export function FileAttachment({ msg }: { readonly msg: Message }) {
         {msg.attachment?.mimeType ? <span>{msg.attachment.mimeType}</span> : null}
       </div>
       {isUploading ? (
-        <div className={styles.uploadProgress}>
+        <div
+          className={styles.uploadProgress}
+          style={uploadExiting ? { opacity: 0, transition: "opacity 220ms" } as CSSProperties : undefined}
+        >
           <div className={styles.uploadProgressRow}>
             <span>{t("message.upload.uploading")}</span>
             <button

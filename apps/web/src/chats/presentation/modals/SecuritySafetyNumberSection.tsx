@@ -1,5 +1,5 @@
 import type { PeerIdentityAlert } from "@/stores/messages";
-import styles from "./SecurityModal.module.css";
+import styles from "./SecuritySafetyNumberSection.module.css";
 import type { SecurityModalLogicState, SecurityTranslate } from "./security-modal-shared";
 
 export function SafetyNumberSection({

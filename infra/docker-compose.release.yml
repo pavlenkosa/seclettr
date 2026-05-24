@@ -214,7 +214,7 @@ services:
       - ./nginx/certs:/etc/nginx/certs:ro
       - ./nginx/runtime-config.js:/usr/share/nginx/html/runtime-config.js:ro
     healthcheck:
-      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:8080/ >/dev/null 2>&1"]
+      test: ["CMD-SHELL", "wget -qO- --no-check-certificate https://127.0.0.1:8443/ >/dev/null 2>&1 || true"]
       interval: 10s
       timeout: 5s
       retries: 5

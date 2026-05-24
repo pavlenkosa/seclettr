@@ -3,7 +3,8 @@ import { Avatar, EntityRow, FieldSection, InlineNotice, PillButton, SurfacePanel
 
 import { AudioOutputSelector } from "@/calls/shared/media/audio-output/AudioOutputSelector";
 import { getMemberInitials } from "@/calls/group/presentation/display";
-import styles from "@/calls/group/presentation/GroupCallPanel.module.css";
+import panelStyles from "@/calls/group/presentation/GroupCallPanel.module.css";
+import styles from "./GroupCallDetailsDrawer.module.css";
 
 interface GroupCallDetailsMember {
   userId: string;
@@ -57,21 +58,21 @@ export function GroupCallDetailsDrawer({
       className={[
         styles.detailsDrawer,
         isOpen ? styles.detailsDrawerOpen : "",
-        inline ? styles.detailsDrawerInline : "",
+        inline ? panelStyles.detailsDrawerInline : "",
       ].filter(Boolean).join(" ")}
       tone="strong"
       padding="lg"
       radius="xl"
       aria-hidden={inline ? undefined : !isOpen}
     >
-      <FieldSection className={styles.section} label={t("group.call.roomId")}>
+      <FieldSection className={panelStyles.section} label={t("group.call.roomId")}>
         <SurfacePanel className={styles.detailsCard} padding="md">
           <div className={styles.roomIdCode}>{roomCode}</div>
           <div className={styles.roomIdHint}>{statusLabel}</div>
         </SurfacePanel>
       </FieldSection>
 
-      <FieldSection className={styles.section} label={t("group.call.mediaKeySection")}>
+      <FieldSection className={panelStyles.section} label={t("group.call.mediaKeySection")}>
         <SurfacePanel className={styles.detailsCard} padding="md">
           <div className={styles.metaPrimary}>{mediaKeyStatusLabel}</div>
           <div className={styles.metaSecondary}>{t("group.call.mediaKeyMode", { mode: mediaKeyModeLabel })}</div>
@@ -93,7 +94,7 @@ export function GroupCallDetailsDrawer({
         </SurfacePanel>
       </FieldSection>
 
-      <FieldSection className={styles.section} label={t("group.call.members")}>
+      <FieldSection className={panelStyles.section} label={t("group.call.members")}>
         <div className={styles.memberList}>
           {members.map((member) => {
             const isActiveParticipant = activeParticipantSet.has(member.userId);
@@ -130,7 +131,7 @@ export function GroupCallDetailsDrawer({
         </div>
       </FieldSection>
 
-      <FieldSection className={styles.section} label={t("call.audioOutput.label")}>
+      <FieldSection className={panelStyles.section} label={t("call.audioOutput.label")}>
         <SurfacePanel className={styles.detailsCard} padding="md">
           <AudioOutputSelector className={styles.audioOutputSelector} />
         </SurfacePanel>
@@ -143,7 +144,7 @@ export function GroupCallDetailsDrawer({
       ) : null}
 
       {showHostAction ? (
-        <FieldSection className={styles.section} label={t("group.call.hostActions")}>
+        <FieldSection className={panelStyles.section} label={t("group.call.hostActions")}>
           <SurfacePanel className={styles.hostActionCard} padding="md">
             {hostActionHint ? <p className={styles.hostActionHint}>{hostActionHint}</p> : null}
             <PillButton

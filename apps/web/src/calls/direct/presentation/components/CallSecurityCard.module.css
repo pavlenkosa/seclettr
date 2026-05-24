@@ -8,8 +8,8 @@
 }
 
 @keyframes cardIn {
-  from { opacity: 0; transform: translateY(4px); }
-  to   { opacity: 1; transform: translateY(0); }
+  from { opacity: 0; }
+  to   { opacity: 1; }
 }
 
 /* ── Emoji row ───────────────────────────────────────────────────────────── */
@@ -25,12 +25,11 @@
   font-size: 2.4rem;
   line-height: 1;
   user-select: none;
-  /* Subtle lift on hover for interactivity feel */
-  transition: transform 120ms ease;
+  transition: opacity 120ms ease;
 }
 
 .emojiCell:hover {
-  transform: scale(1.12);
+  opacity: 0.82;
 }
 
 .hint {

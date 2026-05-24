@@ -14,7 +14,7 @@
  *   - message-list row rendering
  *   - settings screen internals
  */
-import { lazy, Suspense, useCallback, useEffect, useMemo, useRef } from "react";
+import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useShallow } from "zustand/react/shallow";
 import { useAuthStore } from "@/stores/auth";
 import { usePlainMessagesStore, usePlainGroupsStore } from "@/stores/plain";
@@ -80,6 +80,11 @@ const ChatThreadHeader = lazy(() =>
     default: Component,
   }))
 );
+const ProfileSheet = lazy(() =>
+  import("@/components/common/ProfileSheet").then(({ ProfileSheet: Component }) => ({
+    default: Component,
+  }))
+);
 const ChatThreadComposer = lazy(() =>
   import("./chat/ChatThreadComposer").then(({ ChatThreadComposer: Component }) => ({
     default: Component,
@@ -142,6 +147,9 @@ const resolveActiveGroupCallCallerLabel = ({
 export function ChatPage() {
   const { t, locale } = useI18n();
   const { rootRef, startResize, resetWidth } = useSidebarResize();
+  const [profileSheetUsername, setProfileSheetUsername] = useState<string | null>(null);
+  const handleOpenProfile = useCallback((username: string) => setProfileSheetUsername(username), []);
+  const handleCloseProfile = useCallback(() => setProfileSheetUsername(null), []);
   const { username, logout, lock, identityDhKeyPair, userId, deviceId, pinEnabled } = useAuthStore(
     useShallow((state) => ({
       username: state.username,
@@ -157,7 +165,6 @@ export function ChatPage() {
   const {
     createRoomOpen,
     activeRoomSession,
-    handleOpenCreateRoom,
     handleCloseCreateRoom,
     handleLeaveRoom,
     handleRoomCreated,
@@ -336,10 +343,17 @@ export function ChatPage() {
     deletePlainDmMessage,
     deletePlainGroupMessage,
   ]);
+  const handleBulkDeleteMessage = useCallback((messageIds: string[]) => {
+    for (const messageId of messageIds) {
+      handleDeleteMessage(messageId);
+    }
+  }, [handleDeleteMessage]);
+
   const {
     forwardMessageId,
     forwardTargets,
     handleForwardMessage,
+    handleBulkForwardMessage,
     handleCloseForwardPicker,
     handleForwardSend,
   } = useChatPageForwarding({
@@ -426,6 +440,7 @@ export function ChatPage() {
         activeGroupCallCallerLabel={activeGroupCallCallerLabel}
         activeGroupCallParticipantIds={activeGroupCallParticipantIds}
         handleJoinActiveGroupCall={handleJoinActiveGroupCall}
+        onOpenProfile={handleOpenProfile}
       />
     </Suspense>
   ) : null;
@@ -512,6 +527,8 @@ export function ChatPage() {
       handleRetryMessage={handleRetryMessage}
       handleDeleteMessage={handleDeleteMessage}
       handleForwardMessage={handleForwardMessage}
+      handleBulkDeleteMessage={handleBulkDeleteMessage}
+      handleBulkForwardMessage={handleBulkForwardMessage}
       directTrustBlocked={directTrustBlocked}
       handleDropFiles={handleDropFiles}
     />
@@ -599,6 +616,11 @@ export function ChatPage() {
       {activeRoomSession && (
         <Suspense fallback={<div className={styles.modalLazyFallback} aria-hidden="true" />}>
           <RoomCallPanel session={activeRoomSession} onLeave={handleLeaveRoom} />
+        </Suspense>
+      )}
+      {profileSheetUsername !== null && (
+        <Suspense fallback={null}>
+          <ProfileSheet username={profileSheetUsername} onClose={handleCloseProfile} />
         </Suspense>
       )}
     </div>

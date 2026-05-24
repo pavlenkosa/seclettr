@@ -1,9 +1,11 @@
 import {
   forwardRef,
+  useCallback,
   useEffect,
   useImperativeHandle,
   useMemo,
   useRef,
+  useState,
 } from "react";
 import { measureElement, useVirtualizer } from "@tanstack/react-virtual";
 import { useI18n } from "@/i18n";
@@ -34,6 +36,10 @@ interface Props {
   /** When true, renders a placeholder skeleton instead of the empty state
    *  while the thread's first-page history is being fetched. */
   readonly isLoadingHistory?: boolean;
+  /** Bulk delete handler. When provided, bulk selection becomes available. */
+  readonly onBulkDelete?: (messageIds: string[]) => void;
+  /** Bulk forward handler. When provided, bulk forward is shown in the selection bar. */
+  readonly onBulkForward?: (messageIds: string[]) => void;
 }
 
 export interface MessageListHandle {
@@ -71,9 +77,49 @@ export const MessageList = forwardRef<MessageListHandle, Props>(function Message
   isTyping,
   onJumpToBottomStateChange,
   isLoadingHistory,
+  onBulkDelete,
+  onBulkForward,
 }, ref) {
   const { t, locale } = useI18n();
   const containerRef = useRef<HTMLDivElement>(null);
+
+  // ── Bulk selection state ─────────────────────────────────────────────────
+  const [selectionMode, setSelectionMode] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<ReadonlySet<string>>(new Set());
+
+  const handleEnterSelectionMode = useCallback((messageId: string) => {
+    setSelectionMode(true);
+    setSelectedIds(new Set([messageId]));
+  }, []);
+
+  const handleToggleSelect = useCallback((messageId: string) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(messageId)) {
+        next.delete(messageId);
+      } else {
+        next.add(messageId);
+      }
+      return next;
+    });
+  }, []);
+
+  const handleExitSelection = useCallback(() => {
+    setSelectionMode(false);
+    setSelectedIds(new Set());
+  }, []);
+
+  const handleBulkDelete = useCallback(() => {
+    if (selectedIds.size === 0) return;
+    onBulkDelete?.([...selectedIds]);
+    handleExitSelection();
+  }, [selectedIds, onBulkDelete, handleExitSelection]);
+
+  const handleBulkForward = useCallback(() => {
+    if (selectedIds.size === 0) return;
+    onBulkForward?.([...selectedIds]);
+    handleExitSelection();
+  }, [selectedIds, onBulkForward, handleExitSelection]);
   const bottomRef = useRef<HTMLDivElement>(null);
   const rowPresentationCacheRef = useRef<MessageRowPresentationCache | null>(null);
   const shouldVirtualize = messages.length > VIRTUALIZE_THRESHOLD;
@@ -188,6 +234,8 @@ export const MessageList = forwardRef<MessageListHandle, Props>(function Message
     );
   }
 
+  const canEnterSelection = Boolean(onBulkDelete || onBulkForward);
+
   return (
     <div
       ref={timelineState.containerRef}
@@ -202,6 +250,7 @@ export const MessageList = forwardRef<MessageListHandle, Props>(function Message
           {virtualizer.getVirtualItems().map((virtualRow) => {
             const presentation = rowPresentations[virtualRow.index];
             if (!presentation) return null;
+            const leadId = presentation.messageIds[0];
 
             return (
               <div
@@ -238,6 +287,10 @@ export const MessageList = forwardRef<MessageListHandle, Props>(function Message
                   onScrollToMessage={onScrollToMessage}
                   isHighlighted={presentation.rowId === highlightedRowId}
                   enterDelayMs={Math.min(virtualRow.index, 8) * 22}
+                  selectionMode={selectionMode}
+                  isSelected={leadId !== undefined && selectedIds.has(leadId)}
+                  onToggleSelect={canEnterSelection ? handleToggleSelect : undefined}
+                  onEnterSelectionMode={canEnterSelection ? handleEnterSelectionMode : undefined}
                 />
               </div>
             );
@@ -247,6 +300,7 @@ export const MessageList = forwardRef<MessageListHandle, Props>(function Message
         <>
           <div className={styles.spacer} />
           {rowPresentations.map((presentation, index) => {
+            const leadId = presentation.messageIds[0];
             return (
               <div
                 key={presentation.rowId}
@@ -273,6 +327,10 @@ export const MessageList = forwardRef<MessageListHandle, Props>(function Message
                   onScrollToMessage={onScrollToMessage}
                   isHighlighted={presentation.rowId === highlightedRowId}
                   enterDelayMs={Math.min(index, 8) * 22}
+                  selectionMode={selectionMode}
+                  isSelected={leadId !== undefined && selectedIds.has(leadId)}
+                  onToggleSelect={canEnterSelection ? handleToggleSelect : undefined}
+                  onEnterSelectionMode={canEnterSelection ? handleEnterSelectionMode : undefined}
                 />
               </div>
             );
@@ -281,11 +339,52 @@ export const MessageList = forwardRef<MessageListHandle, Props>(function Message
         </>
       )}
 
-      {isTyping && (
+      {isTyping && !selectionMode && (
         <div className={styles.typingBubble} aria-live="polite" aria-label="typing">
           <span className={styles.typingDot} />
           <span className={styles.typingDot} />
           <span className={styles.typingDot} />
+        </div>
+      )}
+
+      {selectionMode && (
+        <div className={styles.bulkActionBar} role="toolbar" aria-label={t("message.bulkAction.selected", { count: selectedIds.size })}>
+          <span className={styles.bulkActionCount}>
+            {t("message.bulkAction.selected", { count: selectedIds.size })}
+          </span>
+          {onBulkForward && (
+            <button
+              type="button"
+              className={styles.bulkBtn}
+              disabled={selectedIds.size === 0}
+              onClick={handleBulkForward}
+            >
+              <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                <path d="M15 8l-5-5v3C5.5 6 2.5 8 1.5 12.5 3 10 5.5 9 10 9v3l5-4z" fill="currentColor" />
+              </svg>
+              {t("message.bulkAction.forward")}
+            </button>
+          )}
+          {onBulkDelete && (
+            <button
+              type="button"
+              className={`${styles.bulkBtn} ${styles.bulkBtnDanger}`}
+              disabled={selectedIds.size === 0}
+              onClick={handleBulkDelete}
+            >
+              <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                <path d="M3 4h10M6 4V2.7a.7.7 0 0 1 .7-.7h2.6a.7.7 0 0 1 .7.7V4M5 4l.7 9.3a.7.7 0 0 0 .7.7h3.2a.7.7 0 0 0 .7-.7L11 4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+              {t("message.bulkAction.delete")}
+            </button>
+          )}
+          <button
+            type="button"
+            className={`${styles.bulkBtn} ${styles.bulkBtnCancel}`}
+            onClick={handleExitSelection}
+          >
+            {t("message.bulkAction.cancel")}
+          </button>
         </div>
       )}
     </div>

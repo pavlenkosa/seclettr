@@ -45,12 +45,19 @@ interface Props {
   readonly isHighlighted: boolean;
   readonly enterDelayMs: number;
   readonly t: (key: string, params?: Record<string, string | number>) => string;
+  /** When true, tapping the row toggles its selection instead of showing a menu. */
+  readonly selectionMode?: boolean;
+  /** Whether this row is currently selected (only relevant when selectionMode=true). */
+  readonly isSelected?: boolean;
+  /** Called when the row is tapped in selection mode. */
+  readonly onToggleSelect?: (messageId: string) => void;
+  /** Called when the user chooses "Select" from the context menu. */
+  readonly onEnterSelectionMode?: (messageId: string) => void;
 }
 
 type MessageListRowMessage = MessageListRowPresentation["message"];
 type MessageBodyKind = "voice" | "video" | "mediaGroup" | "media" | "file" | "text";
 type DateSeparatorProps = Readonly<{ presentation: MessageListRowPresentation }>;
-type RowTimestampProps = Readonly<{ presentation: MessageListRowPresentation }>;
 type CallEventRowProps = Readonly<{ presentation: MessageListRowPresentation }>;
 type SenderLabelProps = Readonly<{
   presentation: MessageListRowPresentation;
@@ -90,6 +97,9 @@ type MessageBubbleProps = Readonly<{
 type MessageRowFrameProps = Readonly<{
   presentation: MessageListRowPresentation;
   children: ReactNode;
+  selectionMode?: boolean;
+  isSelected?: boolean;
+  onToggleSelect?: () => void;
 }>;
 type MessageRowCapabilities = Readonly<{
   canCopy: boolean;
@@ -113,6 +123,10 @@ type MessageRowContentProps = Readonly<{
   onScrollToMessage?: (messageId: string) => void;
   isHighlighted: boolean;
   t: Props["t"];
+  selectionMode?: boolean;
+  isSelected?: boolean;
+  onToggleSelect?: (messageId: string) => void;
+  onEnterSelectionMode?: (messageId: string) => void;
 }>;
 
 function getMessageBodyKind(
@@ -213,12 +227,6 @@ function DateSeparator({ presentation }: DateSeparatorProps) {
       <span className={styles.dateSeparatorLabel}>{presentation.dateSeparatorLabel}</span>
     </div>
   );
-}
-
-function RowTimestamp({ presentation }: RowTimestampProps) {
-  return presentation.showTimestamp
-    ? <div className={styles.timestamp}>{presentation.timeLabel}</div>
-    : null;
 }
 
 function CallEventRow({ presentation }: CallEventRowProps) {
@@ -432,9 +440,44 @@ function MessageBubble({
 function MessageRowFrame({
   presentation,
   children,
+  selectionMode,
+  isSelected,
+  onToggleSelect,
 }: MessageRowFrameProps) {
+  const rowClass = [
+    styles.messageRow,
+    presentation.message.isOwn ? styles.own : styles.theirs,
+    selectionMode ? styles.messageRowSelectable : "",
+    selectionMode && isSelected ? styles.messageRowSelected : "",
+  ].join(" ");
+
   return (
-    <div className={`${styles.messageRow} ${presentation.message.isOwn ? styles.own : styles.theirs}`}>
+    // eslint-disable-next-line jsx-a11y/no-static-element-interactions -- role, tabIndex, and onKeyDown are all set conditionally when selectionMode is true
+    <div
+      className={rowClass}
+      onClick={selectionMode ? onToggleSelect : undefined}
+      role={selectionMode ? "checkbox" : undefined}
+      aria-checked={selectionMode ? isSelected : undefined}
+      tabIndex={selectionMode ? 0 : undefined}
+      onKeyDown={selectionMode ? (e) => {
+        if (e.key === " " || e.key === "Enter") {
+          e.preventDefault();
+          onToggleSelect?.();
+        }
+      } : undefined}
+    >
+      {selectionMode ? (
+        <span
+          className={`${styles.selectionCircle} ${isSelected ? styles.selectionCircleChecked : ""}`}
+          aria-hidden="true"
+        >
+          {isSelected && (
+            <svg width="11" height="11" viewBox="0 0 11 11" fill="none" aria-hidden="true">
+              <path d="M1.5 5.5l3 3 5-5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+          )}
+        </span>
+      ) : null}
       {children}
     </div>
   );
@@ -452,6 +495,10 @@ function MessageRowContent({
   onScrollToMessage,
   isHighlighted,
   t,
+  selectionMode,
+  isSelected,
+  onToggleSelect,
+  onEnterSelectionMode,
 }: MessageRowContentProps) {
   const { message } = presentation;
   const { kind, capabilities, copyText } = viewModel;
@@ -461,30 +508,54 @@ function MessageRowContent({
       onReply?.(message.id);
       return;
     }
-
     if (action.kind === "forward") {
       onForward?.(message.id);
       return;
     }
-
+    if (action.kind === "select") {
+      onEnterSelectionMode?.(message.id);
+      return;
+    }
     if (action.kind === "delete") {
       onDelete?.(message.id);
     }
-  }, [message.id, onDelete, onForward, onReply]);
+  }, [message.id, onDelete, onEnterSelectionMode, onForward, onReply]);
 
   if (presentation.callEvent) {
     return <CallEventRow presentation={presentation} />;
   }
 
+  if (selectionMode) {
+    return (
+      <MessageRowFrame
+        presentation={presentation}
+        selectionMode
+        isSelected={isSelected}
+        onToggleSelect={() => onToggleSelect?.(message.id)}
+      >
+        <MessageBubble
+          presentation={presentation}
+          kind={kind}
+          activeMediaKey={activeMediaKey}
+          onActiveMediaChange={onActiveMediaChange}
+          onScrollToMessage={onScrollToMessage}
+          isHighlighted={isHighlighted}
+          t={t}
+        />
+      </MessageRowFrame>
+    );
+  }
+
   return (
-    <MessageContextMenu
-      onAction={handleContextAction}
-      canCopy={capabilities.canCopy}
-      canForward={capabilities.canForward}
-      canDelete={capabilities.canDelete}
-      copyText={copyText}
-    >
-      <MessageRowFrame presentation={presentation}>
+    <MessageRowFrame presentation={presentation}>
+      <MessageContextMenu
+        onAction={handleContextAction}
+        canCopy={capabilities.canCopy}
+        canForward={capabilities.canForward}
+        canDelete={capabilities.canDelete}
+        canSelect={Boolean(onEnterSelectionMode)}
+        copyText={copyText}
+      >
         <MessageBubble
           presentation={presentation}
           kind={kind}
@@ -495,8 +566,8 @@ function MessageRowContent({
           isHighlighted={isHighlighted}
           t={t}
         />
-      </MessageRowFrame>
-    </MessageContextMenu>
+      </MessageContextMenu>
+    </MessageRowFrame>
   );
 }
 
@@ -512,6 +583,10 @@ export const MessageListRow = memo(function MessageListRow({
   isHighlighted,
   enterDelayMs,
   t,
+  selectionMode,
+  isSelected,
+  onToggleSelect,
+  onEnterSelectionMode,
 }: Props) {
   const { message } = presentation;
   const hasMediaGroup = (presentation.mediaGroupMessages?.length ?? 0) > 1;
@@ -538,6 +613,10 @@ export const MessageListRow = memo(function MessageListRow({
         onScrollToMessage={onScrollToMessage}
         isHighlighted={isHighlighted}
         t={t}
+        selectionMode={selectionMode}
+        isSelected={isSelected}
+        onToggleSelect={onToggleSelect}
+        onEnterSelectionMode={onEnterSelectionMode}
       />
     </div>
   );
@@ -553,6 +632,10 @@ export const MessageListRow = memo(function MessageListRow({
     prev.onScrollToMessage === next.onScrollToMessage &&
     prev.isHighlighted === next.isHighlighted &&
     prev.enterDelayMs === next.enterDelayMs &&
-    prev.t === next.t
+    prev.t === next.t &&
+    prev.selectionMode === next.selectionMode &&
+    prev.isSelected === next.isSelected &&
+    prev.onToggleSelect === next.onToggleSelect &&
+    prev.onEnterSelectionMode === next.onEnterSelectionMode
   );
 });

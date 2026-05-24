@@ -17,7 +17,7 @@ import motionStyles from "@/components/ui/motion/Motion.module.css";
 import styles from "./MessageContextMenu.module.css";
 
 export interface MessageContextMenuAction {
-  kind: "reply" | "copy" | "forward" | "delete";
+  kind: "reply" | "copy" | "forward" | "delete" | "select";
 }
 
 interface Props {
@@ -28,6 +28,7 @@ interface Props {
   readonly canCopy?: boolean;
   readonly canForward?: boolean;
   readonly canDelete?: boolean;
+  readonly canSelect?: boolean;
 }
 
 interface MenuPosition {
@@ -61,6 +62,7 @@ export const MessageContextMenu = memo(function MessageContextMenu({
   canCopy = true,
   canForward = false,
   canDelete = false,
+  canSelect = false,
 }: Props) {
   const menuId = useId();
   const { t } = useI18n();
@@ -293,6 +295,7 @@ export const MessageContextMenu = memo(function MessageContextMenu({
         <div
           ref={menuRef}
           role="menu"
+          tabIndex={-1}
           className={[
             styles.menu,
             isClosing ? motionStyles.popoverOut : motionStyles.popoverIn,
@@ -346,7 +349,21 @@ export const MessageContextMenu = memo(function MessageContextMenu({
               {t("message.context.forward")}
             </button>
           )}
-          {canDelete && (canReply || canCopy || canForward) && (
+          {canSelect && (
+            <button
+              role="menuitem"
+              type="button"
+              className={styles.item}
+              onClick={() => handleAction("select")}
+            >
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                <rect x="2" y="2" width="12" height="12" rx="3" stroke="currentColor" strokeWidth="1.5" />
+                <path d="M5 8l2.5 2.5 4-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+              {t("message.context.select")}
+            </button>
+          )}
+          {canDelete && (canReply || canCopy || canForward || canSelect) && (
             <div className={styles.separator} aria-hidden="true" />
           )}
           {canDelete && (

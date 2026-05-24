@@ -39,7 +39,9 @@ export function useChatPageForwarding(params: UseChatPageForwardingParams) {
     sendPlainGroupText,
     t,
   } = params;
-  const [forwardMessageId, setForwardMessageId] = useState<string | null>(null);
+  // null → picker closed; array → messages pending forward (1 or many)
+  const [forwardMessageIds, setForwardMessageIds] = useState<string[] | null>(null);
+  const forwardMessageId = forwardMessageIds?.[0] ?? null;
 
   const forwardTargets = useMemo<ForwardTarget[]>(() => {
     const savedTarget: ForwardTarget = { kind: "saved", id: "saved", name: t("saved.title") };
@@ -58,35 +60,43 @@ export function useChatPageForwarding(params: UseChatPageForwardingParams) {
   }, [plainConversationEntries, plainGroupEntries, t]);
 
   const handleForwardMessage = useCallback((messageId: string) => {
-    setForwardMessageId(messageId);
+    setForwardMessageIds([messageId]);
+  }, []);
+
+  const handleBulkForwardMessage = useCallback((messageIds: string[]) => {
+    if (messageIds.length > 0) setForwardMessageIds(messageIds);
   }, []);
 
   const handleCloseForwardPicker = useCallback(() => {
-    setForwardMessageId(null);
+    setForwardMessageIds(null);
   }, []);
 
   const handleForwardSend = useCallback((target: ForwardTarget) => {
-    const message = activeMessages.find((entry) => entry.id === forwardMessageId);
-    if (!message || !message.content) return;
+    if (!forwardMessageIds || forwardMessageIds.length === 0) return;
 
-    const senderLabel = message.isOwn
-      ? `@${username ?? "me"}`
-      : (groupSenderLabels?.[message.id] ?? `@${activePlainConversation?.username ?? "unknown"}`);
-    const attribution = t("forward.attribution", { sender: senderLabel });
-    const text = `${attribution}\n\n${message.content}`;
+    for (const msgId of forwardMessageIds) {
+      const message = activeMessages.find((entry) => entry.id === msgId);
+      if (!message || !message.content) continue;
 
-    if (target.kind === "saved") {
-      void sendSavedMessage(text);
-    } else if (target.kind === "plain-direct") {
-      void sendPlainText(target.id, target.name, text);
-    } else {
-      void sendPlainGroupText(target.id, text);
+      const senderLabel = message.isOwn
+        ? `@${username ?? "me"}`
+        : (groupSenderLabels?.[message.id] ?? `@${activePlainConversation?.username ?? "unknown"}`);
+      const attribution = t("forward.attribution", { sender: senderLabel });
+      const text = `${attribution}\n\n${message.content}`;
+
+      if (target.kind === "saved") {
+        void sendSavedMessage(text);
+      } else if (target.kind === "plain-direct") {
+        void sendPlainText(target.id, target.name, text);
+      } else {
+        void sendPlainGroupText(target.id, text);
+      }
     }
 
-    setForwardMessageId(null);
+    setForwardMessageIds(null);
   }, [
     activeMessages,
-    forwardMessageId,
+    forwardMessageIds,
     username,
     groupSenderLabels,
     activePlainConversation,
@@ -100,6 +110,7 @@ export function useChatPageForwarding(params: UseChatPageForwardingParams) {
     forwardMessageId,
     forwardTargets,
     handleForwardMessage,
+    handleBulkForwardMessage,
     handleCloseForwardPicker,
     handleForwardSend,
   };

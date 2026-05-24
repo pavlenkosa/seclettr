@@ -137,7 +137,6 @@ const MessageComposerView = forwardRef<MessageComposerHandle, Props>(function Me
   const primaryAction = resolvePrimaryComposerAction({
     trimmedText: draft.trimmedText,
     isFocused: draft.isTextFocused,
-    isGroupComposer,
     preferredRecordMode,
   });
 

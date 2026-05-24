@@ -1,6 +1,6 @@
 import { IconButton } from "@/components/ui";
 import type { MessageReplyMeta } from "@/stores/messages";
-import styles from "../MessageComposer.module.css";
+import styles from "./MessageComposerReplyPreview.module.css";
 
 type ReplyPreviewProps = Readonly<{
   replyTo?: MessageReplyMeta;

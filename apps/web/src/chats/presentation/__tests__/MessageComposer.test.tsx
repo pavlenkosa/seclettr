@@ -82,6 +82,12 @@ const heartEmoji = "\u{2764}\u{FE0F}";
 
 let emojiCatalog: ComposerEmojiCatalog;
 
+class MockResizeObserver {
+  observe = vi.fn();
+  unobserve = vi.fn();
+  disconnect = vi.fn();
+}
+
 class MockMediaRecorder {
   static isTypeSupported = vi.fn(() => true);
 
@@ -188,6 +194,7 @@ describe("MessageComposer emoji picker", () => {
         storage.clear();
       }),
     });
+    vi.stubGlobal("ResizeObserver", MockResizeObserver);
     container = document.createElement("div");
     document.body.appendChild(container);
     root = createRoot(container);

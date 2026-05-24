@@ -1,0 +1,200 @@
+/* ── Primary action dock ────────────────────────────────────────────────── */
+
+/* Feature-local: primary dock alignment only. */
+.primaryDock {
+  position: relative;
+  align-self: center;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.34rem;
+  flex-shrink: 0;
+}
+
+.primaryActions {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.36rem;
+  flex-shrink: 0;
+}
+
+.recordModeStack {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Feature-local: ephemeral hint copy above the record-mode switch. */
+.recordHint {
+  position: absolute;
+  left: 50%;
+  bottom: calc(100% + 0.34rem);
+  width: 10rem;
+  margin-left: -5rem;
+  padding: 0.36rem 0.72rem;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--surface-float) 74%, transparent);
+  border: 1px solid color-mix(in srgb, var(--panel-border-soft) 82%, transparent);
+  color: var(--text-secondary);
+  font-size: 0.64rem;
+  line-height: 1.3;
+  text-align: center;
+  text-wrap: balance;
+  pointer-events: none;
+}
+
+/* Migrated: shared PillButton with composer-specific density and tone overrides. */
+.recordModeChip {
+  min-height: 34px;
+  padding-inline: 0.72rem;
+  --pill-border: color-mix(in srgb, var(--panel-border-soft) 86%, transparent);
+  --pill-bg: color-mix(in srgb, var(--composer-inner-bg) 94%, var(--surface-float));
+  --pill-bg-hover: color-mix(in srgb, var(--accent) 8%, var(--composer-inner-bg));
+  --pill-fg: var(--text-secondary);
+  font-size: 0.72rem;
+  font-weight: 700;
+  line-height: 1;
+  text-transform: capitalize;
+}
+
+.recordModeChip:hover:not(:disabled) {
+  --pill-fg: var(--text-primary);
+  --pill-border: color-mix(in srgb, var(--accent) 34%, transparent);
+}
+
+.recordModeChip:disabled {
+  opacity: 0.6;
+}
+
+.recordModeChip :global(svg) {
+  color: color-mix(in srgb, var(--accent) 84%, white 8%);
+}
+
+/* Migrated: shared IconButton wrapper for recording cancel. */
+.recordCancelButton {
+  align-self: center;
+  --icon-button-size: 40px;
+  --icon-button-shadow-base: none;
+  --icon-button-shadow-hover-base: none;
+}
+
+/* Feature-local exception: send affordance still needs a dedicated on-accent token. */
+.sendBtn {
+  background: var(--accent);
+  color: #fff;
+  width: 44px;
+  height: 44px;
+  border-radius: 999px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  padding: 0;
+  line-height: 0;
+  border: 1px solid color-mix(in srgb, var(--accent) 56%, transparent);
+  transition:
+    background-color var(--motion-duration-fast) var(--motion-ease-standard),
+    border-color var(--motion-duration-fast) var(--motion-ease-standard),
+    color var(--motion-duration-fast) var(--motion-ease-standard);
+}
+
+.sendBtn:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--accent) 88%, black 12%);
+  border-color: color-mix(in srgb, var(--accent) 70%, transparent);
+}
+
+.sendBtn:active:not(:disabled) {
+  background: color-mix(in srgb, var(--accent) 82%, black 18%);
+}
+
+.sendBtnRecordMode {
+  background: color-mix(in srgb, var(--composer-inner-bg) 94%, var(--surface-float));
+  color: var(--icon-btn-color);
+  border: 1px solid color-mix(in srgb, var(--icon-btn-border) 92%, transparent);
+}
+
+/* Feature-local exception: recording CTA shares the same missing on-danger token. */
+.sendBtnRecording {
+  background: color-mix(in srgb, var(--danger) 86%, black 14%);
+  color: #fff;
+  border: 1px solid color-mix(in srgb, var(--danger) 56%, transparent);
+}
+
+.sendBtn:disabled {
+  background: var(--bg-tertiary);
+  color: var(--text-secondary);
+}
+
+.sendBtn svg {
+  display: block;
+}
+
+/* ── Responsive adjustments ─────────────────────────────────────────────── */
+
+@media (max-width: 760px) {
+  .sendBtn {
+    width: 40px;
+    height: 40px;
+  }
+
+  .primaryActions {
+    gap: 0.32rem;
+  }
+
+  .primaryDock {
+    gap: 0.3rem;
+  }
+
+  .recordModeStack {
+    flex-shrink: 0;
+  }
+
+  .recordHint {
+    width: 8.3rem;
+    margin-left: -4.15rem;
+    font-size: 0.58rem;
+    padding: 0.3rem 0.56rem;
+    bottom: calc(100% + 0.28rem);
+  }
+
+  .recordModeChip {
+    min-height: 32px;
+    padding-inline: 0.58rem;
+    font-size: 0.68rem;
+  }
+
+  .recordCancelButton {
+    --icon-button-size: 40px;
+  }
+}
+
+/* Feature-local: recording-mode compact overrides at very small screens.
+   These replace the cross-component compound rules (.innerRecording .X) that
+   would not work across CSS Module boundaries. */
+@media (max-width: 640px) {
+  .primaryActionsInRecording {
+    gap: 0.24rem;
+  }
+
+  .recordCancelButtonInRecording {
+    --icon-button-size: 38px;
+  }
+
+  .sendBtnInRecording {
+    width: 38px;
+    height: 38px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .primaryDock,
+  .primaryActions,
+  .sendBtn,
+  .recordModeChip,
+  .recordHint {
+    transition: none !important;
+    animation: none !important;
+  }
+}

@@ -8,7 +8,7 @@ import {
   type ComposerEmojiGroup,
 } from "./composer-emojis";
 import type { GifResult } from "./composer-gif-service";
-import styles from "../presentation/MessageComposer.module.css";
+import styles from "./MessageComposerEmojiPicker.module.css";
 
 export interface MessageComposerEmojiPickerProps {
   readonly isOpen: boolean;

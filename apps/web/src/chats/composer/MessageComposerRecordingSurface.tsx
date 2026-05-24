@@ -1,7 +1,7 @@
 import type { CSSProperties } from "react";
 import { RECORDING_WAVEFORM_BAR_COUNT } from "../presentation/shared/audio-waveform";
 import { VideoNoteIcon } from "./MessageComposerIcons";
-import styles from "../presentation/MessageComposer.module.css";
+import styles from "./MessageComposerRecording.module.css";
 
 const WAVEFORM_BAR_KEYS = Array.from({ length: RECORDING_WAVEFORM_BAR_COUNT }, (_, i) => `wave-bar-${i}`);
 

@@ -13,10 +13,9 @@ export type ComposerPrimaryAction =
 export function resolvePrimaryComposerAction(params: {
   trimmedText: string;
   isFocused: boolean;
-  isGroupComposer: boolean;
   preferredRecordMode: RecordMode;
 }): ComposerPrimaryAction {
-  if (params.isGroupComposer || params.trimmedText.length > 0 || params.isFocused) {
+  if (params.trimmedText.length > 0 || params.isFocused) {
     return { kind: "send" };
   }
 
@@ -25,7 +24,7 @@ export function resolvePrimaryComposerAction(params: {
     mode: params.preferredRecordMode,
   };
 }
-import styles from "../presentation/MessageComposer.module.css";
+import styles from "./MessageComposerPrimaryActions.module.css";
 
 /**
  * Props for the composer primary action cluster.
@@ -91,7 +90,7 @@ export const MessageComposerPrimaryActions = memo(function MessageComposerPrimar
 
   return (
     <div className={styles.primaryDock}>
-      <div className={styles.primaryActions}>
+      <div className={`${styles.primaryActions} ${isRecording ? styles.primaryActionsInRecording : ""}`}>
         {showRecordModeChip ? (
           <div className={styles.recordModeStack}>
             {isRecordHintVisible ? (
@@ -122,7 +121,7 @@ export const MessageComposerPrimaryActions = memo(function MessageComposerPrimar
         {isRecording ? (
           <IconButton
             onClick={onCancelRecording}
-            className={styles.recordCancelButton}
+            className={`${styles.recordCancelButton} ${styles.recordCancelButtonInRecording}`}
             aria-label={cancelRecordingAriaLabel}
             title={cancelRecordingTitle}
           >
@@ -139,7 +138,7 @@ export const MessageComposerPrimaryActions = memo(function MessageComposerPrimar
           disabled={primaryButtonDisabled}
           className={`${styles.sendBtn} ${
             primaryAction.kind === "record" && !isRecording ? styles.sendBtnRecordMode : ""
-          } ${isRecording ? styles.sendBtnRecording : ""}`}
+          } ${isRecording ? `${styles.sendBtnRecording} ${styles.sendBtnInRecording}` : ""}`}
           aria-label={primaryButtonAriaLabel}
           title={primaryButtonTitle}
         >

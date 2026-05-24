@@ -934,135 +934,9 @@
   }
 }
 
-/* ── Header summary + security section tail ─────────────────────────────── */
-
-/* Feature-local: direct-call header copy and security section sizing. */
-.callHeaderSummary {
-  min-width: 0;
-  text-align: center;
-}
-
-.callHeaderTitle {
-  color: var(--text-primary);
-  font-size: clamp(1.02rem, 2vw, 1.24rem);
-  font-weight: 780;
-  letter-spacing: -0.02em;
-}
-
-.callHeaderDuration {
-  display: inline-flex;
-  align-items: center;
-  min-height: 28px;
-  padding: 0 0.55rem;
-  border-radius: 999px;
-  background: color-mix(in srgb, var(--surface-shell) 92%, transparent);
-  border: 1px solid color-mix(in srgb, var(--panel-border-soft) 86%, transparent);
-  color: var(--text-secondary);
-  font-size: 0.74rem;
-  font-weight: 700;
-  font-variant-numeric: tabular-nums;
-}
-
-.callHeaderMeta {
-  color: var(--text-secondary);
-  font-size: 0.77rem;
-  font-weight: 650;
-}
-
-.callSecuritySection {
-  width: 100%;
-  max-width: 640px;
-  display: flex;
-  flex-direction: column;
-  gap: 0.6rem;
-}
-
 .callStageAudio {
   border-color: transparent;
   background: transparent;
-}
-
-.callSecuritySheet {
-  position: absolute;
-  top: 148px; /* overridden by inline style from measured header height */
-  left: 50%;
-  transform: translateX(-50%);
-  width: min(calc(100% - 3rem), 420px);
-  z-index: 5;
-  animation: callContentIn 200ms cubic-bezier(0.18, 0.9, 0.2, 1) both;
-}
-
-.callAudioOutputBar {
-  align-self: center;
-  animation: callContentIn 240ms cubic-bezier(0.18, 0.9, 0.2, 1) 60ms both;
-}
-
-.callEncryptionBadge {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.3rem;
-  padding: 0.22rem 0.6rem 0.22rem 0.44rem;
-  border-radius: 999px;
-  border: 1px solid transparent;
-  background: transparent;
-  cursor: pointer;
-  font-size: 0.7rem;
-  font-weight: 700;
-  letter-spacing: 0.01em;
-  line-height: 1;
-  transition: background-color 0.12s ease, opacity 0.12s ease;
-}
-
-.callEncryptionBadge:hover {
-  opacity: 0.82;
-}
-
-.callEncryptionBadgeSecure {
-  color: color-mix(in srgb, var(--status-success, #3ec97c) 90%, #fff);
-  border-color: color-mix(in srgb, var(--status-success, #3ec97c) 28%, transparent);
-  background: color-mix(in srgb, var(--status-success, #3ec97c) 12%, transparent);
-}
-
-.callEncryptionBadgePending {
-  color: color-mix(in srgb, var(--status-warning, #f0a040) 90%, #fff);
-  border-color: color-mix(in srgb, var(--status-warning, #f0a040) 28%, transparent);
-  background: color-mix(in srgb, var(--status-warning, #f0a040) 12%, transparent);
-}
-
-.callEncryptionBadgeOpen {
-  opacity: 0.7;
-}
-
-.callHeaderMetaRow {
-  display: flex;
-  justify-content: center;
-  margin-top: 0.28rem;
-}
-
-.securityToggleHeaderBtn {
-  --icon-button-size: 34px;
-  --icon-button-bg: color-mix(in srgb, var(--panel-header-bg) 75%, var(--icon-btn-bg));
-  --icon-button-bg-hover: color-mix(in srgb, var(--panel-header-bg) 55%, var(--icon-btn-hover-bg));
-  --icon-button-border: var(--icon-btn-border);
-  --icon-button-border-hover: color-mix(in srgb, var(--accent) 34%, var(--icon-btn-border));
-  --icon-button-color: var(--text-secondary);
-  --icon-button-color-hover: var(--text-primary);
-  --icon-button-blur: 0;
-  --icon-button-transform: none;
-  --icon-button-transform-hover: none;
-}
-
-.securityToggleHeaderBtnSecure {
-  --icon-button-color: var(--status-success, #3ec97c);
-}
-
-.securityToggleHeaderBtnPending {
-  --icon-button-color: var(--status-warning, #f0a040);
-}
-
-.securityToggleHeaderBtnActive {
-  --icon-button-color: var(--accent);
-  --icon-button-border: color-mix(in srgb, var(--accent) 34%, var(--icon-btn-border));
 }
 
 @media (max-width: 720px) {
@@ -1071,14 +945,6 @@
       calc(env(safe-area-inset-top, 0px) + 14px)
       0.85rem
       calc(env(safe-area-inset-bottom, 0px) + 16px);
-  }
-
-  .callHeaderTitle {
-    font-size: 1rem;
-  }
-
-  .callHeaderMeta {
-    font-size: 0.74rem;
   }
 
   .callStage {

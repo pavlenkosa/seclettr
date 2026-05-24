@@ -19,6 +19,7 @@ import {
 import { HeaderBar, IconButton, InfoStack } from "@/components/ui";
 
 import styles from "@/calls/direct/presentation/DirectCallPanel.module.css";
+import activeStyles from "./DirectCallActiveOverlay.module.css";
 
 interface DirectCallActiveOverlayProps {
   readonly activeOverlayRef: RefObject<HTMLDialogElement>;
@@ -332,10 +333,6 @@ export function DirectCallActiveOverlay({
           startedAtMs={durationStartedAtMs}
         />
       );
-  // Only show stage type in header when screen share is active — "Camera" is implied and
-  // misleading when the peer's camera is off (avatar showing).
-  const callHeaderMeta = stageScene.stageLayout.stageSource === "screen" ? screenStageLabel : undefined;
-
   return (
     <dialog
       ref={activeOverlayRef}
@@ -355,7 +352,7 @@ export function DirectCallActiveOverlay({
         stackCenterOnNarrow
         center={(
           <InfoStack
-            className={styles.callHeaderSummary}
+            className={activeStyles.callHeaderSummary}
             align="center"
             title={peerDisplayName}
             titleAccessory={callHeaderDuration}
@@ -364,9 +361,9 @@ export function DirectCallActiveOverlay({
                 type="button"
                 onClick={onToggleSecurityCard}
                 className={[
-                  styles.callEncryptionBadge,
-                  e2eeActive ? styles.callEncryptionBadgeSecure : styles.callEncryptionBadgePending,
-                  isSecurityCardOpen ? styles.callEncryptionBadgeOpen : "",
+                  activeStyles.callEncryptionBadge,
+                  e2eeActive ? activeStyles.callEncryptionBadgeSecure : activeStyles.callEncryptionBadgePending,
+                  isSecurityCardOpen ? activeStyles.callEncryptionBadgeOpen : "",
                 ].filter(Boolean).join(" ")}
                 aria-pressed={isSecurityCardOpen}
                 aria-label={callSecurityToggleLabel}
@@ -375,8 +372,8 @@ export function DirectCallActiveOverlay({
                 <span>{callSecurityStatusLabel}</span>
               </button>
             )}
-            titleClassName={styles.callHeaderTitle}
-            metaClassName={styles.callHeaderMetaRow}
+            titleClassName={activeStyles.callHeaderTitle}
+            metaClassName={activeStyles.callHeaderMetaRow}
           />
         )}
         trailing={(
@@ -394,7 +391,7 @@ export function DirectCallActiveOverlay({
 
       {isSecurityCardOpen ? (
         <div
-          className={styles.callSecuritySheet}
+          className={activeStyles.callSecuritySheet}
           style={securitySheetTop !== null ? { top: `${securitySheetTop}px` } : undefined}
         >
           <DirectCallSecurityPanel
@@ -440,7 +437,7 @@ export function DirectCallActiveOverlay({
       </div>
 
       {hasAudioOutputControls ? (
-        <AudioOutputSelector compact hideLabel className={styles.callAudioOutputBar} />
+        <AudioOutputSelector compact hideLabel className={activeStyles.callAudioOutputBar} />
       ) : null}
 
       {shouldRenderLocalCameraPreview ? (

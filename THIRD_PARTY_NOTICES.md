@@ -3,8 +3,8 @@
 This file is auto-generated from workspace production dependencies.
 Source: `pnpm licenses list --prod --json`.
 
-- Total production packages: 312
-- Packages without detected local license file: 30
+- Total production packages: 314
+- Packages without detected local license file: 44
 
 ## License Summary
 
@@ -15,7 +15,7 @@ Source: `pnpm licenses list --prod --json`.
 | BlueOak-1.0.0 | 7 |
 | BSD-3-Clause | 4 |
 | ISC | 27 |
-| MIT | 172 |
+| MIT | 174 |
 | MPL-2.0 | 1 |
 
 ## Package Inventory
@@ -31,7 +31,7 @@ Source: `pnpm licenses list --prod --json`.
 | @aws-crypto/util | 5.2.0 | Apache-2.0 | https://github.com/aws/aws-sdk-js-crypto-helpers/tree/master/packages/util | node_modules/.pnpm/@aws-crypto+util@5.2.0/node_modules/@aws-crypto/util/LICENSE | AWS Crypto Tools Team |
 | @aws-sdk/client-s3 | 3.995.0 | Apache-2.0 | https://github.com/aws/aws-sdk-js-v3/tree/main/clients/client-s3 | node_modules/.pnpm/@aws-sdk+client-s3@3.995.0/node_modules/@aws-sdk/client-s3/LICENSE | AWS SDK for JavaScript Team |
 | @aws-sdk/client-sso | 3.993.0 | Apache-2.0 | https://github.com/aws/aws-sdk-js-v3/tree/main/clients/client-sso | node_modules/.pnpm/@aws-sdk+client-sso@3.993.0/node_modules/@aws-sdk/client-sso/LICENSE | AWS SDK for JavaScript Team |
-| @aws-sdk/core | 3.973.11 | Apache-2.0 | https://github.com/aws/aws-sdk-js-v3/tree/main/packages-internal/core | node_modules/.pnpm/@aws-sdk+core@3.973.11/node_modules/@aws-sdk/core/LICENSE | AWS SDK for JavaScript Team |
+| @aws-sdk/core | 3.974.13 | Apache-2.0 | https://github.com/aws/aws-sdk-js-v3/tree/main/packages-internal/core | - | AWS SDK for JavaScript Team |
 | @aws-sdk/crc64-nvme | 3.972.0 | Apache-2.0 | https://github.com/aws/aws-sdk-js-v3/tree/main/packages/crc64-nvme | node_modules/.pnpm/@aws-sdk+crc64-nvme@3.972.0/node_modules/@aws-sdk/crc64-nvme/LICENSE | AWS SDK for JavaScript Team |
 | @aws-sdk/credential-provider-env | 3.972.9 | Apache-2.0 | https://github.com/aws/aws-sdk-js-v3/tree/main/packages-internal/credential-provider-env | node_modules/.pnpm/@aws-sdk+credential-provider-env@3.972.9/node_modules/@aws-sdk/credential-provider-env/LICENSE | AWS SDK for JavaScript Team |
 | @aws-sdk/credential-provider-http | 3.972.11 | Apache-2.0 | https://github.com/aws/aws-sdk-js-v3/tree/main/packages-internal/credential-provider-http | - | AWS SDK for JavaScript Team |
@@ -57,14 +57,14 @@ Source: `pnpm licenses list --prod --json`.
 | @aws-sdk/s3-request-presigner | 3.995.0 | Apache-2.0 | https://github.com/aws/aws-sdk-js-v3/tree/main/packages/s3-request-presigner | node_modules/.pnpm/@aws-sdk+s3-request-presigner@3.995.0/node_modules/@aws-sdk/s3-request-presigner/LICENSE | AWS SDK for JavaScript Team |
 | @aws-sdk/signature-v4-multi-region | 3.995.0 | Apache-2.0 | https://github.com/aws/aws-sdk-js-v3/tree/main/packages/signature-v4-multi-region | node_modules/.pnpm/@aws-sdk+signature-v4-multi-region@3.995.0/node_modules/@aws-sdk/signature-v4-multi-region/LICENSE | AWS SDK for JavaScript Team |
 | @aws-sdk/token-providers | 3.993.0 | Apache-2.0 | https://github.com/aws/aws-sdk-js-v3/tree/main/packages/token-providers | node_modules/.pnpm/@aws-sdk+token-providers@3.993.0/node_modules/@aws-sdk/token-providers/LICENSE | AWS SDK for JavaScript Team |
-| @aws-sdk/types | 3.973.1 | Apache-2.0 | https://github.com/aws/aws-sdk-js-v3/tree/main/packages-internal/types | node_modules/.pnpm/@aws-sdk+types@3.973.1/node_modules/@aws-sdk/types/LICENSE | AWS SDK for JavaScript Team |
+| @aws-sdk/types | 3.973.9 | Apache-2.0 | https://github.com/aws/aws-sdk-js-v3/tree/main/packages-internal/types | - | AWS SDK for JavaScript Team |
 | @aws-sdk/util-arn-parser | 3.972.2 | Apache-2.0 | https://github.com/aws/aws-sdk-js-v3/tree/main/packages-internal/util-arn-parser | node_modules/.pnpm/@aws-sdk+util-arn-parser@3.972.2/node_modules/@aws-sdk/util-arn-parser/LICENSE | AWS SDK for JavaScript Team |
 | @aws-sdk/util-endpoints | 3.995.0 | Apache-2.0 | https://github.com/aws/aws-sdk-js-v3/tree/main/packages/util-endpoints | node_modules/.pnpm/@aws-sdk+util-endpoints@3.995.0/node_modules/@aws-sdk/util-endpoints/LICENSE | AWS SDK for JavaScript Team |
 | @aws-sdk/util-format-url | 3.972.3 | Apache-2.0 | https://github.com/aws/aws-sdk-js-v3/tree/main/packages-internal/util-format-url | node_modules/.pnpm/@aws-sdk+util-format-url@3.972.3/node_modules/@aws-sdk/util-format-url/LICENSE | AWS SDK for JavaScript Team |
 | @aws-sdk/util-locate-window | 3.965.4 | Apache-2.0 | https://github.com/aws/aws-sdk-js-v3/tree/main/packages-internal/util-locate-window | node_modules/.pnpm/@aws-sdk+util-locate-window@3.965.4/node_modules/@aws-sdk/util-locate-window/LICENSE | AWS SDK for JavaScript Team |
 | @aws-sdk/util-user-agent-browser | 3.972.3 | Apache-2.0 | https://github.com/aws/aws-sdk-js-v3/tree/main/packages-internal/util-user-agent-browser | node_modules/.pnpm/@aws-sdk+util-user-agent-browser@3.972.3/node_modules/@aws-sdk/util-user-agent-browser/LICENSE | AWS SDK for JavaScript Team |
 | @aws-sdk/util-user-agent-node | 3.972.10 | Apache-2.0 | https://github.com/aws/aws-sdk-js-v3/tree/main/packages-internal/util-user-agent-node | node_modules/.pnpm/@aws-sdk+util-user-agent-node@3.972.10/node_modules/@aws-sdk/util-user-agent-node/LICENSE | AWS SDK for JavaScript Team |
-| @aws-sdk/xml-builder | 3.972.5 | Apache-2.0 | https://github.com/aws/aws-sdk-js-v3/tree/main/packages-internal/xml-builder | node_modules/.pnpm/@aws-sdk+xml-builder@3.972.5/node_modules/@aws-sdk/xml-builder/LICENSE | AWS SDK for JavaScript Team |
+| @aws-sdk/xml-builder | 3.972.25 | Apache-2.0 | https://github.com/aws/aws-sdk-js-v3/tree/main/packages-internal/xml-builder | - | AWS SDK for JavaScript Team |
 | @aws/lambda-invoke-store | 0.2.3 | Apache-2.0 | https://github.com/awslabs/aws-lambda-invoke-store | node_modules/.pnpm/@aws+lambda-invoke-store@0.2.3/node_modules/@aws/lambda-invoke-store/LICENSE | Amazon Web Services |
 | @capacitor/android | 8.3.4 | MIT | https://capacitorjs.com | node_modules/.pnpm/@capacitor+android@8.3.4_@capacitor+core@8.3.4/node_modules/@capacitor/android/LICENSE | Ionic Team |
 | @capacitor/background-runner | 3.0.0 | MIT | https://github.com/ionic-team/capacitor-background-runner#readme | node_modules/.pnpm/@capacitor+background-runner@3.0.0_@capacitor+core@8.3.4/node_modules/@capacitor/background-runner/LICENSE | Ionic Team |
@@ -96,6 +96,7 @@ Source: `pnpm licenses list --prod --json`.
 | @lukeed/csprng | 1.1.0 | MIT | https://github.com/lukeed/csprng#readme | - | Luke Edwards |
 | @lukeed/ms | 2.0.2 | MIT | https://github.com/lukeed/ms#readme | - | Luke Edwards |
 | @lukeed/uuid | 2.0.1 | MIT | https://github.com/lukeed/uuid#readme | - | Luke Edwards |
+| @nodable/entities | 2.1.0 | MIT | https://github.com/nodable/val-parsers#readme | - | Amit Gupta |
 | @phc/format | 1.0.0 | MIT | https://github.com/simonepri/phc-format#readme | - | Simone Primarosa |
 | @pinojs/redact | 0.4.0 | MIT | https://github.com/pinojs/redact#readme | node_modules/.pnpm/@pinojs+redact@0.4.0/node_modules/@pinojs/redact/LICENSE | Matteo Collina |
 | @pkgjs/parseargs | 0.11.0 | MIT | https://github.com/pkgjs/parseargs#readme | node_modules/.pnpm/@pkgjs+parseargs@0.11.0/node_modules/@pkgjs/parseargs/LICENSE | - |
@@ -104,7 +105,7 @@ Source: `pnpm licenses list --prod --json`.
 | @smithy/chunked-blob-reader | 5.2.0 | Apache-2.0 | https://github.com/smithy-lang/smithy-typescript/tree/main/packages/chunked-blob-reader | node_modules/.pnpm/@smithy+chunked-blob-reader@5.2.0/node_modules/@smithy/chunked-blob-reader/LICENSE | AWS SDK for JavaScript Team |
 | @smithy/chunked-blob-reader-native | 4.2.1 | Apache-2.0 | https://github.com/smithy-lang/smithy-typescript/tree/main/packages/chunked-blob-reader-native | node_modules/.pnpm/@smithy+chunked-blob-reader-native@4.2.1/node_modules/@smithy/chunked-blob-reader-native/LICENSE | AWS SDK for JavaScript Team |
 | @smithy/config-resolver | 4.4.6 | Apache-2.0 | https://github.com/smithy-lang/smithy-typescript/tree/main/packages/config-resolver | node_modules/.pnpm/@smithy+config-resolver@4.4.6/node_modules/@smithy/config-resolver/LICENSE | AWS SDK for JavaScript Team |
-| @smithy/core | 3.23.2 | Apache-2.0 | https://github.com/smithy-lang/smithy-typescript/tree/main/packages/core | node_modules/.pnpm/@smithy+core@3.23.2/node_modules/@smithy/core/LICENSE | AWS Smithy Team |
+| @smithy/core | 3.24.4 | Apache-2.0 | https://github.com/smithy-lang/smithy-typescript/tree/main/packages/core | - | AWS Smithy Team |
 | @smithy/credential-provider-imds | 4.2.8 | Apache-2.0 | https://github.com/smithy-lang/smithy-typescript/tree/main/packages/credential-provider-imds | node_modules/.pnpm/@smithy+credential-provider-imds@4.2.8/node_modules/@smithy/credential-provider-imds/LICENSE | AWS SDK for JavaScript Team |
 | @smithy/eventstream-codec | 4.2.8 | Apache-2.0 | https://github.com/smithy-lang/smithy-typescript/tree/main/packages/eventstream-codec | node_modules/.pnpm/@smithy+eventstream-codec@4.2.8/node_modules/@smithy/eventstream-codec/LICENSE | AWS SDK for JavaScript Team |
 | @smithy/eventstream-serde-browser | 4.2.8 | Apache-2.0 | https://github.com/smithy-lang/smithy-typescript/tree/main/packages/eventstream-serde-browser | node_modules/.pnpm/@smithy+eventstream-serde-browser@4.2.8/node_modules/@smithy/eventstream-serde-browser/LICENSE | AWS SDK for JavaScript Team |
@@ -131,9 +132,9 @@ Source: `pnpm licenses list --prod --json`.
 | @smithy/querystring-parser | 4.2.8 | Apache-2.0 | https://github.com/smithy-lang/smithy-typescript/tree/main/packages/querystring-parser | node_modules/.pnpm/@smithy+querystring-parser@4.2.8/node_modules/@smithy/querystring-parser/LICENSE | AWS SDK for JavaScript Team |
 | @smithy/service-error-classification | 4.2.8 | Apache-2.0 | https://github.com/smithy-lang/smithy-typescript/tree/main/packages/service-error-classification | node_modules/.pnpm/@smithy+service-error-classification@4.2.8/node_modules/@smithy/service-error-classification/LICENSE | AWS SDK for JavaScript Team |
 | @smithy/shared-ini-file-loader | 4.4.3 | Apache-2.0 | https://github.com/smithy-lang/smithy-typescript/tree/main/packages/shared-ini-file-loader | node_modules/.pnpm/@smithy+shared-ini-file-loader@4.4.3/node_modules/@smithy/shared-ini-file-loader/LICENSE | AWS SDK for JavaScript Team |
-| @smithy/signature-v4 | 5.3.8 | Apache-2.0 | https://github.com/smithy-lang/smithy-typescript/tree/main/packages/signature-v4 | node_modules/.pnpm/@smithy+signature-v4@5.3.8/node_modules/@smithy/signature-v4/LICENSE | AWS SDK for JavaScript Team |
+| @smithy/signature-v4 | 5.4.4 | Apache-2.0 | https://github.com/smithy-lang/smithy-typescript/tree/main/packages/signature-v4 | - | AWS SDK for JavaScript Team |
 | @smithy/smithy-client | 4.11.5 | Apache-2.0 | https://github.com/smithy-lang/smithy-typescript/tree/main/packages/smithy-client | node_modules/.pnpm/@smithy+smithy-client@4.11.5/node_modules/@smithy/smithy-client/LICENSE | AWS SDK for JavaScript Team |
-| @smithy/types | 4.12.0 | Apache-2.0 | https://github.com/smithy-lang/smithy-typescript/tree/main/packages/types | node_modules/.pnpm/@smithy+types@4.12.0/node_modules/@smithy/types/LICENSE | AWS Smithy Team |
+| @smithy/types | 4.14.2 | Apache-2.0 | https://github.com/smithy-lang/smithy-typescript/tree/main/packages/types | - | AWS Smithy Team |
 | @smithy/url-parser | 4.2.8 | Apache-2.0 | https://github.com/smithy-lang/smithy-typescript/tree/main/packages/url-parser | node_modules/.pnpm/@smithy+url-parser@4.2.8/node_modules/@smithy/url-parser/LICENSE | AWS SDK for JavaScript Team |
 | @smithy/util-base64 | 4.3.0 | Apache-2.0 | https://github.com/smithy-lang/smithy-typescript/tree/main/packages/util-base64 | node_modules/.pnpm/@smithy+util-base64@4.3.0/node_modules/@smithy/util-base64/LICENSE | AWS SDK for JavaScript Team |
 | @smithy/util-body-length-browser | 4.2.0 | Apache-2.0 | https://github.com/smithy-lang/smithy-typescript/tree/main/packages/util-body-length-browser | node_modules/.pnpm/@smithy+util-body-length-browser@4.2.0/node_modules/@smithy/util-body-length-browser/LICENSE | AWS SDK for JavaScript Team |
@@ -172,7 +173,7 @@ Source: `pnpm licenses list --prod --json`.
 | balanced-match | 4.0.3 | MIT | https://github.com/juliangruber/balanced-match#readme | node_modules/.pnpm/balanced-match@4.0.3/node_modules/balanced-match/LICENSE.md | - |
 | bn.js | 4.12.3 | MIT | https://github.com/indutny/bn.js | node_modules/.pnpm/bn.js@4.12.3/node_modules/bn.js/LICENSE | Fedor Indutny |
 | bowser | 2.14.1 | MIT | https://github.com/bowser-js/bowser | node_modules/.pnpm/bowser@2.14.1/node_modules/bowser/LICENSE | Dustin Diaz |
-| brace-expansion | 5.0.5 | MIT | https://github.com/juliangruber/brace-expansion#readme | node_modules/.pnpm/brace-expansion@5.0.5/node_modules/brace-expansion/LICENSE | - |
+| brace-expansion | 5.0.6 | MIT | https://github.com/juliangruber/brace-expansion#readme | - | - |
 | buffer-equal-constant-time | 1.0.1 | BSD-3-Clause | https://github.com/goinstant/buffer-equal-constant-time#readme | node_modules/.pnpm/buffer-equal-constant-time@1.0.1/node_modules/buffer-equal-constant-time/LICENSE.txt | GoInstant Inc., a salesforce.com company |
 | chownr | 3.0.0 | BlueOak-1.0.0 | https://github.com/isaacs/chownr#readme | node_modules/.pnpm/chownr@3.0.0/node_modules/chownr/LICENSE.md | Isaac Z. Schlueter |
 | cluster-key-slot | 1.1.2 | Apache-2.0 | https://github.com/Salakar/cluster-key-slot#readme | node_modules/.pnpm/cluster-key-slot@1.1.2/node_modules/cluster-key-slot/LICENSE | Mike Diarmid |
@@ -199,10 +200,10 @@ Source: `pnpm licenses list --prod --json`.
 | fast-decode-uri-component | 1.0.1 | MIT | https://github.com/delvedor/fast-decode-uri-component#readme | node_modules/.pnpm/fast-decode-uri-component@1.0.1/node_modules/fast-decode-uri-component/LICENSE | Tomas Della Vedova - @delvedor |
 | fast-deep-equal | 3.1.3 | MIT | https://github.com/epoberezkin/fast-deep-equal#readme | node_modules/.pnpm/fast-deep-equal@3.1.3/node_modules/fast-deep-equal/LICENSE | Evgeny Poberezkin |
 | fast-json-stringify | 5.16.1 | MIT | https://github.com/fastify/fast-json-stringify#readme | node_modules/.pnpm/fast-json-stringify@5.16.1/node_modules/fast-json-stringify/LICENSE | Matteo Collina |
-| fast-jwt | 6.2.2 | Apache-2.0 | https://github.com/nearform/fast-jwt | node_modules/.pnpm/fast-jwt@6.2.2/node_modules/fast-jwt/LICENSE.md | NearForm Ltd |
+| fast-jwt | 6.2.4 | Apache-2.0 | https://github.com/nearform/fast-jwt | - | NearForm Ltd |
 | fast-querystring | 1.1.2 | MIT | https://github.com/anonrig/fast-querystring#readme | node_modules/.pnpm/fast-querystring@1.1.2/node_modules/fast-querystring/LICENSE | Yagiz Nizipli |
-| fast-uri | 3.1.0 | BSD-3-Clause | https://github.com/fastify/fast-uri | node_modules/.pnpm/fast-uri@3.1.0/node_modules/fast-uri/LICENSE | Vincent Le Goff |
-| fast-xml-builder | 1.1.4 | MIT | https://github.com/NaturalIntelligence/fast-xml-builder#readme | node_modules/.pnpm/fast-xml-builder@1.1.4/node_modules/fast-xml-builder/LICENSE | Amit Gupta |
+| fast-uri | 3.1.2 | BSD-3-Clause | https://github.com/fastify/fast-uri | - | Vincent Le Goff |
+| fast-xml-builder | 1.2.0 | MIT | https://github.com/NaturalIntelligence/fast-xml-builder#readme | - | Amit Gupta |
 | fast-xml-parser | 5.5.9 | MIT | https://github.com/NaturalIntelligence/fast-xml-parser#readme | node_modules/.pnpm/fast-xml-parser@5.5.9/node_modules/fast-xml-parser/LICENSE | Amit Gupta |
 | fastfall | 1.5.1 | MIT | https://github.com/mcollina/fastfall#readme | node_modules/.pnpm/fastfall@1.5.1/node_modules/fastfall/LICENSE | Matteo Collina |
 | fastify | 4.29.1 | MIT | https://fastify.dev/ | node_modules/.pnpm/fastify@4.29.1/node_modules/fastify/LICENSE | Matteo Collina |
@@ -259,7 +260,7 @@ Source: `pnpm licenses list --prod --json`.
 | on-exit-leak-free | 2.1.2 | MIT | https://github.com/mcollina/on-exit-or-gc#readme | node_modules/.pnpm/on-exit-leak-free@2.1.2/node_modules/on-exit-leak-free/LICENSE | Matteo Collina |
 | once | 1.4.0 | ISC | https://github.com/isaacs/once#readme | node_modules/.pnpm/once@1.4.0/node_modules/once/LICENSE | Isaac Z. Schlueter |
 | package-json-from-dist | 1.0.1 | BlueOak-1.0.0 | https://github.com/isaacs/package-json-from-dist#readme | node_modules/.pnpm/package-json-from-dist@1.0.1/node_modules/package-json-from-dist/LICENSE.md | Isaac Z. Schlueter |
-| path-expression-matcher | 1.2.0 | MIT | https://github.com/NaturalIntelligence/path-expression-matcher#readme | node_modules/.pnpm/path-expression-matcher@1.2.0/node_modules/path-expression-matcher/LICENSE | Amit Gupta |
+| path-expression-matcher | 1.5.0 | MIT | https://github.com/NaturalIntelligence/path-expression-matcher#readme | - | Amit Gupta |
 | path-key | 3.1.1 | MIT | https://github.com/sindresorhus/path-key#readme | - | Sindre Sorhus |
 | path-scurry | 1.11.1 | BlueOak-1.0.0 | https://github.com/isaacs/path-scurry#readme | node_modules/.pnpm/path-scurry@1.11.1/node_modules/path-scurry/LICENSE.md | Isaac Z. Schlueter |
 | pg | 8.18.0 | MIT | https://github.com/brianc/node-postgres | node_modules/.pnpm/pg@8.18.0/node_modules/pg/LICENSE | Brian Carlson |
@@ -329,7 +330,8 @@ Source: `pnpm licenses list --prod --json`.
 | which | 2.0.2 | ISC | https://github.com/isaacs/node-which#readme | node_modules/.pnpm/which@2.0.2/node_modules/which/LICENSE | Isaac Z. Schlueter |
 | wrap-ansi | 7.0.0 | MIT | https://github.com/chalk/wrap-ansi#readme | - | Sindre Sorhus |
 | wrappy | 1.0.2 | ISC | https://github.com/npm/wrappy | node_modules/.pnpm/wrappy@1.0.2/node_modules/wrappy/LICENSE | Isaac Z. Schlueter |
-| ws | 8.19.0 | MIT | https://github.com/websockets/ws | node_modules/.pnpm/ws@8.19.0/node_modules/ws/LICENSE | Einar Otto Stangvik |
+| ws | 8.20.1 | MIT | https://github.com/websockets/ws | - | Einar Otto Stangvik |
+| xml-naming | 0.1.0 | MIT | https://github.com/NaturalIntelligence/xml-naming#readme | - | Amit Gupta |
 | xtend | 4.0.2 | MIT | https://github.com/Raynos/xtend | node_modules/.pnpm/xtend@4.0.2/node_modules/xtend/LICENSE | Raynos |
 | yallist | 5.0.0 | BlueOak-1.0.0 | https://github.com/isaacs/yallist#readme | node_modules/.pnpm/yallist@5.0.0/node_modules/yallist/LICENSE.md | Isaac Z. Schlueter |
 | zod | 3.25.76 | MIT | https://zod.dev | node_modules/.pnpm/zod@3.25.76/node_modules/zod/LICENSE | Colin McDonnell |

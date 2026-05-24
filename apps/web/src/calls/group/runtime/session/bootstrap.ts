@@ -23,7 +23,7 @@ import {
   GroupCallSetupTimeoutError,
 } from "@/calls/group/model/group-call-setup-timeouts";
 import { withSetupStageTimeout } from "@/calls/shared/model/call-setup-timeout";
-import { isMediaCaptureError, resolveErrorMessage } from "@/calls/group/runtime/runtime-utils";
+import { isMediaCaptureError, resolveErrorMessage } from "@/calls/group/runtime/group-call-error-utils";
 import type { GroupCallRuntimeMediaEncryptionMode } from "@/calls/group/runtime/media-key/media-encryption-negotiation";
 import type { GroupCallStatusAction } from "@/calls/group/model/group-call-types";
 import { createSfuClientWithRetry, wait, type CreateSfuClientWithRetryContext } from "./sfu-client";

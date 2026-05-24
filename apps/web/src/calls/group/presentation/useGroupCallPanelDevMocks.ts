@@ -19,13 +19,7 @@ export function useGroupCallPanelDevMocks(remoteMedia: GroupCallRemoteMedia[]) {
   useEffect(() => {
     if (!import.meta.env.DEV) return;
 
-    type MockWindow = Window & {
-      __scInjectMockParticipants?: (count: number) => void;
-      __scClearMockParticipants?: () => void;
-    };
-    const w = globalThis as unknown as MockWindow;
-
-    w.__scInjectMockParticipants = (count: number) => {
+    window.__scInjectMockParticipants = (count: number) => {
       const participants: GroupCallRemoteMedia[] = [];
       for (let i = 0; i < count; i++) {
         const hasVideo = i % 3 !== 0;
@@ -43,11 +37,11 @@ export function useGroupCallPanelDevMocks(remoteMedia: GroupCallRemoteMedia[]) {
       setMockRemoteMedia(participants);
     };
 
-    w.__scClearMockParticipants = () => setMockRemoteMedia([]);
+    window.__scClearMockParticipants = () => setMockRemoteMedia([]);
 
     return () => {
-      delete w.__scInjectMockParticipants;
-      delete w.__scClearMockParticipants;
+      delete window.__scInjectMockParticipants;
+      delete window.__scClearMockParticipants;
     };
   }, []);
 

@@ -8,18 +8,18 @@ import { useChatWorkspaceCallEntry } from "../useChatWorkspaceCallEntry";
 
 const {
   useGroupCallChatEntryMock,
-  useGlobalGroupCallAlertsMock,
+  useGroupCallGlobalAlertsMock,
 } = vi.hoisted(() => ({
   useGroupCallChatEntryMock: vi.fn(),
-  useGlobalGroupCallAlertsMock: vi.fn(),
+  useGroupCallGlobalAlertsMock: vi.fn(),
 }));
 
 vi.mock("@/calls/group/runtime/useGroupCallChatEntry", () => ({
   useGroupCallChatEntry: useGroupCallChatEntryMock,
 }));
 
-vi.mock("@/calls/group/runtime/useGlobalGroupCallAlerts", () => ({
-  useGlobalGroupCallAlerts: useGlobalGroupCallAlertsMock,
+vi.mock("@/calls/group/runtime/useGroupCallGlobalAlerts", () => ({
+  useGroupCallGlobalAlerts: useGroupCallGlobalAlertsMock,
 }));
 
 interface HookValue extends ReturnType<typeof useChatWorkspaceCallEntry> {}
@@ -46,7 +46,7 @@ describe("useChatWorkspaceCallEntry", () => {
     root = createRoot(container);
     hookRef = { current: null };
     useGroupCallChatEntryMock.mockReset();
-    useGlobalGroupCallAlertsMock.mockReset();
+    useGroupCallGlobalAlertsMock.mockReset();
   });
 
   afterEach(() => {
@@ -89,7 +89,7 @@ describe("useChatWorkspaceCallEntry", () => {
       handleJoinActiveGroupCall,
       handleCloseGroupCallPanel,
     });
-    useGlobalGroupCallAlertsMock.mockReturnValue([
+    useGroupCallGlobalAlertsMock.mockReturnValue([
       { groupId: "other-group", callId: "call-2" },
     ]);
 
@@ -113,7 +113,7 @@ describe("useChatWorkspaceCallEntry", () => {
       groups: { "group-1": { groupId: "group-1" } },
       userId: "user-1",
     });
-    expect(useGlobalGroupCallAlertsMock).toHaveBeenCalledWith(
+    expect(useGroupCallGlobalAlertsMock).toHaveBeenCalledWith(
       "user-1",
       "group-1"
     );

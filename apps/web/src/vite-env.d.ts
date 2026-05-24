@@ -13,22 +13,19 @@ declare module "*.css";
 
 declare const __APP_VERSION__: string;
 
-declare var __SECLETTR_RUNTIME_CONFIG__: {
-  apiUrl?: string;
-  sfuUrl?: string;
-} | undefined;
-
-declare var __scGetCallDebugSnapshot: ((...args: unknown[]) => unknown) | undefined;
-declare var __scDumpCallDebug: ((...args: unknown[]) => unknown) | undefined;
-declare var __scSetCallDebugEnabled: ((enabled: boolean) => void) | undefined;
-declare var __scIsCallDebugEnabled: ((...args: unknown[]) => unknown) | undefined;
-declare var __scGetGroupCallDebugSnapshot: ((...args: unknown[]) => unknown) | undefined;
-declare var __scDumpGroupCallDebug: ((...args: unknown[]) => unknown) | undefined;
-declare var __scGroupCallDebug: unknown;
-
 interface Window {
   __SECLETTR_RUNTIME_CONFIG__?: {
     apiUrl?: string;
     sfuUrl?: string;
   };
+  __scGetCallDebugSnapshot?: () => Promise<Record<string, unknown> | null>;
+  __scDumpCallDebug?: () => Promise<void>;
+  __scSetCallDebugEnabled?: (enabled: boolean) => void;
+  __scIsCallDebugEnabled?: () => boolean;
+  __scGetGroupCallDebugSnapshot?: () => Record<string, unknown> | null;
+  __scDumpGroupCallDebug?: () => void;
+  __scGroupCallDebug?: unknown;
+  __scInjectMockParticipants?: (count: number) => void;
+  __scClearMockParticipants?: () => void;
+  __scCreateRoom?: () => void;
 }

@@ -65,7 +65,7 @@ function markJoinedGroupCallActive(
   );
 }
 
-export function useGlobalGroupCallAlerts(
+export function useGroupCallGlobalAlerts(
   userId: string | null,
   currentGroupId: string | null
 ): GroupActiveCallEntry[] {

@@ -29,13 +29,6 @@ import {
 } from "@/calls/group/model/group-call-lifecycle";
 import { logger } from "@/lib/logger.js";
 
-type CallDebugWindow = Window & {
-  __scGetCallDebugSnapshot?: () => Promise<Record<string, unknown> | null>;
-  __scDumpCallDebug?: () => Promise<void>;
-  __scSetCallDebugEnabled?: (enabled: boolean) => void;
-  __scIsCallDebugEnabled?: () => boolean;
-};
-
 export interface UseGroupCallDevDebugOptions {
   session: GroupCallPanelSession | null;
   status: GroupCallStatus;
@@ -167,9 +160,8 @@ function useGroupCallDevDebugImpl(options: UseGroupCallDevDebugOptions): void {
   }, []);
 
   useEffect(() => {
-    const callDebugWindow = globalThis as unknown as CallDebugWindow;
-    callDebugWindow.__scGetCallDebugSnapshot = buildGroupCallDebugSnapshot;
-    callDebugWindow.__scDumpCallDebug = async () => {
+    window.__scGetCallDebugSnapshot = buildGroupCallDebugSnapshot;
+    window.__scDumpCallDebug = async () => {
       const snapshot = await buildGroupCallDebugSnapshot();
       if (!snapshot) {
         logger.warn("[CALL][debug] group-call snapshot unavailable");
@@ -179,18 +171,18 @@ function useGroupCallDevDebugImpl(options: UseGroupCallDevDebugOptions): void {
       logger.debug("[CALL][debug] group-call snapshot", snapshot);
       console.groupEnd();
     };
-    callDebugWindow.__scSetCallDebugEnabled = (enabled: boolean) => {
+    window.__scSetCallDebugEnabled = (enabled: boolean) => {
       callMediaDebugEnabledRef.current = enabled;
       writeCallMediaDebugEnabled(enabled);
       logger.info(`[CALL][debug] media logging ${enabled ? "enabled" : "disabled"}`);
     };
-    callDebugWindow.__scIsCallDebugEnabled = () => callMediaDebugEnabledRef.current;
+    window.__scIsCallDebugEnabled = () => callMediaDebugEnabledRef.current;
 
     return () => {
-      delete callDebugWindow.__scGetCallDebugSnapshot;
-      delete callDebugWindow.__scDumpCallDebug;
-      delete callDebugWindow.__scSetCallDebugEnabled;
-      delete callDebugWindow.__scIsCallDebugEnabled;
+      delete window.__scGetCallDebugSnapshot;
+      delete window.__scDumpCallDebug;
+      delete window.__scSetCallDebugEnabled;
+      delete window.__scIsCallDebugEnabled;
     };
   }, [buildGroupCallDebugSnapshot]);
 }

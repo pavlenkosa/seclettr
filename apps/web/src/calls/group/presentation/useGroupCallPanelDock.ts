@@ -24,7 +24,7 @@ import {
   type MutableRefObject,
   type PointerEvent as ReactPointerEvent,
 } from "react";
-import { clampGroupCallMinimizedDockPosition } from "@/calls/group/runtime/runtime-utils";
+import { clampGroupCallMinimizedDockPosition } from "@/calls/group/model/clamp-dock-position";
 import type { MinimizedDockPosition } from "@/calls/group/model/group-call-types";
 
 interface DragState {

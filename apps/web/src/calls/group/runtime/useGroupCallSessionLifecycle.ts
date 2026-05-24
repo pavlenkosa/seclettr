@@ -29,7 +29,7 @@ import {
   type GroupCallRemoteMedia,
   type GroupSfuClient,
 } from "@/calls/group/runtime/sfu";
-import { buildParticipantDeviceIndex } from "@/calls/group/runtime/runtime-utils";
+import { buildParticipantDeviceIndex } from "@/calls/group/model/build-participant-device-index";
 import type { GroupCallRuntimeMediaEncryptionMode } from "@/calls/group/runtime/media-key/media-encryption-negotiation";
 import type {
   LocalGroupCallMediaKey,

@@ -80,7 +80,7 @@
 }
 
 :global(:root[data-theme="light"]) .overlay {
-  background: rgb(15 23 42 / 0.3);
+  background: color-mix(in srgb, var(--text-primary) 30%, transparent);
 }
 
 :global(:root[data-theme="light"]) .surface {

@@ -1,7 +1,4 @@
-import {
-  useCallback,
-  type SetStateAction,
-} from "react";
+import { useCallback, type SetStateAction } from "react";
 import { logger } from "@/lib/logger.js";
 
 import {
@@ -12,14 +9,11 @@ import {
 import { useDirectCallSurfaceDragging } from "../presentation";
 import { useDirectCallMutableRefs } from "./useDirectCallMutableRefs";
 import { useDirectCallReactiveState } from "./useDirectCallReactiveState";
+import { applySetStateAction } from "./set-state-action";
 import type {
   ActiveCall,
   IncomingCall,
 } from "@/calls/direct/model/direct-call-types";
-
-function applySetStateAction<T>(current: T, action: SetStateAction<T>): T {
-  return typeof action === "function" ? (action as (prev: T) => T)(current) : action;
-}
 
 export function useDirectCallControllerState() {
   const {

@@ -1,5 +1,5 @@
 import { useGroupCallChatEntry } from "@/calls/group/runtime/useGroupCallChatEntry";
-import { useGlobalGroupCallAlerts } from "@/calls/group/runtime/useGlobalGroupCallAlerts";
+import { useGroupCallGlobalAlerts } from "@/calls/group/runtime/useGroupCallGlobalAlerts";
 import type { GroupChat } from "@/stores/groups";
 
 type UseChatWorkspaceCallEntryOptions = {
@@ -41,7 +41,7 @@ export function useChatWorkspaceCallEntry({
     userId,
   });
 
-  const globalGroupCallAlerts = useGlobalGroupCallAlerts(userId, activeGroupId);
+  const globalGroupCallAlerts = useGroupCallGlobalAlerts(userId, activeGroupId);
 
   return {
     activeGroupCall,

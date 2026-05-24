@@ -2,7 +2,7 @@
  * Dev-only floating panel for clearing browser state and viewing debug info.
  * Renders only when import.meta.env.DEV is true.
  */
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useI18n } from "@/i18n";
 import { wsClient } from "@/lib/websocket";
 import { useAuthStore } from "@/stores/auth";
@@ -17,16 +17,6 @@ import { IconPill } from "./ui/actions/IconPill";
 import { SecurityModeBadge } from "./ui/feedback/SecurityModeBadge";
 import { InlineNotice } from "./ui/feedback/InlineNotice";
 import styles from "./DevToolsPanel.module.css";
-
-type CallDebugWindow = Window & {
-  __scGetCallDebugSnapshot?: () => Promise<Record<string, unknown> | null>;
-  __scDumpCallDebug?: () => Promise<void>;
-  __scSetCallDebugEnabled?: (enabled: boolean) => void;
-  __scIsCallDebugEnabled?: () => boolean;
-  __scInjectMockParticipants?: (count: number) => void;
-  __scClearMockParticipants?: () => void;
-  __scCreateRoom?: () => void;
-};
 
 const MOCK_USERNAMES = [
   "alice", "bob", "carol", "dave", "eve", "frank", "grace", "heidi",
@@ -192,26 +182,37 @@ export function DevToolsPanel() {
 
   const storageKeyPresent = Boolean(storageKey);
   const wsConnected = wsClient.connected;
-  const callDebugWindow = globalThis as unknown as CallDebugWindow;
-
   useEffect(() => {
-    const fromCallBanner = callDebugWindow.__scIsCallDebugEnabled?.();
+    const fromCallBanner = window.__scIsCallDebugEnabled?.();
     if (typeof fromCallBanner === "boolean") {
       setCallDebugEnabled(fromCallBanner);
     }
-  }, [callDebugWindow]);
+  }, []);
+  const handleTakeSnapshotCall = useCallback(async () => {
+    const snapshot = await window.__scGetCallDebugSnapshot?.();
+    if (!snapshot) {
+      alert(t("dev.callSnapshotUnavailable"));
+      return;
+    }
+    await navigator.clipboard.writeText(JSON.stringify(snapshot, null, 2));
+    alert(t("dev.callSnapshotCopied"));
+  }, []);
+
+  const handleDumpCallSnapshot = useCallback(async () => {
+    if (!window.__scDumpCallDebug) {
+      return;
+    }
+    await window.__scDumpCallDebug();
+  }, []);
 
   async function clearAllData() {
-    if (!globalThis.confirm(t("dev.confirmClearAll"))) return;
-    setClearing(true);
-    try {
-      wsClient.disconnect();
-      localStorage.clear();
-      sessionStorage.clear();
-      await deleteAllDatabases();
-    } finally {
-      globalThis.location.reload();
+    if (!window.confirm("Are you sure you want to clear all data?")) return;
+    localStorage.clear();
+    const stores = [useMessagesStore, useGroupsStore, useAuthStore];
+    for (const store of stores) {
+      store.persist.clearStorage();
     }
+    window.location.reload();
   }
 
   function copyDebugInfo() {
@@ -220,37 +221,22 @@ export function DevToolsPanel() {
       deviceId,
       storageKeyPresent,
       wsConnected,
-      timestamp: new Date().toISOString(),
       userAgent: navigator.userAgent,
     };
-    void navigator.clipboard.writeText(JSON.stringify(info, null, 2)).then(() => {
-      alert(t("dev.debugCopied"));
-    });
+    void navigator.clipboard.writeText(JSON.stringify(info, null, 2));
   }
 
   async function copyCallSnapshot() {
-    const snapshot = await callDebugWindow.__scGetCallDebugSnapshot?.();
-    if (!snapshot) {
-      alert(t("dev.callSnapshotUnavailable"));
-      return;
-    }
+    const snapshot = await window.__scGetCallDebugSnapshot?.();
+    if (!snapshot) return;
     await navigator.clipboard.writeText(JSON.stringify(snapshot, null, 2));
-    alert(t("dev.callSnapshotCopied"));
-  }
-
-  async function dumpCallSnapshot() {
-    if (!callDebugWindow.__scDumpCallDebug) {
-      alert(t("dev.callSnapshotUnavailable"));
-      return;
-    }
-    await callDebugWindow.__scDumpCallDebug();
   }
 
   function toggleCallDebug() {
-    const nextValue = !callDebugEnabled;
-    callDebugWindow.__scSetCallDebugEnabled?.(nextValue);
-    localStorage.setItem(CALL_MEDIA_DEBUG_ENABLED_KEY, nextValue ? "1" : "0");
-    setCallDebugEnabled(nextValue);
+    const next = !callDebugEnabled;
+    window.__scSetCallDebugEnabled?.(next);
+    localStorage.setItem(CALL_MEDIA_DEBUG_ENABLED_KEY, next ? "1" : "0");
+    setCallDebugEnabled(next);
   }
 
   return (
@@ -340,13 +326,13 @@ export function DevToolsPanel() {
             </div>
             <div className={styles.btnRow}>
               <button
-                onClick={() => callDebugWindow.__scInjectMockParticipants?.(mockCount)}
+                onClick={() => window.__scInjectMockParticipants?.(mockCount)}
                 className={`${styles.btn} ${styles.btnFlex} ${styles.btnViolet}`}
               >
                 Spawn
               </button>
               <button
-                onClick={() => callDebugWindow.__scClearMockParticipants?.()}
+                onClick={() => window.__scClearMockParticipants?.()}
                 className={`${styles.btn} ${styles.btnFlex} ${styles.btnMuted}`}
               >
                 Clear
@@ -358,7 +344,7 @@ export function DevToolsPanel() {
           <div className={styles.section}>
             <div className={styles.sectionLabel}>Room Call</div>
             <button
-              onClick={() => callDebugWindow.__scCreateRoom?.()}
+              onClick={() => window.__scCreateRoom?.()}
               className={`${styles.btn} ${styles.btnFull} ${styles.btnPrimary}`}
             >
               Create room…
@@ -537,7 +523,7 @@ export function DevToolsPanel() {
               {t("dev.copyCallSnapshot")}
             </button>
             <button
-              onClick={() => void dumpCallSnapshot()}
+              onClick={() => void handleDumpCallSnapshot()}
               className={`${styles.btn} ${styles.btnSlate}`}
             >
               {t("dev.dumpCallSnapshot")}

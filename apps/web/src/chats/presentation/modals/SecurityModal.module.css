@@ -89,7 +89,7 @@
 }
 
 :global(:root[data-theme="light"]) .e2eeStatusUnverified {
-  color: #92400e;
+  color: var(--warning);
   background: color-mix(in srgb, #f59e0b 20%, white);
   border-color: color-mix(in srgb, #d97706 34%, transparent);
 }

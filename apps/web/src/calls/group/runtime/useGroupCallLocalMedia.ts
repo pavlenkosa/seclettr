@@ -24,7 +24,7 @@ import {
 } from "react";
 import { logGroupCallWarn } from "@/calls/group/runtime/media-key/logger";
 import type { GroupSfuClient } from "@/calls/group/runtime/sfu";
-import { resolveErrorMessage } from "@/calls/group/runtime/runtime-utils";
+import { resolveErrorMessage } from "@/calls/group/runtime/group-call-error-utils";
 import type { GroupCallStatus } from "@/calls/group/model/group-call-types";
 import type { VideoResolution } from "@/calls/shared/presentation/CallDevicePicker";
 

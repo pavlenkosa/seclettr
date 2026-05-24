@@ -36,11 +36,11 @@
 }
 
 :global(:root[data-theme="light"]) .backdrop {
-  background: rgb(238 243 250 / 0.94);
+  background: color-mix(in srgb, var(--bg-primary) 94%, transparent);
 }
 
 :global(:root[data-theme="light"]) .toolbar {
-  background: linear-gradient(to bottom, rgb(238 243 250 / 0.9), transparent);
+  background: linear-gradient(to bottom, color-mix(in srgb, var(--bg-primary) 90%, transparent), transparent);
 }
 
 :global(:root[data-theme="light"]) .toolbarFileName {

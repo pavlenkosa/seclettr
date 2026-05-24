@@ -33,7 +33,7 @@ function readRuntimeConfig(): SeclettrRuntimeConfig {
     return {};
   }
 
-  const config = globalThis.__SECLETTR_RUNTIME_CONFIG__;
+  const config = window.__SECLETTR_RUNTIME_CONFIG__;
   if (!config || typeof config !== "object") {
     return {};
   }

@@ -34,9 +34,9 @@ export function useChatPageRoomState() {
   const handleLeaveRoom = useCallback(() => setActiveRoomSession(null), []);
 
   useEffect(() => {
-    (globalThis as Record<string, unknown>).__scCreateRoom = handleOpenCreateRoom;
+    window.__scCreateRoom = handleOpenCreateRoom;
     return () => {
-      delete (globalThis as Record<string, unknown>).__scCreateRoom;
+      delete window.__scCreateRoom;
     };
   }, [handleOpenCreateRoom]);
 

@@ -1,5 +1,6 @@
 import { useCallback, useReducer, useRef, type SetStateAction } from "react";
 import type { ActiveCall, CallNotice, IncomingCall } from "@/calls/direct/model/direct-call-types";
+import { applySetStateAction } from "./set-state-action";
 
 type State = {
   incoming: IncomingCall | null;
@@ -37,10 +38,6 @@ function reducer(state: State, action: Action): State {
     case "SET_IS_SECURITY_CARD_OPEN":
       return { ...state, isSecurityCardOpen: action.value };
   }
-}
-
-function applySetStateAction<T>(current: T, action: SetStateAction<T>): T {
-  return typeof action === "function" ? (action as (prev: T) => T)(current) : action;
 }
 
 export function useDirectCallReactiveState() {

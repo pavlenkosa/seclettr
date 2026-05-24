@@ -70,10 +70,6 @@
   color: color-mix(in srgb, var(--text-primary) 68%, var(--text-secondary));
 }
 
-:global(:root[data-theme="light"]) .deviceCard {
-  --surface-panel-shadow: none;
-}
-
 @media (max-width: 640px) {
   .deviceCard {
     flex-direction: column;

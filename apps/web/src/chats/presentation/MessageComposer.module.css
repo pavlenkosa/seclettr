@@ -117,10 +117,6 @@
   border-color: color-mix(in srgb, var(--composer-inner-border) 94%, transparent);
 }
 
-:global(:root[data-theme="light"]) .textarea::placeholder {
-  color: color-mix(in srgb, var(--text-secondary) 84%, var(--text-muted));
-}
-
 /* ── Responsive adjustments ─────────────────────────────────────────────── */
 
 /* Feature-local: mobile density, keyboard-safe spacing. */

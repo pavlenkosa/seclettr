@@ -9,11 +9,11 @@
  */
 
 .attachmentCaption {
-  margin-top: 0.42rem;
-  font-size: 0.76rem;
-  line-height: 1.4;
+  margin-top: 0.44rem;
+  font-size: 0.925rem;
+  line-height: 1.42;
   white-space: pre-wrap;
-  word-break: break-word;
+  overflow-wrap: anywhere;
   color: inherit;
 }
 

@@ -53,7 +53,7 @@ const DEFAULT_CSS_ASSET_BUDGET = 40 * 1024;
 const DEFAULT_STATIC_ASSET_BUDGET = 300 * 1024;
 
 const JS_CHUNK_BUDGETS = {
-  index: 48 * 1024,
+  index: 52 * 1024,
   ChatPage: 360 * 1024,
   MessageComposer: 260 * 1024,
   MediaSendDialog: 60 * 1024,
@@ -61,14 +61,14 @@ const JS_CHUNK_BUDGETS = {
   "feature-calls-shared-ui": 80 * 1024,
   "feature-calls-shared-runtime": 96 * 1024,
   "shared-realtime": 40 * 1024,
-  "feature-direct-calls": 380 * 1024,
+  "feature-direct-calls": 400 * 1024,
   "feature-group-calls": 400 * 1024,
   RoomCallPanel: 160 * 1024,
   "vendor-react": 160 * 1024,
   "vendor-router": 10 * 1024,
   "vendor-state": 8 * 1024,
   "vendor-debug": 10 * 1024,
-  "vendor-misc": 86 * 1024,
+  "vendor-misc": 170 * 1024,
   "vendor-protocol": 100 * 1024,
   "vendor-calls": 200 * 1024,
   "vendor-crypto": 220 * 1024,

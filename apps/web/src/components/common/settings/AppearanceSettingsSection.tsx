@@ -5,7 +5,8 @@ import type { AccentColor, FontSize, ThemeMode } from "@/ui-settings";
 import { SegmentedControl } from "@/components/ui";
 import { hexToOklch, oklchToHex } from "@/lib/custom-theme";
 import { SettingsGroup, SettingsRow } from "./SettingsSectionPrimitives";
-import styles from "../SettingsSections.module.css";
+import sharedStyles from "../SettingsSections.module.css";
+import styles from "./AppearanceSettingsSection.module.css";
 
 const THEMES: ThemeMode[] = ["dark", "light", "custom"];
 const ACCENTS: AccentColor[] = ["blue", "emerald", "rose", "violet", "amber", "teal", "indigo", "slate"];
@@ -23,7 +24,7 @@ const ACCENT_SWATCH_CLASS: Record<AccentColor, string> = {
 };
 
 function getAccentClass(accent: AccentColor): string {
-  return styles[ACCENT_SWATCH_CLASS[accent]] ?? "";
+  return sharedStyles[ACCENT_SWATCH_CLASS[accent]] ?? "";
 }
 
 /** Preset background chips for custom theme (dark + light options). */
@@ -202,7 +203,7 @@ export function AppearanceSettingsSection({
   const fontSizeOptions = FONT_SIZES.map((size) => ({ value: size, label: t(`settings.fontSize.${size}`) }));
 
   return (
-    <div className={styles.groupStack}>
+    <div className={sharedStyles.groupStack}>
       <SettingsGroup
         eyebrow={t("settings.groups.appearance.core")}
         title={t("settings.groups.appearance.core.title")}

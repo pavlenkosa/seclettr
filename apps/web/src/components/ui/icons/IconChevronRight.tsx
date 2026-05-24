@@ -1,3 +1,17 @@
+/**
+ * IconChevronRight — inline SVG chevron glyph for disclosure, navigation, and row-trailing affordances.
+ *
+ * Owns:
+ *   - Rendering a presentational right-pointing chevron with configurable size and stroke width.
+ *   - Keeping the SVG `aria-hidden` so it stays a purely visual helper.
+ *
+ * Does not own:
+ *   - button or row interaction semantics
+ *   - navigation logic
+ *   - feature-specific meaning beyond the generic chevron shape
+ *
+ * Use when: a compact forward/disclosure chevron is needed and should inherit `currentColor`.
+ */
 interface IconChevronRightProps {
   readonly size?: number;
   readonly strokeWidth?: number;

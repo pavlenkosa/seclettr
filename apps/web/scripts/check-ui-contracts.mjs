@@ -9,6 +9,7 @@ const guardedBarrels = [
   "src/components/ui/actions/index.ts",
   "src/components/ui/forms/index.ts",
   "src/components/ui/feedback/index.ts",
+  "src/components/ui/icons/index.ts",
   "src/components/ui/surfaces/index.ts",
 ];
 

@@ -40,29 +40,29 @@
 .overlay {
   --label-pill-bg: color-mix(in srgb, var(--panel-header-bg) 74%, transparent);
   --label-pill-border: color-mix(in srgb, var(--panel-border-soft) 88%, transparent);
-  --label-pill-color: rgb(226 232 240 / 0.92);
+  --label-pill-color: color-mix(in srgb, var(--text-primary) 92%, transparent);
 }
 
 .warning {
-  --label-pill-bg: color-mix(in srgb, #92400e 14%, var(--surface-shell));
-  --label-pill-border: color-mix(in srgb, #f59e0b 40%, transparent);
-  --label-pill-color: #d97706;
+  --label-pill-bg: color-mix(in srgb, var(--warning) 14%, var(--surface-shell));
+  --label-pill-border: color-mix(in srgb, var(--warning) 40%, transparent);
+  --label-pill-color: color-mix(in srgb, var(--warning) 72%, var(--text-primary));
 }
 
 :global(:root[data-theme="light"]) .warning {
-  --label-pill-bg: color-mix(in srgb, #fef3c7 80%, var(--bg-primary));
-  --label-pill-border: color-mix(in srgb, #f59e0b 52%, transparent);
-  --label-pill-color: #b45309;
+  --label-pill-bg: color-mix(in srgb, var(--warning) 14%, white);
+  --label-pill-border: color-mix(in srgb, var(--warning) 52%, transparent);
+  --label-pill-color: color-mix(in srgb, var(--warning) 72%, var(--text-primary));
 }
 
 :global(:root[data-theme="light"]) .default {
   --label-pill-bg: color-mix(in srgb, var(--surface-shell-strong) 96%, white);
   --label-pill-border: color-mix(in srgb, var(--panel-border-soft) 90%, transparent);
-  --label-pill-color: color-mix(in srgb, var(--text-primary) 90%, #0f172a);
+  --label-pill-color: color-mix(in srgb, var(--text-primary) 90%, transparent);
 }
 
 :global(:root[data-theme="light"]) .overlay {
   --label-pill-bg: color-mix(in srgb, var(--surface-shell-strong) 92%, white);
   --label-pill-border: color-mix(in srgb, var(--panel-border-soft) 90%, transparent);
-  --label-pill-color: color-mix(in srgb, var(--text-primary) 88%, #0f172a);
+  --label-pill-color: color-mix(in srgb, var(--text-primary) 88%, transparent);
 }

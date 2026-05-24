@@ -54,15 +54,15 @@
 }
 
 .radiusMd {
-  border-radius: 8px;
+  border-radius: var(--radius-md);
 }
 
 .radiusLg {
-  border-radius: 8px;
+  border-radius: 12px;
 }
 
 .radiusXl {
-  border-radius: 8px;
+  border-radius: var(--radius-lg);
 }
 
 .radiusPill {

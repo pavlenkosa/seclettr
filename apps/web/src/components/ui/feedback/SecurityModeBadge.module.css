@@ -14,13 +14,25 @@
 }
 
 .frame {
-  color: color-mix(in srgb, #0f766e 82%, var(--text-primary));
-  background: color-mix(in srgb, #14b8a6 16%, var(--bg-secondary));
-  border-color: color-mix(in srgb, #14b8a6 34%, var(--panel-border-soft));
+  color: color-mix(in srgb, var(--accent) 82%, var(--text-primary));
+  background: color-mix(in srgb, var(--accent) 16%, var(--bg-secondary));
+  border-color: color-mix(in srgb, var(--accent) 34%, var(--panel-border-soft));
 }
 
 .transport {
-  color: color-mix(in srgb, #475569 84%, var(--text-primary));
-  background: color-mix(in srgb, #94a3b8 20%, var(--bg-secondary));
-  border-color: color-mix(in srgb, #94a3b8 34%, var(--panel-border-soft));
+  color: color-mix(in srgb, var(--text-muted) 84%, var(--text-primary));
+  background: color-mix(in srgb, var(--text-muted) 20%, var(--bg-secondary));
+  border-color: color-mix(in srgb, var(--text-muted) 34%, var(--panel-border-soft));
+}
+
+:global(:root[data-theme="light"]) .frame {
+  color: color-mix(in srgb, var(--accent) 88%, #1e3a8a);
+  background: color-mix(in srgb, var(--accent) 22%, white);
+  border-color: color-mix(in srgb, var(--accent) 34%, transparent);
+}
+
+:global(:root[data-theme="light"]) .transport {
+  color: color-mix(in srgb, var(--text-muted) 90%, #1e293b);
+  background: color-mix(in srgb, var(--text-muted) 22%, white);
+  border-color: color-mix(in srgb, var(--text-muted) 34%, transparent);
 }

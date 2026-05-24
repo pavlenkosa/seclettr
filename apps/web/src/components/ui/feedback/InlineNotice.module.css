@@ -28,8 +28,8 @@
 }
 
 .warning {
-  --inline-notice-border: color-mix(in srgb, #f59e0b 34%, var(--panel-border-soft));
-  --inline-notice-bg: color-mix(in srgb, #f59e0b 10%, var(--surface-shell));
+  --inline-notice-border: color-mix(in srgb, var(--warning) 34%, var(--panel-border-soft));
+  --inline-notice-bg: color-mix(in srgb, var(--warning) 10%, var(--surface-shell));
   --inline-notice-color: var(--text-secondary);
 }
 

@@ -60,19 +60,21 @@
 .danger {
   --icon-button-bg: var(--danger);
   --icon-button-bg-hover: color-mix(in srgb, var(--danger) 88%, var(--bg-secondary));
-  --icon-button-border: rgb(252 165 165 / 0.45);
-  --icon-button-border-hover: rgb(252 165 165 / 0.58);
-  --icon-button-color: #fff;
-  --icon-button-color-hover: #fff;
+  --icon-button-bg-active: color-mix(in srgb, var(--danger) 82%, var(--bg-secondary));
+  --icon-button-border: color-mix(in srgb, var(--danger) 30%, transparent);
+  --icon-button-border-hover: color-mix(in srgb, var(--danger) 42%, transparent);
+  --icon-button-color: white;
+  --icon-button-color-hover: white;
 }
 
 .success {
-  --icon-button-bg: color-mix(in srgb, #16a34a 82%, var(--bg-secondary));
-  --icon-button-bg-hover: color-mix(in srgb, #16a34a 88%, var(--bg-secondary));
-  --icon-button-border: rgb(134 239 172 / 0.4);
-  --icon-button-border-hover: rgb(134 239 172 / 0.5);
-  --icon-button-color: #f0fdf4;
-  --icon-button-color-hover: #f0fdf4;
+  --icon-button-bg: var(--success);
+  --icon-button-bg-hover: color-mix(in srgb, var(--success) 88%, var(--bg-secondary));
+  --icon-button-bg-active: color-mix(in srgb, var(--success) 82%, var(--bg-secondary));
+  --icon-button-border: color-mix(in srgb, var(--success) 20%, transparent);
+  --icon-button-border-hover: color-mix(in srgb, var(--success) 28%, transparent);
+  --icon-button-color: white;
+  --icon-button-color-hover: white;
 }
 
 @media (prefers-reduced-motion: reduce) {

@@ -1,3 +1,18 @@
+/**
+ * HeaderBar — shared three-slot surface header for compact panel, dialog, and call-overlay headers.
+ *
+ * Owns:
+ *   - Leading / center / trailing slot composition with balanced alignment.
+ *   - Narrow-screen stacking mode for center content when the header gets tight.
+ *
+ * Does not own:
+ *   - page-level layout
+ *   - row semantics for list items
+ *   - runtime-specific header logic
+ *
+ * Use when: a surface needs a stable header shell with explicit slot ownership.
+ * Avoid when: the layout is a full page frame or an entity row rather than a compact header.
+ */
 import type { ElementType, HTMLAttributes, ReactNode } from "react";
 import styles from "./HeaderBar.module.css";
 

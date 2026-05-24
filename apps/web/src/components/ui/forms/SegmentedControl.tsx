@@ -1,3 +1,18 @@
+/**
+ * SegmentedControl — shared compact chooser for short mutually exclusive options that stay visible at once.
+ *
+ * Owns:
+ *   - Rendering a domain-agnostic segmented button group with active, grouped, and compact variants.
+ *   - Stable accessibility contract through a labeled fieldset and pressed-state buttons.
+ *
+ * Does not own:
+ *   - option fetching or business rules
+ *   - long-list selection UX
+ *   - form-row layout around the control
+ *
+ * Use when: the user chooses among a small fixed set of options inline.
+ * Avoid when: the option set is long enough that SelectField or Listbox is the more honest primitive.
+ */
 import type { ReactNode } from "react";
 import styles from "./SegmentedControl.module.css";
 

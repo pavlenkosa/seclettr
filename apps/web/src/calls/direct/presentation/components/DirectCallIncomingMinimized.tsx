@@ -2,7 +2,7 @@ import type { CSSProperties, PointerEventHandler, RefObject } from "react";
 import { AvatarSummaryButton, FloatingDock, IconButton } from "@/components/ui";
 
 import { CameraIcon, ExpandIcon, HangupIcon, PhoneIcon } from "@/calls/shared/presentation/CallIcons";
-import styles from "@/calls/direct/presentation/DirectCallPanel.module.css";
+import styles from "./DirectCallMinimizedDock.module.css";
 
 interface DirectCallIncomingMinimizedProps {
   readonly minimizedDockRef: RefObject<HTMLDialogElement>;

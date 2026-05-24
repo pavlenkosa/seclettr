@@ -4,7 +4,8 @@ import { AvatarSummaryButton, FloatingDock, IconButton } from "@/components/ui";
 import { useRegisterCallAudioOutputTarget } from "@/calls/shared/media/audio-output/CallAudioOutputProvider";
 import { CallDurationText } from "@/calls/shared/presentation/CallDurationText";
 import { ExpandIcon, HangupIcon, MuteIcon } from "@/calls/shared/presentation/CallIcons";
-import styles from "@/calls/direct/presentation/DirectCallPanel.module.css";
+import styles from "./DirectCallMinimizedDock.module.css";
+import panelStyles from "@/calls/direct/presentation/DirectCallPanel.module.css";
 
 interface DirectCallActiveMinimizedProps {
   readonly minimizedDockRef: RefObject<HTMLDialogElement>;
@@ -70,7 +71,7 @@ export function DirectCallActiveMinimized({
       tabIndex={-1}
       dialogAriaLabel={minimizedDialogAriaLabel}
       dragAriaLabel={dragAriaLabel}
-      auxiliary={<audio ref={remoteAudioRef} autoPlay className={styles.remoteAudio}><track kind="captions" /></audio>}
+      auxiliary={<audio ref={remoteAudioRef} autoPlay className={panelStyles.remoteAudio}><track kind="captions" /></audio>}
       isDragging={isDraggingMinimizedDock}
       onDragStart={onStartDrag}
       onDragMove={onMoveDrag}

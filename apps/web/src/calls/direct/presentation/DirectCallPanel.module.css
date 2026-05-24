@@ -154,38 +154,6 @@
   padding-bottom: clamp(2rem, 7vh, 4rem);
 }
 
-/* ── Minimized direct-call dock ─────────────────────────────────────────── */
-
-/* Migrated: FloatingDock and AvatarSummaryButton own the minimized dock language. */
-.dock {
-  --floating-dock-z-index: 270;
-  --floating-dock-bottom-offset: 10px;
-  /* Default to bottom-right — avoids center-covering the composer */
-  --floating-dock-left: auto;
-  --floating-dock-right: clamp(0.75rem, 2vw, 1.5rem);
-  /* Functional exception: dock position uses translate variables for drag/rest placement. */
-  --floating-dock-translate-x: 0;
-}
-
-.dockSummary {
-  --avatar-summary-padding: 0.38rem 0.46rem;
-  --avatar-summary-radius: 12px;
-  --avatar-summary-avatar-size: 34px;
-  --avatar-summary-avatar-font-size: 0.72rem;
-  --avatar-summary-title-size: 0.825rem;
-  --avatar-summary-subtitle-size: 0.69rem;
-}
-
-.dockActions {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.34rem;
-}
-
-.dockBtn {
-  --icon-button-size: 38px;
-}
-
 /* ── Active fullscreen overlay shell ────────────────────────────────────── */
 
 /* Feature-local: fullscreen shell, safe-area padding, and scroll behavior. */
@@ -938,27 +906,6 @@
     --icon-button-size: 32px;
   }
 
-  .dock {
-    --floating-dock-screen-gap: 0.75rem;
-    --floating-dock-bottom-offset: 10px;
-    --floating-dock-padding: 0.34rem;
-    --floating-dock-gap: 0.32rem;
-    --floating-dock-radius: 13px;
-  }
-
-  .dockSummary {
-    --avatar-summary-padding: 0.32rem 0.38rem;
-    --avatar-summary-radius: 10px;
-    --avatar-summary-avatar-size: 30px;
-    --avatar-summary-avatar-font-size: 0.67rem;
-    --avatar-summary-title-size: 0.78rem;
-    --avatar-summary-subtitle-size: 0.64rem;
-  }
-
-  .dockBtn {
-    --icon-button-size: 34px;
-  }
-
   .securityCard {
     width: 100%;
     max-width: 370px;
@@ -1094,7 +1041,6 @@
 /* Feature-local: motion reduction for direct-call-only entrance and preview transitions. */
 @media (prefers-reduced-motion: reduce) {
   .notice,
-  .dock,
   .callOverlay,
   .callHeader,
   .callCenter,
@@ -1105,7 +1051,6 @@
   .localScreenPreview,
   .minimizeBtn,
   .minimizedDragHandle,
-  .dockBtn,
   .controlBtn {
     animation: none !important;
     transition: none !important;

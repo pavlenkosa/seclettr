@@ -28,6 +28,22 @@ export function pushBackHandler(handler: () => void): () => void {
   };
 }
 
+/** Returns true when the SPA query-string has an active conversation/group param. */
+function hasActiveThread(): boolean {
+  try {
+    const search = window.location.search;
+    return (
+      search.includes("?chat=") ||
+      search.includes("?group=") ||
+      search.includes("?plain-chat=") ||
+      search.includes("?plain-group=") ||
+      search.includes("?saved=")
+    );
+  } catch {
+    return false;
+  }
+}
+
 let _initialized = false;
 
 export function initNativeBackHandler(): void {
@@ -37,16 +53,24 @@ export function initNativeBackHandler(): void {
   const plugin = getPlugin();
   if (!plugin) return;
 
-  void plugin.addListener("backButton", ({ canGoBack }) => {
+  void plugin.addListener("backButton", () => {
     // 1. Close topmost overlay if any
     if (handlerStack.length > 0) {
       handlerStack[handlerStack.length - 1]!();
       return;
     }
 
-    // 2. Navigate back in browser history
-    if (canGoBack) {
-      window.history.back();
+    // 2. SPA back-navigation — don't trust the native canGoBack property
+    // because Android WebView does not reliably track pushState history.
+    // Instead check our own query-string convention.
+    if (hasActiveThread()) {
+      // If the WebView history stack has entries, cleanly navigate back.
+      // Fallback: clear the search params directly.
+      if (window.history.length > 1) {
+        window.history.back();
+      } else {
+        window.location.search = "";
+      }
       return;
     }
 

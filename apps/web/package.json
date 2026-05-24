@@ -12,6 +12,7 @@
     "test:coverage": "vitest run --coverage --coverage.provider=v8 --coverage.reporter=lcov",
     "typecheck": "tsc --noEmit && tsc --noEmit -p tsconfig.node.json",
     "lint": "eslint src --ext .ts,.tsx",
+    "check:ui-contracts": "node scripts/check-ui-contracts.mjs",
     "check:ui-style": "node scripts/check-ui-style.mjs",
     "android:sync": "vite build --mode production && cap sync android",
     "android:open": "cap open android",

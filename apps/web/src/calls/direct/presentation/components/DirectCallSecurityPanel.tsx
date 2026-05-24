@@ -1,6 +1,6 @@
 import type { DirectCallMediaEncryptionMode } from "@/calls/direct/model/call-media-encryption-negotiation";
 import { CallSecurityCard } from "./CallSecurityCard";
-import styles from "@/calls/direct/presentation/DirectCallPanel.module.css";
+import styles from "./DirectCallSecurityPanel.module.css";
 
 interface DirectCallSecurityPanelProps {
   readonly onToggle: () => void;

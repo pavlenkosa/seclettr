@@ -3,7 +3,7 @@ import { useI18n } from "@/i18n";
 import { AvatarSummaryButton, FloatingDock, IconButton } from "@/components/ui";
 
 import { ExpandIcon, HangupIcon } from "./GroupCallIcons";
-import styles from "@/calls/group/presentation/GroupCallPanel.module.css";
+import styles from "./GroupCallDock.module.css";
 
 interface GroupCallDockProps {
   readonly groupName: string;

@@ -2,7 +2,8 @@ import { useI18n } from "@/i18n";
 import type { GroupCallStageTile } from "@/calls/group/model/group-call-types";
 
 import { GroupCallMediaTile } from "./GroupCallMediaTile";
-import styles from "@/calls/group/presentation/GroupCallPanel.module.css";
+import panelStyles from "@/calls/group/presentation/GroupCallPanel.module.css";
+import styles from "./GroupCallStageStrip.module.css";
 
 export interface GroupCallStageStripProps {
   readonly stripTiles: GroupCallStageTile[];
@@ -24,8 +25,8 @@ export function GroupCallStageStrip({
   return (
     <div className={styles.stageStripSection}>
       <div className={styles.stageStripBar}>
-        <span className={styles.sectionLabel}>{t("group.call.stage.strip")}</span>
-        <span className={styles.mediaToolbarHint}>{focusHintLabel}</span>
+        <span className={panelStyles.sectionLabel}>{t("group.call.stage.strip")}</span>
+        <span className={panelStyles.mediaToolbarHint}>{focusHintLabel}</span>
       </div>
       <div className={styles.mediaStrip}>
         {stripTiles.map((tile) => (

@@ -480,31 +480,6 @@
   margin-inline: auto;
 }
 
-.stageStripSection {
-  display: flex;
-  flex-direction: column;
-  gap: 0.55rem;
-}
-
-.mediaStrip {
-  --group-call-strip-tile-width: clamp(168px, 18vw, 236px);
-  display: flex;
-  align-items: stretch;
-  gap: 0.65rem;
-  overflow-x: auto;
-  overflow-y: visible;
-  overscroll-behavior-x: contain;
-  scroll-snap-type: x proximity;
-  scrollbar-width: thin;
-  padding: 0.08rem 0.08rem 0.28rem;
-}
-
-.mediaStrip > .mediaTile {
-  flex: 0 0 var(--group-call-strip-tile-width);
-  width: var(--group-call-strip-tile-width);
-  scroll-snap-align: start;
-}
-
 .mediaTile {
   --media-tile-radius: 18px;
   --media-avatar-size: clamp(76px, 13vw, 112px);
@@ -518,6 +493,12 @@
   border-radius: var(--media-tile-radius);
   border: 1px solid color-mix(in srgb, var(--panel-border-soft) 84%, transparent);
   background: color-mix(in srgb, var(--surface-shell) 90%, var(--bg-primary));
+}
+
+.mediaStrip > .mediaTile {
+  flex: 0 0 var(--group-call-strip-tile-width);
+  width: var(--group-call-strip-tile-width);
+  scroll-snap-align: start;
 }
 
 .mediaTileActionBtn {
@@ -1023,11 +1004,6 @@
   .controlBtn {
     --call-control-inline-height: 52px;
     --call-control-inline-compact-width: 52px;
-  }
-
-  .stageStripBar {
-    flex-direction: column;
-    align-items: stretch;
   }
 
   .stageActionRail {

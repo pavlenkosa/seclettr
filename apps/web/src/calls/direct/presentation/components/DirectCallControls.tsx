@@ -5,7 +5,8 @@ import { CallDevicePicker, type VideoResolution } from "@/calls/shared/presentat
 import type { InputDeviceOption } from "@/calls/shared/media/input-devices/useCallInputDevices";
 import { CameraIcon, HangupIcon, MuteIcon, ScreenShareIcon, SpeakerIcon } from "@/calls/shared/presentation/CallIcons";
 import { useNativeSpeakerToggle } from "@/calls/shared/media/audio-output/useNativeSpeakerToggle";
-import styles from "@/calls/direct/presentation/DirectCallPanel.module.css";
+
+import styles from "./DirectCallControls.module.css";
 
 interface DirectCallControlsProps {
   readonly speakerAriaLabel?: string;

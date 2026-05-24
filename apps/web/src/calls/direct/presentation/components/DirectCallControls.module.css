@@ -1,0 +1,57 @@
+/*
+ * DirectCallControls — shared direct-call control dock/button chrome used by
+ * active and incoming direct-call overlays.
+ *
+ * Owns:
+ * - shared direct-call controls dock layout variables
+ * - shared direct-call control button sizing variables
+ * - local viewport compaction for the controls dock/button pair
+ * - reduced-motion overrides for the shared controls branch
+ *
+ * Does not own:
+ * - incoming-only dock width/padding
+ * - active-call audio output bar
+ * - fullscreen direct-call shell/header/center layout
+ */
+
+.controlsDock {
+  --call-controls-position: sticky;
+  --call-controls-bottom: calc(env(safe-area-inset-bottom, 0px) + 2px);
+  --call-controls-z-index: 7;
+  --call-controls-width: fit-content;
+  --call-controls-max-width: min(100%, 760px);
+  --call-controls-width-narrow: min(100%, 440px);
+  --call-controls-margin: 0 auto;
+  --call-controls-padding: 0.48rem;
+  --call-controls-gap: 0.75rem;
+  --call-controls-direction-narrow: row;
+  --call-controls-align-narrow: center;
+  animation: callContentIn 260ms cubic-bezier(0.18, 0.9, 0.2, 1) 90ms both;
+}
+
+.controlBtn {
+  --call-control-inline-min-width: 96px;
+  --call-control-inline-height: 56px;
+  --call-control-inline-padding: 0 0.85rem;
+  --call-control-inline-radius: 999px;
+  --call-control-inline-blur: 8px;
+}
+
+@media (max-width: 760px) {
+  .controlsDock {
+    --call-controls-gap: 0.5rem;
+  }
+
+  .controlBtn {
+    --call-control-inline-compact-width: 56px;
+    --call-control-inline-compact-padding: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .controlsDock,
+  .controlBtn {
+    animation: none !important;
+    transition: none !important;
+  }
+}

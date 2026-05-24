@@ -4,6 +4,7 @@ import { CameraIcon, HangupIcon, MinimizeIcon, PhoneIcon } from "@/calls/shared/
 import { Avatar, HeaderBar, IconButton, IconPill, InfoStack } from "@/components/ui";
 
 import panelStyles from "@/calls/direct/presentation/DirectCallPanel.module.css";
+import controlsStyles from "./DirectCallControls.module.css";
 import styles from "./DirectCallIncomingOverlay.module.css";
 
 interface DirectCallIncomingOverlayProps {
@@ -97,10 +98,10 @@ export function DirectCallIncomingOverlay({
         />
       </div>
 
-      <div className={`${panelStyles.controlsDock} ${styles.incomingControlsDock}`}>
+      <div className={`${controlsStyles.controlsDock} ${styles.incomingControlsDock}`}>
         <CallControlButton
           onClick={onReject}
-          className={panelStyles.controlBtn}
+          className={controlsStyles.controlBtn}
           tone="danger"
           icon={<HangupIcon />}
           label={rejectAriaLabel}
@@ -111,7 +112,7 @@ export function DirectCallIncomingOverlay({
         <CallControlButton
           ref={incomingAcceptButtonRef}
           onClick={() => onAccept()}
-          className={panelStyles.controlBtn}
+          className={controlsStyles.controlBtn}
           tone="success"
           icon={isVideoCall ? <CameraIcon /> : <PhoneIcon />}
           label={acceptAriaLabel}

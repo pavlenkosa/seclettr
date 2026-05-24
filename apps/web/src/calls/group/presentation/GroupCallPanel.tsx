@@ -1,7 +1,6 @@
 import { useCallback, useRef } from "react";
 import { useIsMobileViewport } from "@/lib/hooks";
 import { useI18n } from "@/i18n";
-import type { GroupCallRemoteMedia } from "@/calls/group/runtime/sfu";
 import { useGroupCallPanelDock } from "@/calls/group/presentation/useGroupCallPanelDock";
 import { useGroupCallPanelPresentation } from "@/calls/group/presentation/useGroupCallPanelPresentation";
 import {
@@ -204,7 +203,6 @@ export function GroupCallPanel({ session, onClose }: Props) {
   }
 
   const {
-    dockProps,
     headerProps,
     mediaSectionProps,
     detailsDrawerProps,
@@ -243,14 +241,14 @@ export function GroupCallPanel({ session, onClose }: Props) {
       isScreenSwitching: runtime.isScreenSwitching,
       selectedVideoResolution: runtime.selectedVideoResolution,
       selectedScreenResolution: runtime.selectedScreenResolution,
-      handleLeave: runtime.handleLeave,
-      handleEndForEveryone: runtime.handleEndForEveryone,
+      handleLeave: () => { void runtime.handleLeave(); },
+      handleEndForEveryone: () => { void runtime.handleEndForEveryone(); },
       handleToggleMute: runtime.handleToggleMute,
-      handleToggleVideo: runtime.handleToggleVideo,
-      handleToggleScreenShare: runtime.handleToggleScreenShare,
-      handleSwitchMic: runtime.handleSwitchMic,
-      handleSwitchCamera: runtime.handleSwitchCamera,
-      handleSelectVideoResolution: runtime.handleSelectVideoResolution,
+      handleToggleVideo: () => { void runtime.handleToggleVideo(); },
+      handleToggleScreenShare: () => { void runtime.handleToggleScreenShare(); },
+      handleSwitchMic: (deviceId) => { void runtime.handleSwitchMic(deviceId); },
+      handleSwitchCamera: (deviceId) => { void runtime.handleSwitchCamera(deviceId); },
+      handleSelectVideoResolution: (resolution) => { void runtime.handleSelectVideoResolution(resolution); },
       handleSelectScreenResolution: runtime.handleSelectScreenResolution,
     },
     devices: {

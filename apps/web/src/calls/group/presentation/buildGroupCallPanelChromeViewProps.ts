@@ -9,8 +9,8 @@
  * Does not own any state or rendering — this is a pure props-mapping function.
  */
 import type { ComponentProps } from "react";
-import { GroupCallDock } from "@/calls/group/presentation/components/GroupCallDock";
-import { GroupCallHeader } from "@/calls/group/presentation/components/GroupCallHeader";
+import type { GroupCallDock } from "@/calls/group/presentation/components/GroupCallDock";
+import type { GroupCallHeader } from "@/calls/group/presentation/components/GroupCallHeader";
 import type { GroupCallPanelViewPropsBuildParams } from "@/calls/group/presentation/group-call-panel-view-props-contract";
 
 interface GroupCallPanelChromeViewProps {

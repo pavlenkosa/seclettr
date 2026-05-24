@@ -9,8 +9,8 @@
  * Does not own any state or rendering — this is a pure props-mapping function.
  */
 import type { ComponentProps } from "react";
-import { GroupCallDetailsDrawer } from "@/calls/group/presentation/components/GroupCallDetailsDrawer";
-import { GroupCallMediaSection } from "@/calls/group/presentation/components/GroupCallMediaSection";
+import type { GroupCallDetailsDrawer } from "@/calls/group/presentation/components/GroupCallDetailsDrawer";
+import type { GroupCallMediaSection } from "@/calls/group/presentation/components/GroupCallMediaSection";
 import type { GroupCallPanelViewPropsBuildParams } from "@/calls/group/presentation/group-call-panel-view-props-contract";
 
 interface GroupCallPanelMediaDetailsViewProps {

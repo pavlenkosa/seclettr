@@ -228,7 +228,6 @@
 }
 
 /* ── Details drawer + section scaffolding ────────────────────────────────── */
-.detailsDrawer {
 .detailsDrawerInline {
   position: relative;
   top: auto;
@@ -791,12 +790,6 @@
     padding-top: 0.72rem;
   }
 
-  .detailsDrawer {
-    left: max(0.85rem, env(safe-area-inset-left, 0px));
-    right: max(0.85rem, env(safe-area-inset-right, 0px));
-    width: auto;
-  }
-
   .mediaGrid {
     grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
     justify-content: stretch;
@@ -1209,13 +1202,4 @@
     min-height: clamp(160px, 22vh, 210px);
   }
 
-  .detailsDrawer {
-    top: calc(env(safe-area-inset-top, 0px) + 6.8rem);
-    left: max(0.75rem, env(safe-area-inset-left, 0px));
-    right: max(0.75rem, env(safe-area-inset-right, 0px));
-    bottom: calc(env(safe-area-inset-bottom, 0px) + 5.95rem);
-    width: auto;
-    max-height: none;
-    border-radius: 12px;
-  }
 }

@@ -79,13 +79,19 @@ function StreamVideo({
   );
 }
 
-function StreamAudioSink({ stream }: { readonly stream: MediaStream | null }) {
+function StreamAudioSink({
+  stream,
+  muted = false,
+}: {
+  readonly stream: MediaStream | null;
+  readonly muted?: boolean;
+}) {
   const { elementRef } = useMediaElementBinding<HTMLAudioElement>({
     kind: "audio",
     stream,
   });
 
-  return <audio ref={elementRef} className={styles.hiddenAudio} autoPlay><track kind="captions" /></audio>;
+  return <audio ref={elementRef} className={styles.hiddenAudio} autoPlay muted={muted}><track kind="captions" /></audio>;
 }
 
 function getVariantClassName(variant: GroupCallMediaTileProps["variant"]): string {
@@ -245,7 +251,7 @@ export function GroupCallMediaTile({
       {/* Sentinel fills the tile for IntersectionObserver (tile has position:relative). */}
       <span ref={sentinelRef} style={{ position: "absolute", inset: 0, pointerEvents: "none" }} aria-hidden />
       {/* Audio sink is always active regardless of visibility. */}
-      {audioStream ? <StreamAudioSink stream={audioStream} /> : null}
+      {audioStream ? <StreamAudioSink stream={audioStream} muted={muted} /> : null}
     </CallMediaSurface>
   );
 }

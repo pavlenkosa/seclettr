@@ -11,11 +11,11 @@
  */
 import type { CSSProperties, ComponentProps, ReactNode, RefObject } from "react";
 import type { GroupCallPanelSession } from "@/calls/group/model/entry";
-import { GroupCallControls } from "@/calls/group/presentation/components/GroupCallControls";
-import { GroupCallDetailsDrawer } from "@/calls/group/presentation/components/GroupCallDetailsDrawer";
-import { GroupCallDock } from "@/calls/group/presentation/components/GroupCallDock";
-import { GroupCallHeader } from "@/calls/group/presentation/components/GroupCallHeader";
-import { GroupCallMediaSection } from "@/calls/group/presentation/components/GroupCallMediaSection";
+import type { GroupCallControls } from "@/calls/group/presentation/components/GroupCallControls";
+import type { GroupCallDetailsDrawer } from "@/calls/group/presentation/components/GroupCallDetailsDrawer";
+import type { GroupCallDock } from "@/calls/group/presentation/components/GroupCallDock";
+import type { GroupCallHeader } from "@/calls/group/presentation/components/GroupCallHeader";
+import type { GroupCallMediaSection } from "@/calls/group/presentation/components/GroupCallMediaSection";
 
 export interface GroupCallPanelViewPropsBuildParams {
   readonly session: GroupCallPanelSession;

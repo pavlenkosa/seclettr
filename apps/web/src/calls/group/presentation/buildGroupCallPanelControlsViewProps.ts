@@ -8,7 +8,7 @@
  * Does not own any state or rendering — this is a pure props-mapping function.
  */
 import type { ComponentProps } from "react";
-import { GroupCallControls } from "@/calls/group/presentation/components/GroupCallControls";
+import type { GroupCallControls } from "@/calls/group/presentation/components/GroupCallControls";
 import type { GroupCallPanelViewPropsBuildParams } from "@/calls/group/presentation/group-call-panel-view-props-contract";
 
 export function buildGroupCallPanelControlsViewProps({

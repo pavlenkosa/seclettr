@@ -1,5 +1,5 @@
 import { formatFingerprint } from "@/lib/safety";
-import styles from "./SecurityModal.module.css";
+import styles from "./SecurityTechnicalDetails.module.css";
 import {
   formatDeviceLabel,
   type SecurityModalLogicState,

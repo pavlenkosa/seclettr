@@ -60,6 +60,8 @@ export interface WirePlainGroup {
   id: string;
   name: string;
   creatorId: string;
+  avatarKey: string | null;
+  description: string | null;
   members: WireGroupMember[];
   createdAt: string;
   updatedAt: string;
@@ -105,6 +107,8 @@ export function wireToPlainGroup(wire: WirePlainGroup): PlainGroup {
     groupId: wire.id,
     name: wire.name,
     creatorId: wire.creatorId,
+    avatarKey: wire.avatarKey ?? null,
+    description: wire.description ?? null,
     members: wire.members.map((m) => ({
       userId: m.userId,
       username: m.username,

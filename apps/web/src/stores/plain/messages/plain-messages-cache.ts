@@ -110,6 +110,8 @@ export async function loadConversationsCache(
       result[e.userId] = {
         userId: e.userId,
         username: e.username,
+        displayName: null,
+        avatarKey: null,
         messages: e.lastMessage ? [{ ...e.lastMessage, status: "sent" as const }] : [],
         lastMessageAt: e.lastMessageAt,
         unreadCount: e.unreadCount,

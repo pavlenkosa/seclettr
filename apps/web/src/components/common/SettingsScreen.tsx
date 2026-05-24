@@ -25,6 +25,7 @@ import { useI18n } from "@/i18n";
 import { useAppearanceSettings, useSecuritySettings } from "@/ui-settings";
 import {
   BellIcon,
+  PersonIcon,
   ShieldIcon,
   SparklesIcon,
 } from "./settings/SettingsSectionPrimitives";
@@ -48,7 +49,12 @@ interface SettingsScreenProps {
   readonly onClose: () => void;
 }
 
-type SettingsSectionId = "notifications" | "appearance" | "security";
+type SettingsSectionId = "profile" | "notifications" | "appearance" | "security";
+
+const loadProfileSettingsSection = () =>
+  import("./settings/ProfileSettingsSection").then(({ ProfileSettingsSection: Section }) => ({
+    default: Section,
+  }));
 
 const loadAppearanceSettingsSection = () =>
   import("./settings/AppearanceSettingsSection").then(({ AppearanceSettingsSection: Section }) => ({
@@ -67,6 +73,7 @@ const loadSecuritySettingsSection = () =>
     default: Section,
   }));
 
+const ProfileSettingsSection = lazy(loadProfileSettingsSection);
 const AppearanceSettingsSection = lazy(loadAppearanceSettingsSection);
 const NotificationsSettingsSectionContainer = lazy(loadNotificationsSettingsSectionContainer);
 const SecuritySettingsSection = lazy(loadSecuritySettingsSection);
@@ -96,10 +103,11 @@ export function SettingsScreen({
     setAutoDecryptMedia,
   } = useSecuritySettings();
   const pushSettings = usePushSettings();
-  const [activeSection, setActiveSection] = useState<SettingsSectionId>("appearance");
+  const [activeSection, setActiveSection] = useState<SettingsSectionId>("profile");
   const [mobileDetailOpen, setMobileDetailOpen] = useState(false);
 
   useEffect(() => {
+    void loadProfileSettingsSection();
     void loadAppearanceSettingsSection();
     void loadNotificationsSettingsSectionContainer();
     void loadSecuritySettingsSection();
@@ -108,6 +116,13 @@ export function SettingsScreen({
   const notificationsSummary = resolvePushStatusLabel(pushSettings.pushStatus, t);
 
   const sectionEntries = useMemo(() => [
+    {
+      id: "profile",
+      title: t("settings.sections.profile"),
+      description: t("settings.sections.profile.description"),
+      summary: username ?? "",
+      icon: <PersonIcon />,
+    },
     {
       id: "appearance",
       title: t("settings.sections.appearance"),
@@ -142,6 +157,7 @@ export function SettingsScreen({
     notificationsSummary,
     t,
     themeMode,
+    username,
   ]);
 
   const active = sectionEntries.find((section) => section.id === activeSection) ?? sectionEntries[0]!;
@@ -163,6 +179,10 @@ export function SettingsScreen({
 
   const sectionContent = (
     <Suspense fallback={<SettingsSectionFallback label={t("app.loading")} />}>
+      {activeSection === "profile" ? (
+        <ProfileSettingsSection />
+      ) : null}
+
       {activeSection === "appearance" ? (
         <AppearanceSettingsSection
           locale={locale}

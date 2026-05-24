@@ -18,6 +18,9 @@ export interface AuthReadySnapshot {
   userId: string;
   deviceId: string;
   username: string | null;
+  displayName: string | null;
+  bio: string | null;
+  avatarKey: string | null;
   accessToken: string;
   identityDhKeyPair: KeyPair;
   storageKey: CryptoKey;
@@ -29,6 +32,9 @@ export interface AuthLockedSnapshot {
   userId: string;
   deviceId: string;
   username: string | null;
+  displayName: string | null;
+  bio: string | null;
+  avatarKey: string | null;
 }
 
 export type RestoreSessionResult =
@@ -45,6 +51,9 @@ export type SignedOutStateFields =
   | "userId"
   | "deviceId"
   | "username"
+  | "displayName"
+  | "bio"
+  | "avatarKey"
   | "accessToken"
   | "identityDhKeyPair"
   | "storageKey"
@@ -59,6 +68,9 @@ export interface AuthState {
   userId: string | null;
   deviceId: string | null;
   username: string | null;
+  displayName: string | null;
+  bio: string | null;
+  avatarKey: string | null;
   accessToken: string | null;
   identityDhKeyPair: KeyPair | null;
   storageKey: CryptoKey | null;
@@ -98,4 +110,6 @@ export interface AuthState {
   /** Destructively forget this browser's local device state and encrypted key material. */
   resetLocalDeviceData: () => Promise<void>;
   clearError: () => void;
+  /** Locally update profile fields after a successful PATCH /profile or avatar change. */
+  applyProfileUpdate: (patch: { displayName?: string | null; bio?: string | null; avatarKey?: string | null }) => void;
 }

@@ -1,7 +1,8 @@
-import { memo, useCallback, useEffect, useRef, useState, type CSSProperties, type MouseEvent as ReactMouseEvent, type PointerEvent as ReactPointerEvent } from "react";
+import { memo, useCallback, useEffect, useId, useLayoutEffect, useRef, useState, type CSSProperties, type MouseEvent as ReactMouseEvent, type PointerEvent as ReactPointerEvent } from "react";
 
 import { Avatar, MessageDeliveryStatusIcon, type MessageDeliveryStatus } from "@/components/ui";
 import { hapticSelection } from "@/lib/native-haptics";
+import { useAvatarUrl } from "@/lib/hooks";
 import type { PlainFolder } from "@/stores/plain";
 
 import styles from "../ConversationList.module.css";
@@ -54,16 +55,23 @@ export const ConversationListRow = memo(function ConversationListRow({
   const previewText = getPreviewText(last, t);
   const showOwnPrefix = Boolean(last?.isOwn && last.type !== "call");
   const isGroup = entry.kind === "group" || entry.kind === "plain-group";
+  // Show profile photo when peer has uploaded an avatar.
+  const avatarBlobUrl = useAvatarUrl(
+    entry.kind === "plain-direct" || entry.kind === "direct" ? entry.id : null,
+    entry.avatarKey ?? null,
+  );
   const senderPrefix = last && !last.isOwn && isGroup && last.senderLabel
     ? `${last.senderLabel}: `
     : "";
   const itemStyle = {
     "--conversation-enter-delay": `${enterDelayMs}ms`,
   } as CSSProperties;
+  const rowId = useId();
   const [menuOpen, setMenuOpen] = useState(false);
+  const [menuFlipped, setMenuFlipped] = useState(false);
+  const menuNodeRef = useRef<HTMLDivElement>(null);
   const isPlainChat = entry.kind === "plain-direct" || entry.kind === "plain-group";
   const canOpenMenu = !!entry.pinKind || isPlainChat;
-  const canPin = !!entry.pinKind;
   const pressStateRef = useRef<{ id: ReturnType<typeof setTimeout>; x: number; y: number } | null>(null);
 
   const cancelPress = useCallback(() => {
@@ -73,12 +81,23 @@ export const ConversationListRow = memo(function ConversationListRow({
     }
   }, []);
 
+  const openMenu = useCallback(() => {
+    // Broadcast so any other open menu (same type or MessageContextMenu) closes first.
+    document.dispatchEvent(
+      new CustomEvent("seclettr:context-menu-open", { detail: { id: rowId } }),
+    );
+    setMenuFlipped(false);
+    setMenuOpen(true);
+  }, [rowId]);
+
+  const closeMenu = useCallback(() => setMenuOpen(false), []);
+
   const startPress = (event: ReactPointerEvent<HTMLButtonElement>) => {
     if (!canOpenMenu || event.pointerType !== "touch") return;
     cancelPress();
     pressStateRef.current = {
       id: setTimeout(() => {
-        setMenuOpen(true);
+        openMenu();
         pressStateRef.current = null;
         hapticSelection();
       }, LONG_PRESS_MS),
@@ -103,21 +122,45 @@ export const ConversationListRow = memo(function ConversationListRow({
   const handleContextMenu = (event: ReactMouseEvent<HTMLButtonElement>) => {
     event.preventDefault();
     if (!canOpenMenu) return;
-    setMenuOpen(true);
+    openMenu();
   };
+
+  // Close when another context menu opens (right-click elsewhere doesn't fire "click",
+  // so we use the custom broadcast event instead of relying on click propagation).
+  useEffect(() => {
+    const handler = (e: Event) => {
+      if ((e as CustomEvent<{ id: string }>).detail.id !== rowId) closeMenu();
+    };
+    document.addEventListener("seclettr:context-menu-open", handler);
+    return () => document.removeEventListener("seclettr:context-menu-open", handler);
+  }, [rowId, closeMenu]);
 
   useEffect(() => {
     if (!menuOpen) return;
-    const close = () => setMenuOpen(false);
     const onKey = (event: KeyboardEvent) => {
-      if (event.key === "Escape") close();
+      if (event.key === "Escape") closeMenu();
     };
-    globalThis.addEventListener("click", close);
-    globalThis.addEventListener("keydown", onKey);
+    // Use mousedown (fires on right-click too) instead of click so the menu closes
+    // when the user presses any mouse button outside it.
+    const onOutsideMouseDown = (event: MouseEvent) => {
+      if (!menuNodeRef.current?.contains(event.target as Node)) closeMenu();
+    };
+    document.addEventListener("mousedown", onOutsideMouseDown);
+    document.addEventListener("keydown", onKey);
     return () => {
-      globalThis.removeEventListener("click", close);
-      globalThis.removeEventListener("keydown", onKey);
+      document.removeEventListener("mousedown", onOutsideMouseDown);
+      document.removeEventListener("keydown", onKey);
     };
+  }, [menuOpen, closeMenu]);
+
+  // Clamp the menu to the viewport — flip above the row if it would clip the bottom edge.
+  useLayoutEffect(() => {
+    if (!menuOpen || !menuNodeRef.current) return;
+    const rect = menuNodeRef.current.getBoundingClientRect();
+    const viewportHeight = globalThis.innerHeight ?? document.documentElement.clientHeight;
+    if (rect.bottom > viewportHeight - 8) {
+      setMenuFlipped(true);
+    }
   }, [menuOpen]);
 
   return (
@@ -137,7 +180,7 @@ export const ConversationListRow = memo(function ConversationListRow({
       >
         {entry.kind === "saved"
           ? <SavedMessagesAvatar size={50} />
-          : <Avatar label={entry.name} size={50} fontSize="0.9rem" ariaHidden />}
+          : <Avatar label={entry.name} size={50} fontSize="0.9rem" ariaHidden imageUrl={avatarBlobUrl ?? undefined} />}
 
         <div className={styles.content}>
           <div className={styles.row}>
@@ -169,27 +212,29 @@ export const ConversationListRow = memo(function ConversationListRow({
       </button>
       {menuOpen && canOpenMenu ? (
         <ConversationListPinMenu
+          ref={menuNodeRef}
           entry={entry}
           folders={folders}
+          flipped={menuFlipped}
           t={t}
           onTogglePin={(menuEntry) => {
-            setMenuOpen(false);
+            closeMenu();
             onTogglePin(menuEntry);
           }}
           onMoveToFolder={(menuEntry, folderId) => {
-            setMenuOpen(false);
+            closeMenu();
             onMoveToFolder(menuEntry, folderId);
           }}
           onRemoveFromFolder={(menuEntry) => {
-            setMenuOpen(false);
+            closeMenu();
             onRemoveFromFolder(menuEntry);
           }}
           onCreateFolder={() => {
-            setMenuOpen(false);
+            closeMenu();
             onCreateFolder(entry);
           }}
           onDeleteChat={(menuEntry) => {
-            setMenuOpen(false);
+            closeMenu();
             onDeleteChat(menuEntry);
           }}
         />

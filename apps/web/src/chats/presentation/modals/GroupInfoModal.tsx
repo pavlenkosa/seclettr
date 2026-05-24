@@ -6,7 +6,6 @@ import { useAnimatedClose, useModalSurfaceA11y } from "@/lib/hooks";
 import {
   USER_SEARCH_MIN_QUERY_LENGTH,
   searchUsers,
-  type UserSearchResult,
 } from "@/lib/user-search";
 import { ModalShell } from "@/components/ui";
 
@@ -26,6 +25,12 @@ export type { GroupInfoMember, GroupRole } from "./group-info-modal-shared";
 export interface GroupInfoActions {
   /** Rename the group. Throws on failure so the caller can surface an error. */
   readonly rename?: (name: string) => Promise<void>;
+  /** Upload a new group avatar. Plain groups only. */
+  readonly uploadAvatar?: (file: File) => Promise<void>;
+  /** Remove the group avatar. Plain groups only. */
+  readonly deleteAvatar?: () => Promise<void>;
+  /** Update the group description. Plain groups only. */
+  readonly updateDescription?: (description: string | null) => Promise<void>;
   /** Add a user. `role` is the role to assign on add (admin only when supported). */
   readonly addMember: (userId: string, role: GroupRole) => Promise<void>;
   /** Remove or self-leave (depending on userId). */
@@ -40,6 +45,8 @@ interface Props {
   readonly groupId: string;
   readonly groupName: string;
   readonly groupKind: "e2ee" | "plain";
+  readonly avatarKey?: string | null;
+  readonly description?: string | null;
   readonly members: readonly GroupInfoMember[];
   readonly myUserId: string;
   readonly actions: GroupInfoActions;
@@ -50,6 +57,8 @@ export function GroupInfoModal({
   groupId,
   groupName,
   groupKind,
+  avatarKey = null,
+  description = null,
   members,
   myUserId,
   actions,
@@ -251,7 +260,10 @@ export function GroupInfoModal({
       title={null}
     >
       <GroupInfoHeroSection
+        groupId={groupId}
         groupName={groupName}
+        avatarKey={avatarKey}
+        description={description}
         memberCount={members.length}
         groupKind={groupKind}
         renaming={renaming}
@@ -259,10 +271,15 @@ export function GroupInfoModal({
         renameBusy={renameBusy}
         nameDraft={nameDraft}
         renameInputRef={renameInputRef}
+        canEditAvatar={canManage && groupKind === "plain"}
+        canEditDescription={canManage && groupKind === "plain"}
         onRenameDraftChange={setNameDraft}
         onRenameStart={() => setRenaming(true)}
         onRenameCancel={() => { setNameDraft(groupName); setRenaming(false); }}
         onRenameSubmit={() => { void handleRenameSubmit(); }}
+        onAvatarUpload={actions.uploadAvatar}
+        onAvatarDelete={actions.deleteAvatar}
+        onDescriptionSave={actions.updateDescription}
         t={t}
       />
 

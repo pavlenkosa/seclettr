@@ -106,6 +106,9 @@ export async function resolveRestoredSession(
             userId: sessionPreview.userId,
             deviceId: sessionPreview.deviceId,
             username: sessionPreview.username,
+            displayName: null,
+            bio: null,
+            avatarKey: null,
           },
         };
       }
@@ -181,6 +184,9 @@ export async function resolveRestoredSession(
       userId: sessionIdentity.userId,
       deviceId: sessionIdentity.deviceId,
       username: me?.username ?? sessionPreview.username,
+      displayName: me?.displayName ?? null,
+      bio: me?.bio ?? null,
+      avatarKey: me?.avatarKey ?? null,
       accessToken,
       identityDhKeyPair: normalized.identityDhKeyPair,
       storageKey,

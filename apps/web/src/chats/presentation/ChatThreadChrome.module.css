@@ -81,6 +81,21 @@
   flex-shrink: 0;
 }
 
+/* Clickable avatar wrapper — used on direct threads to open the profile sheet. */
+.avatarBtn {
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  border-radius: 50%;
+  flex-shrink: 0;
+  transition: opacity var(--motion-duration-fast, 120ms) ease;
+}
+
+.avatarBtn:hover {
+  opacity: 0.82;
+}
+
 .iconBtn {
   --icon-button-size: 40px;
   --icon-button-bg-base: transparent;

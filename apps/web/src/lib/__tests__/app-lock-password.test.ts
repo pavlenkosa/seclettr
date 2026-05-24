@@ -14,19 +14,8 @@ import {
 // different inputs → different outputs, constant-time-ish comparison).
 // ------------------------------------------------------------------
 vi.mock("@seclettr/crypto", () => {
-  const { webcrypto } = require("node:crypto") as typeof import("node:crypto");
-
-  async function fakePwhash(
-    outlen: number,
-    password: Uint8Array,
-    salt: Uint8Array
-  ): Promise<Uint8Array> {
-    const combined = new Uint8Array(password.length + salt.length);
-    combined.set(password, 0);
-    combined.set(salt, password.length);
-    const digest = await webcrypto.subtle.digest("SHA-256", combined);
-    return new Uint8Array(digest).slice(0, outlen);
-  }
+  const { webcrypto } = require("node:crypto");
+  void webcrypto;
 
   return {
     ensureSodium: async () => ({

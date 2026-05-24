@@ -178,6 +178,15 @@
   border-radius: 12px;
   border: 1px solid color-mix(in srgb, var(--panel-border) 88%, transparent);
   background: var(--surface-shell-strong);
+  box-shadow: 0 4px 16px rgb(0 0 0 / 0.18);
+}
+
+/* Flips the menu above the row when it would overflow the bottom of the viewport. */
+.contextMenuFlipped {
+  top: auto;
+  bottom: 100%;
+  margin-top: 0;
+  margin-bottom: -0.4rem;
 }
 
 .contextMenuItem {

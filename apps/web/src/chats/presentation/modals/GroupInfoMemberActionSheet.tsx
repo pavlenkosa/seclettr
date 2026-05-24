@@ -53,9 +53,29 @@ export function GroupInfoMemberActionSheet({
     return () => document.removeEventListener("keydown", onKey);
   }, [onClose]);
 
+  const handleOverlayKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
+    if (event.key === "Escape" || event.key === "Enter" || event.key === " ") {
+      event.preventDefault();
+      onClose();
+    }
+  };
+
   return (
-    <div className={styles.sheetOverlay} onClick={onClose} role="presentation">
-      <div className={styles.sheet} onClick={(event) => event.stopPropagation()} role="dialog" aria-label={member.username}>
+    <div
+      className={styles.sheetOverlay}
+      onClick={onClose}
+      onKeyDown={handleOverlayKeyDown}
+      role="presentation"
+      tabIndex={0}
+    >
+      <div
+        className={styles.sheet}
+        onClick={(event) => event.stopPropagation()}
+        onKeyDown={(event) => event.stopPropagation()}
+        role="dialog"
+        aria-label={member.username}
+        tabIndex={-1}
+      >
         <div className={styles.sheetHeader}>
           <Avatar label={member.username} size={48} fontSize="0.96rem" ariaHidden />
           <div className={styles.sheetIdentity}>

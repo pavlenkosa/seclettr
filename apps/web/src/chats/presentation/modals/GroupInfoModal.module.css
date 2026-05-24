@@ -37,6 +37,126 @@
   padding: 0.6rem 0 0.6rem;
 }
 
+/* ─── Hero avatar ─────────────────────────────────────────────────────────── */
+
+.heroAvatarWrap {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.28rem;
+}
+
+.heroAvatarBtn {
+  position: relative;
+  padding: 0;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  border-radius: 50%;
+}
+
+.heroAvatarOverlay {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: rgb(0 0 0 / 0.34);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  opacity: 0;
+  transition: opacity var(--motion-duration-fast) var(--motion-ease-standard);
+}
+
+.heroAvatarBtn:hover .heroAvatarOverlay {
+  opacity: 1;
+}
+
+.heroAvatarDeleteBtn {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: 2px solid var(--surface-float, var(--surface-shell-strong));
+  background: color-mix(in srgb, var(--danger, #ef4444) 80%, transparent);
+  color: #fff;
+  font-size: 14px;
+  line-height: 1;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  transition: background var(--motion-duration-fast) var(--motion-ease-standard);
+}
+
+.heroAvatarDeleteBtn:hover {
+  background: var(--danger, #ef4444);
+}
+
+.heroAvatarError {
+  font-size: 0.74rem;
+  color: var(--danger, #ef4444);
+  text-align: center;
+  margin: 0;
+}
+
+/* ─── Description ─────────────────────────────────────────────────────────── */
+
+.heroDescription {
+  width: 100%;
+  max-width: 380px;
+  text-align: center;
+}
+
+.descForm {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  width: 100%;
+}
+
+.descText {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.32rem;
+  font-size: 0.86rem;
+  color: var(--text-secondary);
+  background: transparent;
+  border: none;
+  padding: 0.2rem 0.4rem;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background var(--motion-duration-fast) var(--motion-ease-standard);
+  text-align: center;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.descText:disabled {
+  cursor: default;
+}
+
+.descText:not(:disabled):hover {
+  background: color-mix(in srgb, var(--accent) 8%, transparent);
+}
+
+.descTextEmpty {
+  color: color-mix(in srgb, var(--text-secondary) 60%, transparent);
+  font-style: italic;
+}
+
+.descPencil {
+  color: var(--text-secondary);
+  flex-shrink: 0;
+  opacity: 0.6;
+}
+
 .heroName {
   display: inline-flex;
   align-items: center;
@@ -258,6 +378,22 @@
   cursor: pointer;
   text-align: left;
   transition: background var(--motion-duration-fast) var(--motion-ease-standard);
+}
+
+/* Round the first/last rows so the hover highlight fills cleanly inside the
+   container's border-radius instead of being clipped at the edges. */
+.memberList li:first-child .memberRow {
+  border-top-left-radius: 13px;
+  border-top-right-radius: 13px;
+}
+
+.memberList li:last-child .memberRow {
+  border-bottom-left-radius: 13px;
+  border-bottom-right-radius: 13px;
+}
+
+.memberList li:only-child .memberRow {
+  border-radius: 13px;
 }
 
 .memberRow:hover:not(:disabled),

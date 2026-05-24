@@ -48,6 +48,9 @@ export const ChatModals = memo(function ChatModals({
   const plainAddMember = usePlainGroupsStore((state) => state.addMember);
   const plainRemoveMember = usePlainGroupsStore((state) => state.removeMember);
   const plainUpdateRole = usePlainGroupsStore((state) => state.updateMemberRole);
+  const plainUploadAvatar = usePlainGroupsStore((state) => state.uploadGroupAvatar);
+  const plainDeleteAvatar = usePlainGroupsStore((state) => state.deleteGroupAvatar);
+  const plainUpdateDescription = usePlainGroupsStore((state) => state.updateGroupDescription);
 
   const handleNewGroupCreate = useCallback(
     async ({ name, memberUserIds, kind }: { name: string; memberUserIds: string[]; kind: "e2ee" | "plain" }) => {
@@ -102,7 +105,14 @@ export const ChatModals = memo(function ChatModals({
       },
       // E2EE store has no rename API yet — the pencil stays hidden.
     };
-    return { members, actions, groupId: activeGroup.groupId, groupName: activeGroup.name };
+    return {
+      members,
+      actions,
+      groupId: activeGroup.groupId,
+      groupName: activeGroup.name,
+      avatarKey: null,
+      description: null,
+    };
   }, [activeGroup, e2eeAddMembers, e2eeRemoveMember, e2eeUpdateRole, handleVerifyGroupMember]);
 
   const plainGroupInfo = useMemo(() => {
@@ -114,12 +124,22 @@ export const ChatModals = memo(function ChatModals({
     }));
     const actions: GroupInfoActions = {
       rename: (name) => plainRename(activePlainGroup.groupId, name),
+      uploadAvatar: (file) => plainUploadAvatar(activePlainGroup.groupId, file),
+      deleteAvatar: () => plainDeleteAvatar(activePlainGroup.groupId),
+      updateDescription: (desc) => plainUpdateDescription(activePlainGroup.groupId, desc),
       addMember: (id) => plainAddMember(activePlainGroup.groupId, id),
       removeMember: (id) => plainRemoveMember(activePlainGroup.groupId, id),
       updateRole: (id, role) => plainUpdateRole(activePlainGroup.groupId, id, role),
     };
-    return { members, actions, groupId: activePlainGroup.groupId, groupName: activePlainGroup.name };
-  }, [activePlainGroup, plainAddMember, plainRemoveMember, plainRename, plainUpdateRole]);
+    return {
+      members,
+      actions,
+      groupId: activePlainGroup.groupId,
+      groupName: activePlainGroup.name,
+      avatarKey: activePlainGroup.avatarKey,
+      description: activePlainGroup.description,
+    };
+  }, [activePlainGroup, plainAddMember, plainRemoveMember, plainRename, plainUpdateRole, plainUploadAvatar, plainDeleteAvatar, plainUpdateDescription]);
 
   const activeGroupInfo = e2eeGroupInfo ?? plainGroupInfo;
   const activeGroupKind: "e2ee" | "plain" = e2eeGroupInfo ? "e2ee" : "plain";
@@ -152,6 +172,8 @@ export const ChatModals = memo(function ChatModals({
           groupId={activeGroupInfo.groupId}
           groupName={activeGroupInfo.groupName}
           groupKind={activeGroupKind}
+          avatarKey={activeGroupInfo.avatarKey}
+          description={activeGroupInfo.description}
           members={activeGroupInfo.members}
           myUserId={userId}
           actions={activeGroupInfo.actions}

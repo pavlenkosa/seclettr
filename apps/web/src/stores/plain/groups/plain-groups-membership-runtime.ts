@@ -1,5 +1,5 @@
 import type { StoreApi } from "zustand";
-import { api } from "@/lib/api";
+import { api, getAccessToken } from "@/lib/api";
 import { logger } from "@/lib/logger";
 import { PLAIN_PROTOCOL_VERSION } from "@seclettr/protocol";
 import type { PlainGroupsState } from "./plain-groups-store";
@@ -30,6 +30,9 @@ export interface PlainGroupsMembershipRuntime {
   addMember: (groupId: string, userId: string) => Promise<void>;
   removeMember: (groupId: string, userId: string) => Promise<void>;
   updateMemberRole: (groupId: string, userId: string, role: "owner" | "admin" | "member") => Promise<void>;
+  uploadGroupAvatar: (groupId: string, file: File) => Promise<void>;
+  deleteGroupAvatar: (groupId: string) => Promise<void>;
+  updateGroupDescription: (groupId: string, description: string | null) => Promise<void>;
 }
 
 export function createPlainGroupsMembershipRuntime(
@@ -167,5 +170,63 @@ export function createPlainGroupsMembershipRuntime(
     }
   }
 
-  return { createGroup, renameGroup, addMember, removeMember, updateMemberRole };
+  async function uploadGroupAvatar(groupId: string, file: File): Promise<void> {
+    const form = new FormData();
+    form.append("file", file);
+    const token = getAccessToken();
+    const headers: Record<string, string> = {};
+    if (token) headers["Authorization"] = `Bearer ${token}`;
+    const res = await fetch(
+      `/api/plain/groups/${encodeURIComponent(groupId)}/avatar`,
+      { method: "POST", headers, body: form }
+    );
+    if (!res.ok) {
+      const text = await res.text().catch(() => "");
+      throw new Error(`Avatar upload failed: ${res.status} ${text}`);
+    }
+    const data = (await res.json()) as { avatarKey: string | null };
+    set((state) => {
+      const g = state.groups[groupId];
+      if (!g) return state;
+      return { groups: { ...state.groups, [groupId]: { ...g, avatarKey: data.avatarKey ?? null } } };
+    });
+  }
+
+  async function deleteGroupAvatar(groupId: string): Promise<void> {
+    await api.delete(`/plain/groups/${encodeURIComponent(groupId)}/avatar`);
+    set((state) => {
+      const g = state.groups[groupId];
+      if (!g) return state;
+      return { groups: { ...state.groups, [groupId]: { ...g, avatarKey: null } } };
+    });
+  }
+
+  async function updateGroupDescription(groupId: string, description: string | null): Promise<void> {
+    const previous = get().groups[groupId];
+    if (previous) {
+      set((state) => ({
+        groups: { ...state.groups, [groupId]: { ...previous, description } },
+      }));
+    }
+    try {
+      await api.patch(`/plain/groups/${encodeURIComponent(groupId)}`, { description });
+    } catch (err) {
+      logger.error("[PlainGroups] updateGroupDescription failed", err);
+      if (previous) {
+        set((state) => ({ groups: { ...state.groups, [groupId]: previous } }));
+      }
+      throw err;
+    }
+  }
+
+  return {
+    createGroup,
+    renameGroup,
+    addMember,
+    removeMember,
+    updateMemberRole,
+    uploadGroupAvatar,
+    deleteGroupAvatar,
+    updateGroupDescription,
+  };
 }

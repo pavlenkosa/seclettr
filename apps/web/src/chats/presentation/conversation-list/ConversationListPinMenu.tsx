@@ -1,4 +1,4 @@
-import { useState, type MouseEvent as ReactMouseEvent } from "react";
+import { forwardRef, useState, type MouseEvent as ReactMouseEvent } from "react";
 import type { PlainFolder } from "@/stores/plain";
 import { IconChevronRight } from "@/components/ui/icons";
 import type { ConversationEntry } from "./conversation-list-helpers";
@@ -7,6 +7,7 @@ import styles from "../ConversationList.module.css";
 interface ConversationListPinMenuProps {
   readonly entry: ConversationEntry;
   readonly folders: PlainFolder[];
+  readonly flipped?: boolean;
   readonly t: (key: string, params?: Record<string, string | number>) => string;
   readonly onTogglePin: (entry: ConversationEntry) => void;
   readonly onMoveToFolder: (entry: ConversationEntry, folderId: string) => void;
@@ -15,16 +16,18 @@ interface ConversationListPinMenuProps {
   readonly onDeleteChat: (entry: ConversationEntry) => void;
 }
 
-export function ConversationListPinMenu({
+export const ConversationListPinMenu = forwardRef<HTMLDivElement, ConversationListPinMenuProps>(
+function ConversationListPinMenu({
   entry,
   folders,
+  flipped = false,
   t,
   onTogglePin,
   onMoveToFolder,
   onRemoveFromFolder,
   onCreateFolder,
   onDeleteChat,
-}: ConversationListPinMenuProps) {
+}, ref) {
   const [folderSubmenuOpen, setFolderSubmenuOpen] = useState(false);
 
   const handleTogglePin = (event: ReactMouseEvent<HTMLButtonElement>) => {
@@ -37,7 +40,15 @@ export function ConversationListPinMenu({
   const otherFolders = folders.filter((f) => f.folderId !== currentFolderId);
 
   return (
-    <div className={styles.contextMenu} role="menu" onClick={(e) => e.stopPropagation()}>
+    <div
+      ref={ref}
+      className={`${styles.contextMenu} ${flipped ? styles.contextMenuFlipped : ""}`}
+      role="menu"
+      tabIndex={-1}
+      onClick={(e) => e.stopPropagation()}
+      onMouseDown={(e) => e.stopPropagation()}
+      onKeyDown={(e) => e.stopPropagation()}
+    >
       {/* Pin / Unpin */}
       <button
         type="button"
@@ -139,4 +150,5 @@ export function ConversationListPinMenu({
       ) : null}
     </div>
   );
-}
+});
+ConversationListPinMenu.displayName = "ConversationListPinMenu";

@@ -1,6 +1,7 @@
 import { memo, type ReactNode } from "react";
 import { ChatThreadChrome } from "@/chats/presentation/ChatThreadChrome";
 import { SavedMessagesAvatar } from "@/chats/presentation/SavedMessagesAvatar";
+import { useAvatarUrl } from "@/lib/hooks";
 import type {
   SecurityWorkspaceState,
   TranslateFn,
@@ -80,6 +81,7 @@ export const ChatThreadHeader = memo(function ChatThreadHeader({
   activeGroupCallCallerLabel,
   activeGroupCallParticipantIds,
   handleJoinActiveGroupCall,
+  onOpenProfile,
 }: {
   activeThreadKind: WorkspaceEntryState["activeThreadKind"];
   activeConversation: WorkspaceEntryState["activeConversation"];
@@ -98,7 +100,20 @@ export const ChatThreadHeader = memo(function ChatThreadHeader({
   activeGroupCallCallerLabel: string;
   activeGroupCallParticipantIds: WorkspaceEntryState["activeGroupCallParticipantIds"];
   handleJoinActiveGroupCall: WorkspaceEntryState["handleJoinActiveGroupCall"];
+  onOpenProfile?: (username: string) => void;
 }) {
+  // Determine the peer's userId and avatarKey for DM threads so we can show
+  // their profile photo. Must be called unconditionally (before any early return).
+  const peerUserId = activeThreadKind === "plain-direct"
+    ? (activePlainConversation?.userId ?? null)
+    : activeThreadKind === "direct"
+      ? (activeConversation?.userId ?? null)
+      : null;
+  const peerAvatarKey = activeThreadKind === "plain-direct"
+    ? (activePlainConversation?.avatarKey ?? null)
+    : null; // E2EE Conversation doesn't carry avatarKey yet
+  const avatarImageUrl = useAvatarUrl(peerUserId, peerAvatarKey);
+
   if (!activeThreadKind) return null;
 
   if (activeThreadKind === "saved") {
@@ -130,6 +145,10 @@ export const ChatThreadHeader = memo(function ChatThreadHeader({
     const plainSubtitle = isPlainGroup
       ? t("group.header.memberCount", { count: activePlainGroup?.members.length ?? 0 })
       : plainDirectPresenceLabel;
+    const plainDirectUsername = isPlainDirect ? (activePlainConversation?.username ?? null) : null;
+    const handlePlainAvatarClick = plainDirectUsername && onOpenProfile
+      ? () => onOpenProfile(plainDirectUsername)
+      : null;
     return (
       <ChatThreadChrome
         title={plainTitle}
@@ -138,9 +157,11 @@ export const ChatThreadHeader = memo(function ChatThreadHeader({
         statusAriaLabel={null}
         statusTone={null}
         // Plain groups open the same Telegram-style info modal on title/sub tap;
-        // plain DMs have nothing extra to surface here.
+        // plain DMs open the contact's profile sheet.
         onStatusClick={isPlainGroup ? handleOpenGroupMembers : null}
         avatarLabel={plainTitle}
+        onAvatarClick={handlePlainAvatarClick}
+        avatarImageUrl={isPlainDirect ? avatarImageUrl : null}
         backAriaLabel={t("chat.back")}
         onBack={handleBack}
         actions={threadChromeActions}
@@ -168,6 +189,12 @@ export const ChatThreadHeader = memo(function ChatThreadHeader({
       }
     : null;
 
+  // For direct threads, clicking the avatar opens the contact's profile sheet.
+  const directUsername = isDirectThread ? (activeConversation?.username ?? null) : null;
+  const handleAvatarClick = directUsername && onOpenProfile
+    ? () => onOpenProfile(directUsername)
+    : null;
+
   return (
     <ChatThreadChrome
       title={title}
@@ -177,6 +204,8 @@ export const ChatThreadHeader = memo(function ChatThreadHeader({
       statusTone={statusTone}
       onStatusClick={handleStatusClick}
       avatarLabel={title}
+      onAvatarClick={handleAvatarClick}
+      avatarImageUrl={isDirectThread ? avatarImageUrl : null}
       backAriaLabel={t("chat.back")}
       onBack={handleBack}
       actions={threadChromeActions}

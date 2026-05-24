@@ -96,12 +96,18 @@ export function ConversationFolderTabs({
       {/* Right-click context menu for folder tabs */}
       {contextMenu ? (
         <>
-          <div className={styles.menuBackdrop} onClick={handleCloseMenu} />
+          <button
+            type="button"
+            className={styles.menuBackdrop}
+            onClick={handleCloseMenu}
+            aria-label={t("common.close")}
+          />
           <div
             ref={menuRef}
             className={styles.contextMenu}
             style={{ left: contextMenu.x, top: contextMenu.y }}
             role="menu"
+            tabIndex={-1}
           >
             <button type="button" className={styles.menuItem} role="menuitem" onClick={handleRename}>
               {t("folders.rename")}

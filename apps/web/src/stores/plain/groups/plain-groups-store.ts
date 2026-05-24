@@ -5,12 +5,6 @@ import type {
   PlainGroup,
   PlainReplyMeta,
 } from "../types";
-import {
-  wireToPlainGroup,
-  type WireGroupHistoryResponse,
-  type WireGroupListResponse,
-  type WirePlainGroup,
-} from "./plain-groups-wire";
 import { createPlainGroupsAttachmentRuntime } from "./plain-groups-attachment-runtime";
 import { createPlainGroupsHistoryRuntime } from "./plain-groups-history-runtime";
 import { createPlainGroupsLiveRuntime } from "./plain-groups-live-runtime";
@@ -36,6 +30,12 @@ export interface PlainGroupsState {
   createGroup: (name: string, memberUserIds: string[]) => Promise<string>;
   /** Rename group (owner / admin only). */
   renameGroup: (groupId: string, name: string) => Promise<void>;
+  /** Upload or replace the group avatar. Admin+ only. */
+  uploadGroupAvatar: (groupId: string, file: File) => Promise<void>;
+  /** Remove the group avatar. Admin+ only. */
+  deleteGroupAvatar: (groupId: string) => Promise<void>;
+  /** Update the group description (null to clear). Admin+ only. */
+  updateGroupDescription: (groupId: string, description: string | null) => Promise<void>;
   /** Add a member */
   addMember: (groupId: string, userId: string) => Promise<void>;
   /** Remove a member (or leave) */
@@ -90,8 +90,16 @@ export const usePlainGroupsStore = create<PlainGroupsState>((set, get) => {
     getMyUserId,
   });
 
-  const { createGroup, renameGroup, addMember, removeMember, updateMemberRole } =
-    createPlainGroupsMembershipRuntime({ set, get, getMyUserId });
+  const {
+    createGroup,
+    renameGroup,
+    addMember,
+    removeMember,
+    updateMemberRole,
+    uploadGroupAvatar,
+    deleteGroupAvatar,
+    updateGroupDescription,
+  } = createPlainGroupsMembershipRuntime({ set, get, getMyUserId });
   const { sendText, editMessage, deleteMessage } = createPlainGroupsSendRuntime({
     set,
     getMyUserId,
@@ -119,6 +127,9 @@ export const usePlainGroupsStore = create<PlainGroupsState>((set, get) => {
     loadMoreHistory,
     createGroup,
     renameGroup,
+    uploadGroupAvatar,
+    deleteGroupAvatar,
+    updateGroupDescription,
     addMember,
     removeMember,
     updateMemberRole,

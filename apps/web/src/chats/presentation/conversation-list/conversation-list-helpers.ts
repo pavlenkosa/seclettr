@@ -23,7 +23,12 @@ export interface ConversationEntry {
   key: string;
   id: string;
   kind: "direct" | "group" | "plain-direct" | "plain-group" | "saved";
+  /** Display-friendly name: displayName if set, otherwise username / group name. */
   name: string;
+  /** Raw username (always the login handle, regardless of displayName). */
+  username?: string;
+  /** Profile avatar key — present when the peer has uploaded a photo. */
+  avatarKey?: string | null;
   lastMessageAt: number;
   unreadCount: number;
   lastMessage?: EntryLastMessage;
@@ -241,6 +246,7 @@ function mapDirectConversation(conversation: Conversation): ConversationEntry {
     id: conversation.userId,
     kind: "direct",
     name: conversation.username,
+    username: conversation.username,
     lastMessageAt: conversation.lastMessageAt,
     unreadCount: conversation.unreadCount,
     lastMessage: mapDirectLastMessage(conversation.messages.at(-1)),
@@ -301,7 +307,9 @@ function mapPlainConversation(
     key: `plain-direct:${conversation.userId}`,
     id: conversation.userId,
     kind: "plain-direct",
-    name: conversation.username,
+    name: conversation.displayName ?? conversation.username,
+    username: conversation.username,
+    avatarKey: conversation.avatarKey ?? null,
     lastMessageAt: conversation.lastMessageAt,
     unreadCount: conversation.unreadCount,
     lastMessage: mapPlainLastMessage(conversation.messages.at(-1)),

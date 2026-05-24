@@ -25,6 +25,8 @@ function conversation(overrides: Partial<PlainConversation> = {}): PlainConversa
         status: "sent",
       },
     ],
+    displayName: null,
+    avatarKey: null,
     lastMessageAt: 1_700_000_000_000,
     unreadCount: 2,
     hasMore: false,

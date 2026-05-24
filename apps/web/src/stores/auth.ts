@@ -82,6 +82,9 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   userId: null,
   deviceId: null,
   username: null,
+  displayName: null,
+  bio: null,
+  avatarKey: null,
   accessToken: null,
   identityDhKeyPair: null,
   storageKey: null,
@@ -376,6 +379,14 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   },
 
   clearError: () => set({ error: null }),
+
+  applyProfileUpdate: (patch) => {
+    const updates: Partial<AuthState> = {};
+    if ("displayName" in patch) updates.displayName = patch.displayName ?? null;
+    if ("bio" in patch) updates.bio = patch.bio ?? null;
+    if ("avatarKey" in patch) updates.avatarKey = patch.avatarKey ?? null;
+    set(updates);
+  },
 }));
 
 const authRealtimeRuntime = createAuthRealtimeRuntime({

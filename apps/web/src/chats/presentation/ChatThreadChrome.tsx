@@ -32,6 +32,16 @@ export interface ChatThreadChromeProps {
   readonly avatarLabel: string;
   /** Optional custom avatar node — replaces the generated initials avatar when provided. */
   readonly avatarSlot?: ReactNode;
+  /**
+   * When provided the avatar is wrapped in a button. Used to open the contact's
+   * profile sheet on direct threads.
+   */
+  readonly onAvatarClick?: (() => void) | null;
+  /**
+   * Blob URL of the peer's profile photo. When set the Avatar shows the photo
+   * instead of initials. Works alongside onAvatarClick (they're not exclusive).
+   */
+  readonly avatarImageUrl?: string | null;
   /** Accessible label for the mobile back button. */
   readonly backAriaLabel: string;
   /** Back handler used on mobile layouts. */
@@ -55,6 +65,8 @@ export function ChatThreadChrome({
   onStatusClick,
   avatarLabel,
   avatarSlot,
+  onAvatarClick,
+  avatarImageUrl,
   backAriaLabel,
   onBack,
   actions,
@@ -82,12 +94,30 @@ export function ChatThreadChrome({
           </IconButton>
 
           {avatarSlot ?? (
-            <Avatar
-              label={avatarLabel}
-              size={38}
-              fontSize="0.82rem"
-              ariaHidden
-            />
+            onAvatarClick ? (
+              <button
+                type="button"
+                className={styles.avatarBtn}
+                onClick={onAvatarClick}
+                aria-label={avatarLabel}
+              >
+                <Avatar
+                  label={avatarLabel}
+                  size={38}
+                  fontSize="0.82rem"
+                  ariaHidden
+                  imageUrl={avatarImageUrl ?? undefined}
+                />
+              </button>
+            ) : (
+              <Avatar
+                label={avatarLabel}
+                size={38}
+                fontSize="0.82rem"
+                ariaHidden
+                imageUrl={avatarImageUrl ?? undefined}
+              />
+            )
           )}
 
           <div className={styles.info}>

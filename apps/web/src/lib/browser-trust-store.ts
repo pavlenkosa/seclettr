@@ -1,5 +1,4 @@
 import {
-  createEmptyTrustStore,
   type BrowserTrustIntegrityState,
   type StoredDeviceRegistration,
   type StoredSafetyVerificationRecord,

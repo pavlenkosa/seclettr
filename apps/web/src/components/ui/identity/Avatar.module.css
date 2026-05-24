@@ -11,4 +11,17 @@
   font-size: var(--avatar-font-size, 0.86rem);
   font-weight: 700;
   user-select: none;
+  overflow: hidden;
+}
+
+.rootPhoto {
+  background: color-mix(in srgb, var(--avatar-bg, var(--accent)) 30%, var(--surface-shell-strong));
+}
+
+.photo {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  border-radius: inherit;
 }

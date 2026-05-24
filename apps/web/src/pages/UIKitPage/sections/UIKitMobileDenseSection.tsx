@@ -1,6 +1,5 @@
 import { LabelPill, SurfacePanel } from "@/components/ui";
 import { RecipeItem, SectionHeader } from "../helpers/uikitDemoBlocks";
-import type { DensityMode } from "../helpers/uikitDemoData";
 import styles from "../../UIKitPage.module.css";
 
 interface UIKitMobileDenseSectionProps {

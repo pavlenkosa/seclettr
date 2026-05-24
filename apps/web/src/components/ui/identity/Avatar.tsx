@@ -1,4 +1,4 @@
-import type { CSSProperties } from "react";
+import { useState, type CSSProperties } from "react";
 import styles from "./Avatar.module.css";
 
 export interface AvatarProps {
@@ -13,6 +13,12 @@ export interface AvatarProps {
   readonly className?: string;
   /** Hides the decorative avatar from the accessibility tree. */
   readonly ariaHidden?: boolean;
+  /**
+   * When provided the avatar shows a photo instead of initials.
+   * Falls back to initials if the image fails to load.
+   * Accepts any URL the browser can display (blob:, https:, etc.).
+   */
+  readonly imageUrl?: string;
 }
 
 const AVATAR_PALETTE = [
@@ -66,9 +72,11 @@ function toInitials(label: string): string {
 }
 
 /**
- * Shared initials-based avatar for lists, headers, and call surfaces.
- * It intentionally renders a stable visual fallback instead of loading images.
- * Choose it as the visual identity token; pair it with InfoStack, EntityRow, or CallIdentityBlock instead of turning Avatar itself into a summary component.
+ * Shared avatar for lists, headers, and call surfaces.
+ *
+ * When `imageUrl` is provided it shows the user's photo (falls back to
+ * initials if the image fails to load). Without `imageUrl` it renders a
+ * stable initials-based fallback derived from `label`.
  */
 export function Avatar({
   label,
@@ -77,8 +85,11 @@ export function Avatar({
   fontSize,
   className = "",
   ariaHidden = false,
+  imageUrl,
 }: AvatarProps) {
   const palette = resolveAvatarPalette(label || initials || "");
+  const [imgError, setImgError] = useState(false);
+
   const style = {
     "--avatar-size": typeof size === "number" ? `${size}px` : size,
     "--avatar-font-size": typeof fontSize === "number" ? `${fontSize}px` : fontSize,
@@ -86,13 +97,25 @@ export function Avatar({
     "--avatar-fg": palette.fg,
   } as CSSProperties;
 
+  const showImage = !!imageUrl && !imgError;
+
   return (
     <span
-      className={`${styles.root} ${className}`.trim()}
+      className={`${styles.root} ${showImage ? styles.rootPhoto : ""} ${className}`.trim()}
       style={style}
       aria-hidden={ariaHidden}
     >
-      {initials ?? toInitials(label)}
+      {showImage ? (
+        <img
+          src={imageUrl}
+          alt=""
+          className={styles.photo}
+          onError={() => setImgError(true)}
+          aria-hidden
+        />
+      ) : (
+        initials ?? toInitials(label)
+      )}
     </span>
   );
 }

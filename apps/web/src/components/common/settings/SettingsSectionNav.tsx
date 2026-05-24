@@ -3,7 +3,7 @@ import { EntityRow } from "@/components/ui";
 import styles from "../SettingsScreen.module.css";
 
 export interface SettingsSectionEntry {
-  readonly id: "notifications" | "appearance" | "security";
+  readonly id: "profile" | "notifications" | "appearance" | "security";
   readonly title: string;
   readonly description: string;
   readonly summary: string;

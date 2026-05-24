@@ -11,7 +11,7 @@
  *   WebRTC core       → useDirectCallPeerConnectionRuntime
  *   Signaling ingress → useDirectCallSignalRuntime
  *   Negotiation       → useDirectCallNegotiationRuntime
- *   Call setup/accept → useDirectCallSetupControlRuntime
+ *   Call setup/accept → useDirectCallSetup
  *   Media controls    → useDirectCallOutgoingMediaState + useDirectCallVisualMediaControls
  *   Presentation      → useDirectCallControllerPresentationWiring → useDirectCallPresentationBindings
  */
@@ -259,7 +259,6 @@ export function useDirectCallController() {
     resolveLocalSupportedMediaEncryptionModes,
     ensureDirectCallSenderFrameCryptoBound,
     primeDirectCallSenderFrameCrypto,
-    ensureDirectCallReceiverFrameCryptoBound,
     configureDirectCallFrameCrypto,
     prepareLocalEphemeralKey,
     setPeerEphemeralPublicKey,
@@ -422,9 +421,7 @@ export function useDirectCallController() {
     hasRenderableRemoteCamera,
     hasRenderableRemoteScreen,
     hasRemoteVisualMedia,
-    isVideoCallActive,
     shouldRenderLocalCameraPreview,
-    localSupportsFrameEncryption,
   } = useDirectCallControllerMediaWiring({
     localMedia: {
       peerConnectionRef,
@@ -595,7 +592,6 @@ export function useDirectCallController() {
     acceptCall,
     rejectCall,
     hangup,
-    sendCallMediaState,
     syncOutgoingVisualMediaStateTrackBindings,
     clearOutgoingMediaStateTrackBindings,
     canSwitchCamera,

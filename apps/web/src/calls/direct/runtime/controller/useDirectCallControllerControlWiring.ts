@@ -1,6 +1,6 @@
 import { useCallback, type MutableRefObject } from "react";
 import type { ActiveCall } from "@/calls/direct/model/direct-call-types";
-import { useDirectCallSetupControlRuntime } from "../useDirectCallSetupControlRuntime";
+import { useDirectCallSetup } from "../useDirectCallSetup";
 import {
   useDirectCallOutgoingMediaState,
   useDirectCallVisualMediaControls,
@@ -19,7 +19,7 @@ import {
  * bootstrap, or presentation bindings.
  */
 type UseDirectCallControllerControlWiringOptions = {
-  setupControl: Parameters<typeof useDirectCallSetupControlRuntime>[0];
+  setupControl: Parameters<typeof useDirectCallSetup>[0];
   outgoingMediaState: Parameters<typeof useDirectCallOutgoingMediaState>[0];
   visualMediaControls: Omit<
     Parameters<typeof useDirectCallVisualMediaControls>[0],
@@ -45,7 +45,7 @@ export function useDirectCallControllerControlWiring({
     acceptCall,
     rejectCall,
     hangup,
-  } = useDirectCallSetupControlRuntime(setupControl);
+  } = useDirectCallSetup(setupControl);
 
   const {
     sendCallMediaState,

@@ -15,8 +15,6 @@
  * threaded in from useDirectCallControllerState via the controller.
  */
 import {
-  useCallback,
-  useEffect,
   useMemo,
   useRef,
   type Dispatch,
@@ -33,7 +31,6 @@ import { type DirectCallNegotiationRole } from "@/calls/direct/model/direct-call
 import type {
   ActiveCall,
   CallNotice,
-  IncomingCallAnsweredSignal,
 } from "@/calls/direct/model/direct-call-types";
 import {
   createNegotiationDispatch,

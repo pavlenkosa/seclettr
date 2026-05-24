@@ -14,7 +14,7 @@
  * module and keep buildDirectCallPresentationState declarative and testable.
  *
  * Does not own React state, hooks, or any side effects.
- * Consumed by useDirectCallPresentationBindings via useDirectCallVisualStateSummary.
+ * Consumed by useDirectCallPresentationBindings via useDirectCallVisualState.
  */
 import { resolveDirectCallSurface, type DirectCallSurface, type ActiveCall, type IncomingCall } from "./direct-call-types";
 import {

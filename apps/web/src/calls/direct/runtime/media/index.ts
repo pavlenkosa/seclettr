@@ -6,9 +6,9 @@ export { useDirectCallOutgoingMediaState } from "./useDirectCallOutgoingMediaSta
 export { useDirectCallRemoteMediaHints } from "./useDirectCallRemoteMediaHints";
 export { useDirectCallRemoteMediaRuntime } from "./useDirectCallRemoteMediaRuntime";
 export { useDirectCallRemoteMediaState } from "./useDirectCallRemoteMediaState";
-export { useDirectCallRemoteReceiverIngress } from "./useDirectCallRemoteReceiverIngress";
+export { useDirectCallRemoteReceiverIngest } from "./useDirectCallRemoteReceiverIngest";
 export { useDirectCallRemoteTelemetry } from "./useDirectCallRemoteTelemetry";
 export { useDirectCallRemoteTrackIngress } from "./useDirectCallRemoteTrackIngress";
 export { useDirectCallScreenShareControls } from "./useDirectCallScreenShareControls";
 export { useDirectCallVisualMediaControls } from "./useDirectCallVisualMediaControls";
-export { useDirectCallVisualStateSummary } from "./useDirectCallVisualStateSummary";
+export { useDirectCallVisualState } from "./useDirectCallVisualState";

@@ -137,7 +137,7 @@ export interface DirectCallSetupCallbackContext {
 }
 
 /**
- * Full options bag for useDirectCallSetupControlRuntime.
+ * Full options bag for useDirectCallSetup.
  * Defined as an intersection of the five sub-contexts so each concern is
  * self-documenting. Callers pass a flat object — the intersection is structural,
  * not nominal, so nothing changes at the call site.

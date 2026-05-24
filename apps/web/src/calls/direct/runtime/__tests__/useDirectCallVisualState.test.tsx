@@ -8,9 +8,9 @@ import {
   type RemoteMediaSlot,
 } from "@/calls/direct/model/call-media-slots";
 import type { ActiveCall } from "@/calls/direct/model/direct-call-types";
-import { useDirectCallVisualStateSummary } from "@/calls/direct/runtime/media/useDirectCallVisualStateSummary";
+import { useDirectCallVisualState } from "@/calls/direct/runtime/media/useDirectCallVisualState";
 
-type VisualStateSummaryApi = ReturnType<typeof useDirectCallVisualStateSummary>;
+type VisualStateSummaryApi = ReturnType<typeof useDirectCallVisualState>;
 
 function createActiveCall(overrides?: Partial<ActiveCall>): ActiveCall {
   return {
@@ -75,7 +75,7 @@ function HookHarness(props: {
   localSupportedMediaEncryptionModes: Array<"transport" | "frame-v1">;
   capture: (api: VisualStateSummaryApi) => void;
 }) {
-  const api = useDirectCallVisualStateSummary({
+  const api = useDirectCallVisualState({
     active: props.active,
     localStream: props.localStream,
     remoteCameraSlot: props.remoteCameraSlot,
@@ -86,7 +86,7 @@ function HookHarness(props: {
   return null;
 }
 
-describe("useDirectCallVisualStateSummary", () => {
+describe("useDirectCallVisualState", () => {
   let container: HTMLDivElement;
   let root: Root;
   let api: VisualStateSummaryApi | null;

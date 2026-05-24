@@ -4,7 +4,7 @@ import {
   useDirectCallLocalMedia,
   useDirectCallMediaElementBindings,
   useDirectCallRemoteTelemetry,
-  useDirectCallVisualStateSummary,
+  useDirectCallVisualState,
 } from "../media";
 
 /**
@@ -23,7 +23,7 @@ type UseDirectCallControllerMediaWiringOptions = {
   localMedia: Parameters<typeof useDirectCallLocalMedia>[0];
   resolveLocalSupportedMediaEncryptionModes: () => DirectCallMediaEncryptionMode[];
   visualStateSummary: Omit<
-    Parameters<typeof useDirectCallVisualStateSummary>[0],
+    Parameters<typeof useDirectCallVisualState>[0],
     "localSupportedMediaEncryptionModes"
   >;
   remoteTelemetry: Parameters<typeof useDirectCallRemoteTelemetry>[0];
@@ -62,7 +62,7 @@ export function useDirectCallControllerMediaWiring({
     isVideoCallActive,
     shouldRenderLocalCameraPreview,
     localSupportsFrameEncryption,
-  } = useDirectCallVisualStateSummary({
+  } = useDirectCallVisualState({
     ...visualStateSummary,
     localSupportedMediaEncryptionModes,
   });

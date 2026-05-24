@@ -36,7 +36,7 @@ interface UseDirectCallRemoteReceiverIngressOptions {
   ) => DirectCallVisualMediaSource;
 }
 
-export function useDirectCallRemoteReceiverIngress({
+export function useDirectCallRemoteReceiverIngest({
   activeRef,
   peerConnectionRef,
   remoteAudioRef,

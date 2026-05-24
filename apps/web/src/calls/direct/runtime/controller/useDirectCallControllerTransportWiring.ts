@@ -2,7 +2,7 @@ import { useCallback } from "react";
 import { api } from "@/lib/api";
 import { useDirectCallFrameCryptoRuntime } from "../useDirectCallFrameCryptoRuntime";
 import { useDirectCallIceBatch } from "../useDirectCallIceBatch";
-import { useDirectCallRemoteReceiverIngress } from "../media";
+import { useDirectCallRemoteReceiverIngest } from "../media";
 
 /**
  * useDirectCallControllerTransportWiring — direct-call transport composition bundle.
@@ -20,7 +20,7 @@ type UseDirectCallControllerTransportWiringOptions = {
   outgoingIceBatchRef: Parameters<typeof useDirectCallIceBatch>[0];
   frameCrypto: Parameters<typeof useDirectCallFrameCryptoRuntime>[0];
   remoteReceiverIngress: Omit<
-    Parameters<typeof useDirectCallRemoteReceiverIngress>[0],
+    Parameters<typeof useDirectCallRemoteReceiverIngest>[0],
     "ensureDirectCallReceiverFrameCryptoBound"
   >;
 };
@@ -58,7 +58,7 @@ export function useDirectCallControllerTransportWiring({
   const {
     ingestRemoteReceiverTrack,
     refreshRemoteVideoTracksFromPeer,
-  } = useDirectCallRemoteReceiverIngress({
+  } = useDirectCallRemoteReceiverIngest({
     ...remoteReceiverIngress,
     ensureDirectCallReceiverFrameCryptoBound,
   });

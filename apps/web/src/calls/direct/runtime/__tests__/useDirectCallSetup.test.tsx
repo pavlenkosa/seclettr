@@ -14,7 +14,7 @@ import type {
   IncomingCall,
 } from "@/calls/direct/model/direct-call-types";
 import type { DirectCallFinishSessionOptions } from "@/calls/direct/runtime/direct-call-runtime-types";
-import { useDirectCallSetupControlRuntime } from "@/calls/direct/runtime/useDirectCallSetupControlRuntime";
+import { useDirectCallSetup } from "@/calls/direct/runtime/useDirectCallSetup";
 
 const setupControlMocks = vi.hoisted(() => {
   const apiPost = vi.fn();
@@ -49,7 +49,7 @@ vi.mock("@/lib/websocket", () => ({
   },
 }));
 
-type SetupControlRuntimeApi = ReturnType<typeof useDirectCallSetupControlRuntime>;
+type SetupControlRuntimeApi = ReturnType<typeof useDirectCallSetup>;
 type ActiveCallStateUpdater =
   | ActiveCall
   | null
@@ -193,7 +193,7 @@ function HookHarness(props: {
   finishCallSession?: (opts: DirectCallFinishSessionOptions) => void;
   capture: (runtime: SetupControlRuntimeApi) => void;
 }) {
-  const runtime = useDirectCallSetupControlRuntime({
+  const runtime = useDirectCallSetup({
     activeRef: props.activeRef,
     incomingRef: props.incomingRef,
     acceptingIncomingCallRef: props.acceptingIncomingCallRef ?? { current: null },
@@ -252,7 +252,7 @@ function HookHarness(props: {
   return null;
 }
 
-describe("useDirectCallSetupControlRuntime", () => {
+describe("useDirectCallSetup", () => {
   let container: HTMLDivElement;
   let root: Root;
   let runtime: SetupControlRuntimeApi | null;

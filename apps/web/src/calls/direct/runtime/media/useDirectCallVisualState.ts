@@ -23,7 +23,7 @@ interface UseDirectCallVisualStateSummaryResult {
   localSupportsFrameEncryption: boolean;
 }
 
-export function useDirectCallVisualStateSummary({
+export function useDirectCallVisualState({
   active,
   localStream,
   remoteCameraSlot,

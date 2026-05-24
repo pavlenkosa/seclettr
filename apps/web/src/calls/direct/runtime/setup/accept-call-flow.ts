@@ -1,12 +1,11 @@
 /**
- * Inbound call acceptance flow — extracted from useDirectCallSetupControlRuntime.
+ * Inbound call acceptance flow — extracted from useDirectCallSetup.
  *
  * runAcceptCallFlow is a pure async function; it has no React hook dependencies.
  * All side-effect surfaces are injected via AcceptCallFlowOptions.
  */
 
 import {
-  DIRECT_CALL_SETUP_TIMEOUTS,
 } from "@/calls/direct/model/direct-call-setup-timeouts";
 import {
   type DirectCallMediaEncryptionMode,
@@ -21,7 +20,6 @@ import {
   resetNegotiationSessionState,
 } from "./direct-call-setup-shared";
 import {
-  DirectCallLifecycleAbortError,
   isDirectCallLifecycleAbortError,
   createLifecycleGuard,
   stopMediaStream,
@@ -168,8 +166,6 @@ export async function runAcceptCallFlow(options: AcceptCallFlowOptions): Promise
     callerUserId,
     callerLabel,
     callType,
-    offerSdp,
-    mediaEncryptionOffer,
   } = currentIncoming;
   // Keep runtime ownership of the accepted call while the incoming UI state is hidden.
   // Late hangup/ICE can arrive before activeRef exists, and must still have a session target.
@@ -209,15 +205,6 @@ export async function runAcceptCallFlow(options: AcceptCallFlowOptions): Promise
     } = inboundOfferAcceptance;
 
     let resolvedMediaEncryptionMode: DirectCallMediaEncryptionMode = selectedMediaEncryptionMode;
-    const mediaEncryptionAnswer: {
-      selectedMode: DirectCallMediaEncryptionMode;
-      supportedModes: readonly DirectCallMediaEncryptionMode[];
-      ephemeralPublicKey?: string;
-    } = {
-      selectedMode: resolvedMediaEncryptionMode,
-      supportedModes: localSupportedMediaEncryptionModes,
-    };
-
     const { pc, stream } = await bootstrapAcceptedIncomingCall({
       currentIncoming,
       offerVerificationState: offerVerification.state,

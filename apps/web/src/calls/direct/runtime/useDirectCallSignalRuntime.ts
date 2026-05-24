@@ -15,7 +15,6 @@
  * provided by the controller. All business decisions live in the handlers.
  */
 import {
-  useCallback,
   type Dispatch,
   type MutableRefObject,
   type SetStateAction,

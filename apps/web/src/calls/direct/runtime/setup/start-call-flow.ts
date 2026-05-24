@@ -1,5 +1,5 @@
 /**
- * Outbound call setup flow — extracted from useDirectCallSetupControlRuntime.
+ * Outbound call setup flow — extracted from useDirectCallSetup.
  *
  * runStartCallFlow is a pure async function; it has no React hook dependencies.
  * All side-effect surfaces are injected via StartCallFlowOptions.
@@ -33,7 +33,6 @@ import {
   resetNegotiationSessionState,
 } from "./direct-call-setup-shared";
 import {
-  DirectCallLifecycleAbortError,
   isDirectCallLifecycleAbortError,
   createLifecycleGuard,
   stopMediaStream,

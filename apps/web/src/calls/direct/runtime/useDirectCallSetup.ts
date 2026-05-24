@@ -1,5 +1,5 @@
 /**
- * useDirectCallSetupControlRuntime — call setup state machine entry point.
+ * useDirectCallSetup — call setup state machine entry point.
  *
  * Owns:
  *   - startCall: initiates an outgoing call (media acquisition → offer → invite API)
@@ -25,7 +25,7 @@ import {
 } from "./setup";
 import { hapticImpactMedium, hapticNotificationWarning } from "@/lib/native-haptics";
 
-export function useDirectCallSetupControlRuntime(options: DirectCallSetupRuntimeOptions) {
+export function useDirectCallSetup(options: DirectCallSetupRuntimeOptions) {
   const {
     // --- DirectCallSetupSessionContext ---
     activeRef,

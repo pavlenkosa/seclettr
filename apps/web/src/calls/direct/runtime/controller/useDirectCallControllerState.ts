@@ -44,12 +44,14 @@ export function useDirectCallControllerState() {
     const value = applySetStateAction(refs.incomingRef.current, next);
     refs.incomingRef.current = value;
     setIncoming(value);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const commitActiveState = useCallback((next: SetStateAction<ActiveCall | null>) => {
     const value = applySetStateAction(refs.activeRef.current, next);
     refs.activeRef.current = value;
     setActive(value);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const debugCallMedia = useCallback((event: string, payload: Record<string, unknown>) => {
@@ -57,6 +59,7 @@ export function useDirectCallControllerState() {
       return;
     }
     logger.debug(`[CALL][${event}]`, payload);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const recordLastRenegotiationAttempt = useCallback((payload: Record<string, unknown>) => {
@@ -64,6 +67,7 @@ export function useDirectCallControllerState() {
       ...payload,
       at: new Date().toISOString(),
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const shouldIgnoreUnexpectedPeerSignal = useCallback((params: {
@@ -103,6 +107,7 @@ export function useDirectCallControllerState() {
     };
     debugCallMedia("unexpected-peer-signal-ignored", errorPayload);
     return true;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [debugCallMedia]);
 
   const isCurrentActiveCallContext = useCallback((callId: string, pc?: RTCPeerConnection | null) => {
@@ -112,6 +117,7 @@ export function useDirectCallControllerState() {
       currentConnection: refs.peerConnectionRef.current,
       expectedConnection: pc,
     });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const setActiveIfCurrent = useCallback((

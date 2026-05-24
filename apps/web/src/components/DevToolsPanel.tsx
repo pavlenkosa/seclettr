@@ -146,22 +146,9 @@ function clearMockGroups(): void {
   useGroupsStore.setState({ groups: next });
 }
 
-async function deleteAllDatabases(): Promise<void> {
-  const names = ["seclettr-keystore"];
-  for (const name of names) {
-    await new Promise<void>((resolve, reject) => {
-      const req = indexedDB.deleteDatabase(name);
-      req.onsuccess = () => resolve();
-      req.onerror = () => reject(req.error ?? new Error("Failed to delete database"));
-      req.onblocked = () => resolve();
-    });
-  }
-}
-
 export function DevToolsPanel() {
   const { t } = useI18n();
   const [open, setOpen] = useState(false);
-  const [clearing, setClearing] = useState(false);
   const [mockCount, setMockCount] = useState(5);
   const [chatMockCount, setChatMockCount] = useState(20);
   const [showStorage, setShowStorage] = useState(false);
@@ -188,16 +175,6 @@ export function DevToolsPanel() {
       setCallDebugEnabled(fromCallBanner);
     }
   }, []);
-  const handleTakeSnapshotCall = useCallback(async () => {
-    const snapshot = await window.__scGetCallDebugSnapshot?.();
-    if (!snapshot) {
-      alert(t("dev.callSnapshotUnavailable"));
-      return;
-    }
-    await navigator.clipboard.writeText(JSON.stringify(snapshot, null, 2));
-    alert(t("dev.callSnapshotCopied"));
-  }, []);
-
   const handleDumpCallSnapshot = useCallback(async () => {
     if (!window.__scDumpCallDebug) {
       return;
@@ -501,10 +478,9 @@ export function DevToolsPanel() {
           <div className={styles.btnGroup}>
             <button
               onClick={() => void clearAllData()}
-              disabled={clearing}
               className={`${styles.btn} ${styles.btnDanger}`}
             >
-              {clearing ? t("dev.clearing") : t("dev.clearAllData")}
+              {t("dev.clearAllData")}
             </button>
             <button
               onClick={copyDebugInfo}

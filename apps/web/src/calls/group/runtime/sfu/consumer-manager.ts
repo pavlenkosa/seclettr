@@ -29,11 +29,11 @@ import {
 import type { SfuHttpClient } from "./http-client";
 import {
   emitRemoteMediaUpdate,
-  mergeRemoteFrameKeyContexts,
   upsertRemoteEntry,
   type GroupCallRemoteMedia,
   type RemoteParticipantMediaInternal,
 } from "./runtime-common";
+import type { mergeRemoteFrameKeyContexts } from "./runtime-common";
 import type {
   GroupCallMediaEncryptionMode,
   ManagedConsumer,

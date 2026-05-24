@@ -216,7 +216,7 @@ export function DirectCallActiveOverlay({
     const el = callHeaderRef.current;
     if (!el) return;
     setSecuritySheetTop(Math.round(el.getBoundingClientRect().bottom) + 8);
-  });
+  }, []);
 
   useEffect(() => {
     const measure = () => {

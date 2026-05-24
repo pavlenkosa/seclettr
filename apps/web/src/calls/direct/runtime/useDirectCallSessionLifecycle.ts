@@ -174,6 +174,7 @@ export function useDirectCallSessionLifecycle(options: UseDirectCallSessionLifec
     });
     resetLocalPreviewState();
     resetLocalScreenPreviewState();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [resetLocalPreviewState, resetLocalScreenPreviewState]);
 
   const closePeerConnection = useCallback(
@@ -249,6 +250,7 @@ export function useDirectCallSessionLifecycle(options: UseDirectCallSessionLifec
       disconnectRecoveryAttemptedRef,
     });
     if (opts?.notice) pushNotice(opts.notice);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     closeDirectCallFrameCrypto,
     closePeerConnection,
@@ -297,6 +299,7 @@ export function useDirectCallSessionLifecycle(options: UseDirectCallSessionLifec
     }
 
     resetCallState({ notice: opts.notice });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [resetCallState, sendAuthoritativeDirectCallHangup, sendAuthoritativeDirectCallReject]);
 
   useDirectCallFrameModeRecovery({

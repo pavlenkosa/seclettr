@@ -1,0 +1,221 @@
+.root {
+  display: flex;
+  flex-direction: column;
+  gap: 1.2rem;
+  padding: 1.25rem 1.25rem 2rem;
+}
+
+/* ── Avatar ──────────────────────────────────────────────────────────────── */
+
+.avatarSection {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+  padding-bottom: 0.5rem;
+}
+
+.avatarWrap {
+  position: relative;
+  flex-shrink: 0;
+}
+
+.avatarSpinner {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  border: 2.5px solid transparent;
+  border-top-color: var(--accent);
+  animation: spin 0.9s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* Buttons sit horizontally below the avatar */
+.avatarActions {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.avatarBtn {
+  font-size: 0.83rem;
+  font-weight: 600;
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 10%, transparent);
+  border: 1px solid color-mix(in srgb, var(--accent) 28%, transparent);
+  border-radius: 999px;
+  cursor: pointer;
+  padding: 0.32rem 0.88rem;
+  line-height: 1.2;
+  transition:
+    background-color var(--motion-duration-fast) var(--motion-ease-standard),
+    border-color var(--motion-duration-fast) var(--motion-ease-standard),
+    opacity var(--motion-duration-fast) var(--motion-ease-standard);
+}
+
+.avatarBtn:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+.avatarBtn:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--accent) 18%, transparent);
+  border-color: color-mix(in srgb, var(--accent) 45%, transparent);
+}
+
+.avatarBtnDanger {
+  color: var(--danger);
+  background: color-mix(in srgb, var(--danger) 10%, transparent);
+  border-color: color-mix(in srgb, var(--danger) 28%, transparent);
+}
+
+.avatarBtnDanger:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--danger) 18%, transparent);
+  border-color: color-mix(in srgb, var(--danger) 45%, transparent);
+}
+
+.fileInput {
+  position: absolute;
+  width: 0;
+  height: 0;
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* ── Fields ──────────────────────────────────────────────────────────────── */
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.label {
+  font-size: 0.78rem;
+  font-weight: 650;
+  color: var(--text-secondary);
+  letter-spacing: 0.02em;
+}
+
+.input {
+  width: 100%;
+  padding: 0.56rem 0.72rem;
+  background: color-mix(in srgb, var(--surface-shell-strong) 80%, var(--bg-secondary));
+  border: 1px solid color-mix(in srgb, var(--panel-border) 70%, transparent);
+  border-radius: 10px;
+  color: var(--text-primary);
+  font-size: 0.9rem;
+  line-height: 1.4;
+  transition:
+    border-color var(--motion-duration-fast) var(--motion-ease-standard),
+    background-color var(--motion-duration-fast) var(--motion-ease-standard);
+}
+
+.input:focus {
+  outline: none;
+  border-color: color-mix(in srgb, var(--accent) 60%, transparent);
+  background: color-mix(in srgb, var(--surface-shell-strong) 92%, var(--bg-secondary));
+}
+
+.textarea {
+  resize: vertical;
+  min-height: 72px;
+  font-family: inherit;
+}
+
+.readonlyValue {
+  padding: 0.56rem 0.72rem;
+  background: color-mix(in srgb, var(--surface-shell-strong) 50%, transparent);
+  border: 1px solid color-mix(in srgb, var(--panel-border) 44%, transparent);
+  border-radius: 10px;
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+  line-height: 1.4;
+}
+
+.hint {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  line-height: 1.35;
+}
+
+.charCount {
+  font-size: 0.68rem;
+  color: var(--text-muted);
+  text-align: right;
+  line-height: 1.2;
+}
+
+/* ── Save ────────────────────────────────────────────────────────────────── */
+
+.saveRow {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding-top: 0.25rem;
+}
+
+.saveBtn {
+  align-self: flex-start;
+  padding: 0.5rem 1.2rem;
+  border-radius: 999px;
+  background: var(--accent);
+  color: #fff;
+  border: none;
+  font-size: 0.86rem;
+  font-weight: 650;
+  cursor: pointer;
+  transition:
+    opacity var(--motion-duration-fast) var(--motion-ease-standard),
+    background-color var(--motion-duration-fast) var(--motion-ease-standard);
+}
+
+.saveBtn:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+.saveBtn:hover:not(:disabled) {
+  opacity: 0.88;
+}
+
+.errorMsg {
+  font-size: 0.78rem;
+  color: var(--danger);
+  margin: 0;
+  line-height: 1.4;
+}
+
+/* ── Light theme ─────────────────────────────────────────────────────────── */
+
+:global(:root[data-theme="light"]) .input {
+  background: var(--bg-primary);
+  border-color: color-mix(in srgb, var(--panel-border) 80%, transparent);
+}
+
+:global(:root[data-theme="light"]) .input:focus {
+  border-color: var(--accent);
+  background: var(--bg-primary);
+}
+
+:global(:root[data-theme="light"]) .readonlyValue {
+  background: color-mix(in srgb, var(--bg-secondary) 60%, transparent);
+}
+
+/* ── Reduced motion ──────────────────────────────────────────────────────── */
+
+@media (prefers-reduced-motion: reduce) {
+  .avatarSpinner {
+    animation: none;
+  }
+
+  .input,
+  .avatarBtn,
+  .saveBtn {
+    transition: none !important;
+  }
+}

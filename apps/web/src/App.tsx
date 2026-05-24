@@ -20,7 +20,6 @@ import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import { useShallow } from "zustand/react/shallow";
 import { AppErrorFallback, ErrorBoundary } from "./components/common/ErrorBoundary";
 import { AppBootSkeleton } from "./components/common/AppBootSkeleton";
-import { useI18n } from "./i18n";
 import { startAppRealtimeListeners } from "./lib/app-realtime-bootstrap";
 import { logger } from "./lib/logger.js";
 import { useInactivityLock } from "./lib/useInactivityLock";
@@ -147,7 +146,6 @@ function renderChatRouteElement({
 
 
 export function App() {
-  const { t } = useI18n();
   const {
     authLifecycle,
     authOperation,

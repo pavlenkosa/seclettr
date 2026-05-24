@@ -45,6 +45,8 @@ export interface PlainMessage {
 export interface PlainConversation {
   userId: string;
   username: string;
+  displayName: string | null;
+  avatarKey: string | null;
   messages: PlainMessage[];
   lastMessageAt: number;
   unreadCount: number;
@@ -65,6 +67,10 @@ export interface PlainGroup {
   groupId: string;
   name: string;
   creatorId: string;
+  /** S3 storage key for the group avatar. Null when no avatar is set. */
+  avatarKey: string | null;
+  /** Optional group description shown in the info modal. */
+  description: string | null;
   members: PlainGroupMember[];
   messages: PlainMessage[];
   lastMessageAt: number;

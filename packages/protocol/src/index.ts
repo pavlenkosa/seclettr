@@ -8,3 +8,4 @@ export * from "./groups.js";
 export * from "./sfu.js";
 export * from "./rooms.js";
 export * from "./plain.js";
+export * from "./profile.js";

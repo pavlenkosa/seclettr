@@ -98,6 +98,8 @@ export async function plainConversationRoutes(fastify: FastifyInstance): Promise
       const rows = await query<{
         peer_user_id: string;
         peer_username: string;
+        peer_display_name: string | null;
+        peer_avatar_key: string | null;
         last_message_at: string;
         last_message_content: string;
         last_message_type: string;
@@ -109,6 +111,8 @@ export async function plainConversationRoutes(fastify: FastifyInstance): Promise
           SELECT DISTINCT ON (peer_user_id)
             peer_user_id,
             peer_username,
+            peer_display_name,
+            peer_avatar_key,
             last_message_at,
             last_message_content,
             last_message_type,
@@ -116,7 +120,9 @@ export async function plainConversationRoutes(fastify: FastifyInstance): Promise
           FROM (
             SELECT
               CASE WHEN pm.sender_user_id = $1 THEN pm.recipient_user_id ELSE pm.sender_user_id END AS peer_user_id,
-              CASE WHEN pm.sender_user_id = $1 THEN ru.username ELSE su.username END AS peer_username,
+              CASE WHEN pm.sender_user_id = $1 THEN ru.username      ELSE su.username      END AS peer_username,
+              CASE WHEN pm.sender_user_id = $1 THEN ru.display_name  ELSE su.display_name  END AS peer_display_name,
+              CASE WHEN pm.sender_user_id = $1 THEN ru.avatar_key    ELSE su.avatar_key    END AS peer_avatar_key,
               pm.created_at   AS last_message_at,
               pm.content      AS last_message_content,
               pm.message_type AS last_message_type,
@@ -152,6 +158,8 @@ export async function plainConversationRoutes(fastify: FastifyInstance): Promise
         conversations: rows.map((r) => ({
           peerUserId: r.peer_user_id,
           peerUsername: r.peer_username,
+          peerDisplayName: r.peer_display_name ?? null,
+          peerAvatarKey: r.peer_avatar_key ?? null,
           lastMessageAt: r.last_message_at,
           lastMessageContent: r.last_message_content,
           lastMessageType: r.last_message_type,

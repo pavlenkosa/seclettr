@@ -132,6 +132,8 @@ export function mergeIncomingMessage(
     [conversationKey]: {
       userId: conversationKey,
       username,
+      displayName: null,
+      avatarKey: null,
       messages: [msg],
       lastMessageAt: msg.timestamp,
       unreadCount: msg.isOwn ? 0 : 1,

@@ -1,18 +1,23 @@
 /**
  * Plain group routes.
  *
- * POST /plain/groups                       → create group
- * GET  /plain/groups                       → list my groups
- * GET  /plain/groups/:id                   → get group details
- * POST /plain/groups/:id/members           → add member
- * DELETE /plain/groups/:id/members/:userId → remove member
- * POST /plain/groups/:id/messages          → send group message
- * GET  /plain/groups/:id/messages          → paginated group history
- * PATCH /plain/groups/:id/messages/:msgId  → edit group message
- * DELETE /plain/groups/:id/messages/:msgId → delete group message
+ * POST   /plain/groups                          → create group
+ * GET    /plain/groups                          → list my groups
+ * GET    /plain/groups/:id                      → get group details
+ * PATCH  /plain/groups/:id                      → rename / update description
+ * POST   /plain/groups/:id/avatar               → upload group avatar (admin+)
+ * DELETE /plain/groups/:id/avatar               → remove group avatar (admin+)
+ * GET    /plain/groups/:id/avatar               → serve avatar image (member)
+ * POST   /plain/groups/:id/members              → add member
+ * DELETE /plain/groups/:id/members/:userId      → remove member
+ * POST   /plain/groups/:id/messages             → send group message
+ * GET    /plain/groups/:id/messages             → paginated group history
+ * PATCH  /plain/groups/:id/messages/:msgId      → edit group message
+ * DELETE /plain/groups/:id/messages/:msgId      → delete group message
  */
 import type { FastifyInstance } from "fastify";
 import { randomUUID } from "node:crypto";
+import { S3Client, GetObjectCommand, PutObjectCommand, DeleteObjectCommand } from "@aws-sdk/client-s3";
 import { requireAuth } from "../../middleware/auth.js";
 import { query, transaction } from "../../db/pool.js";
 import { parseOrReply } from "../../utils/validation.js";
@@ -23,6 +28,7 @@ import { buildGroupMessagePushPayload } from "../../services/push-payloads.js";
 import { hasActiveConnectionForUserAcrossCluster } from "../../services/websocket.js";
 import { buildDownloadUrl } from "./attachments.js";
 import { resolveBrowserOrigin } from "../../utils/request-origin.js";
+import { config } from "../../config.js";
 import {
   SendPlainMessageRequestSchema,
   EditPlainMessageRequestSchema,
@@ -31,6 +37,24 @@ import {
   UpdatePlainGroupMemberRoleRequestSchema,
   RenamePlainGroupRequestSchema,
 } from "@seclettr/protocol";
+
+// ─── Avatar storage ────────────────────────────────────────────────────────────
+const GROUP_AVATAR_MAX_BYTES = 4 * 1024 * 1024;
+const GROUP_AVATAR_ALLOWED_TYPES = new Set(["image/jpeg", "image/png", "image/webp"]);
+const GROUP_AVATAR_PREFIX = "group-avatars/";
+
+const GROUP_AVATAR_UPLOAD_RATE_WINDOW_SEC = 60 * 5;
+const GROUP_AVATAR_UPLOAD_RATE_MAX = 5;
+
+const s3 = new S3Client({
+  endpoint: config.S3_ENDPOINT,
+  region: config.S3_REGION,
+  credentials: {
+    accessKeyId: config.S3_ACCESS_KEY,
+    secretAccessKey: config.S3_SECRET_KEY,
+  },
+  forcePathStyle: true,
+});
 
 async function fetchUsername(userId: string): Promise<string | null> {
   const [row] = await query<{ username: string }>(
@@ -52,6 +76,8 @@ interface GroupRow {
   id: string;
   name: string;
   creator_id: string;
+  avatar_key: string | null;
+  description: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -253,6 +279,8 @@ export async function plainGroupRoutes(fastify: FastifyInstance): Promise<void> 
         group_id: string;
         group_name: string;
         creator_id: string;
+        avatar_key: string | null;
+        description: string | null;
         created_at: string;
         updated_at: string;
         member_user_id: string;
@@ -264,6 +292,8 @@ export async function plainGroupRoutes(fastify: FastifyInstance): Promise<void> 
            pg.id              AS group_id,
            pg.name            AS group_name,
            pg.creator_id,
+           pg.avatar_key,
+           pg.description,
            pg.created_at,
            pg.updated_at,
            pgm.user_id        AS member_user_id,
@@ -285,6 +315,8 @@ export async function plainGroupRoutes(fastify: FastifyInstance): Promise<void> 
         id: string;
         name: string;
         creatorId: string;
+        avatarKey: string | null;
+        description: string | null;
         members: Array<{ userId: string; username: string; role: string; joinedAt: string }>;
         createdAt: string;
         updatedAt: string;
@@ -296,6 +328,8 @@ export async function plainGroupRoutes(fastify: FastifyInstance): Promise<void> 
             id: row.group_id,
             name: row.group_name,
             creatorId: row.creator_id,
+            avatarKey: row.avatar_key ?? null,
+            description: row.description ?? null,
             members: [],
             createdAt: row.created_at,
             updatedAt: row.updated_at,
@@ -326,7 +360,8 @@ export async function plainGroupRoutes(fastify: FastifyInstance): Promise<void> 
       if (!membership) return reply.code(403).send({ error: "Not a member" });
 
       const [g] = await query<GroupRow>(
-        `SELECT id, name, creator_id, created_at, updated_at FROM plain_groups WHERE id = $1`,
+        `SELECT id, name, creator_id, avatar_key, description, created_at, updated_at
+         FROM plain_groups WHERE id = $1`,
         [id]
       );
       if (!g) return reply.code(404).send({ error: "Group not found" });
@@ -343,6 +378,8 @@ export async function plainGroupRoutes(fastify: FastifyInstance): Promise<void> 
         id: g.id,
         name: g.name,
         creatorId: g.creator_id,
+        avatarKey: g.avatar_key ?? null,
+        description: g.description ?? null,
         members: members.map((m) => ({
           userId: m.user_id,
           username: m.username,
@@ -368,15 +405,43 @@ export async function plainGroupRoutes(fastify: FastifyInstance): Promise<void> 
       if (!membership) return reply.code(403).send({ error: "Not a member" });
       if (membership.role === "member") return reply.code(403).send({ error: "Insufficient role" });
 
+      // Accept rename (required) + optional description update
+      const rawBody = request.body as Record<string, unknown>;
+
+      // Description-only update (no name change)
+      if ("description" in rawBody && !("name" in rawBody)) {
+        const desc = rawBody["description"];
+        if (desc !== null && typeof desc !== "string") {
+          return reply.code(400).send({ error: "description must be a string or null" });
+        }
+        if (typeof desc === "string" && desc.length > 500) {
+          return reply.code(400).send({ error: "description too long (max 500 chars)" });
+        }
+        const [updated] = await query<{ id: string; name: string; description: string | null; updated_at: string }>(
+          `UPDATE plain_groups SET description = $1 WHERE id = $2
+           RETURNING id, name, description,
+             to_char(updated_at AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"') AS updated_at`,
+          [desc ?? null, id]
+        );
+        if (!updated) return reply.code(404).send({ error: "Group not found" });
+        return reply.code(200).send({
+          id: updated.id,
+          name: updated.name,
+          description: updated.description,
+          updatedAt: updated.updated_at,
+        });
+      }
+
       const body = parseOrReply(reply, RenamePlainGroupRequestSchema, request.body);
       if (!body) return;
 
       const trimmed = body.name.trim();
       if (!trimmed) return reply.code(400).send({ error: "Name cannot be empty" });
 
-      const [updated] = await query<{ id: string; name: string; updated_at: string }>(
+      const [updated] = await query<{ id: string; name: string; description: string | null; updated_at: string }>(
         `UPDATE plain_groups SET name = $1 WHERE id = $2
-         RETURNING id, name, to_char(updated_at AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"') AS updated_at`,
+         RETURNING id, name, description,
+           to_char(updated_at AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"') AS updated_at`,
         [trimmed, id]
       );
       if (!updated) return reply.code(404).send({ error: "Group not found" });
@@ -384,8 +449,140 @@ export async function plainGroupRoutes(fastify: FastifyInstance): Promise<void> 
       return reply.code(200).send({
         id: updated.id,
         name: updated.name,
+        description: updated.description,
         updatedAt: updated.updated_at,
       });
+    }
+  );
+
+  /** Upload group avatar (admin / owner only) */
+  fastify.post(
+    "/:id/avatar",
+    { preHandler: requireAuth },
+    async (request, reply) => {
+      const { sub: userId } = request.auth;
+      const { id } = request.params as { id: string };
+
+      const membership = await getActiveMembership(id, userId);
+      if (!membership) return reply.code(403).send({ error: "Not a member" });
+      if (membership.role === "member") return reply.code(403).send({ error: "Insufficient role" });
+
+      const rateOk = await consumeFixedWindowRateLimit({
+        key: `rate:group-avatar:v1:${userId}:${id}`,
+        max: GROUP_AVATAR_UPLOAD_RATE_MAX,
+        windowSec: GROUP_AVATAR_UPLOAD_RATE_WINDOW_SEC,
+      });
+      if (!rateOk.allowed) {
+        reply.header("Retry-After", String(rateOk.retryAfterSec));
+        return reply.code(429).send({ error: "Too many avatar upload requests" });
+      }
+
+      const data = await request.file({ limits: { fileSize: GROUP_AVATAR_MAX_BYTES } });
+      if (!data) return reply.code(400).send({ error: "No file provided" });
+
+      const contentType = data.mimetype ?? "application/octet-stream";
+      if (!GROUP_AVATAR_ALLOWED_TYPES.has(contentType)) {
+        data.file.resume();
+        return reply.code(400).send({
+          error: `Unsupported image type. Allowed: ${[...GROUP_AVATAR_ALLOWED_TYPES].join(", ")}`,
+        });
+      }
+
+      const chunks: Buffer[] = [];
+      let totalBytes = 0;
+      for await (const chunk of data.file) {
+        totalBytes += chunk.length;
+        if (totalBytes > GROUP_AVATAR_MAX_BYTES) {
+          return reply.code(413).send({ error: "Avatar image too large (max 4 MB)" });
+        }
+        chunks.push(chunk);
+      }
+      const buffer = Buffer.concat(chunks);
+
+      const storageKey = `${GROUP_AVATAR_PREFIX}${id}`;
+      await s3.send(new PutObjectCommand({
+        Bucket: config.S3_BUCKET,
+        Key: storageKey,
+        Body: buffer,
+        ContentType: contentType,
+        ContentLength: buffer.length,
+      }));
+
+      const [updated] = await query<{ id: string; name: string; avatar_key: string | null; updated_at: string }>(
+        `UPDATE plain_groups SET avatar_key = $1 WHERE id = $2
+         RETURNING id, name, avatar_key,
+           to_char(updated_at AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"') AS updated_at`,
+        [storageKey, id]
+      );
+      if (!updated) return reply.code(404).send({ error: "Group not found" });
+
+      return reply.code(200).send({
+        id: updated.id,
+        name: updated.name,
+        avatarKey: updated.avatar_key,
+        updatedAt: updated.updated_at,
+      });
+    }
+  );
+
+  /** Delete group avatar (admin / owner only) */
+  fastify.delete(
+    "/:id/avatar",
+    { preHandler: requireAuth },
+    async (request, reply) => {
+      const { sub: userId } = request.auth;
+      const { id } = request.params as { id: string };
+
+      const membership = await getActiveMembership(id, userId);
+      if (!membership) return reply.code(403).send({ error: "Not a member" });
+      if (membership.role === "member") return reply.code(403).send({ error: "Insufficient role" });
+
+      const storageKey = `${GROUP_AVATAR_PREFIX}${id}`;
+      await s3.send(new DeleteObjectCommand({ Bucket: config.S3_BUCKET, Key: storageKey })).catch(() => undefined);
+
+      const [updated] = await query<{ id: string; name: string; avatar_key: string | null; updated_at: string }>(
+        `UPDATE plain_groups SET avatar_key = NULL WHERE id = $1
+         RETURNING id, name, avatar_key,
+           to_char(updated_at AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"') AS updated_at`,
+        [id]
+      );
+      if (!updated) return reply.code(404).send({ error: "Group not found" });
+
+      return reply.code(200).send({
+        id: updated.id,
+        name: updated.name,
+        avatarKey: null,
+        updatedAt: updated.updated_at,
+      });
+    }
+  );
+
+  /** Serve group avatar image (any member) */
+  fastify.get(
+    "/:id/avatar",
+    { preHandler: requireAuth },
+    async (request, reply) => {
+      const { sub: userId } = request.auth;
+      const { id } = request.params as { id: string };
+
+      const membership = await getActiveMembership(id, userId);
+      if (!membership) return reply.code(403).send({ error: "Not a member" });
+
+      const storageKey = `${GROUP_AVATAR_PREFIX}${id}`;
+      let object;
+      try {
+        object = await s3.send(new GetObjectCommand({ Bucket: config.S3_BUCKET, Key: storageKey }));
+      } catch {
+        return reply.code(404).send({ error: "Avatar not found" });
+      }
+
+      const contentType = object.ContentType ?? "image/jpeg";
+      reply.header("Content-Type", contentType);
+      reply.header("Cache-Control", "private, max-age=300");
+      if (object.ContentLength) reply.header("Content-Length", String(object.ContentLength));
+
+      const { Readable } = await import("node:stream");
+      return reply.send(object.Body as InstanceType<typeof Readable>);
     }
   );
 

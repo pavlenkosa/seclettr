@@ -78,6 +78,8 @@ export function createPlainMessagesLocalEventsRuntime(
       const conv: PlainConversation = existing ?? {
         userId,
         username,
+        displayName: null,
+        avatarKey: null,
         messages: [],
         lastMessageAt: 0,
         unreadCount: 0,

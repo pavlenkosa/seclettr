@@ -60,6 +60,8 @@ export function createPlainMessagesHistoryRuntime(
         conversations: Array<{
           peerUserId: string;
           peerUsername: string;
+          peerDisplayName: string | null;
+          peerAvatarKey: string | null;
           lastMessageAt: string;
           lastMessageContent: string;
           lastMessageType: string;
@@ -92,6 +94,8 @@ export function createPlainMessagesHistoryRuntime(
             next[key] = {
               userId: c.peerUserId,
               username: c.peerUsername,
+              displayName: c.peerDisplayName ?? null,
+              avatarKey: c.peerAvatarKey ?? null,
               messages: [stub],
               lastMessageAt: lastTs,
               unreadCount: c.unreadCount,
@@ -99,8 +103,13 @@ export function createPlainMessagesHistoryRuntime(
               historyLoaded: false,
             };
           } else {
-            // Update unread count from server even if conversation already exists
-            next[key] = { ...next[key]!, unreadCount: c.unreadCount };
+            // Update unread count and profile fields from server even if conversation already exists.
+            next[key] = {
+              ...next[key]!,
+              unreadCount: c.unreadCount,
+              displayName: c.peerDisplayName ?? null,
+              avatarKey: c.peerAvatarKey ?? null,
+            };
           }
         }
         return { conversations: next };
@@ -149,6 +158,8 @@ export function createPlainMessagesHistoryRuntime(
             [key]: {
               userId,
               username: prev?.username ?? username,
+              displayName: prev?.displayName ?? null,
+              avatarKey: prev?.avatarKey ?? null,
               messages,
               lastMessageAt: messages.at(-1)?.timestamp ?? prev?.lastMessageAt ?? 0,
               unreadCount: prev?.unreadCount ?? 0,

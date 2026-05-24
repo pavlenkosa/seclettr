@@ -52,7 +52,15 @@ import {
   recordWebSocketConnected,
   recordWebSocketDisconnected,
 } from "./observability.js";
-import { createOrderedTaskRunner } from "./ordered-task-runner.js";
+function createSignalRunner() {
+  let tail = Promise.resolve();
+  const enqueue = <T>(task: () => Promise<T> | T): Promise<T> => {
+    const next = tail.then(() => task());
+    tail = next.then(() => undefined, () => undefined);
+    return next;
+  };
+  return { enqueue };
+}
 
 interface ConnectedClient {
   ws: WebSocket;
@@ -254,14 +262,14 @@ export async function registerWebSocketHandler(
     directCallSignalRouter.cancelDisconnectCleanup(client.deviceId);
     connections.add(client);
     let pingInterval: NodeJS.Timeout | null = null;
-    const statefulSignalRunner = createOrderedTaskRunner();
+    const signalRunner = createSignalRunner();
 
     const enqueueStatefulSignalTask = (
       task: () => Promise<void>,
       context: Record<string, unknown>,
       failureMessage: string
     ): void => {
-      void statefulSignalRunner.enqueue(task).catch((err) => {
+      void signalRunner.enqueue(task).catch((err) => {
         fastify.log.warn(
           {
             err,

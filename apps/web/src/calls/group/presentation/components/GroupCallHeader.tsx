@@ -8,7 +8,7 @@ import {
   MinimizeIcon,
   PhoneIcon,
 } from "./GroupCallIcons";
-import styles from "@/calls/group/presentation/GroupCallPanel.module.css";
+import styles from "./GroupCallHeader.module.css";
 
 interface GroupCallHeaderProps {
   readonly groupName: string;

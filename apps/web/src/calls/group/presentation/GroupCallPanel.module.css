@@ -92,85 +92,6 @@
   animation: groupCallPanelIn 220ms cubic-bezier(0.18, 0.9, 0.2, 1) both;
 }
 
-/* ── Header chrome ────────────────────────────────────────────────────────── */
-.header {
-  --header-bar-gap: 0.85rem;
-  flex-shrink: 0;
-  width: min(100%, 1520px);
-  margin-inline: auto;
-}
-
-.headerSummary {
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 0.28rem;
-  align-items: center;
-  justify-self: center;
-  text-align: center;
-}
-
-.headerTitleRow,
-.headerMetaRow {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.6rem;
-  flex-wrap: wrap;
-}
-
-.headerTitle {
-  min-width: 0;
-  color: var(--text-primary);
-  font-size: clamp(1rem, 2.5vw, 1.22rem);
-  font-weight: 760;
-  letter-spacing: -0.02em;
-}
-
-.headerDuration {
-  display: inline-flex;
-  align-items: center;
-  min-height: 28px;
-  padding: 0 0.55rem;
-  border-radius: 999px;
-  background: color-mix(in srgb, var(--surface-shell) 88%, transparent);
-  border: 1px solid color-mix(in srgb, var(--panel-border-soft) 88%, transparent);
-  color: var(--text-secondary);
-  font-size: 0.74rem;
-  font-weight: 700;
-  font-variant-numeric: tabular-nums;
-}
-
-.headerMetaText {
-  color: var(--text-secondary);
-  font-size: 0.78rem;
-  font-weight: 600;
-}
-
-.headerActions {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.45rem;
-}
-
-.detailsToggleBtn {
-  min-width: 126px;
-}
-
-.modeChip {
-  --icon-pill-min-height: 38px;
-  --icon-pill-padding: 0 0.8rem;
-  --icon-pill-gap: 0.45rem;
-}
-
-.statusBadge {
-  flex-shrink: 0;
-}
-
-.iconBtn {
-  --icon-button-size: 38px;
-}
-
 /* ── Main layout + shared side-panel shell ───────────────────────────────── */
 .body {
   flex: 1;
@@ -1125,16 +1046,6 @@
     gap: 0.85rem;
   }
 
-  .header {
-    --header-bar-gap: 0.62rem;
-  }
-
-  .detailsToggleBtn {
-    min-height: 36px;
-    padding: 0 0.72rem;
-    font-size: 0.74rem;
-  }
-
   .controlRail {
     gap: 0.5rem;
   }
@@ -1411,20 +1322,10 @@
   --surface-panel-border: color-mix(in srgb, var(--panel-border-soft) 92%, transparent);
 }
 
-:global(:root[data-theme="light"]) .headerDuration {
-  background: color-mix(in srgb, var(--surface-shell-strong) 95%, white);
-  border-color: color-mix(in srgb, var(--panel-border-soft) 86%, transparent);
-  color: color-mix(in srgb, var(--text-primary) 70%, var(--text-secondary));
-}
-
 :global(:root[data-theme="light"]) .mediaToolbarHint,
 :global(:root[data-theme="light"]) .sectionLabel,
 :global(:root[data-theme="light"]) .stageEyebrow {
   color: color-mix(in srgb, var(--text-primary) 78%, var(--text-secondary));
-}
-
-:global(:root[data-theme="light"]) .headerMetaText {
-  color: color-mix(in srgb, var(--text-primary) 72%, var(--text-secondary));
 }
 
 :global(:root[data-theme="light"]) .mediaTileActionBtn {
@@ -1462,9 +1363,7 @@
   .backdrop,
   .panel,
   .dock,
-  .iconBtn,
-  .detailsDrawer,
-  .detailsToggleBtn {
+  .detailsDrawer {
     animation: none !important;
     transition: none !important;
   }

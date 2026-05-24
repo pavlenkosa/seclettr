@@ -208,10 +208,6 @@ export function DevToolsPanel() {
   async function clearAllData() {
     if (!window.confirm("Are you sure you want to clear all data?")) return;
     localStorage.clear();
-    const stores = [useMessagesStore, useGroupsStore, useAuthStore];
-    for (const store of stores) {
-      store.persist.clearStorage();
-    }
     window.location.reload();
   }
 

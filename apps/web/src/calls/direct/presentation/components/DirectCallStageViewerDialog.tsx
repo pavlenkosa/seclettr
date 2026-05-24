@@ -1,4 +1,4 @@
-import { lazy, Suspense } from "react";
+import { lazy, Suspense, useCallback } from "react";
 
 const LazyCallStageViewerDialog = lazy(() =>
   import("@/calls/shared/presentation/CallStageViewerDialog").then(({ CallStageViewerDialog }) => ({
@@ -17,8 +17,8 @@ interface DirectCallStageViewerDialogProps {
   readonly exitFullscreenLabel: string;
   readonly closeViewerLabel: string;
   readonly stopWatchingScreenLabel: string;
-  readonly onClose: () => void;
-  readonly onStopWatchingScreen: () => void;
+  readonly onClose?: () => void;
+  readonly onStopWatchingScreen?: () => void;
 }
 
 export function DirectCallStageViewerDialog({
@@ -35,6 +35,14 @@ export function DirectCallStageViewerDialog({
   onClose,
   onStopWatchingScreen,
 }: DirectCallStageViewerDialogProps) {
+  const handleClose = useCallback(() => {
+    onClose?.();
+  }, [onClose]);
+
+  const handleStopWatching = useCallback(() => {
+    onStopWatchingScreen?.();
+  }, [onStopWatchingScreen]);
+
   if (!isOpen || !stream) {
     return null;
   }
@@ -51,8 +59,8 @@ export function DirectCallStageViewerDialog({
         exitFullscreenLabel={exitFullscreenLabel}
         closeLabel={closeViewerLabel}
         stopWatchingLabel={stopWatchingScreenLabel}
-        onClose={onClose}
-        onStopWatching={onStopWatchingScreen}
+        onClose={handleClose}
+        onStopWatching={handleStopWatching}
       />
     </Suspense>
   );

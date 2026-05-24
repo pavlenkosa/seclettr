@@ -1,0 +1,48 @@
+/* ─────────────────────────────────────────────────────────────────────────
+ * SecuritySettingsSection.module.css — PIN and transfer feedback branch.
+ *
+ * Owns:
+ *   - PIN action rows
+ *   - PIN input stack
+ *   - PIN feedback copy states
+ *
+ * Does not own:
+ *   - settings group shell
+ *   - shared settings row layout
+ * ─────────────────────────────────────────────────────────────────────────
+ */
+
+.pinButtonRow {
+  display: flex;
+  gap: 8px;
+}
+
+.pinInputGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: 100%;
+}
+
+.pinInput {
+  width: 100%;
+  min-width: 0;
+}
+
+.pinFeedback {
+  font-size: 0.78rem;
+  margin: 0;
+  line-height: 1.45;
+}
+
+.pinFeedbackBottom {
+  margin-bottom: 0.25rem;
+}
+
+.pinFeedbackError {
+  color: var(--danger);
+}
+
+.pinFeedbackSuccess {
+  color: var(--success);
+}

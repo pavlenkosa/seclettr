@@ -186,7 +186,6 @@
 
 /* === helper panels === */
 
-.feedbackPanel,
 .footerPanel {
   width: 100%;
 }
@@ -311,112 +310,14 @@
   color: var(--danger-contrast);
 }
 
-/* === notification devices === */
-
-.deviceList {
-  display: flex;
-  flex-direction: column;
-  gap: 0.72rem;
-}
-
-.deviceCard {
-  border-radius: 8px;
-  border: 1px solid color-mix(in srgb, var(--accent) 14%, var(--panel-border-soft));
-  background: var(--bg-secondary);
-}
-
-.deviceMeta {
-  gap: 0.34rem;
-}
-
-.deviceTitleRow {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 0.45rem;
-}
-
-.deviceTitle {
-  color: var(--text-primary);
-  font-size: 0.82rem;
-  font-weight: 600;
-  line-height: 1.45;
-  word-break: break-word;
-}
-
-.deviceStatus {
-  margin: 0;
-  color: var(--text-secondary);
-  font-size: 0.74rem;
-  line-height: 1.45;
-}
-
-.deviceStatusRow {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 0.45rem;
-}
-
-.deviceAction {
-  flex: 0 0 auto;
-}
-
-.deviceEmpty {
-  margin: 0;
-  color: var(--text-secondary);
-  font-size: 0.78rem;
-  line-height: 1.5;
-}
-
-/* === security pin controls === */
-
-.pinButtonRow {
-  display: flex;
-  gap: 8px;
-}
-
-.pinInputGroup {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  width: 100%;
-}
-
-.pinInput {
-  width: 100%;
-  min-width: 0;
-}
-
-.pinFeedback {
-  font-size: 0.78rem;
-  margin: 0;
-  line-height: 1.45;
-}
-
-.pinFeedbackBottom {
-  margin-bottom: 0.25rem;
-}
-
-.pinFeedbackError {
-  color: var(--danger);
-}
-
-.pinFeedbackSuccess {
-  color: var(--success);
-}
-
 /* === light theme adjustments === */
 
 :global(:root[data-theme="light"]) .groupDescription,
-:global(:root[data-theme="light"]) .note,
-:global(:root[data-theme="light"]) .deviceStatus,
-:global(:root[data-theme="light"]) .deviceEmpty {
+:global(:root[data-theme="light"]) .note {
   color: color-mix(in srgb, var(--text-primary) 68%, var(--text-secondary));
 }
 
-:global(:root[data-theme="light"]) .groupPanel,
-:global(:root[data-theme="light"]) .deviceCard {
+:global(:root[data-theme="light"]) .groupPanel {
   --surface-panel-shadow: none;
 }
 
@@ -447,20 +348,6 @@
 
   .settingControl :global(.root) {
     max-width: 100%;
-  }
-
-  .deviceCard {
-    flex-direction: column;
-    align-items: stretch;
-  }
-
-  .deviceCard > span:last-child {
-    width: 100%;
-    justify-content: stretch;
-  }
-
-  .deviceAction {
-    width: 100%;
   }
 
   .sectionSkeletonStack {

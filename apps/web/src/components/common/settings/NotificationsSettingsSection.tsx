@@ -9,7 +9,8 @@ import {
 } from "@/lib/native-notifications";
 import { isVibrationSupported } from "@/lib/native-haptics";
 import { SettingsGroup, SettingsRow } from "./SettingsSectionPrimitives";
-import styles from "../SettingsSections.module.css";
+import sharedStyles from "../SettingsSections.module.css";
+import styles from "./NotificationsSettingsSection.module.css";
 
 type NativePermission = "granted" | "denied" | "prompt" | "unsupported" | "loading";
 
@@ -132,7 +133,7 @@ export function NotificationsSettingsSection({
   );
 
   return (
-    <div className={styles.groupStack}>
+    <div className={sharedStyles.groupStack}>
       {isVibrationSupported() ? (
         <SettingsGroup
           eyebrow={t("settings.groups.feedback")}

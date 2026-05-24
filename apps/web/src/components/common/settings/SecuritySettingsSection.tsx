@@ -7,7 +7,7 @@ import { InputField, PillButton, SegmentedControl } from "@/components/ui";
 import { exportChatHistory, importChatHistory } from "@/lib/chat-transfer";
 import { ApiError } from "@/lib/api";
 import { SettingsGroup, SettingsRow } from "./SettingsSectionPrimitives";
-import styles from "../SettingsSections.module.css";
+import styles from "./SecuritySettingsSection.module.css";
 
 const CALL_SECURITY_MODES: CallSecurityMode[] = ["compatibility", "balanced", "strict"];
 const AUTO_DECRYPT_MEDIA_MODES: AutoDecryptMedia[] = ["on", "off"];

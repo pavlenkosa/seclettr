@@ -3,7 +3,7 @@ import { InlineNotice, type StatusBadgeTone } from "@/components/ui";
 import { resolvePushStatusLabel, type UsePushSettingsResult } from "../usePushSettings";
 import { useHapticsSettings } from "@/ui-settings";
 import { NotificationsSettingsSection } from "./NotificationsSettingsSection";
-import styles from "../SettingsSections.module.css";
+import styles from "./NotificationsSettingsSection.module.css";
 
 export interface NotificationsSectionMeta {
   summary: string;

@@ -1,4 +1,5 @@
 import { isNativePlatform } from "./native-platform";
+import { resolveApiBaseUrl } from "./runtime-config";
 
 interface LocalNotificationsPlugin {
   requestPermissions: () => Promise<{ display: "granted" | "denied" | "prompt" }>;
@@ -14,6 +15,14 @@ interface NativeNotificationRequest {
   smallIcon?: string;
   iconColor?: string;
   sound?: string;
+}
+
+interface NativePushPlugin {
+  start: (opts: { serverUrl: string; token: string }) => Promise<void>;
+  stop: () => Promise<void>;
+  updateToken: (opts: { token: string }) => Promise<void>;
+  isRunning: () => Promise<{ value: boolean }>;
+  addListener: (event: string, handler: (data: unknown) => void) => Promise<{ remove: () => void }>;
 }
 
 interface CapacitorGlobal {
@@ -175,4 +184,66 @@ export async function showNativeGroupNotification(params: {
       iconColor: "#4f8ef7",
     }],
   });
+}
+
+// ─── Native push foreground service (Android ForegroundService WS) ─────
+
+function getNativePushPlugin(): NativePushPlugin | null {
+  if (!isNativePlatform()) return null;
+  const cap = (window as unknown as { Capacitor?: CapacitorGlobal }).Capacitor;
+  const plugin = cap?.Plugins?.["NativePush"];
+  return plugin ? (plugin as NativePushPlugin) : null;
+}
+
+export async function startNativePushService(token: string): Promise<void> {
+  const plugin = getNativePushPlugin();
+  if (!plugin) return;
+  const apiUrl = resolveApiBaseUrl();
+  try {
+    await plugin.start({ serverUrl: apiUrl, token });
+  } catch {
+    // Non-critical — push service won't start in background
+  }
+}
+
+export async function stopNativePushService(): Promise<void> {
+  const plugin = getNativePushPlugin();
+  if (!plugin) return;
+  try {
+    await plugin.stop();
+  } catch {
+    // Ignore
+  }
+}
+
+export async function updateNativePushToken(token: string): Promise<void> {
+  const plugin = getNativePushPlugin();
+  if (!plugin) return;
+  try {
+    await plugin.updateToken({ token });
+  } catch {
+    // Ignore
+  }
+}
+
+export async function isNativePushServiceRunning(): Promise<boolean> {
+  const plugin = getNativePushPlugin();
+  if (!plugin) return false;
+  try {
+    const result = await plugin.isRunning();
+    return result.value;
+  } catch {
+    return false;
+  }
+}
+
+export async function onNativePushAuthFailure(handler: () => void): Promise<() => void> {
+  const plugin = getNativePushPlugin();
+  if (!plugin) return () => {};
+  try {
+    const handle = await plugin.addListener("pushAuthFailure", () => { handler(); });
+    return () => handle.remove();
+  } catch {
+    return () => {};
+  }
 }

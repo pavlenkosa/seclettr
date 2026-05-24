@@ -15,6 +15,8 @@
 import { create } from "zustand";
 import { AUTH_ERROR_CODES } from "@/lib/auth-error-codes";
 import {
+  clearLegacyStorageKeyStorage,
+  clearPersistedStorageKey,
   ensureExportableStorageKey,
   getOrCreateStorageKey,
   lockPersistedStorageKey,
@@ -28,7 +30,9 @@ import { logger } from "@/lib/logger.js";
 import {
   clearLegacyLockSnapshotStorage,
   clearPin,
+  getBiometricEnabled,
   hasPinSet,
+  setBiometricEnabledFlag,
   setPinHash,
   verifyPin,
 } from "@/lib/app-lock-password";
@@ -46,6 +50,11 @@ import {
 } from "./auth-session-restore";
 import { nativeStorageRemove } from "@/lib/native-storage";
 import { storePinBiometric, clearPinBiometric } from "@/lib/native-biometric";
+import {
+  startNativePushService,
+  stopNativePushService,
+  updateNativePushToken,
+} from "@/lib/native-notifications";
 
 export type { AuthLifecycleState, AuthRecoveryReason, AuthState } from "./auth-types";
 
@@ -64,6 +73,26 @@ async function clearEphemeralRuntimeState(): Promise<void> {
 async function clearEncryptedRuntimeState(): Promise<void> {
   const { clearEncryptedRuntimeState: clearEncryptedState } = await import("./auth-runtime-reset");
   clearEncryptedState();
+}
+
+/**
+ * Get or create the storage key for a fresh credential-based auth flow
+ * (login / register).  If a PIN-locked key from a previous session is found,
+ * wipe it so the fresh credential flow can proceed — the user is explicitly
+ * re-authenticating and will re-establish local device material.
+ */
+async function getOrCreateStorageKeyForAuth(): Promise<{ key: CryptoKey; volatile: boolean }> {
+  try {
+    return await getOrCreateStorageKey();
+  } catch (err) {
+    if (err instanceof Error && err.message === "storage_key_locked") {
+      logger.warn("[auth] locked storage key found during credential login — clearing to allow fresh start");
+      await clearPersistedStorageKey();
+      clearLegacyStorageKeyStorage();
+      return getOrCreateStorageKey();
+    }
+    throw err;
+  }
 }
 
 async function clearLocalSessionSecrets(params: {
@@ -99,7 +128,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   register: async (username, password, deviceName) => {
     set({ error: null, authRecoveryReason: null, authOperation: "idle" });
     try {
-      const { key: storageKey, volatile: storageKeyVolatile } = await getOrCreateStorageKey();
+      const { key: storageKey, volatile: storageKeyVolatile } = await getOrCreateStorageKeyForAuth();
       const authCredentialRuntime = await import("./auth-login-register-runtime");
       const result = await authCredentialRuntime.runRegisterFlow({
         username,
@@ -116,6 +145,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       if (result.shouldFetchBackgroundToken) {
         void authCredentialRuntime.fetchAndStoreBackgroundToken();
       }
+      void startNativePushService(result.session.accessToken);
     } catch (err) {
       set({
         error:
@@ -130,7 +160,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   login: async (username, password, deviceName) => {
     set({ error: null, authRecoveryReason: null, authOperation: "idle" });
     try {
-      const { key: storageKey, volatile: storageKeyVolatile } = await getOrCreateStorageKey();
+      const { key: storageKey, volatile: storageKeyVolatile } = await getOrCreateStorageKeyForAuth();
       const authCredentialRuntime = await import("./auth-login-register-runtime");
       const result = await authCredentialRuntime.runLoginFlow({
         username,
@@ -147,6 +177,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       if (result.shouldFetchBackgroundToken) {
         void authCredentialRuntime.fetchAndStoreBackgroundToken();
       }
+      void startNativePushService(result.session.accessToken);
     } catch (err) {
       const msg =
         err instanceof Error ? err.message : AUTH_ERROR_CODES.loginFailed;
@@ -205,6 +236,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       clearLegacyLockSnapshotStorage();
       set(buildReadyState(restoreResult.session));
       authRealtimeRuntime.activate(restoreResult.session.accessToken, "session-restore");
+      void startNativePushService(restoreResult.session.accessToken);
 
       return true;
     } catch (err) {
@@ -316,6 +348,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       clearLegacyLockSnapshotStorage();
       set(buildReadyState(restoreResult.session));
       authRealtimeRuntime.activate(restoreResult.session.accessToken, "unlock");
+      void startNativePushService(restoreResult.session.accessToken);
       return true;
     } catch (err) {
       logger.warn("[auth] unexpected error during unlock", err);
@@ -340,7 +373,11 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     await protectPersistedStorageKeyWithPin(exportableStorageKey, pin);
     await setPinHash(pin);
     // Store PIN in biometric secure enclave so FaceID/TouchID/Fingerprint can retrieve it.
-    void storePinBiometric(pin);
+    // Also re-enable the biometric flag so the settings toggle reflects the correct state.
+    if (getBiometricEnabled()) {
+      void storePinBiometric(pin);
+    }
+    setBiometricEnabledFlag(true);
     set({
       pinEnabled: true,
       storageKey: exportableStorageKey,
@@ -356,11 +393,13 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     await clearPin();
     clearLegacyLockSnapshotStorage();
     void clearPinBiometric();
+    setBiometricEnabledFlag(false);
     set({ pinEnabled: false });
   },
 
   logout: async () => {
     void nativeStorageRemove(BACKGROUND_POLL_TOKEN_KEY);
+    void stopNativePushService();
     await clearLocalSessionSecrets({
       storageKey: get().storageKey,
       teardownReason: "logout",
@@ -392,6 +431,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 const authRealtimeRuntime = createAuthRealtimeRuntime({
   onAccessTokenRefreshed: (accessToken) => {
     useAuthStore.setState({ accessToken });
+    void updateNativePushToken(accessToken);
   },
   onSessionRefreshFailed: async () => {
     // Session cookie expired or server rejected the refresh.  Suspend the WS
@@ -399,6 +439,7 @@ const authRealtimeRuntime = createAuthRealtimeRuntime({
     // must never be wiped on a transient network failure.  The user can
     // re-authenticate and resume from existing keys (reuse path in login()).
     suspendRealtimeSession("session-refresh-failed");
+    void stopNativePushService();
     try {
       await clearEphemeralRuntimeState();
     } catch (error) {

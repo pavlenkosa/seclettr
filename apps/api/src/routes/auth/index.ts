@@ -171,6 +171,29 @@ function sendRefreshSessionError(
   return reply.code(401).send({ error: resolution.error });
 }
 
+/**
+ * Capacitor Android uses `https://localhost` as its WebView origin;
+ * Capacitor iOS uses `capacitor://localhost`.  Both are cross-site relative
+ * to the server domain, so `SameSite=Strict` blocks the refresh-token cookie
+ * from being sent on subsequent requests.  Detect these origins and use
+ * `SameSite=None` (always Secure) so the cookie round-trips correctly.
+ * For regular browser sessions keep `SameSite=Strict` for CSRF hardening.
+ */
+function resolveRefreshCookieSameSite(
+  request: FastifyRequest
+): "strict" | "none" {
+  if (config.NODE_ENV === "development") return "none";
+  const origin = request.headers["origin"] ?? "";
+  if (
+    origin === "https://localhost" ||
+    origin === "capacitor://localhost" ||
+    origin === "ionic://localhost"
+  ) {
+    return "none";
+  }
+  return "strict";
+}
+
 export async function authRoutes(fastify: FastifyInstance): Promise<void> {
   fastify.post("/register", { preHandler: enforceAuthRouteRateLimit }, async (request, reply) => {
     const body = parseVersionedOrReply(
@@ -279,7 +302,7 @@ export async function authRoutes(fastify: FastifyInstance): Promise<void> {
 
     reply.setCookie("refresh_token", result.refreshToken, {
       httpOnly: true,
-      sameSite: config.NODE_ENV === "development" ? "none" : "strict",
+      sameSite: resolveRefreshCookieSameSite(request),
       secure: config.NODE_ENV === "development" ? true : config.COOKIE_SECURE,
       path: "/",
       maxAge: config.REFRESH_TOKEN_TTL_DAYS * 86400,
@@ -458,7 +481,7 @@ export async function authRoutes(fastify: FastifyInstance): Promise<void> {
 
     reply.setCookie("refresh_token", result.refreshToken, {
       httpOnly: true,
-      sameSite: config.NODE_ENV === "development" ? "none" : "strict",
+      sameSite: resolveRefreshCookieSameSite(request),
       secure: config.NODE_ENV === "development" ? true : config.COOKIE_SECURE,
       path: "/",
       maxAge: config.REFRESH_TOKEN_TTL_DAYS * 86400,
@@ -523,7 +546,7 @@ export async function authRoutes(fastify: FastifyInstance): Promise<void> {
 
     reply.setCookie("refresh_token", newRefreshToken, {
       httpOnly: true,
-      sameSite: config.NODE_ENV === "development" ? "none" : "strict",
+      sameSite: resolveRefreshCookieSameSite(request),
       secure: config.NODE_ENV === "development" ? true : config.COOKIE_SECURE,
       path: "/",
       maxAge: config.REFRESH_TOKEN_TTL_DAYS * 86400,

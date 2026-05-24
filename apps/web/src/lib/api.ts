@@ -123,9 +123,12 @@ async function request<T>(
     credentials: "include",
   });
 
-  if (res.status === 401 && retry) {
+  if (res.status === 401 && retry && !path.startsWith("/auth/")) {
     // refreshSessionAccessToken() deduplicates concurrent calls across HTTP, WS,
     // and SFU transports — safe to await without a local wrapper.
+    // Auth endpoints (/auth/login, /auth/register, …) are exempt — their 401
+    // means "invalid credentials", not "session expired", and the response body
+    // carries the real error message which the generic handler below will read.
     const newToken = await refreshSessionAccessToken();
     if (newToken) {
       return request<T>(path, options, false);

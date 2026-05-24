@@ -231,6 +231,12 @@ export function useChatWorkspaceProjection(
   const groupSenderLabels =
     activeGroupProjection?.senderLabels ?? (activePlainGroup ? plainGroupSenderLabels : undefined);
 
+  const activePeerIdentityAlertCount = useMemo(
+    () => Object.keys(activeConversation?.peerIdentityAlertsByDevice ?? {}).length,
+    [activeConversation?.peerIdentityAlertsByDevice]
+  );
+  const directTrustBlocked = activePeerIdentityAlertCount > 0;
+
   const activeHistoryLoading: boolean = (
     (activePlainConversation && activePlainConversation.historyLoaded === false) ||
     (activePlainGroup && activePlainGroup.historyLoaded === false) ||
@@ -241,7 +247,9 @@ export function useChatWorkspaceProjection(
     activeHistoryLoading,
     activeListId,
     activeMessages,
+    activePeerIdentityAlertCount,
     conversationEntries,
+    directTrustBlocked,
     groupEntries,
     groupSenderLabels,
     plainConversationEntries,

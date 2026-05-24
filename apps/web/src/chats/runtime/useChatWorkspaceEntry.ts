@@ -1,12 +1,11 @@
 import {
   useCallback,
-  useMemo,
   useState,
   type Dispatch,
   type SetStateAction,
 } from "react";
 import { useShallow } from "zustand/react/shallow";
-import { useMessagesStore, type Message } from "@/stores/messages";
+import { useMessagesStore } from "@/stores/messages";
 import { useGroupsStore } from "@/stores/groups";
 import { usePlainMessagesStore, usePlainGroupsStore } from "@/stores/plain";
 import { useSavedMessagesStore } from "@/stores/saved";
@@ -14,7 +13,6 @@ import { useChatWorkspaceCallEntry } from "./useChatWorkspaceCallEntry";
 import { useChatWorkspaceRoutingBootstrap } from "./useChatWorkspaceRoutingBootstrap";
 import { useChatWorkspacePresenceEffects } from "./useChatWorkspacePresenceEffects";
 import { useChatWorkspaceProjection } from "./useChatWorkspaceProjection";
-import { useChatWorkspaceThreadActions } from "./useChatWorkspaceThreadActions";
 
 interface UseChatWorkspaceEntryOptions {
   userId: string | null;
@@ -127,20 +125,76 @@ export function useChatWorkspaceEntry(options: UseChatWorkspaceEntryOptions) {
               ? "saved"
               : null;
 
-  const {
-    upsertPlainConversation,
-    ensurePlainConversation,
-    handleRetryMessage,
-  } = useChatWorkspaceThreadActions({
-    plainConversations,
-    activeThreadKind,
-    activeConversationUserId: activeConversation?.userId ?? null,
-    activeGroupId,
-    activePlainConversationId,
-    activePlainGroupId,
-    retryDirectMessage,
-    retryGroupMessage,
-  });
+  const activeConversationUserId = activeConversation?.userId ?? null;
+
+  const upsertPlainConversation = useCallback(
+    (conversation: { userId: string; username: string }) => {
+      usePlainMessagesStore.setState((state) => {
+        if (state.conversations[conversation.userId]) return state;
+        return {
+          conversations: {
+            ...state.conversations,
+            [conversation.userId]: {
+              userId: conversation.userId,
+              username: conversation.username,
+              displayName: null,
+              avatarKey: null,
+              messages: [],
+              lastMessageAt: 0,
+              unreadCount: 0,
+              hasMore: false,
+              historyLoaded: false,
+            },
+          },
+        };
+      });
+    },
+    []
+  );
+
+  const ensurePlainConversation = useCallback(
+    (peerUserId: string, peerUsername: string) => {
+      if (!plainConversations[peerUserId]) {
+        usePlainMessagesStore.setState((state) => ({
+          conversations: {
+            ...state.conversations,
+            [peerUserId]: {
+              userId: peerUserId,
+              username: peerUsername,
+              displayName: null,
+              avatarKey: null,
+              messages: [],
+              lastMessageAt: 0,
+              unreadCount: 0,
+              hasMore: false,
+              historyLoaded: false,
+            },
+          },
+        }));
+      }
+    },
+    [plainConversations]
+  );
+
+  const handleRetryMessage = useCallback(
+    (messageId: string) => {
+      if (activeThreadKind === "direct" && activeConversationUserId) {
+        void retryDirectMessage(activeConversationUserId, messageId);
+        return;
+      }
+      if (activeThreadKind === "group" && activeGroupId) {
+        void retryGroupMessage(activeGroupId, messageId);
+        return;
+      }
+    },
+    [
+      activeConversationUserId,
+      activeGroupId,
+      activeThreadKind,
+      retryDirectMessage,
+      retryGroupMessage,
+    ]
+  );
 
   const {
     handleBack,
@@ -168,11 +222,8 @@ export function useChatWorkspaceEntry(options: UseChatWorkspaceEntryOptions) {
   });
 
   const {
-    activeConversationUserId,
-    activePeerIdentityAlertCount,
     activePresence,
     activeTyping,
-    directTrustBlocked,
     plainActivePresence,
     plainActiveTyping,
   } = useChatWorkspacePresenceEffects({
@@ -218,6 +269,8 @@ export function useChatWorkspaceEntry(options: UseChatWorkspaceEntryOptions) {
     activeHistoryLoading,
     activeListId,
     activeMessages,
+    activePeerIdentityAlertCount,
+    directTrustBlocked,
     conversationEntries,
     groupEntries,
     groupSenderLabels,

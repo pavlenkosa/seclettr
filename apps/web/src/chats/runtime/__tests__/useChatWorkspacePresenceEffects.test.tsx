@@ -113,8 +113,6 @@ describe("useChatWorkspacePresenceEffects", () => {
     expect(markConversationRead).toHaveBeenCalledWith("user-1");
     expect(hookRef.current?.activePresence?.online).toBe(true);
     expect(hookRef.current?.activeTyping).toBe(true);
-    expect(hookRef.current?.activePeerIdentityAlertCount).toBe(1);
-    expect(hookRef.current?.directTrustBlocked).toBe(true);
 
     act(() => {
       vi.advanceTimersByTime(30_000);
@@ -148,6 +146,8 @@ describe("useChatWorkspacePresenceEffects", () => {
     const baseConversation = {
       userId: "peer",
       username: "Peer",
+      displayName: null,
+      avatarKey: null,
       messages: [],
       lastMessageAt: 0,
       unreadCount: 2,

@@ -1,4 +1,4 @@
-import { useEffect, useMemo } from "react";
+import { useEffect } from "react";
 import { useCallback } from "react";
 import type { Conversation } from "@/stores/messages";
 import { useMessagesStore } from "@/stores/messages";
@@ -30,11 +30,6 @@ export function useChatWorkspacePresenceEffects(
   } = options;
 
   const activeConversationUserId = activeConversation?.userId ?? null;
-  const activePeerIdentityAlertCount = useMemo(
-    () => Object.keys(activeConversation?.peerIdentityAlertsByDevice ?? {}).length,
-    [activeConversation?.peerIdentityAlertsByDevice]
-  );
-  const directTrustBlocked = activePeerIdentityAlertCount > 0;
 
   const activePresence = useMessagesStore(
     useCallback(
@@ -113,11 +108,8 @@ export function useChatWorkspacePresenceEffects(
   }, [plainPeerUserId, fetchUserPresence]);
 
   return {
-    activeConversationUserId,
-    activePeerIdentityAlertCount,
     activePresence,
     activeTyping,
-    directTrustBlocked,
     plainActivePresence,
     plainActiveTyping,
   };

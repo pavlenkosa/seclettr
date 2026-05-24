@@ -4,9 +4,9 @@ import { type MutableRefObject } from "react";
 import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import type { Conversation, Message } from "@/stores/messages";
+import type { Message } from "@/stores/messages";
 import type { GroupChat } from "@/stores/groups";
-import type { PlainConversation, PlainGroup } from "@/stores/plain";
+import type { PlainGroup } from "@/stores/plain";
 import type { SavedMessage } from "@/stores/saved";
 import { useChatWorkspaceProjection } from "../useChatWorkspaceProjection";
 
@@ -125,6 +125,8 @@ describe("useChatWorkspaceProjection", () => {
       groupId: "g-1",
       name: "Group",
       creatorId: "owner",
+      avatarKey: null,
+      description: null,
       members: [],
       messages: [
         {

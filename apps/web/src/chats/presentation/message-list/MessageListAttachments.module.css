@@ -1,0 +1,652 @@
+/* Ownership map
+ * Owns:
+ *   - File-attachment, inline-media, media-group, and upload-progress styles.
+ *   - Media-only bubble chrome and attachment caption styling used by
+ *     message-list attachment subviews.
+ * Does not own:
+ *   - Timeline shell, text bubble layout, voice/video playback chrome,
+ *     date separators, call-event rows, or generic row spacing.
+ */
+
+.attachmentCaption {
+  margin-top: 0.42rem;
+  font-size: 0.76rem;
+  line-height: 1.4;
+  white-space: pre-wrap;
+  word-break: break-word;
+  color: inherit;
+}
+
+.fileAttachment {
+  display: flex;
+  flex-direction: column;
+  gap: 0.36rem;
+  min-width: min(280px, 72vw);
+}
+
+.fileTitle {
+  font-size: 0.82rem;
+  font-weight: 600;
+  line-height: 1.2;
+  word-break: break-word;
+}
+
+.fileMeta {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 0.42rem;
+  font-size: 0.68rem;
+  opacity: 0.88;
+}
+
+.fileDecryptBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 34px;
+  border-radius: 12px;
+  border: 1px solid var(--voice-decrypt-border);
+  background: var(--voice-decrypt-bg);
+  color: var(--voice-decrypt-text);
+  font-size: 0.72rem;
+  font-weight: 600;
+  padding: 0.3rem 0.64rem;
+  transition:
+    background-color var(--motion-duration-fast) var(--motion-ease-standard),
+    border-color var(--motion-duration-fast) var(--motion-ease-standard);
+}
+
+.fileDecryptBtn:hover:not(:disabled) {
+  background: var(--voice-decrypt-hover-bg);
+  border-color: var(--voice-decrypt-border);
+}
+
+.fileDecryptBtnOwn {
+  background: rgb(255 255 255 / 0.08);
+  border-color: var(--message-out-ui-soft);
+  color: var(--message-out-ui);
+}
+
+.fileDecryptBtnOwn:hover:not(:disabled) {
+  background: rgb(255 255 255 / 0.14);
+  border-color: var(--message-out-ui-strong);
+}
+
+.fileDecryptBtn:disabled {
+  opacity: 0.72;
+}
+
+.attachmentErrorNotice {
+  margin-top: 0.18rem;
+  align-self: stretch;
+}
+
+.uploadProgress {
+  display: flex;
+  flex-direction: column;
+  gap: 0.32rem;
+}
+
+.uploadProgressRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  font-size: 0.68rem;
+  opacity: 0.88;
+}
+
+.uploadProgressBar {
+  height: 3px;
+  border-radius: 2px;
+  background: rgb(255 255 255 / 0.18);
+  overflow: hidden;
+}
+
+.uploadProgressFill {
+  height: 100%;
+  border-radius: 2px;
+  background: currentColor;
+  opacity: 0.7;
+  transition: width 120ms ease;
+}
+
+.uploadProgressFillOwn {
+  background: var(--message-out-ui);
+  opacity: 0.9;
+}
+
+.uploadCancelBtn {
+  background: none;
+  border: none;
+  padding: 0;
+  font-size: 0.68rem;
+  font-weight: 600;
+  cursor: pointer;
+  color: inherit;
+  opacity: 0.75;
+  white-space: nowrap;
+}
+
+.uploadCancelBtn:hover {
+  opacity: 1;
+}
+
+.inlineMediaUploadOverlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: rgb(0 0 0 / 0.5);
+  gap: 0.5rem;
+  padding: 0.75rem;
+}
+
+.uploadRing {
+  --upload-ring-progress: 0;
+  --upload-ring-size: 56px;
+  --upload-ring-circumference: 125.66;
+  --upload-ring-offset: 125.66;
+  position: relative;
+  width: var(--upload-ring-size);
+  height: var(--upload-ring-size);
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: rgb(255 255 255 / 0.08);
+  border: 1px solid rgb(255 255 255 / 0.1);
+}
+
+.uploadRingSvg {
+  position: absolute;
+  inset: 3px;
+  width: calc(var(--upload-ring-size) - 6px);
+  height: calc(var(--upload-ring-size) - 6px);
+  transform: rotate(-90deg);
+  pointer-events: none;
+}
+
+.uploadRingTrack {
+  fill: none;
+  stroke: rgb(255 255 255 / 0.2);
+  stroke-width: 3;
+}
+
+.uploadRingProgress {
+  fill: none;
+  stroke: #fff;
+  stroke-width: 3;
+  stroke-linecap: round;
+  stroke-dasharray: var(--upload-ring-circumference);
+  stroke-dashoffset: var(--upload-ring-offset);
+  transition: stroke-dashoffset 150ms linear;
+}
+
+.uploadRingProgressAnimated {
+  transform-origin: 24px 24px;
+  animation: uploadRingProgressSpin 1.35s linear infinite;
+}
+
+.uploadRing::before {
+  content: "";
+  position: absolute;
+  inset: 3px;
+  border-radius: 50%;
+  background: rgb(2 6 23 / 0.66);
+}
+
+.uploadRingCompact {
+  --upload-ring-size: 48px;
+}
+
+.uploadRingCancel {
+  position: relative;
+  z-index: 1;
+  width: calc(var(--upload-ring-size) - 18px);
+  height: calc(var(--upload-ring-size) - 18px);
+  border: 1px solid rgb(255 255 255 / 0.18);
+  border-radius: 50%;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: rgb(255 255 255 / 0.08);
+  color: #fff;
+  cursor: pointer;
+  transition:
+    background-color var(--motion-duration-fast) var(--motion-ease-standard),
+    border-color var(--motion-duration-fast) var(--motion-ease-standard);
+}
+
+.uploadRingCancel:hover {
+  background: rgb(255 255 255 / 0.14);
+  border-color: rgb(255 255 255 / 0.28);
+}
+
+.uploadRingCancel:focus-visible {
+  outline: 2px solid rgb(255 255 255 / 0.8);
+  outline-offset: 2px;
+}
+
+.uploadRingStop {
+  width: 11px;
+  height: 11px;
+  border-radius: 3px;
+  background: currentColor;
+}
+
+.uploadRingLabel {
+  font-size: 0.67rem;
+  font-weight: 700;
+  line-height: 1;
+  color: #fff;
+}
+
+@keyframes uploadRingProgressSpin {
+  from {
+    transform: rotate(0deg);
+  }
+
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.mediaBubble {
+  padding: 0;
+  overflow: hidden;
+}
+
+.mediaBubble .inlineMediaBtn {
+  border-radius: 0;
+}
+
+.mediaBubble .inlineMediaMeta {
+  border-radius: 6px 0 0 0;
+}
+
+.mediaBubble .attachmentCaption {
+  margin-top: 0;
+  padding: 0.48rem 0.64rem 0.56rem;
+  max-width: min(320px, 80vw);
+}
+
+.mediaGroup {
+  display: grid;
+  gap: 2px;
+  width: min(320px, 80vw);
+  max-width: 100%;
+  grid-auto-flow: dense;
+}
+
+.mediaGroup[data-layout="single"] {
+  grid-template-columns: 1fr;
+}
+
+.mediaGroup[data-layout="pair"] {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.mediaGroup[data-layout="triple"] {
+  grid-template-columns: minmax(0, 1.08fr) minmax(0, 0.92fr);
+  align-content: start;
+}
+
+.mediaGroup[data-layout="quad"] {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-rows: repeat(2, minmax(0, 1fr));
+  aspect-ratio: 1 / 1;
+}
+
+.mediaGroup[data-layout="quint"] {
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  align-content: start;
+}
+
+.mediaGroup[data-layout="grid"] {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.mediaGroup[data-layout="triple"] > :first-child .mediaGroupCell {
+  grid-column: 1;
+  grid-row: span 2;
+  aspect-ratio: 4 / 5;
+}
+
+.mediaGroup[data-layout="triple"] > :nth-child(2) .mediaGroupCell {
+  grid-column: 2;
+  aspect-ratio: 1 / 1;
+}
+
+.mediaGroup[data-layout="triple"] > :nth-child(3) .mediaGroupCell {
+  grid-column: 2;
+  aspect-ratio: 1 / 1;
+}
+
+.mediaGroup[data-layout="quint"] > :first-child .mediaGroupCell {
+  grid-column: 1 / 4;
+  aspect-ratio: 4 / 3;
+}
+
+.mediaGroup[data-layout="quint"] > :nth-child(2) .mediaGroupCell {
+  grid-column: 4 / 7;
+  aspect-ratio: 4 / 3;
+}
+
+.mediaGroup[data-layout="quint"] > :nth-child(3) .mediaGroupCell {
+  grid-column: 1 / 3;
+  aspect-ratio: 1 / 1;
+}
+
+.mediaGroup[data-layout="quint"] > :nth-child(4) .mediaGroupCell {
+  grid-column: 3 / 5;
+  aspect-ratio: 1 / 1;
+}
+
+.mediaGroup[data-layout="quint"] > :nth-child(5) .mediaGroupCell {
+  grid-column: 5 / 7;
+  aspect-ratio: 1 / 1;
+}
+
+.mediaGroup[data-layout="pair"] > * > .mediaGroupCell,
+.mediaGroup[data-layout="grid"] > * > .mediaGroupCell,
+.mediaGroup[data-layout="single"] > * > .mediaGroupCell {
+  aspect-ratio: 1;
+}
+
+.mediaGroup[data-layout="triple"] > * > .mediaGroupCell,
+.mediaGroup[data-layout="quad"] > * > .mediaGroupCell,
+.mediaGroup[data-layout="quint"] > * > .mediaGroupCell {
+  min-height: 0;
+}
+
+.mediaGroup[data-layout="single"] > * > .mediaGroupCell {
+  aspect-ratio: 16 / 10;
+}
+
+.mediaGroupCell {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: var(--surface-shell-strong);
+  cursor: zoom-in;
+}
+
+.mediaGroupThumb {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  pointer-events: none;
+  transition: opacity var(--motion-duration-fast) var(--motion-ease-standard);
+}
+
+.mediaGroupCell:hover .mediaGroupThumb {
+  opacity: 0.92;
+}
+
+.mediaGroupPlaceholder {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: color-mix(in srgb, var(--accent) 8%, var(--surface-shell-strong));
+}
+
+.mediaGroupSpinner {
+  width: 22px;
+  height: 22px;
+  border: 2px solid rgb(255 255 255 / 0.25);
+  border-top-color: rgb(255 255 255 / 0.75);
+  border-radius: 50%;
+  animation: mediaGroupSpin 0.7s linear infinite;
+}
+
+@keyframes mediaGroupSpin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.mediaGroupPlayOverlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+}
+
+.mediaGroupPlayOverlay svg {
+  width: 32px;
+  height: 32px;
+}
+
+.mediaGroupMeta {
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  padding: 3px 7px 5px;
+  background: rgb(8 18 32 / 0.78);
+  color: #fff;
+  font-size: 0.68rem;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  line-height: 1;
+  pointer-events: none;
+}
+
+.mediaGroupMore {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: color-mix(in srgb, var(--bg-primary) 55%, transparent);
+  color: #fff;
+  font-size: 1.4rem;
+  font-weight: 700;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  transition: background var(--motion-duration-fast) var(--motion-ease-standard);
+}
+
+.mediaGroupMore:hover {
+  background: color-mix(in srgb, var(--bg-primary) 65%, transparent);
+}
+
+.inlineMedia {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.inlineMediaFrame {
+  position: relative;
+  width: fit-content;
+}
+
+.inlineMediaBtn {
+  position: relative;
+  display: block;
+  max-width: min(260px, 72vw);
+  width: fit-content;
+  border-radius: 14px;
+  overflow: hidden;
+  flex-shrink: 0;
+  cursor: zoom-in;
+  transition: opacity var(--motion-duration-fast) var(--motion-ease-standard);
+}
+
+.inlineMediaMeta {
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  padding: 2px 6px 4px;
+  background: rgb(8 18 32 / 0.74);
+  border-radius: 6px 0 14px 0;
+  color: #fff;
+  font-size: 0.64rem;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  line-height: 1;
+  pointer-events: none;
+}
+
+.inlineMediaBtn:hover:not(:disabled) {
+  opacity: 0.94;
+}
+
+.inlineMediaBtn:active:not(:disabled) {
+  opacity: 0.9;
+}
+
+.inlineMediaBtn:disabled {
+  cursor: default;
+}
+
+.inlineMediaThumb {
+  display: block;
+  max-width: min(260px, 72vw);
+  max-height: 360px;
+  width: auto;
+  height: auto;
+  object-fit: contain;
+}
+
+.inlineMediaPlaceholder {
+  position: relative;
+  width: min(260px, 72vw);
+  aspect-ratio: 4 / 3;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.56rem;
+  background: var(--skeleton-surface, color-mix(in srgb, var(--surface-shell-strong) 100%, transparent));
+  border-radius: inherit;
+  overflow: hidden;
+}
+
+.inlineMediaPlaceholderVideo {
+  aspect-ratio: 16 / 9;
+}
+
+.inlineMediaPlaceholderOwn {
+  background: color-mix(in srgb, var(--message-out-ui-soft) 60%, var(--surface-shell-strong));
+}
+
+.inlineMediaLock {
+  width: 36px;
+  height: 36px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-secondary);
+  opacity: 0.72;
+}
+
+.inlineMediaLock svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.inlineMediaTypeLabel {
+  display: inline-flex;
+  align-items: center;
+  color: var(--text-muted);
+}
+
+.inlineMediaSpinner {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: 2.5px solid color-mix(in srgb, var(--accent) 28%, transparent);
+  border-top-color: var(--accent);
+  animation: inlineMediaSpin 0.7s linear infinite;
+  display: block;
+}
+
+@keyframes inlineMediaSpin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.inlineMediaShimmer {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: color-mix(in srgb, var(--bg-primary) 26%, transparent);
+  animation: inlineMediaShimmerPulse 1.35s var(--motion-ease-standard) infinite alternate;
+}
+
+@keyframes inlineMediaShimmerPulse {
+  from {
+    opacity: 0.36;
+  }
+
+  to {
+    opacity: 0.7;
+  }
+}
+
+.inlineMediaPlayOverlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+}
+
+.inlineMediaPlayOverlay svg {
+  width: 48px;
+  height: 48px;
+  color: #fff;
+}
+
+@media (max-width: 760px) {
+  .fileAttachment {
+    min-width: min(230px, 82vw);
+  }
+
+  .inlineMediaBtn {
+    max-width: min(220px, 72vw);
+  }
+
+  .inlineMediaThumb {
+    max-width: min(220px, 72vw);
+    max-height: 300px;
+  }
+
+  .inlineMediaPlaceholder {
+    width: min(220px, 72vw);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fileDecryptBtn {
+    transition: none !important;
+  }
+
+  .uploadRingProgressAnimated,
+  .inlineMediaShimmer {
+    animation: none;
+  }
+
+  .inlineMediaShimmer {
+    background: color-mix(in srgb, var(--bg-primary) 20%, transparent);
+  }
+}

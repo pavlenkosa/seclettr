@@ -10,6 +10,7 @@ import { MessageStatusIcon } from "./MessageStatusIcon";
 import { resolveAttachmentErrorMessage, type MediaPlaybackProps } from "./message-attachment-shared";
 import { formatClock, formatTime } from "./message-list-presentation";
 import styles from "../MessageList.module.css";
+import attachmentStyles from "./MessageListAttachments.module.css";
 
 /**
  * Interactive video-note attachment renderer with decrypt/playback controls.
@@ -144,7 +145,7 @@ export function VideoNoteAttachment({
               onCancel={cancelUpload}
               ariaLabel={t("message.upload.cancel")}
             />
-            <span className={styles.uploadRingLabel}>{Math.round(uploadProgress)}%</span>
+            <span className={attachmentStyles.uploadRingLabel}>{Math.round(uploadProgress)}%</span>
           </div>
         </div>
       )}

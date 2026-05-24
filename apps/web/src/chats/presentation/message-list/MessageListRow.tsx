@@ -28,6 +28,7 @@ import {
 import { MediaGroupAttachment } from "./MediaGroupAttachment";
 import type { MessageListRowPresentation } from "./message-list-presentation";
 import styles from "../MessageList.module.css";
+import attachmentStyles from "./MessageListAttachments.module.css";
 
 interface Props {
   readonly presentation: MessageListRowPresentation;
@@ -164,7 +165,7 @@ function buildBubbleClassName(message: MessageListRowMessage, kind: MessageBodyK
     styles.bubble,
     message.isOwn ? styles.bubbleOwn : styles.bubbleTheirs,
     kind === "voice" ? styles.voiceBubble : "",
-    kind === "media" || kind === "mediaGroup" ? styles.mediaBubble : "",
+    kind === "media" || kind === "mediaGroup" ? attachmentStyles.mediaBubble : "",
     isHighlighted ? styles.bubbleHighlighted : "",
   ].join(" ");
 }
@@ -355,7 +356,7 @@ function AttachmentCaption({
 }: AttachmentCaptionProps) {
   const caption = resolveAttachmentCaption({ kind, presentation });
   return caption ? (
-    <div className={styles.attachmentCaption}>{caption}</div>
+    <div className={attachmentStyles.attachmentCaption}>{caption}</div>
   ) : null;
 }
 

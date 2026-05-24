@@ -1,5 +1,5 @@
 import type { CSSProperties } from "react";
-import styles from "../MessageList.module.css";
+import styles from "./MessageListAttachments.module.css";
 
 interface AttachmentUploadRingProps {
   readonly progress: number;

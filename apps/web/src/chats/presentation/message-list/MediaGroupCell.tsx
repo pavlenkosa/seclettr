@@ -6,7 +6,7 @@ import { useUploadProgress } from "@/chats/runtime/useUploadProgress";
 import type { Message } from "@/stores/messages";
 import { MessageStatusIcon } from "./MessageListAttachments";
 import { InlineAttachmentUploadOverlay } from "./AttachmentUploadProgress";
-import styles from "../MessageList.module.css";
+import styles from "./MessageListAttachments.module.css";
 
 /**
  * Resolved lightbox-ready preview payload for a single media-group cell.

@@ -10,7 +10,7 @@ import {
   resolveMediaGroupLayout,
 } from "./media-group-layout";
 import { MediaGroupCell, type CellPreviewController } from "./MediaGroupCell";
-import styles from "../MessageList.module.css";
+import styles from "./MessageListAttachments.module.css";
 
 // Re-exported for message-list tests that assert layout bucketing.
 export { resolveMediaGroupLayout } from "./media-group-layout";

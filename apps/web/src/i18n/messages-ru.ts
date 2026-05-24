@@ -87,6 +87,7 @@ export const ruMessages: TranslationMap = {
   "auth.title.createAccount": "Создать аккаунт",
   "auth.subtitle.signIn": "Безопасный мессенджер со сквозным шифрованием. Войдите, чтобы продолжить общение.",
   "auth.subtitle.createAccount": "Создайте новый аккаунт для того чтобы продолжить",
+  "auth.serverUrl": "Сервер",
   "auth.username": "Имя пользователя",
   "auth.password": "Пароль",
   "auth.showPassword": "Показать пароль",

@@ -10,7 +10,8 @@ import { InlineAttachmentUploadOverlay } from "./AttachmentUploadProgress";
 import { MessageStatusIcon } from "./MessageStatusIcon";
 import { resolveAttachmentErrorMessage } from "./message-attachment-shared";
 import { formatTime } from "./message-list-presentation";
-import styles from "../MessageList.module.css";
+import rowStyles from "../MessageList.module.css";
+import styles from "./MessageListAttachments.module.css";
 
 type InlineMediaPreviewProps = Readonly<{
   isVideo: boolean;
@@ -25,6 +26,7 @@ type InlineMediaPlaceholderProps = Readonly<{
   loading: boolean;
   /** Plain attachments aren't encrypted — show a shimmer instead of the lock glyph. */
   isPlain: boolean;
+  isOwn: boolean;
 }>;
 
 type InlineMediaAttachmentProps = Readonly<{
@@ -74,7 +76,7 @@ function InlineMediaPreview({
   );
 }
 
-function InlineMediaPlaceholder({ isVideo, loading, isPlain }: InlineMediaPlaceholderProps) {
+function InlineMediaPlaceholder({ isVideo, loading, isPlain, isOwn }: InlineMediaPlaceholderProps) {
   const restingGlyph = isPlain
     ? <span className={styles.inlineMediaShimmer} aria-hidden="true" />
     : (
@@ -90,9 +92,10 @@ function InlineMediaPlaceholder({ isVideo, loading, isPlain }: InlineMediaPlaceh
   const placeholderClass = isVideo
     ? `${styles.inlineMediaPlaceholder} ${styles.inlineMediaPlaceholderVideo}`
     : styles.inlineMediaPlaceholder;
+  const ownClassName = isOwn ? styles.inlineMediaPlaceholderOwn : "";
 
   return (
-    <div className={placeholderClass}>
+    <div className={`${placeholderClass} ${ownClassName}`}>
       {loading ? (
         <span className={styles.inlineMediaSpinner} aria-hidden="true" />
       ) : restingGlyph}
@@ -191,7 +194,7 @@ export function InlineMediaAttachment({ msg, isOwn }: InlineMediaAttachmentProps
   const showPlaceholder = !previewUrl || !mediaLoaded;
 
   return (
-    <div className={`${styles.inlineMedia} ${isOwn ? styles.voiceOwn : styles.voiceTheirs}`}>
+    <div className={`${styles.inlineMedia} ${isOwn ? rowStyles.voiceOwn : rowStyles.voiceTheirs}`}>
       <div className={styles.inlineMediaFrame}>
         <button
           type="button"
@@ -205,6 +208,7 @@ export function InlineMediaAttachment({ msg, isOwn }: InlineMediaAttachmentProps
               isVideo={isVideo}
               loading={loading}
               isPlain={!!msg.attachment?.isPlain}
+              isOwn={isOwn}
             />
           ) : null}
 

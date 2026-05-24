@@ -90,6 +90,7 @@ const enMessages: TranslationMap = {
   "auth.title.createAccount": "Create account",
   "auth.subtitle.signIn": "Secure messaging with end-to-end encryption. Sign in to continue your conversations.",
   "auth.subtitle.createAccount": "Create a new account to continue",
+  "auth.serverUrl": "Server",
   "auth.username": "Username",
   "auth.password": "Password",
   "auth.showPassword": "Show password",

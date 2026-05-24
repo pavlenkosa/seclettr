@@ -4,7 +4,7 @@ import { useUploadProgress } from "@/chats/runtime/useUploadProgress";
 import { InlineNotice } from "@/components/ui";
 import type { Message } from "@/stores/messages";
 import { formatAttachmentSize, resolveAttachmentErrorMessage } from "./message-attachment-shared";
-import styles from "../MessageList.module.css";
+import styles from "./MessageListAttachments.module.css";
 
 /**
  * Generic encrypted file attachment block with decrypt-and-download action.
@@ -51,7 +51,7 @@ export function FileAttachment({ msg }: { readonly msg: Message }) {
           </div>
           <div className={styles.uploadProgressBar}>
             <div
-              className={styles.uploadProgressFill}
+              className={`${styles.uploadProgressFill} ${msg.isOwn ? styles.uploadProgressFillOwn : ""}`}
               style={{ width: `${progress}%` }}
             />
           </div>
@@ -61,7 +61,7 @@ export function FileAttachment({ msg }: { readonly msg: Message }) {
           <button
             onClick={() => void decryptAndDownload()}
             disabled={loading || msg.status === "sending"}
-            className={styles.fileDecryptBtn}
+            className={`${styles.fileDecryptBtn} ${msg.isOwn ? styles.fileDecryptBtnOwn : ""}`}
             aria-label={t(isPlain ? "message.file.downloadAria" : "message.file.decryptAria")}
           >
             {loading

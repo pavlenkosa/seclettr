@@ -37,6 +37,8 @@ export interface ChatThreadPaneProps {
   readonly onDropFiles?: (files: File[]) => Promise<void>;
 }
 
+type BulkSelectionState = { mode: boolean; selectedIds: ReadonlySet<string> };
+
 export function ChatThreadPane({
   hasActiveThread,
   threadKey,
@@ -65,6 +67,7 @@ export function ChatThreadPane({
     pendingCount: 0,
   });
   const [isDragOver, setIsDragOver] = useState(false);
+  const [bulkState, setBulkState] = useState<BulkSelectionState>({ mode: false, selectedIds: new Set() });
 
   useEffect(() => {
     setJumpToBottomState({
@@ -76,6 +79,26 @@ export function ChatThreadPane({
   const handleJumpToBottom = useCallback(() => {
     messageListRef.current?.scrollToBottom();
   }, []);
+
+  const handleSelectionChange = useCallback((state: BulkSelectionState) => {
+    setBulkState(state);
+  }, []);
+
+  const handleBulkCancel = useCallback(() => {
+    messageListRef.current?.exitSelection();
+  }, []);
+
+  const handleBulkForward = useCallback(() => {
+    if (bulkState.selectedIds.size === 0) return;
+    onBulkForward?.([...bulkState.selectedIds]);
+    messageListRef.current?.exitSelection();
+  }, [bulkState.selectedIds, onBulkForward]);
+
+  const handleBulkDelete = useCallback(() => {
+    if (bulkState.selectedIds.size === 0) return;
+    onBulkDelete?.([...bulkState.selectedIds]);
+    messageListRef.current?.exitSelection();
+  }, [bulkState.selectedIds, onBulkDelete]);
 
   const jumpBadgeLabel = jumpToBottomState.pendingCount > 99
     ? "99+"
@@ -119,6 +142,8 @@ export function ChatThreadPane({
     );
   }
 
+  const showBulkBar = bulkState.mode && (onBulkDelete || onBulkForward);
+
   return (
     <section
       className={styles.thread}
@@ -152,8 +177,7 @@ export function ChatThreadPane({
               onReply={onReply}
               onDelete={onDelete}
               onForward={onForward}
-              onBulkDelete={onBulkDelete}
-              onBulkForward={onBulkForward}
+              onSelectionChange={handleSelectionChange}
               onScrollToMessage={onScrollToMessage}
               highlightMessageId={highlightMessageId}
               isTyping={isTyping}
@@ -179,6 +203,50 @@ export function ChatThreadPane({
               </IconButton>
             ) : null}
           </div>
+          {showBulkBar ? (
+            <div
+              className={styles.bulkActionBar}
+              role="toolbar"
+              aria-label={t("message.bulkAction.selected", { count: bulkState.selectedIds.size })}
+            >
+              <span className={styles.bulkActionCount}>
+                {t("message.bulkAction.selected", { count: bulkState.selectedIds.size })}
+              </span>
+              {onBulkForward && (
+                <button
+                  type="button"
+                  className={styles.bulkBtn}
+                  disabled={bulkState.selectedIds.size === 0}
+                  onClick={handleBulkForward}
+                >
+                  <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                    <path d="M15 8l-5-5v3C5.5 6 2.5 8 1.5 12.5 3 10 5.5 9 10 9v3l5-4z" fill="currentColor" />
+                  </svg>
+                  {t("message.bulkAction.forward")}
+                </button>
+              )}
+              {onBulkDelete && (
+                <button
+                  type="button"
+                  className={`${styles.bulkBtn} ${styles.bulkBtnDanger}`}
+                  disabled={bulkState.selectedIds.size === 0}
+                  onClick={handleBulkDelete}
+                >
+                  <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                    <path d="M3 4h10M6 4V2.7a.7.7 0 0 1 .7-.7h2.6a.7.7 0 0 1 .7.7V4M5 4l.7 9.3a.7.7 0 0 0 .7.7h3.2a.7.7 0 0 0 .7-.7L11 4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                  </svg>
+                  {t("message.bulkAction.delete")}
+                </button>
+              )}
+              <button
+                type="button"
+                className={`${styles.bulkBtn} ${styles.bulkBtnCancel}`}
+                onClick={handleBulkCancel}
+              >
+                {t("message.bulkAction.cancel")}
+              </button>
+            </div>
+          ) : null}
           {composer ? (
             <div className={styles.composerRail}>
               {composer}

@@ -25,11 +25,69 @@
 
 .contentStack {
   position: relative;
-  display: grid;
-  grid-template-rows: minmax(0, 1fr) auto;
+  display: flex;
+  flex-direction: column;
   flex: 1;
   min-height: 0;
   overflow: hidden;
+}
+
+/* Bulk selection action bar — between message list and composer */
+.bulkActionBar {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.42rem;
+  padding: 0.52rem 0.82rem;
+  background: color-mix(in srgb, var(--bg-primary) 94%, transparent);
+  border-top: 1px solid color-mix(in srgb, var(--panel-border) 52%, transparent);
+  z-index: 9;
+}
+
+.bulkActionCount {
+  flex: 1;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  white-space: nowrap;
+}
+
+.bulkBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.32rem;
+  padding: 0.38rem 0.72rem;
+  border: none;
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--accent) 13%, transparent);
+  color: var(--accent);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background var(--motion-duration-fast, 140ms) ease;
+}
+
+.bulkBtn:hover {
+  background: color-mix(in srgb, var(--accent) 22%, transparent);
+}
+
+.bulkBtnDanger {
+  color: var(--danger, #ef4444);
+  background: color-mix(in srgb, var(--danger, #ef4444) 11%, transparent);
+}
+
+.bulkBtnDanger:hover {
+  background: color-mix(in srgb, var(--danger, #ef4444) 20%, transparent);
+}
+
+.bulkBtnCancel {
+  color: var(--text-secondary);
+  background: transparent;
+}
+
+.bulkBtnCancel:hover {
+  background: color-mix(in srgb, var(--text-primary) 8%, transparent);
 }
 
 .messages {

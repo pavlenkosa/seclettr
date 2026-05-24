@@ -272,69 +272,6 @@
   border-color: var(--accent);
 }
 
-/* Bulk action bar — sticky at bottom of scroll container */
-.bulkActionBar {
-  position: sticky;
-  bottom: 0;
-  display: flex;
-  align-items: center;
-  gap: 0.42rem;
-  padding: 0.6rem 0.82rem;
-  margin-top: 0.5rem;
-  border-radius: 14px 14px 0 0;
-  background: var(--surface-shell-strong, #1e1e2e);
-  border: 1px solid color-mix(in srgb, var(--panel-border) 72%, transparent);
-  border-bottom: none;
-  backdrop-filter: blur(16px);
-  z-index: 8;
-}
-
-.bulkActionCount {
-  flex: 1;
-  font-size: 0.8125rem;
-  font-weight: 600;
-  color: var(--text-primary);
-  white-space: nowrap;
-}
-
-.bulkBtn {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.32rem;
-  padding: 0.4rem 0.72rem;
-  border: none;
-  border-radius: 8px;
-  background: color-mix(in srgb, var(--accent) 13%, transparent);
-  color: var(--accent);
-  font-size: 0.8125rem;
-  font-weight: 600;
-  cursor: pointer;
-  white-space: nowrap;
-  transition: background var(--motion-duration-fast, 140ms) ease;
-}
-
-.bulkBtn:hover {
-  background: color-mix(in srgb, var(--accent) 22%, transparent);
-}
-
-.bulkBtnDanger {
-  color: var(--danger, #ef4444);
-  background: color-mix(in srgb, var(--danger, #ef4444) 11%, transparent);
-}
-
-.bulkBtnDanger:hover {
-  background: color-mix(in srgb, var(--danger, #ef4444) 20%, transparent);
-}
-
-.bulkBtnCancel {
-  color: var(--text-secondary);
-  background: transparent;
-}
-
-.bulkBtnCancel:hover {
-  background: color-mix(in srgb, var(--text-primary) 8%, transparent);
-}
-
 /* ── Bubble base, text, reply preview, and delivery meta ─────────────────── */
 .messageRow {
   display: flex;

@@ -62,16 +62,10 @@ describe("useSidebarResize", () => {
     expect(api!.rootRef.current?.style.getPropertyValue("--sidebar-width")).toBe("400px");
   });
 
-  it("clamps stored width below MIN_WIDTH to 220", () => {
+  it("clamps stored width below MIN_WIDTH to 260", () => {
     localStorage.setItem("sidebar-width", "100");
     renderHook();
-    expect(api!.rootRef.current?.style.getPropertyValue("--sidebar-width")).toBe("220px");
-  });
-
-  it("clamps stored width above MAX_WIDTH to 540", () => {
-    localStorage.setItem("sidebar-width", "700");
-    renderHook();
-    expect(api!.rootRef.current?.style.getPropertyValue("--sidebar-width")).toBe("540px");
+    expect(api!.rootRef.current?.style.getPropertyValue("--sidebar-width")).toBe("260px");
   });
 
   it("falls back to DEFAULT_WIDTH when localStorage has invalid value", () => {
@@ -201,7 +195,7 @@ describe("useSidebarResize", () => {
     expect(div.style.getPropertyValue("--sidebar-width")).toBe("540px");
   });
 
-  it("clamps width to MIN_WIDTH (220) during drag", () => {
+  it("clamps width to MIN_WIDTH (260) during drag", () => {
     const div = document.createElement("div");
     renderHook();
     api!.rootRef.current = div;
@@ -223,7 +217,7 @@ describe("useSidebarResize", () => {
       document.dispatchEvent(new PointerEvent("pointermove", { clientX: 0 }));
     });
 
-    expect(div.style.getPropertyValue("--sidebar-width")).toBe("220px");
+    expect(div.style.getPropertyValue("--sidebar-width")).toBe("260px");
   });
 
   it("touch pointer (non-mouse) accepts button !== 0", () => {

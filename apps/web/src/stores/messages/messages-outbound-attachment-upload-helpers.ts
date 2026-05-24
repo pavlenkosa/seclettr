@@ -1,4 +1,4 @@
-import { ApiError, api } from "@/lib/api";
+import { api } from "@/lib/api";
 import {
   clearUploadLocalSource,
   unregisterUpload,

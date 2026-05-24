@@ -29,33 +29,10 @@ interface CreateMessagesInboundRuntimeOptions {
   trySendReadReceipt: (messageId: string) => boolean;
   queueReadReceipt: (messageId: string) => Promise<void>;
 }
-
-type IncomingMessageNew = WsServerMessage & { type: "message.new" };
-type IncomingServerMessagePayload = IncomingMessageNew["message"];
 type InboundFailureHandler = (
   decision: InboundFailureDecision,
   error: unknown
 ) => Promise<void>;
-
-interface LockedIncomingMessageContext extends CreateMessagesInboundRuntimeOptions {
-  message: IncomingServerMessagePayload;
-  myUserId: string;
-  myDeviceId: string;
-  inboundDecryptRuntime: ReturnType<typeof createMessagesInboundDecryptRuntime>;
-  inboundConversationRuntime: ReturnType<
-    typeof createMessagesInboundConversationRuntime
-  >;
-  inboundPeerIdentityRuntime: ReturnType<
-    typeof createMessagesInboundPeerIdentityRuntime
-  >;
-  inboundPlaintextRuntime: ReturnType<typeof createMessagesInboundPlaintextRuntime>;
-  handleInboundFailure: InboundFailureHandler;
-  classifyUnexpectedInboundFailure: (
-    error: unknown
-  ) => InboundFailureDecision;
-  flushPendingAckForMessage: (messageId: string) => Promise<void>;
-  commitTerminalAndFlushAck: (messageId: string) => Promise<void>;
-}
 
 export function createMessagesInboundRuntime({
   set,

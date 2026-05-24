@@ -20,11 +20,11 @@ import {
   parseDirectDeliveries,
 } from "./messages-outbound-direct-helpers";
 import {
-  AttachmentUploadInitResponse,
   clampDurationMs,
   completeAttachmentUpload,
   markOptimisticAttachmentError,
   toSafeBlobChunk,
+  type AttachmentUploadInitResponse,
   uploadEncryptedAttachmentCiphertext,
 } from "./messages-outbound-attachment-upload-helpers";
 import {
@@ -46,6 +46,7 @@ import {
   MESSAGE_PROTOCOL_VERSION,
   PlaintextAttachmentMessageSchema,
 } from "@seclettr/protocol";
+import type { DirectMessageDeliveryMeta } from "./messages-store-runtime-types";
 
 /**
  * Attachment-send runtime for encrypted outbound direct messages.
@@ -72,13 +73,13 @@ export interface MessagesOutboundAttachmentRuntimeDeps {
   ) => Promise<void>;
   settleAcceptedDirectQueueItem: (
     item: OutboundQueueItem,
-    deliveries: import("./messages-store-runtime-types").DirectMessageDeliveryMeta[] | undefined
+    deliveries: DirectMessageDeliveryMeta[] | undefined
   ) => Promise<boolean>;
   markDirectQueuedMessageStatus: (
     recipientUserId: string,
     clientMessageId: string,
     status: Message["status"],
-    directDeliveries?: import("./messages-store-runtime-types").DirectMessageDeliveryMeta[]
+    directDeliveries?: DirectMessageDeliveryMeta[]
   ) => Promise<void>;
 }
 

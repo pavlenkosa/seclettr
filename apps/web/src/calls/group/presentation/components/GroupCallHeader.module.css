@@ -99,7 +99,7 @@
 }
 
 :global(:root[data-theme="light"]) .headerMetaText {
-  color: color-mix(in srgb, var(--text-primary) 72%, var(--text-secondary));
+  color: var(--text-primary-muted);
 }
 
 @media (prefers-reduced-motion: reduce) {

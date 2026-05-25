@@ -346,7 +346,7 @@
 /* ─── Light theme ────────────────────────────────────────────────────────── */
 
 :global(:root[data-theme="light"]) .surface {
-  background: color-mix(in srgb, var(--surface-shell-strong) 96%, white);
+  background: var(--surface-lighten);
 }
 
 /* ─── Reduced motion ─────────────────────────────────────────────────────── */

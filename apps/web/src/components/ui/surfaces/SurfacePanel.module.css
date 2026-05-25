@@ -28,7 +28,7 @@
 :global(:root[data-theme="light"]) .root {
   --surface-panel-border: color-mix(in srgb, var(--panel-border-soft) 94%, transparent);
   --surface-panel-bg-start: color-mix(in srgb, var(--surface-float) 82%, white);
-  --surface-panel-bg-end: color-mix(in srgb, var(--surface-shell-strong) 86%, white);
+  --surface-panel-bg-end: var(--surface-lighten-mid);
 }
 
 :global(:root[data-theme="light"]) .accent {

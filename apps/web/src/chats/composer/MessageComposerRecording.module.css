@@ -121,7 +121,7 @@
 
 .videoRecordingOverlayCancelBtn {
   color: var(--icon-btn-color);
-  border-color: color-mix(in srgb, var(--panel-border-soft) 92%, transparent);
+  border-color: var(--border-subtle);
   background: color-mix(in srgb, var(--surface-shell-strong) 94%, var(--bg-primary));
 }
 

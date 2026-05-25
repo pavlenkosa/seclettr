@@ -32,6 +32,9 @@
   --motion-ease-emphasized: cubic-bezier(0.22, 1, 0.36, 1);
   --motion-ease-exit: cubic-bezier(0.4, 0, 1, 1);
   --hover-outline: color-mix(in srgb, var(--accent, #2563eb) 42%, transparent);
+  --border-subtle: color-mix(in srgb, var(--panel-border-soft) 92%, transparent);
+  --text-primary-muted: color-mix(in srgb, var(--text-primary) 72%, var(--text-secondary));
+  --text-primary-muted-soft: color-mix(in srgb, var(--text-primary) 68%, var(--text-secondary));
   --panel-header-height: 76px;
 
   /* Z-index scale */
@@ -170,6 +173,12 @@
 }
 
 :root[data-theme="light"] {
+  --border-subtle: color-mix(in srgb, var(--panel-border-soft) 92%, transparent);
+  --text-primary-muted: color-mix(in srgb, var(--text-primary) 72%, var(--text-secondary));
+  --text-primary-muted-soft: color-mix(in srgb, var(--text-primary) 68%, var(--text-secondary));
+  --surface-lighten: color-mix(in srgb, var(--surface-shell-strong) 96%, white);
+  --surface-lighten-mid: color-mix(in srgb, var(--surface-shell-strong) 86%, white);
+
   color-scheme: light;
 
   --bg-primary: #eef3fa;

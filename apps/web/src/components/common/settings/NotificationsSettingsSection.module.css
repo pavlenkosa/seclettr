@@ -67,7 +67,7 @@
 
 :global(:root[data-theme="light"]) .deviceStatus,
 :global(:root[data-theme="light"]) .deviceEmpty {
-  color: color-mix(in srgb, var(--text-primary) 68%, var(--text-secondary));
+  color: var(--text-primary-muted-soft);
 }
 
 @media (max-width: 640px) {

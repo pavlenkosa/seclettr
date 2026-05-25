@@ -33,7 +33,7 @@
 }
 
 :global(:root[data-theme="light"]) .root {
-  border-color: color-mix(in srgb, var(--panel-border-soft) 92%, transparent);
+  border-color: var(--border-subtle);
 }
 
 @media (max-width: 760px) {

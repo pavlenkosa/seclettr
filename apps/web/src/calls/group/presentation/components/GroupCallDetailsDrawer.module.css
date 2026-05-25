@@ -190,7 +190,7 @@
 :global(:root[data-theme="light"]) .detailsDrawer {
   --surface-panel-bg-start: color-mix(in srgb, var(--surface-shell-strong) 98%, white);
   --surface-panel-bg-end: color-mix(in srgb, var(--surface-shell) 96%, white);
-  --surface-panel-border: color-mix(in srgb, var(--panel-border-soft) 92%, transparent);
+  --surface-panel-border: var(--border-subtle);
 }
 
 @media (prefers-reduced-motion: reduce) {

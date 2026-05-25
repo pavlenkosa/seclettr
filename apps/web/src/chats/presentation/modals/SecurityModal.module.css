@@ -59,7 +59,7 @@
   flex-direction: column;
   gap: 0.35rem;
   padding: 0.72rem 0.82rem;
-  border: 1px solid color-mix(in srgb, var(--panel-border-soft) 92%, transparent);
+  border: 1px solid var(--border-subtle);
   border-radius: var(--radius-md);
   background: var(--surface-shell);
 }
@@ -97,12 +97,12 @@
 :global(:root[data-theme="light"]) .description,
 :global(:root[data-theme="light"]) .quickGuideList,
 :global(:root[data-theme="light"]) .advanced summary {
-  color: color-mix(in srgb, var(--text-primary) 72%, var(--text-secondary));
+  color: var(--text-primary-muted);
 }
 
 :global(:root[data-theme="light"]) .quickGuide {
-  border-color: color-mix(in srgb, var(--panel-border-soft) 92%, transparent);
-  background: color-mix(in srgb, var(--surface-shell-strong) 86%, white);
+  border-color: var(--border-subtle);
+  background: var(--surface-lighten-mid);
 }
 
 /* Responsive */

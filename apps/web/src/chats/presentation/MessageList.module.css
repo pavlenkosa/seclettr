@@ -602,11 +602,11 @@ button.quotedBubble {
 }
 
 :global(:root[data-theme="light"]) .timestamp {
-  color: color-mix(in srgb, var(--text-primary) 72%, var(--text-secondary));
+  color: var(--text-primary-muted);
 }
 
 :global(:root[data-theme="light"]) .callEventCard {
-  --surface-panel-border: color-mix(in srgb, var(--panel-border-soft) 92%, transparent);
+  --surface-panel-border: var(--border-subtle);
   --surface-panel-bg-start: color-mix(in srgb, var(--surface-shell-strong) 88%, white);
   --surface-panel-bg-end: color-mix(in srgb, var(--surface-shell-strong) 88%, white);
 }

@@ -113,8 +113,8 @@
 
 :global(:root[data-theme="light"]) .neutral {
   color: color-mix(in srgb, var(--text-primary) 76%, var(--text-secondary));
-  background: color-mix(in srgb, var(--surface-shell-strong) 96%, white);
-  border-color: color-mix(in srgb, var(--panel-border-soft) 92%, transparent);
+  background: var(--surface-lighten);
+  border-color: var(--border-subtle);
 }
 
 @media (max-width: 640px) {

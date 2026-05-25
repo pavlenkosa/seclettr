@@ -177,7 +177,7 @@
   gap: 1rem;
   margin: 0;
   border-radius: 0;
-  --surface-panel-border: color-mix(in srgb, var(--panel-border-soft) 92%, transparent);
+  --surface-panel-border: var(--border-subtle);
   --surface-panel-bg-start: var(--bg-secondary);
   --surface-panel-bg-end: var(--bg-secondary);
   color: var(--text-secondary);

@@ -314,7 +314,7 @@
 
 :global(:root[data-theme="light"]) .groupDescription,
 :global(:root[data-theme="light"]) .note {
-  color: color-mix(in srgb, var(--text-primary) 68%, var(--text-secondary));
+  color: var(--text-primary-muted-soft);
 }
 
 /* === motion and responsive === */

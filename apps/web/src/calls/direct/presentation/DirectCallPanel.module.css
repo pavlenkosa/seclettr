@@ -404,7 +404,7 @@
 }
 
 :global(:root[data-theme="light"]) .callStage {
-  border-color: color-mix(in srgb, var(--panel-border-soft) 92%, transparent);
+  border-color: var(--border-subtle);
   background: color-mix(in srgb, var(--panel-header-bg) 72%, white);
 }
 
@@ -417,7 +417,7 @@
 }
 
 :global(:root[data-theme="light"]) .callState {
-  color: color-mix(in srgb, var(--text-primary) 72%, var(--text-secondary));
+  color: var(--text-primary-muted);
 }
 
 .securityPanel {

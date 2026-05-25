@@ -7,7 +7,7 @@
   display: inline-flex;
   align-items: center;
   gap: 0.5rem;
-  border: 1px solid color-mix(in srgb, var(--panel-border-soft) 92%, transparent);
+  border: 1px solid var(--border-subtle);
   background: color-mix(in srgb, var(--surface-shell) 88%, transparent);
   color: var(--text-primary);
   text-align: left;

@@ -1,7 +1,7 @@
 .indicator {
   --security-status-color: var(--text-secondary);
   --security-status-bg: color-mix(in srgb, var(--surface-shell) 88%, transparent);
-  --security-status-border: color-mix(in srgb, var(--panel-border-soft) 92%, transparent);
+  --security-status-border: var(--border-subtle);
   --security-status-hover-bg: color-mix(in srgb, var(--accent) 10%, transparent);
   --security-status-hover-border: color-mix(in srgb, var(--accent) 24%, transparent);
 

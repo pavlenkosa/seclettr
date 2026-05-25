@@ -56,7 +56,7 @@
 }
 
 :global(:root[data-theme="light"]) .default {
-  --label-pill-bg: color-mix(in srgb, var(--surface-shell-strong) 96%, white);
+  --label-pill-bg: var(--surface-lighten);
   --label-pill-border: color-mix(in srgb, var(--panel-border-soft) 90%, transparent);
   --label-pill-color: color-mix(in srgb, var(--text-primary) 90%, transparent);
 }

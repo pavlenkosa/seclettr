@@ -80,7 +80,7 @@ public class PushForegroundService extends Service {
             "seclettr:push_ws_keepalive"
         );
         wakeLock.setReferenceCounted(false);
-        wakeLock.acquire(10 * 60 * 1000L); // auto-release after 10 min as safety
+        wakeLock.acquire();
     }
 
     @Override
@@ -407,11 +407,8 @@ public class PushForegroundService extends Service {
             PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE
         );
 
-        int appIcon = getApplicationInfo().icon;
-        int iconRes = appIcon != 0 ? appIcon : android.R.drawable.ic_dialog_info;
-
         NotificationCompat.Builder builder = new NotificationCompat.Builder(this, CHANNEL_MESSAGES)
-            .setSmallIcon(iconRes)
+            .setSmallIcon(R.drawable.ic_stat_notification)
             .setContentTitle(title)
             .setContentText(content)
             .setAutoCancel(true)
@@ -477,11 +474,8 @@ public class PushForegroundService extends Service {
             PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE
         );
 
-        int appIcon = getApplicationInfo().icon;
-        int iconRes = appIcon != 0 ? appIcon : android.R.drawable.ic_dialog_info;
-
         return new NotificationCompat.Builder(this, CHANNEL_SERVICE)
-            .setSmallIcon(iconRes)
+            .setSmallIcon(R.drawable.ic_stat_notification)
             .setContentTitle("Seclettr")
             .setContentText("Push notifications active")
             .setContentIntent(pendingIntent)

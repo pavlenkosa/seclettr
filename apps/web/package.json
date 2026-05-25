@@ -14,7 +14,7 @@
     "lint": "eslint src --ext .ts,.tsx",
     "check:ui-contracts": "node scripts/check-ui-contracts.mjs",
     "check:ui-style": "node scripts/check-ui-style.mjs",
-    "android:sync": "vite build --mode production && cap sync android",
+    "android:sync": "vite build --mode production && cap sync android && node scripts/patch-capacitor-plugins.mjs",
     "android:open": "cap open android",
     "android:run": "cap run android",
     "android:build:debug": "bash ./scripts/build-android-artifacts.sh debug",

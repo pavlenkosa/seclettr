@@ -17,12 +17,12 @@
   --surface-panel-bg-end: color-mix(in srgb, var(--surface-shell-strong) 96%, var(--bg-primary));
   --surface-panel-border: color-mix(in srgb, var(--panel-border-soft) 86%, transparent);
   position: absolute;
-  top: calc(env(safe-area-inset-top, 0px) + 6.2rem);
+  top: calc(var(--safe-top) + 6.2rem);
   right: max(
     clamp(0.85rem, 1.6vw, 1.35rem),
     calc((100% - 1560px) / 2 + clamp(0.85rem, 1.6vw, 1.35rem))
   );
-  bottom: calc(env(safe-area-inset-bottom, 0px) + 5.8rem);
+  bottom: calc(var(--safe-bottom) + 5.8rem);
   z-index: var(--z-8);
   width: clamp(360px, 26vw, 430px);
   max-height: none;
@@ -70,6 +70,46 @@
 
 .audioOutputSelector {
   width: 100%;
+}
+
+/* Native Android: earpiece / speaker toggle inside the details card. */
+.nativeSpeakerOptions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.nativeSpeakerOption {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.52rem 0.7rem;
+  border: none;
+  background: transparent;
+  border-radius: 6px;
+  cursor: pointer;
+  color: var(--text-secondary);
+  font-size: 0.84rem;
+  font-family: inherit;
+  width: 100%;
+  text-align: left;
+  transition: background 0.12s ease, color 0.12s ease;
+}
+
+.nativeSpeakerOption:hover {
+  background: color-mix(in srgb, var(--surface-shell) 60%, transparent);
+  color: var(--text-primary);
+}
+
+.nativeSpeakerOptionActive {
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.nativeSpeakerCheck {
+  margin-left: auto;
+  color: var(--accent);
+  flex-shrink: 0;
 }
 
 .roomIdCode {
@@ -176,10 +216,10 @@
   }
 
   .detailsDrawer {
-    top: calc(env(safe-area-inset-top, 0px) + 6.8rem);
-    right: max(0.7rem, env(safe-area-inset-right, 0px));
-    bottom: calc(env(safe-area-inset-bottom, 0px) + 5.9rem);
-    left: max(0.7rem, env(safe-area-inset-left, 0px));
+    top: calc(var(--safe-top) + 6.8rem);
+    right: max(0.7rem, var(--safe-right));
+    bottom: calc(var(--safe-bottom) + 5.9rem);
+    left: max(0.7rem, var(--safe-left));
     width: auto;
     max-height: none;
     padding: 0.72rem;

@@ -2,6 +2,8 @@ import { useI18n } from "@/i18n";
 import { Avatar, EntityRow, FieldSection, InlineNotice, PillButton, SurfacePanel } from "@/components/ui";
 
 import { AudioOutputSelector } from "@/calls/shared/media/audio-output/AudioOutputSelector";
+import { useNativeSpeakerToggle } from "@/calls/shared/media/audio-output/useNativeSpeakerToggle";
+import { PhoneIcon, SpeakerIcon } from "@/calls/shared/presentation/CallIcons";
 import { getMemberInitials } from "@/calls/group/presentation/display";
 import panelStyles from "@/calls/group/presentation/GroupCallPanel.module.css";
 import styles from "./GroupCallDetailsDrawer.module.css";
@@ -49,6 +51,7 @@ export function GroupCallDetailsDrawer({
   onHostAction,
 }: GroupCallDetailsDrawerProps) {
   const { t } = useI18n();
+  const { supported: speakerSupported, speakerOn, toggle: toggleSpeaker } = useNativeSpeakerToggle();
   const showHostAction = Boolean(hostActionLabel && onHostAction);
 
   return (
@@ -133,7 +136,41 @@ export function GroupCallDetailsDrawer({
 
       <FieldSection className={panelStyles.section} label={t("call.audioOutput.label")}>
         <SurfacePanel className={styles.detailsCard} padding="md">
-          <AudioOutputSelector className={styles.audioOutputSelector} />
+          {speakerSupported ? (
+            /* Native Android: earpiece / speaker options with multi-attempt
+               backoff earpiece default applied by useNativeSpeakerToggle. */
+            <div className={styles.nativeSpeakerOptions}>
+              <button
+                type="button"
+                className={[
+                  styles.nativeSpeakerOption,
+                  !speakerOn ? styles.nativeSpeakerOptionActive : "",
+                ].filter(Boolean).join(" ")}
+                onClick={() => { if (speakerOn) toggleSpeaker(); }}
+                aria-pressed={!speakerOn}
+              >
+                <PhoneIcon />
+                <span>{t("call.earpiece")}</span>
+                {!speakerOn ? <span className={styles.nativeSpeakerCheck} aria-hidden="true">✓</span> : null}
+              </button>
+              <button
+                type="button"
+                className={[
+                  styles.nativeSpeakerOption,
+                  speakerOn ? styles.nativeSpeakerOptionActive : "",
+                ].filter(Boolean).join(" ")}
+                onClick={() => { if (!speakerOn) toggleSpeaker(); }}
+                aria-pressed={speakerOn}
+              >
+                <SpeakerIcon speakerOn={speakerOn} />
+                <span>{t("call.speaker")}</span>
+                {speakerOn ? <span className={styles.nativeSpeakerCheck} aria-hidden="true">✓</span> : null}
+              </button>
+            </div>
+          ) : (
+            /* Web / desktop: standard AudioOutputSelector (setSinkId). */
+            <AudioOutputSelector className={styles.audioOutputSelector} />
+          )}
         </SurfacePanel>
       </FieldSection>
 

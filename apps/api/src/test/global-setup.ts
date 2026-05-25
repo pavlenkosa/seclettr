@@ -32,6 +32,8 @@ export default async function globalSetup() {
     process.env["QM_API_TEST_REFRESH_RATE_LIMIT_MAX"] = "500";
   }
 
+  await import("../db/migrate.js");
+
   const { buildApp } = await import("../index.js");
   const { pool } = await import("../db/pool.js");
   const { redis } = await import("../services/redis.js");

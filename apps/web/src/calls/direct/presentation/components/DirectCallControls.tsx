@@ -1,4 +1,4 @@
-import { useState, type RefObject } from "react";
+import { useEffect, useRef, useState, type RefObject } from "react";
 import { useI18n } from "@/i18n";
 import { CallControlButton } from "@/calls/shared/presentation/CallControlButton";
 import { CallControlsDock } from "@/calls/shared/presentation/CallControlsDock";
@@ -102,6 +102,24 @@ export function DirectCallControls({
   // Bottom-sheet state for web audio output selection on mobile.
   const [outputSheetOpen, setOutputSheetOpen] = useState(false);
 
+  // Refs for sheet focus management (CAL-03).
+  // One ref per sheet variant; trigger refs to restore focus on close.
+  const nativeSpeakerSheetRef = useRef<HTMLDivElement>(null);
+  const webOutputSheetRef = useRef<HTMLDivElement>(null);
+  const nativeSpeakerBtnRef = useRef<HTMLButtonElement>(null);
+  const webOutputBtnRef = useRef<HTMLButtonElement>(null);
+
+  // Move focus into the active sheet when it opens; return to trigger on close.
+  useEffect(() => {
+    if (outputSheetOpen) {
+      const sheet = nativeSpeakerSheetRef.current ?? webOutputSheetRef.current;
+      sheet?.focus();
+    } else {
+      const btn = nativeSpeakerBtnRef.current ?? webOutputBtnRef.current;
+      btn?.focus();
+    }
+  }, [outputSheetOpen]);
+
   const resolvedSpeakerLabel = speakerLabel ?? t("call.speaker");
   const resolvedSpeakerAriaLabel = speakerAriaLabel ?? t("call.speakerAria");
   const resolvedEarphoneLabel = earphoneLabel ?? t("call.earpiece");
@@ -140,6 +158,7 @@ export function DirectCallControls({
           /* Capacitor native: select earpiece or loudspeaker via a sheet */
           <div className={styles.audioOutputWrapper}>
             <CallControlButton
+              ref={nativeSpeakerBtnRef}
               onClick={() => { setOutputSheetOpen((prev) => !prev); }}
               layout="stacked"
               className={mobileClass}
@@ -157,9 +176,13 @@ export function DirectCallControls({
                   aria-hidden="true"
                 />
                 <div
+                  ref={nativeSpeakerSheetRef}
                   className={styles.audioOutputSheet}
                   role="dialog"
+                  aria-modal="true"
                   aria-label={resolvedSpeakerAriaLabel}
+                  tabIndex={-1}
+                  onKeyDown={(e) => { if (e.key === "Escape") setOutputSheetOpen(false); }}
                 >
                   <button
                     type="button"
@@ -199,6 +222,7 @@ export function DirectCallControls({
           /* Web mobile: open a bottom-sheet with the AudioOutputSelector */
           <div className={styles.audioOutputWrapper}>
             <CallControlButton
+              ref={webOutputBtnRef}
               onClick={() => { setOutputSheetOpen((prev) => !prev); }}
               layout="stacked"
               className={mobileClass}
@@ -217,9 +241,13 @@ export function DirectCallControls({
                   aria-hidden="true"
                 />
                 <div
+                  ref={webOutputSheetRef}
                   className={styles.audioOutputSheet}
                   role="dialog"
+                  aria-modal="true"
                   aria-label={resolvedSpeakerAriaLabel}
+                  tabIndex={-1}
+                  onKeyDown={(e) => { if (e.key === "Escape") setOutputSheetOpen(false); }}
                 >
                   <AudioOutputSelector compact hideLabel />
                 </div>

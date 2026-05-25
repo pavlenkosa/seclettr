@@ -299,7 +299,7 @@
     position: fixed;
     left: 0;
     right: 0;
-    bottom: calc(env(safe-area-inset-bottom, 0px) + var(--composer-height, 72px) + 4px);
+    bottom: calc(var(--safe-bottom) + var(--composer-height, 72px) + 4px);
     width: auto;
     inline-size: auto;
     max-inline-size: none;

@@ -13,6 +13,9 @@
         <item name="windowActionBar">false</item>
         <item name="windowNoTitle">true</item>
         <item name="android:background">@null</item>
+        <!-- Transparent navigation bar — Capacitor edge-to-edge draws behind it.
+             On API 35+ the system enforces transparency; this covers API 26–34. -->
+        <item name="android:navigationBarColor">@android:color/transparent</item>
     </style>
 
 

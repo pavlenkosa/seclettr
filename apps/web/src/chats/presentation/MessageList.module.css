@@ -12,6 +12,7 @@
   flex: 1;
   overflow-y: auto;
   overflow-x: clip;
+  overscroll-behavior: contain;
   scroll-padding-block-end: 1rem;
   padding: 0.5rem var(--thread-content-inline-pad, 0.74rem) 0.82rem;
   display: flex;

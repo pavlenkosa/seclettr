@@ -244,9 +244,9 @@
 
   .menu {
     position: fixed;
-    left: max(0.72rem, env(safe-area-inset-left, 0px));
-    right: max(0.72rem, env(safe-area-inset-right, 0px));
-    bottom: calc(env(safe-area-inset-bottom, 0px) + 0.72rem);
+    left: max(0.72rem, var(--safe-left));
+    right: max(0.72rem, var(--safe-right));
+    bottom: calc(var(--safe-bottom) + 0.72rem);
     z-index: var(--z-400);
     width: auto;
     min-width: 0;

@@ -2,9 +2,9 @@
   position: fixed;
   left: var(--floating-dock-left, 50%);
   right: var(--floating-dock-right, auto);
-  bottom: calc(env(safe-area-inset-bottom, 0px) + var(--floating-dock-bottom-offset, 14px));
+  bottom: calc(var(--safe-bottom) + var(--floating-dock-bottom-offset, 14px));
   transform: translate(var(--floating-dock-translate-x, -50%), 0);
-  z-index: var(--floating-dock-z-index, 260);
+  z-index: var(--z-floating-dock);
   width: min(var(--floating-dock-max-width, 620px), calc(100vw - var(--floating-dock-screen-gap, 1rem)));
   display: flex;
   align-items: center;

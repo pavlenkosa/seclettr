@@ -58,7 +58,7 @@
 
 .noticeLayer {
   position: fixed;
-  top: calc(env(safe-area-inset-top, 0px) + 10px);
+  top: calc(var(--safe-top) + 10px);
   left: 0;
   right: 0;
   display: flex;
@@ -99,9 +99,9 @@
   justify-content: flex-start;
   gap: clamp(0.5rem, 1vw, 0.75rem);
   padding:
-    calc(env(safe-area-inset-top, 0px) + 14px)
+    calc(var(--safe-top) + 14px)
     clamp(0.9rem, 1.5vw, 1.4rem)
-    calc(env(safe-area-inset-bottom, 0px) + 14px);
+    calc(var(--safe-bottom) + 14px);
   background: color-mix(in srgb, var(--bg-primary) 48%, #05080f);
   animation: callSurfaceIn var(--motion-duration-base) cubic-bezier(0.18, 0.9, 0.2, 1) both;
 }
@@ -603,8 +603,8 @@
 }
 
 .localPreview {
-  right: max(1rem, env(safe-area-inset-right, 0px));
-  bottom: calc(env(safe-area-inset-bottom, 0px) + 110px);
+  right: max(1rem, var(--safe-right));
+  bottom: calc(var(--safe-bottom) + 110px);
   width: clamp(104px, 22vw, 156px);
   aspect-ratio: 3 / 4;
   cursor: grab;
@@ -613,9 +613,9 @@
 }
 
 .localScreenPreview {
-  left: max(1rem, env(safe-area-inset-left, 0px));
+  left: max(1rem, var(--safe-left));
   right: auto;
-  bottom: calc(env(safe-area-inset-bottom, 0px) + 110px);
+  bottom: calc(var(--safe-bottom) + 110px);
   width: clamp(164px, 28vw, 280px);
   aspect-ratio: 16 / 10;
   cursor: grab;
@@ -633,7 +633,7 @@
 
 .localPreviewRaised,
 .localScreenPreviewRaised {
-  bottom: calc(env(safe-area-inset-bottom, 0px) + 372px);
+  bottom: calc(var(--safe-bottom) + 372px);
 }
 
 .floatingPreviewSurface {
@@ -820,18 +820,18 @@
 
   .localPreview {
     width: 104px;
-    bottom: calc(env(safe-area-inset-bottom, 0px) + 92px);
+    bottom: calc(var(--safe-bottom) + 92px);
   }
 
   .localScreenPreview {
-    left: max(0.75rem, env(safe-area-inset-left, 0px));
+    left: max(0.75rem, var(--safe-left));
     width: 136px;
-    bottom: calc(env(safe-area-inset-bottom, 0px) + 92px);
+    bottom: calc(var(--safe-bottom) + 92px);
   }
 
   .localPreviewRaised,
   .localScreenPreviewRaised {
-    bottom: calc(env(safe-area-inset-bottom, 0px) + 148px);
+    bottom: calc(var(--safe-bottom) + 148px);
   }
 
   .remoteCompanionPreview {
@@ -937,9 +937,9 @@
 @media (max-width: 720px) {
   .callOverlay {
     padding:
-      calc(env(safe-area-inset-top, 0px) + 14px)
+      calc(var(--safe-top) + 14px)
       0.85rem
-      calc(env(safe-area-inset-bottom, 0px) + 16px);
+      calc(var(--safe-bottom) + 16px);
   }
 
   .callStage {
@@ -954,9 +954,9 @@
     overflow: hidden;
     gap: 0.48rem;
     padding:
-      calc(env(safe-area-inset-top, 0px) + 8px)
+      calc(var(--safe-top) + 8px)
       0.72rem
-      calc(env(safe-area-inset-bottom, 0px) + 8px);
+      calc(var(--safe-bottom) + 8px);
   }
 
   .callCenter {
@@ -986,18 +986,18 @@
      Dock occupies ~88px from bottom → use 96px so PiP is visibly above the dock. */
   .localPreview {
     width: 86px;
-    bottom: calc(env(safe-area-inset-bottom, 0px) + 96px);
+    bottom: calc(var(--safe-bottom) + 96px);
   }
 
   .localScreenPreview {
-    left: max(0.72rem, env(safe-area-inset-left, 0px));
+    left: max(0.72rem, var(--safe-left));
     width: 120px;
-    bottom: calc(env(safe-area-inset-bottom, 0px) + 96px);
+    bottom: calc(var(--safe-bottom) + 96px);
   }
 
   .localPreviewRaised,
   .localScreenPreviewRaised {
-    bottom: calc(env(safe-area-inset-bottom, 0px) + 112px);
+    bottom: calc(var(--safe-bottom) + 112px);
   }
 
   /* Scale down the PiP action/resize buttons — at 86px wide a 34px button is too dominant. */

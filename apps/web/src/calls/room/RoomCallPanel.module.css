@@ -72,12 +72,12 @@
 
 .roomSidePanelOverlay {
   position: absolute;
-  top: calc(env(safe-area-inset-top, 0px) + 6.2rem);
+  top: calc(var(--safe-top) + 6.2rem);
   right: max(
     clamp(0.85rem, 1.6vw, 1.35rem),
     calc((100% - 1560px) / 2 + clamp(0.85rem, 1.6vw, 1.35rem))
   );
-  bottom: calc(env(safe-area-inset-bottom, 0px) + 5.8rem);
+  bottom: calc(var(--safe-bottom) + 5.8rem);
   z-index: var(--z-8);
   width: clamp(330px, 24vw, 400px);
   max-height: none;
@@ -206,12 +206,53 @@
   line-height: 1.42;
 }
 
+/* Native Android: earpiece / speaker toggle inside the participants panel. */
+.nativeSpeakerCard {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  padding: 0.42rem 0.12rem;
+}
+
+.nativeSpeakerOption {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.52rem 0.7rem;
+  border: none;
+  background: transparent;
+  border-radius: 6px;
+  cursor: pointer;
+  color: var(--text-secondary);
+  font-size: 0.84rem;
+  font-family: inherit;
+  width: 100%;
+  text-align: left;
+  transition: background 0.12s ease, color 0.12s ease;
+}
+
+.nativeSpeakerOption:hover {
+  background: color-mix(in srgb, var(--surface-shell) 60%, transparent);
+  color: var(--text-primary);
+}
+
+.nativeSpeakerOptionActive {
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.nativeSpeakerCheck {
+  margin-left: auto;
+  color: var(--accent);
+  flex-shrink: 0;
+}
+
 @media (max-width: 960px) {
   .roomSidePanelOverlay {
-    top: calc(env(safe-area-inset-top, 0px) + 6.8rem);
-    left: max(0.75rem, env(safe-area-inset-left, 0px));
-    right: max(0.75rem, env(safe-area-inset-right, 0px));
-    bottom: calc(env(safe-area-inset-bottom, 0px) + 5.95rem);
+    top: calc(var(--safe-top) + 6.8rem);
+    left: max(0.75rem, var(--safe-left));
+    right: max(0.75rem, var(--safe-right));
+    bottom: calc(var(--safe-bottom) + 5.95rem);
     width: auto;
     max-height: none;
   }
@@ -229,8 +270,8 @@
   }
 
   .roomSidePanelOverlay {
-    left: max(0.7rem, env(safe-area-inset-left, 0px));
-    right: max(0.7rem, env(safe-area-inset-right, 0px));
+    left: max(0.7rem, var(--safe-left));
+    right: max(0.7rem, var(--safe-right));
   }
 
   .roomMediaGridSolo {

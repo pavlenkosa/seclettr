@@ -23,7 +23,7 @@
 
 .controlsDock {
   --call-controls-position: sticky;
-  --call-controls-bottom: calc(env(safe-area-inset-bottom, 0px) + 2px);
+  --call-controls-bottom: calc(var(--safe-bottom) + 2px);
   --call-controls-z-index: var(--z-8);
   --call-controls-width: fit-content;
   --call-controls-max-width: min(100%, 760px);
@@ -106,7 +106,7 @@
   position: fixed;
   left: 0.75rem;
   right: 0.75rem;
-  bottom: calc(env(safe-area-inset-bottom, 0px) + 96px);
+  bottom: calc(var(--safe-bottom) + 96px);
   z-index: var(--z-10);
   border-radius: 20px;
   background: color-mix(in srgb, var(--surface-shell) 96%, transparent);

@@ -9,7 +9,7 @@
   border: 0;
   outline: 0;
   box-sizing: border-box;
-  z-index: var(--call-panel-z-index, 255);
+  z-index: var(--z-call-panel);
   display: flex;
   align-items: stretch;
   justify-content: center;
@@ -28,9 +28,9 @@
   gap: var(--call-panel-gap, 1.1rem);
   padding: var(
     --call-panel-padding,
-    calc(env(safe-area-inset-top, 0px) + 1rem)
+    calc(var(--safe-top) + 1rem)
     clamp(0.9rem, 1.4vw, 1.35rem)
-    calc(env(safe-area-inset-bottom, 0px) + 1rem)
+    calc(var(--safe-bottom) + 1rem)
   );
   border: var(--call-panel-border, 0);
   border-radius: var(--call-panel-radius, 0);
@@ -42,9 +42,9 @@
   .panel {
     padding: var(
       --call-panel-padding-narrow,
-      calc(env(safe-area-inset-top, 0px) + 0.9rem)
+      calc(var(--safe-top) + 0.9rem)
       0.85rem
-      calc(env(safe-area-inset-bottom, 0px) + 0.95rem)
+      calc(var(--safe-bottom) + 0.95rem)
     );
   }
 }

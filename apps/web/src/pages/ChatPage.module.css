@@ -119,7 +119,7 @@
 .modalLazyFallback {
   position: fixed;
   inset: 0;
-  z-index: var(--modal-z-index, 1200);
+  z-index: var(--z-modal);
   display: grid;
   place-items: center;
   background: rgb(2 6 23 / 0.28);

@@ -226,10 +226,10 @@
   flex-direction: column;
   min-height: 100dvh;
   padding:
-    calc(env(safe-area-inset-top, 0px) + 2.5rem)
-    calc(env(safe-area-inset-right, 0px) + 1.5rem)
-    calc(env(safe-area-inset-bottom, 0px) + 1.5rem)
-    calc(env(safe-area-inset-left, 0px) + 1.5rem);
+    calc(var(--safe-top) + 2.5rem)
+    calc(var(--safe-right) + 1.5rem)
+    calc(var(--safe-bottom) + 1.5rem)
+    calc(var(--safe-left) + 1.5rem);
   background: var(--bg-primary);
 }
 

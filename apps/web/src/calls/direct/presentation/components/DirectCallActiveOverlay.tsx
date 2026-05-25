@@ -349,7 +349,6 @@ export function DirectCallActiveOverlay({
       <div ref={callHeaderRef}>
       <HeaderBar
         className={styles.callHeader}
-        stackCenterOnNarrow
         center={(
           <InfoStack
             className={activeStyles.callHeaderSummary}
@@ -369,7 +368,7 @@ export function DirectCallActiveOverlay({
                 aria-label={callSecurityToggleLabel}
               >
                 <LockIcon />
-                <span>{callSecurityStatusLabel}</span>
+                <span className={activeStyles.callEncryptionBadgeLabel}>{callSecurityStatusLabel}</span>
               </button>
             )}
             titleClassName={activeStyles.callHeaderTitle}

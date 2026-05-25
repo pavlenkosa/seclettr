@@ -19,7 +19,7 @@
   border-radius: 20px 20px 0 0;
   border: 1px solid color-mix(in srgb, var(--panel-border-soft, var(--panel-border)) 80%, transparent);
   border-bottom: none;
-  padding: 0.5rem 1rem calc(env(safe-area-inset-bottom, 0px) + 0.75rem);
+  padding: 0.5rem 1rem calc(var(--safe-bottom) + 0.75rem);
   display: flex;
   flex-direction: column;
   gap: 0;

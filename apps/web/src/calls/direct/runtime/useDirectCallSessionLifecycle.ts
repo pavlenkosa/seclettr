@@ -17,12 +17,38 @@ import { api } from "@/lib/api";
 import { beginDirectCallLifecycleToken } from "@/calls/direct/model/direct-call-lifecycle";
 import type { CallNotice } from "@/calls/direct/model/direct-call-types";
 import { logger } from "@/lib/logger.js";
-import { type UseDirectCallSessionLifecycleOptions } from "./direct-call-session-lifecycle-shared";
+import {
+  type UseDirectCallSessionLifecycleOptions,
+  type DirectCallLifecycleVideoElementRefs,
+  type DirectCallLifecycleMediaStateRefs,
+} from "./session/direct-call-session-lifecycle-shared";
 import { closePeerConnection as doClosePeerConnection } from "./direct-call-pc-utils";
-import { clearDirectCallNegotiationState } from "./direct-call-setup-shared";
+import { clearDirectCallNegotiationState } from "./setup/direct-call-setup-shared";
 import { type DirectCallFinishSession } from "./direct-call-runtime-types";
-import { useDirectCallIncomingRingtone } from "./useDirectCallIncomingRingtone";
-import { useDirectCallFrameModeRecovery } from "./useDirectCallFrameModeRecovery";
+import { useDirectCallFrameModeRecovery } from "./session/useDirectCallFrameModeRecovery";
+import { useDirectCallIncomingRingtone } from "./session/useDirectCallIncomingRingtone";
+import { useDirectCallOutgoingRingtone } from "./session/useDirectCallOutgoingRingtone";
+
+function detachVideoElements(refs: DirectCallLifecycleVideoElementRefs): void {
+  if (refs.localVideoRef.current) refs.localVideoRef.current.srcObject = null;
+  if (refs.localScreenPreviewRef.current) refs.localScreenPreviewRef.current.srcObject = null;
+  if (refs.remoteVideoRef.current) refs.remoteVideoRef.current.srcObject = null;
+  if (refs.remoteScreenVideoRef.current) refs.remoteScreenVideoRef.current.srcObject = null;
+  if (refs.remoteCameraProbeRef.current) refs.remoteCameraProbeRef.current.srcObject = null;
+  if (refs.remoteScreenProbeRef.current) refs.remoteScreenProbeRef.current.srcObject = null;
+  if (refs.remoteAudioRef.current) refs.remoteAudioRef.current.srcObject = null;
+}
+
+function resetMediaStateRefs(refs: DirectCallLifecycleMediaStateRefs): void {
+  refs.remoteCameraPlaybackRef.current = { lastTime: 0, lastFrameCount: 0, lastProgressAt: 0 };
+  refs.remoteScreenPlaybackRef.current = { lastTime: 0, lastFrameCount: 0, lastProgressAt: 0 };
+  refs.remoteInboundVideoProgressRef.current.clear();
+  refs.callMediaStateSeqRef.current = 0;
+  refs.localMediaStateRevisionRef.current = { camera: 0, screen: 0, mic: 0 };
+  refs.remoteMediaStateSeqRef.current = { camera: 0, screen: 0, mic: 0 };
+  refs.remoteMediaStateRevisionRef.current = { camera: 0, screen: 0, mic: 0 };
+  refs.lastIncomingMediaStateRef.current = { camera: null, screen: null, mic: null };
+}
 
 export function useDirectCallSessionLifecycle(options: UseDirectCallSessionLifecycleOptions) {
   const {
@@ -97,12 +123,17 @@ export function useDirectCallSessionLifecycle(options: UseDirectCallSessionLifec
     isCurrentActiveCallContext,
     configureDirectCallFrameCrypto,
     incomingRingtoneRef,
+    outgoingRingtoneRef,
     t,
   } = options;
 
   const { stopIncomingRingtone } = useDirectCallIncomingRingtone({
     incomingCallId,
     incomingRingtoneRef,
+  });
+  const { stopOutgoingRingtone } = useDirectCallOutgoingRingtone({
+    active,
+    outgoingRingtoneRef,
   });
 
   const stopLocalMedia = useCallback(() => {
@@ -122,54 +153,34 @@ export function useDirectCallSessionLifecycle(options: UseDirectCallSessionLifec
     screenShareTrackRef.current = null;
     localScreenPreviewStreamRef.current = null;
     remoteAudioStreamRef.current = null;
-    if (localVideoRef.current) localVideoRef.current.srcObject = null;
-    if (localScreenPreviewRef.current) localScreenPreviewRef.current.srcObject = null;
-    if (remoteVideoRef.current) remoteVideoRef.current.srcObject = null;
-    if (remoteScreenVideoRef.current) remoteScreenVideoRef.current.srcObject = null;
-    if (remoteCameraProbeRef.current) remoteCameraProbeRef.current.srcObject = null;
-    if (remoteScreenProbeRef.current) remoteScreenProbeRef.current.srcObject = null;
-    if (remoteAudioRef.current) remoteAudioRef.current.srcObject = null;
-    remoteCameraPlaybackRef.current = { lastTime: 0, lastFrameCount: 0, lastProgressAt: 0 };
-    remoteScreenPlaybackRef.current = { lastTime: 0, lastFrameCount: 0, lastProgressAt: 0 };
-    remoteInboundVideoProgressRef.current.clear();
-    callMediaStateSeqRef.current = 0;
-    localMediaStateRevisionRef.current = { camera: 0, screen: 0, mic: 0 };
-    remoteMediaStateSeqRef.current = { camera: 0, screen: 0, mic: 0 };
-    remoteMediaStateRevisionRef.current = { camera: 0, screen: 0, mic: 0 };
-    lastIncomingMediaStateRef.current = { camera: null, screen: null, mic: null };
+    detachVideoElements({
+      localVideoRef,
+      localScreenPreviewRef,
+      remoteVideoRef,
+      remoteScreenVideoRef,
+      remoteCameraProbeRef,
+      remoteScreenProbeRef,
+      remoteAudioRef,
+    });
+    resetMediaStateRefs({
+      remoteCameraPlaybackRef,
+      remoteScreenPlaybackRef,
+      remoteInboundVideoProgressRef,
+      callMediaStateSeqRef,
+      localMediaStateRevisionRef,
+      remoteMediaStateSeqRef,
+      remoteMediaStateRevisionRef,
+      lastIncomingMediaStateRef,
+    });
     resetLocalPreviewState();
     resetLocalScreenPreviewState();
-  }, [
-    callMediaStateSeqRef,
-    cameraSenderRef,
-    cameraTransceiverRef,
-    lastIncomingMediaStateRef,
-    localMediaStateRevisionRef,
-    localScreenPreviewRef,
-    localScreenPreviewStreamRef,
-    localStreamRef,
-    localVideoRef,
-    remoteAudioRef,
-    remoteAudioStreamRef,
-    remoteCameraPlaybackRef,
-    remoteCameraProbeRef,
-    remoteInboundVideoProgressRef,
-    remoteMediaStateRevisionRef,
-    remoteMediaStateSeqRef,
-    remoteScreenPlaybackRef,
-    remoteScreenProbeRef,
-    remoteScreenVideoRef,
-    remoteVideoRef,
-    resetLocalPreviewState,
-    resetLocalScreenPreviewState,
-    screenShareSenderRef,
-    screenShareTrackRef,
-    screenShareTransceiverRef,
-  ]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [resetLocalPreviewState, resetLocalScreenPreviewState]);
 
   const closePeerConnection = useCallback(
     () => doClosePeerConnection(peerConnectionRef),
-    [peerConnectionRef]
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    []
   );
 
   const sendAuthoritativeDirectCallHangup = useCallback(async (callId: string) => {
@@ -196,6 +207,7 @@ export function useDirectCallSessionLifecycle(options: UseDirectCallSessionLifec
       directCallLifecycleTokenRef.current
     );
     stopIncomingRingtone();
+    stopOutgoingRingtone();
     closePeerConnection();
     clearOutgoingMediaStateTrackBindingsRef.current();
     stopLocalMedia();
@@ -204,7 +216,6 @@ export function useDirectCallSessionLifecycle(options: UseDirectCallSessionLifec
       clearTimeout(disconnectResetTimerRef.current);
       disconnectResetTimerRef.current = null;
     }
-    remoteInboundVideoProgressRef.current.clear();
     resetRemoteMediaRuntime();
     if (frameModeRecoveryTimerRef.current) {
       clearTimeout(frameModeRecoveryTimerRef.current);
@@ -239,36 +250,12 @@ export function useDirectCallSessionLifecycle(options: UseDirectCallSessionLifec
       disconnectRecoveryAttemptedRef,
     });
     if (opts?.notice) pushNotice(opts.notice);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
-    activeRef,
-    acceptingIncomingCallRef,
-    clearOutgoingMediaStateTrackBindingsRef,
     closeDirectCallFrameCrypto,
     closePeerConnection,
-    directCallLifecycleTokenRef,
-    directCallNegotiationRoleRef,
-    disconnectRecoveryAttemptedRef,
-    disconnectResetTimerRef,
-    frameModeRecoveryAttemptedCallIdRef,
-    frameModeRecoveryTimerRef,
-    ignoreOfferRef,
-    incomingIceCandidatesRef,
-    incomingRef,
-    isSettingRemoteAnswerPendingRef,
-    lastAppliedRemoteRenegotiationRevisionRef,
-    lastRenegotiationAttemptRef,
-    lastSignalingErrorRef,
-    makingOfferRef,
-    negotiationReadyRef,
     outgoingIceBatchReset,
-    outboundMediaEncryptionOfferRef,
-    pendingIceCandidatesRef,
-    pendingLocalRenegotiationRevisionRef,
-    pendingRenegotiationReasonRef,
     pushNotice,
-    remoteInboundVideoProgressRef,
-    renegotiationRevisionRef,
-    renegotiationUnsupportedRef,
     resetMinimizedDockState,
     resetRemoteMediaRuntime,
     sendAuthoritativeDirectCallHangup,
@@ -276,8 +263,8 @@ export function useDirectCallSessionLifecycle(options: UseDirectCallSessionLifec
     setIncoming,
     setIsMinimized,
     stopIncomingRingtone,
+    stopOutgoingRingtone,
     stopLocalMedia,
-    supportsPeerRenegotiationV1Ref,
   ]);
 
   const resetCallStateIfCurrent = useCallback((
@@ -312,14 +299,8 @@ export function useDirectCallSessionLifecycle(options: UseDirectCallSessionLifec
     }
 
     resetCallState({ notice: opts.notice });
-  }, [
-    acceptingIncomingCallRef,
-    activeRef,
-    incomingRef,
-    resetCallState,
-    sendAuthoritativeDirectCallHangup,
-    sendAuthoritativeDirectCallReject,
-  ]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [resetCallState, sendAuthoritativeDirectCallHangup, sendAuthoritativeDirectCallReject]);
 
   useDirectCallFrameModeRecovery({
     active,
@@ -331,6 +312,9 @@ export function useDirectCallSessionLifecycle(options: UseDirectCallSessionLifec
     remoteScreenSlot,
     remoteCameraStreamRef,
     remoteScreenStreamRef,
+    remoteAudioRef,
+    remoteAudioStreamRef,
+    lastIncomingMediaStateRef,
     setActive,
     configureDirectCallFrameCrypto,
     pushNotice,
@@ -339,27 +323,18 @@ export function useDirectCallSessionLifecycle(options: UseDirectCallSessionLifec
     frameModeRecoveryAttemptedCallIdRef,
   });
 
-  const runUnmountCleanup = useCallback(() => {
-    resetRemoteMediaRuntime();
-    stopIncomingRingtone();
-    outgoingIceBatchReset();
-    closePeerConnection();
-    stopLocalMedia();
-    closeDirectCallFrameCrypto();
-  }, [
-    closeDirectCallFrameCrypto,
-    closePeerConnection,
-    outgoingIceBatchReset,
-    resetRemoteMediaRuntime,
-    stopIncomingRingtone,
-    stopLocalMedia,
-  ]);
-
   useEffect(() => {
     return () => {
-      runUnmountCleanup();
+      resetRemoteMediaRuntime();
+      stopIncomingRingtone();
+      stopOutgoingRingtone();
+      outgoingIceBatchReset();
+      closePeerConnection();
+      stopLocalMedia();
+      closeDirectCallFrameCrypto();
     };
-  }, [runUnmountCleanup]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   return {
     finishCallSession,

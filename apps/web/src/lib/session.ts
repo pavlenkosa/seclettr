@@ -42,27 +42,31 @@ export function refreshSessionAccessToken(): Promise<string | null> {
 }
 
 async function _doRefreshSessionAccessToken(): Promise<string | null> {
+  let response: Response;
   try {
-    const response = await fetch(`${API_BASE_URL}/auth/refresh`, {
+    response = await fetch(`${API_BASE_URL}/auth/refresh`, {
       method: "POST",
       credentials: "include",
     });
-
-    if (!response.ok) {
-      setSessionAccessToken(null);
-      return null;
-    }
-
-    const payload = parseRefreshResponse(await response.json());
-    if (!payload) {
-      setSessionAccessToken(null);
-      return null;
-    }
-
-    setSessionAccessToken(payload.accessToken);
-    return payload.accessToken;
   } catch {
+    // Network-level failure (no connectivity, DNS, etc.).
+    // Do NOT clear the token or return null — the caller should retry,
+    // not sign the user out over a transient connection hiccup.
+    throw new Error("network_error");
+  }
+
+  if (!response.ok) {
+    // Server explicitly rejected the session (401/403) — it really is expired.
     setSessionAccessToken(null);
     return null;
   }
+
+  const payload = parseRefreshResponse(await response.json());
+  if (!payload) {
+    setSessionAccessToken(null);
+    return null;
+  }
+
+  setSessionAccessToken(payload.accessToken);
+  return payload.accessToken;
 }

@@ -1,3 +1,18 @@
+/**
+ * group-call-lifecycle — group call lifecycle state machine definitions and helpers.
+ *
+ * Owns:
+ *   - GroupCallLifecycleState / GroupCallLifecycleAction / GroupCallLifecycleDefinition types
+ *   - GROUP_CALL_LIFECYCLE_DEFINITIONS — per-state metadata (entry/exit events, allowed/forbidden
+ *     actions, required cleanup checklist) used for developer documentation and guard logic
+ *   - resolveGroupCallLifecycleState — maps runtime call status + flags to a lifecycle state
+ *   - canGroupCallLifecycleAction — guard predicate for the allowedActions whitelist
+ *   - mapGroupCallLifecycleStateToSharedPhase — converts group state to SharedCallLifecyclePhase
+ *   - isGroupCallConnectedLifecycleState — predicate for the joined/publishing/subscribed set
+ *
+ * Does not own call status transitions (dispatched through the React reducer in group-call-types),
+ * UI presentation logic, or any React hooks.
+ */
 import type { GroupCallStatus } from "./group-call-types";
 import type { SharedCallLifecyclePhase } from "@/calls/shared/model/call-lifecycle-contract";
 

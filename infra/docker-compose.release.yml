@@ -32,6 +32,7 @@ x-api-env: &api-env
   COOKIE_SECURE: ${COOKIE_SECURE:-true}
   CORS_ORIGIN: ${CORS_ORIGIN:?CORS_ORIGIN must be set}
   S3_ENDPOINT: http://minio:9000
+  S3_PUBLIC_URL: ${S3_PUBLIC_URL:-}
   S3_BUCKET: seclettr-attachments
   S3_ACCESS_KEY: ${MINIO_ACCESS_KEY:?MINIO_ACCESS_KEY must be set}
   S3_SECRET_KEY: ${MINIO_SECRET_KEY:?MINIO_SECRET_KEY must be set}
@@ -213,7 +214,7 @@ services:
       - ./nginx/certs:/etc/nginx/certs:ro
       - ./nginx/runtime-config.js:/usr/share/nginx/html/runtime-config.js:ro
     healthcheck:
-      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:8080/ >/dev/null 2>&1 || true"]
+      test: ["CMD-SHELL", "wget -qO- --no-check-certificate https://127.0.0.1:8443/ >/dev/null 2>&1 || true"]
       interval: 10s
       timeout: 5s
       retries: 5

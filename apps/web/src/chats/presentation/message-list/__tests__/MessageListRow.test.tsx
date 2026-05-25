@@ -249,4 +249,28 @@ describe("MessageListRow", () => {
 
     expect(container.textContent).toContain("signed document");
   });
+
+  it("localizes sentinel text in quoted replies", () => {
+    const message: Message = {
+      id: "reply-message-1",
+      senderId: "me",
+      senderDeviceId: "device-1",
+      content: "answer",
+      type: "text",
+      replyTo: {
+        id: "voice-1",
+        content: "[voice note]",
+      },
+      timestamp: 1,
+      status: "sent",
+      isOwn: true,
+    };
+
+    act(() => {
+      root.render(renderRow(message));
+    });
+
+    expect(container.textContent).toContain("conversation.voiceNotePreview");
+    expect(container.textContent).not.toContain("[voice note]");
+  });
 });

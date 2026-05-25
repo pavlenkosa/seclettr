@@ -12,7 +12,7 @@ interface CachedWsTicket {
 
 interface AuthRealtimeRuntimeOptions {
   onAccessTokenRefreshed: (accessToken: string) => void;
-  onSessionRefreshFailed: () => void;
+  onSessionRefreshFailed: () => void | Promise<void>;
 }
 
 export interface AuthRealtimeRuntime {
@@ -83,13 +83,16 @@ export function createAuthRealtimeRuntime(
     try {
       const newToken = await refreshSessionAccessToken();
       if (!newToken) {
-        options.onSessionRefreshFailed();
+        // Server explicitly rejected the session — sign out.
+        await options.onSessionRefreshFailed();
         return null;
       }
       options.onAccessTokenRefreshed(newToken);
       return newToken;
     } catch {
-      options.onSessionRefreshFailed();
+      // Network error (no connectivity, DNS, timeout).
+      // Return null WITHOUT signing out — the WS will schedule a retry,
+      // and the next attempt will succeed once the network recovers.
       return null;
     }
   });

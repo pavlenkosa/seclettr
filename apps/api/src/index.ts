@@ -34,8 +34,17 @@ import { messageRoutes, groupMessageRoutes } from "./routes/messages/index.js";
 import { groupRoutes } from "./routes/groups/index.js";
 import { attachmentRoutes } from "./routes/attachments/index.js";
 import { callRoutes } from "./routes/calls/index.js";
+import { roomRoutes } from "./routes/rooms/index.js";
 import { pushRoutes } from "./routes/push/index.js";
 import { clientErrorRoutes } from "./routes/client-errors/index.js";
+import { transferRoutes } from "./routes/transfer/index.js";
+import { plainConversationRoutes } from "./routes/plain/conversations.js";
+import { plainMessageRoutes } from "./routes/plain/messages.js";
+import { plainGroupRoutes } from "./routes/plain/groups.js";
+import { plainAttachmentRoutes } from "./routes/plain/attachments.js";
+import { plainPinRoutes } from "./routes/plain/pins.js";
+import { plainFolderRoutes } from "./routes/plain/folders.js";
+import { profileRoutes } from "./routes/profile/index.js";
 
 const LEGACY_WS_CLIENT_PROTOCOL = "qm.v1";
 
@@ -113,8 +122,8 @@ export async function buildApp() {
         }
       : allowedOrigins,
     credentials: true,
-    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-    allowedHeaders: ["Authorization", "Content-Type", "X-Request-ID"],
+    methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Authorization", "Content-Type", "X-Request-ID", "X-Client-Origin"],
   });
 
   await fastify.register(fastifyRateLimit, {
@@ -156,8 +165,17 @@ export async function buildApp() {
   await fastify.register(groupMessageRoutes, { prefix: "/groups" });
   await fastify.register(attachmentRoutes, { prefix: "/attachments" });
   await fastify.register(callRoutes, { prefix: "/calls" });
+  await fastify.register(roomRoutes, { prefix: "/rooms" });
   await fastify.register(pushRoutes, { prefix: "/push" });
   await fastify.register(clientErrorRoutes, { prefix: "/client-errors" });
+  await fastify.register(transferRoutes, { prefix: "/transfer" });
+  await fastify.register(plainConversationRoutes, { prefix: "/plain/conversations" });
+  await fastify.register(plainMessageRoutes, { prefix: "/plain/messages" });
+  await fastify.register(plainGroupRoutes, { prefix: "/plain/groups" });
+  await fastify.register(plainAttachmentRoutes, { prefix: "/plain/attachments" });
+  await fastify.register(plainPinRoutes, { prefix: "/plain/pins" });
+  await fastify.register(plainFolderRoutes, { prefix: "/plain/folders" });
+  await fastify.register(profileRoutes, { prefix: "/profile" });
 
   await registerWebSocketHandler(fastify);
 
@@ -245,7 +263,7 @@ export async function buildApp() {
   return fastify;
 }
 
-const EXPECTED_LATEST_MIGRATION = "017_group_crypto_epoch.sql";
+const EXPECTED_LATEST_MIGRATION = "027_plain_group_profiles.sql";
 
 async function checkDbSchemaVersion(): Promise<void> {
   const rows = await query<{ filename: string }>(
@@ -279,10 +297,16 @@ async function main() {
     app.log.info(`Received ${signal}, shutting down…`);
     clearTimeout(retentionTimer);
     if (retentionInterval) clearInterval(retentionInterval);
+
+    const forceExitTimer = setTimeout(() => {
+      app.log.error("Graceful shutdown timed out — forcing exit");
+      process.exit(1);
+    }, 10_000).unref();
+
     await app.close();
     await pool.end();
     redis.disconnect();
-    process.exit(0);
+    clearTimeout(forceExitTimer);
   };
   process.on("SIGTERM", () => void shutdown("SIGTERM"));
   process.on("SIGINT", () => void shutdown("SIGINT"));

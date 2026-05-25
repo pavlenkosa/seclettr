@@ -7,9 +7,11 @@ COMPOSE_FILE="$BUNDLE_DIR/docker-compose.yml"
 HTTP_OVERRIDE_FILE="$BUNDLE_DIR/docker-compose.http.yml"
 ENV_FILE="$BUNDLE_DIR/.env"
 ENV_TEMPLATE="$BUNDLE_DIR/.env.example"
+RELEASE_ENV_FILE="$BUNDLE_DIR/release.env"
 IMAGE_ARCHIVE="$BUNDLE_DIR/prebuilt-images.tar.gz"
 RUNTIME_CONFIG_FILE="$BUNDLE_DIR/nginx/runtime-config.js"
 PROJECT_NAME="seclettr"
+GITHUB_REPO="pavlenkosa/seclettr"
 SKIP_LOAD=false
 SKIP_MIGRATE=false
 SKIP_BACKUP=false
@@ -24,6 +26,7 @@ CLI_NETWORK_MODE=""
 CLI_WEB_RUNTIME_API_URL=""
 CLI_WEB_RUNTIME_SFU_URL=""
 INTERACTIVE_MODE="auto"
+SETUP_DOMAIN=""
 
 DEPLOY_MODE=""
 NETWORK_MODE=""
@@ -76,8 +79,11 @@ run_quiet() {
     spin_idx=$(( (spin_idx + 1) % ${#spin_chars[@]} ))
     sleep 0.12
   done
+  local rc=0
+  set +e
   wait "$pid"
-  local rc=$?
+  rc=$?
+  set -e
   if [[ $rc -eq 0 ]]; then
     printf "\r       ${GRN}✓${RST} %s\n" "$label"
   else
@@ -106,8 +112,14 @@ usage() {
 Usage: ./install.sh [install|update] [options]
 
 Loads a Seclettr release bundle and starts one of the supported deployment modes.
-Use `./install.sh --update ./new-release.tar.gz` from the current release directory
-for the simplest upgrade flow.
+
+Recommended update flows:
+  # From the currently running/old release directory:
+  ./install.sh update /opt/seclettr-release-NEW.tar.gz
+  ./install.sh update /opt/seclettr-release-NEW
+
+  # From an already unpacked new release directory:
+  ./install.sh update --from /opt/seclettr-release-OLD
 
 Deployment modes:
   full      Web + backend + infra services
@@ -131,8 +143,8 @@ Options:
   --compose-file <path>               Path to compose file (default: ./docker-compose.yml)
   --image-archive <path>              Path to image archive (default: ./prebuilt-images.tar.gz)
   --project-name <name>               Docker Compose project name (default: seclettr)
-  --update [archive.tar.gz]           Update. With an archive, unpack it and hand off to the new installer
-  --from <path>                       Previous release bundle directory for update mode
+  --update [archive-or-dir]           Update. Accepts a new release .tar.gz or unpacked release directory
+  --from <path>                       Previous release bundle directory when running from the new bundle
   --skip-load                         Skip `docker load`
   --skip-migrate                      Skip migration step
   --skip-backup                       Skip update backup step
@@ -367,6 +379,71 @@ PYEOF
   log_warn "Set VAPID_PUBLIC_KEY and VAPID_PRIVATE_KEY manually in .env to enable push notifications."
   printf '\n'
   return 0
+}
+
+fetch_latest_release_archive() {
+  # Downloads the latest GitHub release bundle into $BUNDLE_DIR/.. and returns
+  # the path to the .tar.gz on stdout.  Dies on network or integrity errors.
+  local repo="${GITHUB_REPO}"
+  local dest_dir
+  dest_dir="$(cd "$BUNDLE_DIR/.." && pwd)"
+
+  log_step "Fetching latest release info from GitHub..."
+  command -v curl >/dev/null 2>&1 || die "curl is required to auto-fetch the latest release. Install it or download the bundle manually."
+
+  local release_json
+  release_json="$(curl -fsSL \
+    -H "Accept: application/vnd.github+json" \
+    "https://api.github.com/repos/${repo}/releases" \
+    | grep -o '"browser_download_url":"[^"]*"' | head -40)"
+
+  local asset_url="" checksum_url=""
+  while IFS= read -r line; do
+    local url="${line#*:\"}"
+    url="${url%\"}"
+    if [[ "$url" == *seclettr-release-*.tar.gz && "$url" != *.sha256 && -z "$asset_url" ]]; then
+      asset_url="$url"
+    fi
+    if [[ "$url" == *.tar.gz.sha256 && -z "$checksum_url" ]]; then
+      checksum_url="$url"
+    fi
+  done <<< "$release_json"
+
+  [[ -n "$asset_url" ]] || die "No release bundle found at api.github.com/repos/${repo}/releases. Make sure releases are published."
+
+  local archive_name
+  archive_name="$(basename "$asset_url")"
+  local archive_path="$dest_dir/$archive_name"
+
+  if [[ -f "$archive_path" ]]; then
+    log_ok "Release archive already present: $archive_path"
+  else
+    log_step "Downloading ${archive_name}..."
+    curl -fL --progress-bar -o "$archive_path" "$asset_url"
+    echo ""
+    log_ok "Downloaded: $archive_path"
+  fi
+
+  if [[ -n "$checksum_url" ]]; then
+    log_step "Verifying integrity..."
+    local checksum_file="$dest_dir/${archive_name}.sha256"
+    curl -fsSL -o "$checksum_file" "$checksum_url"
+    local expected actual
+    expected="$(awk '{print $1}' "$checksum_file")"
+    if command -v sha256sum >/dev/null 2>&1; then
+      actual="$(sha256sum "$archive_path" | awk '{print $1}')"
+    else
+      actual="$(shasum -a 256 "$archive_path" | awk '{print $1}')"
+    fi
+    [[ "$actual" == "$expected" ]] || die "Checksum mismatch for $archive_name — the file may be corrupted.
+  Expected: $expected
+  Actual:   $actual"
+    log_ok "Integrity verified"
+  else
+    log_warn "No checksum file found for $archive_name — skipping integrity check"
+  fi
+
+  printf '%s' "$archive_path"
 }
 
 fill_env_secrets() {
@@ -715,6 +792,111 @@ set_env_value() {
     printf '\n%s=%s\n' "$key" "$value" >>"$ENV_FILE"
   fi
   export "${key}=${value}"
+}
+
+read_release_env_value() {
+  local key="$1"
+  [[ -f "$RELEASE_ENV_FILE" ]] || return 1
+  awk -F= -v key="$key" '$1 == key { sub(/^[^=]*=/, ""); print; exit }' "$RELEASE_ENV_FILE"
+}
+
+apply_bundle_image_refs() {
+  if [[ ! -f "$RELEASE_ENV_FILE" ]]; then
+    log_warn "No release.env found in this bundle — keeping SECLETTR_* image refs from $ENV_FILE"
+    return 0
+  fi
+
+  if [[ "${SECLETTR_PRESERVE_IMAGE_REFS:-false}" == "true" ]]; then
+    log_warn "Keeping image refs from $ENV_FILE because SECLETTR_PRESERVE_IMAGE_REFS=true"
+    return
+  fi
+
+  local bundle_tag bundle_api bundle_web bundle_sfu
+  bundle_tag="$(read_release_env_value SECLETTR_IMAGE_TAG || true)"
+  bundle_api="$(read_release_env_value SECLETTR_API_IMAGE || true)"
+  bundle_web="$(read_release_env_value SECLETTR_WEB_IMAGE || true)"
+  bundle_sfu="$(read_release_env_value SECLETTR_SFU_IMAGE || true)"
+
+  [[ -n "$bundle_tag" ]] || die "release.env is missing SECLETTR_IMAGE_TAG"
+  [[ -n "$bundle_api" ]] || bundle_api="seclettr/api"
+  [[ -n "$bundle_web" ]] || bundle_web="seclettr/web"
+  [[ -n "$bundle_sfu" ]] || bundle_sfu="seclettr/sfu"
+
+  set_env_value SECLETTR_IMAGE_TAG "$bundle_tag"
+  set_env_value SECLETTR_API_IMAGE "$bundle_api"
+  set_env_value SECLETTR_WEB_IMAGE "$bundle_web"
+  set_env_value SECLETTR_SFU_IMAGE "$bundle_sfu"
+
+  log_ok "Using bundled Docker image tag: $bundle_tag"
+}
+
+sync_s3_public_url() {
+  if ! is_mode_with_backend; then
+    return 0
+  fi
+
+  local public_url="${S3_PUBLIC_URL:-}"
+  if [[ -z "$public_url" ]]; then
+    public_url="${CORS_ORIGIN:-}"
+    # If multiple origins are configured, use the first one as the browser-facing
+    # MinIO URL. Advanced deployments can set S3_PUBLIC_URL explicitly.
+    public_url="${public_url%%,*}"
+  fi
+
+  public_url="$(trim_string "$public_url")"
+  if [[ -n "$public_url" ]]; then
+    set_env_value S3_PUBLIC_URL "$public_url"
+    log_ok "Browser-facing S3 URL: $public_url"
+  else
+    log_warn "S3_PUBLIC_URL is empty — presigned media URLs may point to the internal MinIO endpoint"
+  fi
+}
+
+runtime_image_for_service() {
+  case "$1" in
+    postgres) printf '%s' "postgres:16-alpine" ;;
+    redis) printf '%s' "redis:7-alpine" ;;
+    minio) printf '%s' "minio/minio:latest" ;;
+    minio-init) printf '%s' "minio/mc:latest" ;;
+    coturn) printf '%s' "coturn/coturn:latest" ;;
+    api|migrate) printf '%s:%s' "${SECLETTR_API_IMAGE:-seclettr/api}" "${SECLETTR_IMAGE_TAG:-release}" ;;
+    sfu) printf '%s:%s' "${SECLETTR_SFU_IMAGE:-seclettr/sfu}" "${SECLETTR_IMAGE_TAG:-release}" ;;
+    web) printf '%s:%s' "${SECLETTR_WEB_IMAGE:-seclettr/web}" "${SECLETTR_IMAGE_TAG:-release}" ;;
+    *) return 1 ;;
+  esac
+}
+
+validate_runtime_images_available() {
+  local images=()
+  local service image_ref existing
+
+  for service in "${SELECTED_SERVICES[@]}"; do
+    image_ref="$(runtime_image_for_service "$service")" || continue
+    images+=("$image_ref")
+  done
+
+  if is_mode_with_backend && [[ "$SKIP_MIGRATE" == "false" ]]; then
+    images+=("$(runtime_image_for_service migrate)")
+  fi
+
+  local unique_images=()
+  for image_ref in "${images[@]}"; do
+    existing=false
+    local current
+    for current in "${unique_images[@]}"; do
+      [[ "$current" == "$image_ref" ]] && existing=true && break
+    done
+    [[ "$existing" == "false" ]] && unique_images+=("$image_ref")
+  done
+
+  local missing=()
+  for image_ref in "${unique_images[@]}"; do
+    "${DOCKER_CMD[@]}" image inspect "$image_ref" >/dev/null 2>&1 || missing+=("$image_ref")
+  done
+
+  if [[ ${#missing[@]} -gt 0 ]]; then
+    die "Required Docker image(s) are not available after loading $IMAGE_ARCHIVE: ${missing[*]}. Rebuild the release bundle or rerun without --skip-load."
+  fi
 }
 
 absolute_path() {
@@ -1070,12 +1252,148 @@ prompt_update_source_interactive() {
   printf '%s' "$(trim_string "$previous_dir")"
 }
 
+_quickstart_whiptail() {
+  local detected_ip="${1:-}"
+  local domain_hint=""
+  [[ -n "$detected_ip" ]] && domain_hint="$detected_ip"
+
+  local domain
+  domain="$({
+    whiptail --title "Seclettr — Quick Setup" --inputbox \
+"Welcome to Seclettr!
+
+Enter your server's domain name or leave empty to use the IP address.
+  Example: chat.example.com
+
+Everything else is configured automatically:
+  • All services will be installed on this server
+  • HTTPS will be enabled (certificate generated automatically)
+  • All secret keys are generated automatically" \
+      18 72 "$domain_hint" \
+      3>&1 1>&2 2>&3
+  })" || die "Installation cancelled"
+  domain="$(trim_string "$domain")"
+
+  DEPLOY_MODE="full"
+  NETWORK_MODE="tls"
+  CERT_MODE="selfsigned"
+
+  if [[ -n "$domain" && ! $(is_ip_address "$domain") ]]; then
+    local want_le
+    want_le="$({
+      whiptail --title "TLS Certificate" --yesno \
+"Do you want a free trusted certificate from Let's Encrypt?
+
+  YES — Trusted certificate, no browser warning
+         (requires domain $domain to point to this server and port 80 to be free)
+
+  NO  — Self-signed certificate  (browser will show a warning)" \
+        14 72 \
+        3>&1 1>&2 2>&3
+      echo $?
+    })" || want_le=1
+    if [[ "$want_le" -eq 0 ]]; then
+      CERT_MODE="letsencrypt"
+      LETSENCRYPT_EMAIL="$({
+        whiptail --title "TLS Certificate" --inputbox \
+          "Email for Let's Encrypt expiry alerts (optional — press Enter to skip):" \
+          10 72 "" \
+          3>&1 1>&2 2>&3
+      })" || true
+      LETSENCRYPT_EMAIL="$(trim_string "$LETSENCRYPT_EMAIL")"
+    fi
+  fi
+
+  printf '%s' "$domain"
+}
+
+_quickstart_text() {
+  local detected_ip="${1:-}"
+
+  echo ""
+  echo -e "${CYN}${BLD}╔══════════════════════════════════════════════════╗${RST}"
+  echo -e "${CYN}${BLD}║          Seclettr — Quick Setup                  ║${RST}"
+  echo -e "${CYN}${BLD}╚══════════════════════════════════════════════════╝${RST}"
+  echo ""
+  echo "  All services will be installed on this server."
+  echo "  HTTPS is enabled; secrets are generated automatically."
+  echo ""
+  if [[ -n "$detected_ip" ]]; then
+    echo -e "  Detected public IP: ${GRN}${detected_ip}${RST}"
+  fi
+  echo ""
+
+  local prompt_hint=""
+  [[ -n "$detected_ip" ]] && prompt_hint=" (or press Enter to use IP $detected_ip)"
+
+  local domain
+  read -r -p "  Domain name for your server${prompt_hint}: " domain
+  domain="$(trim_string "$domain")"
+
+  DEPLOY_MODE="full"
+  NETWORK_MODE="tls"
+  CERT_MODE="selfsigned"
+
+  if [[ -n "$domain" ]] && ! is_ip_address "$domain"; then
+    echo ""
+    echo "  TLS certificate options for ${domain}:"
+    echo "    1) Let's Encrypt — trusted, no browser warning  [recommended]"
+    echo "       (port 80 must be open and DNS must point to this server)"
+    echo "    2) Self-signed   — browser will show a security warning"
+    local cert_choice
+    read -r -p "  Certificate type [1-2] (default: 1): " cert_choice
+    cert_choice="$(trim_string "$cert_choice")"
+    cert_choice="${cert_choice:-1}"
+    if [[ "$cert_choice" == "1" ]]; then
+      CERT_MODE="letsencrypt"
+      read -r -p "  Let's Encrypt email (optional, press Enter to skip): " LETSENCRYPT_EMAIL
+      LETSENCRYPT_EMAIL="$(trim_string "$LETSENCRYPT_EMAIL")"
+    fi
+  fi
+
+  printf '%s' "$domain"
+}
+
 configure_interactive_inputs() {
   if ! is_interactive_enabled; then
     return
   fi
 
   detect_ui_backend
+
+  # Quick-start path: fresh install with no CLI overrides for mode/network.
+  # Only offer the advanced multi-screen flow if the user explicitly passed
+  # --mode, --network, or --interactive with mode!=full (they know what they want).
+  local use_quickstart=true
+  if [[ -n "$CLI_DEPLOY_MODE" || -n "$CLI_NETWORK_MODE" ]]; then
+    use_quickstart=false
+  fi
+  # Advanced mode/network already set to non-defaults → skip quickstart
+  if [[ "$DEPLOY_MODE" != "full" && -n "$DEPLOY_MODE" ]]; then
+    use_quickstart=false
+  fi
+
+  if [[ "$use_quickstart" == "true" ]]; then
+    # Detect IP first so we can pre-fill the domain hint
+    local detected_ip_qs=""
+    if command -v curl >/dev/null 2>&1; then
+      detected_ip_qs="$(detect_public_ip)" || detected_ip_qs=""
+    fi
+
+    local qs_domain=""
+    if [[ "$UI_BACKEND" == "whiptail" || "$UI_BACKEND" == "dialog" ]]; then
+      qs_domain="$(_quickstart_whiptail "$detected_ip_qs")"
+    else
+      qs_domain="$(_quickstart_text "$detected_ip_qs")"
+    fi
+
+    # Apply domain to env immediately (fill_env_secrets runs later but uses SETUP_DOMAIN)
+    SETUP_DOMAIN="$qs_domain"
+    # Defaults are already set inside _quickstart_*
+    return
+  fi
+
+  # Advanced / non-default path: show individual prompts as before
   if [[ "${_WELCOME_SHOWN:-false}" != "true" ]]; then
     show_welcome_banner
     _WELCOME_SHOWN=true
@@ -1144,32 +1462,53 @@ env_has_placeholders() {
   grep -q "CHANGE_ME" "$ENV_FILE" 2>/dev/null
 }
 
-handoff_update_archive() {
-  local archive_abs
-  archive_abs="$(absolute_path "$CLI_UPDATE_ARCHIVE")"
-  [[ -f "$archive_abs" ]] || die "Update archive not found: $CLI_UPDATE_ARCHIVE"
-  require_command tar
+handoff_update_target() {
+  local update_target_abs
+  update_target_abs="$(absolute_path "$CLI_UPDATE_ARCHIVE")"
 
   local parent_dir
   parent_dir="$(cd "$BUNDLE_DIR/.." && pwd)"
 
-  local top_level
-  top_level="$(tar -tzf "$archive_abs" 2>/dev/null | awk -F/ 'NF && $1 != "." { print $1; exit }')" \
-    || die "Could not inspect archive: $archive_abs"
-  [[ -n "$top_level" ]] || die "Archive has no top-level directory: $archive_abs"
-  [[ "$top_level" != *".."* && "$top_level" != /* ]] || die "Unsafe top-level directory in archive: $top_level"
+  local new_bundle_dir=""
 
-  local new_bundle_dir="$parent_dir/$top_level"
-  if [[ -e "$new_bundle_dir" ]]; then
-    [[ -d "$new_bundle_dir" && -f "$new_bundle_dir/install.sh" ]] \
-      || die "Target update directory already exists but is not a Seclettr bundle: $new_bundle_dir"
-    log_warn "Update bundle already unpacked — using $new_bundle_dir"
+  if [[ -d "$update_target_abs" ]]; then
+    new_bundle_dir="$(cd "$update_target_abs" && pwd)"
+    [[ -f "$new_bundle_dir/install.sh" ]] \
+      || die "Update directory is not a Seclettr release bundle: $new_bundle_dir"
+    log_ok "Using unpacked update bundle: $new_bundle_dir"
   else
-    log_step "Unpacking update archive"
-    tar -xzf "$archive_abs" -C "$parent_dir"
-    log_ok "Unpacked update bundle to $new_bundle_dir"
+    [[ -f "$update_target_abs" ]] || die "Update archive or directory not found: $CLI_UPDATE_ARCHIVE"
+    require_command tar
+
+    local top_level=""
+    if ! top_level="$(tar -tzf "$update_target_abs" 2>/dev/null | awk -F/ 'NF && $1 != "." { print $1; exit }')"; then
+      local file_kind="unknown"
+      if command -v file >/dev/null 2>&1; then
+        file_kind="$(file -b "$update_target_abs" 2>/dev/null || printf 'unknown')"
+      fi
+      die "Could not inspect update archive: $update_target_abs
+  File type: $file_kind
+  Expected: gzip-compressed tar archive created by scripts/release-build.sh
+  Check it with: tar -tzf '$update_target_abs' | head
+  Or pass an unpacked bundle directory instead: ./install.sh update /opt/seclettr-release-NEW"
+    fi
+
+    [[ -n "$top_level" ]] || die "Archive has no top-level directory: $update_target_abs"
+    [[ "$top_level" != *".."* && "$top_level" != /* ]] || die "Unsafe top-level directory in archive: $top_level"
+
+    new_bundle_dir="$parent_dir/$top_level"
+    if [[ -e "$new_bundle_dir" ]]; then
+      [[ -d "$new_bundle_dir" && -f "$new_bundle_dir/install.sh" ]] \
+        || die "Target update directory already exists but is not a Seclettr bundle: $new_bundle_dir"
+      log_warn "Update bundle already unpacked — using $new_bundle_dir"
+    else
+      log_step "Unpacking update archive"
+      tar -xzf "$update_target_abs" -C "$parent_dir"
+      log_ok "Unpacked update bundle to $new_bundle_dir"
+    fi
   fi
 
+  [[ "$new_bundle_dir" != "$BUNDLE_DIR" ]] || die "Update target points to the current bundle"
   [[ -f "$new_bundle_dir/install.sh" ]] || die "New bundle has no install.sh: $new_bundle_dir"
   chmod +x "$new_bundle_dir/install.sh" 2>/dev/null || true
 
@@ -1189,7 +1528,8 @@ handoff_update_archive() {
 
   echo ""
   echo -e "${CYN}${BLD}Handing off update to:${RST} $new_bundle_dir/install.sh"
-  echo -e "${DIM}Old bundle remains available for rollback/reference: $BUNDLE_DIR${RST}"
+  echo -e "${DIM}Previous release: $BUNDLE_DIR${RST}"
+  echo -e "${DIM}Command: ./install.sh ${handoff_args[*]}${RST}"
   echo ""
 
   cd "$new_bundle_dir"
@@ -1473,8 +1813,13 @@ case "$ACTION" in
   *) die "Invalid action '$ACTION'. Use install or update" ;;
 esac
 
+if [[ "$ACTION" == "update" && -z "$CLI_UPDATE_ARCHIVE" && -z "$CLI_UPDATE_FROM" && ! -f "$ENV_FILE" ]]; then
+  # update with no args and no existing .env → auto-fetch latest release and hand off
+  CLI_UPDATE_ARCHIVE="$(fetch_latest_release_archive)"
+fi
+
 if [[ -n "$CLI_UPDATE_ARCHIVE" ]]; then
-  handoff_update_archive
+  handoff_update_target
 fi
 
 ensure_system_deps
@@ -1504,6 +1849,16 @@ if env_has_placeholders; then
   ENV_NEEDS_GENERATION=true
 fi
 
+# Run the interactive setup early (before secrets generation) so the user's
+# domain and mode choices are available to fill_env_secrets.
+# Update mode must reuse the previous release configuration. Do not launch the
+# fresh-install quickstart there, otherwise an upgrade can silently rewrite
+# deployment mode/cert choices or look like it only prepared .env.
+if [[ "$ACTION" != "update" && ( "$GENERATED_ENV" == "true" || "$ENV_NEEDS_GENERATION" == "true" ) ]] && is_interactive_enabled; then
+  configure_interactive_inputs
+  _CONFIGURE_DONE=true
+fi
+
 if [[ "$GENERATED_ENV" == "true" || "$ENV_NEEDS_GENERATION" == "true" ]]; then
   if [[ "$GENERATED_ENV" == "true" ]]; then
     log_step "No .env found — auto-generating settings and secrets"
@@ -1522,15 +1877,12 @@ if [[ "$GENERATED_ENV" == "true" || "$ENV_NEEDS_GENERATION" == "true" ]]; then
     fi
   fi
 
-  SETUP_DOMAIN=""
-  if is_interactive_enabled; then
+  # SETUP_DOMAIN may already be set by configure_interactive_inputs (quickstart path).
+  if [[ -z "${SETUP_DOMAIN:-}" ]] && is_interactive_enabled; then
     detect_ui_backend
-    if [[ "${_WELCOME_SHOWN:-false}" != "true" ]]; then
-      show_welcome_banner
-      _WELCOME_SHOWN=true
-    fi
     SETUP_DOMAIN="$(prompt_domain_setup)"
   fi
+  SETUP_DOMAIN="${SETUP_DOMAIN:-}"
 
   fill_env_secrets "$ENV_FILE" "$DETECTED_IP" "$SETUP_DOMAIN"
 
@@ -1540,8 +1892,14 @@ if [[ "$GENERATED_ENV" == "true" || "$ENV_NEEDS_GENERATION" == "true" ]]; then
   set +a
 
   log_ok "Secrets written to $ENV_FILE"
-  log_warn "Review $ENV_FILE before production use, especially CORS_ORIGIN, TURN_DOMAIN, and COOKIE_SECURE"
+  if [[ "$ACTION" == "update" ]]; then
+    log_ok "Continuing update after filling missing .env values"
+  else
+    log_warn "Review $ENV_FILE before production use, especially CORS_ORIGIN, TURN_DOMAIN, and COOKIE_SECURE"
+  fi
 fi
+
+apply_bundle_image_refs
 
 DEPLOY_MODE="${CLI_DEPLOY_MODE:-${DEPLOY_MODE:-full}}"
 if [[ -n "${CLI_NETWORK_MODE:-}" ]]; then
@@ -1571,7 +1929,11 @@ WEB_RUNTIME_SFU_URL="$(normalize_runtime_url "$WEB_RUNTIME_SFU_URL")"
 validate_mode "$DEPLOY_MODE"
 validate_network_mode "$NETWORK_MODE"
 
-configure_interactive_inputs
+# Skip if already called early (quickstart path during secret generation).
+# Update mode reuses the previous .env and must not show first-install prompts.
+if [[ "$ACTION" != "update" && "${_CONFIGURE_DONE:-false}" != "true" ]]; then
+  configure_interactive_inputs
+fi
 
 DEPLOY_MODE="$(trim_string "$DEPLOY_MODE")"
 NETWORK_MODE="$(trim_string "$NETWORK_MODE")"
@@ -1606,6 +1968,7 @@ fi
 
 step "Preparing configuration"
 configure_network_mode
+sync_s3_public_url
 set_selected_services
 
 if is_mode_with_backend; then
@@ -1634,6 +1997,8 @@ if [[ "$SKIP_LOAD" == "false" ]]; then
   run_quiet "Importing prebuilt-images.tar.gz (this may take a minute…)" \
     "${DOCKER_CMD[@]}" load -i "$IMAGE_ARCHIVE"
 fi
+
+validate_runtime_images_available
 
 if [[ "$SKIP_MIGRATE" == "false" ]]; then
   step "Running database migrations"

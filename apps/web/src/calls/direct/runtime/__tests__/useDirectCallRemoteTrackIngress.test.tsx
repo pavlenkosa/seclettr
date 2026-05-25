@@ -5,8 +5,8 @@ import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { LastIncomingMediaState } from "@/calls/direct/model/call-media-state";
-import { useDirectCallRemoteMediaState } from "@/calls/direct/runtime/useDirectCallRemoteMediaState";
-import { useDirectCallRemoteTrackIngress } from "@/calls/direct/runtime/useDirectCallRemoteTrackIngress";
+import { useDirectCallRemoteMediaState } from "@/calls/direct/runtime/media/useDirectCallRemoteMediaState";
+import { useDirectCallRemoteTrackIngress } from "@/calls/direct/runtime/media/useDirectCallRemoteTrackIngress";
 
 type RemoteMediaStateApi = ReturnType<typeof useDirectCallRemoteMediaState>;
 type RemoteTrackIngressApi = ReturnType<typeof useDirectCallRemoteTrackIngress>;

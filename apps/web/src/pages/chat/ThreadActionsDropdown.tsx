@@ -1,8 +1,10 @@
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import { useI18n } from "@/i18n";
 import { useAnimatedPresence } from "@/lib/hooks";
-import { IconButton } from "@/components/ui";
-import pageStyles from "@/pages/ChatPage.module.css";
+import { MOTION_DURATION_MS } from "@/lib/motion";
+import { IconButton, SurfacePanel } from "@/components/ui";
+import motionStyles from "@/components/ui/motion/Motion.module.css";
+import actionStyles from "./ChatThreadActions.module.css";
 import styles from "./ThreadActionsDropdown.module.css";
 
 export interface ThreadActionsItem {
@@ -26,7 +28,7 @@ export function ThreadActionsDropdown({ items, disabled }: Props) {
   const menuRef = useRef<HTMLDivElement>(null);
   const { isMounted, isClosing } = useAnimatedPresence({
     isOpen: open,
-    durationMs: 140,
+    durationMs: MOTION_DURATION_MS.fast,
     onHidden: () => {
       triggerRef.current?.focus();
     },
@@ -69,9 +71,8 @@ export function ThreadActionsDropdown({ items, disabled }: Props) {
       <IconButton
         ref={triggerRef}
         onClick={disabled ? undefined : () => setOpen((o) => !o)}
-        className={`${pageStyles.iconBtn} ${open ? pageStyles.iconBtnActive : ""}`}
+        className={`${actionStyles.iconBtn} ${open ? actionStyles.iconBtnActive : ""}`}
         size={40}
-        variant="glass"
         title={t("chat.moreActions")}
         aria-label={t("chat.moreActions")}
         aria-haspopup="true"
@@ -87,31 +88,43 @@ export function ThreadActionsDropdown({ items, disabled }: Props) {
       </IconButton>
 
       {isMounted && (
-        <div
-          ref={menuRef}
-          className={[styles.menu, isClosing ? styles.menuClosing : ""].join(" ")}
-          role="menu"
+        <SurfacePanel
+          padding="none"
+          radius="md"
+          className={styles.menuSurface}
         >
-          {items.map((item) => (
-            <button
-              key={item.id}
-              type="button"
-              role="menuitem"
-              className={`${styles.item} ${item.isActive ? styles.itemActive : ""}`}
-              onClick={() => { closeMenu(); item.onClick(); }}
-            >
-              <span className={styles.itemIcon} aria-hidden="true">{item.icon}</span>
-              <span className={styles.itemLabel}>{t(item.labelKey)}</span>
-              {item.isActive && (
-                <span className={styles.itemCheck} aria-hidden="true">
-                  <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
-                    <path d="M2 6l3 3 5-5" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" />
-                  </svg>
-                </span>
-              )}
-            </button>
-          ))}
-        </div>
+          <div
+            ref={menuRef}
+            className={[
+              styles.menu,
+              isClosing ? motionStyles.popoverOut : motionStyles.popoverIn,
+            ].join(" ")}
+            role="menu"
+          >
+            {items.map((item) => (
+              <button
+                key={item.id}
+                type="button"
+                role="menuitem"
+                className={`${styles.item} ${item.isActive ? styles.itemActive : ""}`}
+                onClick={() => {
+                  closeMenu();
+                  item.onClick();
+                }}
+              >
+                <span className={styles.itemIcon} aria-hidden="true">{item.icon}</span>
+                <span className={styles.itemLabel}>{t(item.labelKey)}</span>
+                {item.isActive && (
+                  <span className={styles.itemCheck} aria-hidden="true">
+                    <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+                      <path d="M2 6l3 3 5-5" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" />
+                    </svg>
+                  </span>
+                )}
+              </button>
+            ))}
+          </div>
+        </SurfacePanel>
       )}
     </div>
   );

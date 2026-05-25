@@ -7,13 +7,12 @@
   isolation: isolate;
 }
 
-.sidebarView {
+.sidebarView,
+.settingsView {
   position: absolute;
   inset: 0;
   min-width: 0;
   min-height: 0;
-  will-change: opacity, transform;
-  animation: mobileShellSurfaceIn var(--motion-duration-slow) var(--motion-ease-emphasized) both;
 }
 
 .threadView {
@@ -21,13 +20,13 @@
   inset: 0;
   min-width: 0;
   min-height: 0;
-  will-change: opacity, transform;
-  animation: mobileShellSurfaceIn var(--motion-duration-slow) var(--motion-ease-emphasized) both;
   display: flex;
   flex-direction: column;
-  padding: 0.65rem;
-  padding-bottom: 0;
   gap: 0.18rem;
+}
+
+.settingsView {
+  z-index: var(--z-4);
 }
 
 
@@ -41,14 +40,11 @@
 .threadDockOverlay {
   position: absolute;
   inset: 0;
-  z-index: 24;
+  z-index: var(--z-20);
   pointer-events: none;
   opacity: 1;
-  transform: translateY(0) scale(1);
   transform-origin: center bottom;
-  transition:
-    opacity var(--motion-duration-base) var(--motion-ease-standard),
-    transform var(--motion-duration-slow) var(--motion-ease-emphasized);
+  transition: opacity var(--motion-duration-base) var(--motion-ease-standard);
 }
 
 .threadDockOverlay > * {
@@ -57,48 +53,14 @@
 
 .threadDockOverlayHidden {
   opacity: 0;
-  transform: translateY(0.5rem) scale(0.985);
   pointer-events: none;
-}
-
-.surfaceClosing {
-  pointer-events: none;
-  animation: mobileShellSurfaceOut var(--motion-duration-base) var(--motion-ease-exit) both;
 }
 
 @media (prefers-reduced-motion: reduce) {
   .sidebarView,
+  .settingsView,
   .threadView,
   .threadDockOverlay {
-    animation: none !important;
     transition: none !important;
-  }
-}
-
-@keyframes mobileShellSurfaceIn {
-  0% {
-    opacity: 0;
-    transform: translateY(8px) scale(0.992);
-  }
-
-  100% {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-    /* Keep the mobile shell itself transform-free.
-       Even transient transforms on the thread surface can flatten its
-       descendants into a composited layer and make backdrop-filtered
-       headers render like flat translucent panels instead of real glass. */
-  }
-}
-
-@keyframes mobileShellSurfaceOut {
-  0% {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-  }
-
-  100% {
-    opacity: 0;
-    transform: translateY(10px) scale(0.992);
   }
 }

@@ -1,9 +1,73 @@
-import { useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useI18n } from "@/i18n";
 import type { PushPreferencesDto, PushSubscriptionDto } from "@/lib/api";
-import { PillButton, SegmentedControl, StatusBadge } from "@/components/ui";
+import { EntityRow, PillButton, SegmentedControl, StatusBadge } from "@/components/ui";
+import { isNativePlatform } from "@/lib/native-platform";
+import {
+  getNativeNotificationPermission,
+  requestNativeNotificationPermission,
+} from "@/lib/native-notifications";
+import { isVibrationSupported } from "@/lib/native-haptics";
 import { SettingsGroup, SettingsRow } from "./SettingsSectionPrimitives";
-import styles from "../SettingsModal.module.css";
+import sharedStyles from "../SettingsSections.module.css";
+import styles from "./NotificationsSettingsSection.module.css";
+
+type NativePermission = "granted" | "denied" | "prompt" | "unsupported" | "loading";
+
+function NativeNotificationsGroup() {
+  const { t } = useI18n();
+  const [permission, setPermission] = useState<NativePermission>("loading");
+  const [requesting, setRequesting] = useState(false);
+
+  useEffect(() => {
+    void getNativeNotificationPermission().then(setPermission);
+  }, []);
+
+  const statusLabel = permission === "loading"
+    ? "…"
+    : permission === "granted"
+      ? t("settings.native.notifications.status.granted")
+      : permission === "denied"
+        ? t("settings.native.notifications.status.denied")
+        : t("settings.native.notifications.status.notRequested");
+
+  const isLoading = permission === "loading";
+  const canRequest = !isLoading && permission !== "granted" && permission !== "unsupported";
+
+  async function handleRequest() {
+    setRequesting(true);
+    const result = await requestNativeNotificationPermission();
+    setPermission(result);
+    setRequesting(false);
+  }
+
+  return (
+    <SettingsGroup
+      eyebrow={t("settings.groups.notifications.native")}
+      title={t("settings.groups.notifications.native.title")}
+      description={t("settings.groups.notifications.native.description")}
+      tone="accent"
+    >
+      <SettingsRow
+        label={t("settings.native.notifications.permission")}
+        description={statusLabel}
+      >
+        {canRequest ? (
+          <PillButton
+            type="button"
+            tone="accent"
+            appearance="soft"
+            size="sm"
+            disabled={requesting || isLoading}
+            onClick={() => void handleRequest()}
+          >
+            {t("settings.native.notifications.allow")}
+          </PillButton>
+        ) : null}
+      </SettingsRow>
+    </SettingsGroup>
+  );
+}
 
 const TOGGLE_OPTIONS = [
   { value: "on", label: "On" },
@@ -17,9 +81,11 @@ interface NotificationsSettingsSectionProps {
   readonly pushPreferences: PushPreferencesDto;
   readonly pushSubscriptions: PushSubscriptionDto[];
   readonly pushBusy: boolean;
+  readonly vibrationEnabled: "on" | "off";
   readonly onBrowserPushToggle: (nextValue: "on" | "off") => Promise<void>;
   readonly onDeletePushSubscription: (subscriptionId: string) => Promise<void>;
   readonly onPreferenceToggle: <K extends keyof PushPreferencesDto>(key: K, nextValue: "on" | "off") => Promise<void>;
+  readonly onVibrationToggle: (nextValue: "on" | "off") => void;
 }
 
 function formatPushSubscriptionLabel(
@@ -41,9 +107,11 @@ export function NotificationsSettingsSection({
   pushPreferences,
   pushSubscriptions,
   pushBusy,
+  vibrationEnabled,
   onBrowserPushToggle,
   onDeletePushSubscription,
   onPreferenceToggle,
+  onVibrationToggle,
 }: NotificationsSettingsSectionProps) {
   const { t } = useI18n();
 
@@ -65,7 +133,30 @@ export function NotificationsSettingsSection({
   );
 
   return (
-    <div className={styles.groupStack}>
+    <div className={sharedStyles.groupStack}>
+      {isVibrationSupported() ? (
+        <SettingsGroup
+          eyebrow={t("settings.groups.feedback")}
+          title={t("settings.groups.feedback.title")}
+          description={t("settings.groups.feedback.description")}
+        >
+          <SettingsRow
+            label={t("settings.haptics.vibration")}
+            description={t("settings.haptics.vibration.description")}
+          >
+            <SegmentedControl
+              value={vibrationEnabled}
+              onChange={onVibrationToggle}
+              ariaLabel={t("settings.haptics.vibration")}
+              grouped
+              options={togglePushOptions}
+            />
+          </SettingsRow>
+        </SettingsGroup>
+      ) : null}
+
+      {isNativePlatform() ? <NativeNotificationsGroup /> : null}
+
       <SettingsGroup
         eyebrow={t("settings.groups.notifications.browser")}
         title={t("settings.groups.notifications.browser.title")}
@@ -176,38 +267,45 @@ export function NotificationsSettingsSection({
               }
 
               return (
-                <div key={subscription.id} className={styles.deviceCard}>
-                  <div className={styles.deviceMeta}>
-                    <div className={styles.deviceTitleRow}>
-                      <span className={styles.deviceTitle}>
-                        {formatPushSubscriptionLabel(
-                          subscription,
-                          t("settings.push.devices.currentBrowser"),
-                          t("settings.push.devices.browser")
-                        )}
-                      </span>
+                <EntityRow
+                  key={subscription.id}
+                  as="div"
+                  size="md"
+                  align="start"
+                  className={styles.deviceCard}
+                  mainClassName={styles.deviceMeta}
+                  titleClassName={styles.deviceTitle}
+                  title={formatPushSubscriptionLabel(
+                    subscription,
+                    t("settings.push.devices.currentBrowser"),
+                    t("settings.push.devices.browser")
+                  )}
+                  subtitle={(
+                    <span className={styles.deviceStatusRow}>
+                      <span className={styles.deviceStatus}>{statusLabel}</span>
                       {subscription.currentDevice ? (
                         <StatusBadge tone="accent" size="sm">
                           {t("settings.push.devices.current")}
                         </StatusBadge>
                       ) : null}
-                    </div>
-                    <p className={styles.deviceStatus}>{statusLabel}</p>
-                  </div>
-                  <PillButton
-                    type="button"
-                    className={styles.deviceAction}
-                    tone="danger"
-                    appearance="soft"
-                    size="sm"
-                    onClick={() => {
-                      void onDeletePushSubscription(subscription.id);
-                    }}
-                    disabled={pushBusy}
-                  >
-                    {t("settings.push.devices.revoke")}
-                  </PillButton>
-                </div>
+                    </span>
+                  )}
+                  trailing={(
+                    <PillButton
+                      type="button"
+                      className={styles.deviceAction}
+                      tone="danger"
+                      appearance="soft"
+                      size="sm"
+                      onClick={() => {
+                        void onDeletePushSubscription(subscription.id);
+                      }}
+                      disabled={pushBusy}
+                    >
+                      {t("settings.push.devices.revoke")}
+                    </PillButton>
+                  )}
+                />
               );
             })}
           </div>

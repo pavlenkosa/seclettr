@@ -47,7 +47,7 @@
   min-height: 28px;
   padding: 0 0.56rem;
   font-size: 0.715rem;
-  font-weight: 650;
+  font-weight: 600;
 }
 
 .lg {
@@ -59,62 +59,62 @@
 
 .success {
   color: color-mix(in srgb, var(--success) 82%, var(--text-primary));
-  background: color-mix(in srgb, var(--success) 12%, var(--glass-surface-fill-subtle, transparent));
+  background: color-mix(in srgb, var(--success) 12%, transparent);
   border-color: color-mix(in srgb, var(--success) 26%, transparent);
 }
 
 .warning {
   color: color-mix(in srgb, var(--warning) 84%, var(--text-primary));
-  background: color-mix(in srgb, var(--warning) 12%, var(--glass-surface-fill-subtle, transparent));
+  background: color-mix(in srgb, var(--warning) 12%, transparent);
   border-color: color-mix(in srgb, var(--warning) 26%, transparent);
 }
 
 .danger {
   color: color-mix(in srgb, var(--danger) 84%, var(--text-primary));
-  background: color-mix(in srgb, var(--danger) 12%, var(--glass-surface-fill-subtle, transparent));
+  background: color-mix(in srgb, var(--danger) 12%, transparent);
   border-color: color-mix(in srgb, var(--danger) 26%, transparent);
 }
 
 .accent {
   color: color-mix(in srgb, var(--accent) 82%, var(--text-primary));
-  background: color-mix(in srgb, var(--accent) 13%, var(--glass-surface-fill-subtle, transparent));
+  background: color-mix(in srgb, var(--accent) 13%, transparent);
   border-color: color-mix(in srgb, var(--accent) 26%, transparent);
 }
 
 .neutral {
   color: var(--text-secondary);
-  background: color-mix(in srgb, var(--surface-shell) 84%, var(--glass-surface-fill, transparent));
+  background: color-mix(in srgb, var(--surface-shell) 84%, transparent);
   border-color: color-mix(in srgb, var(--panel-border-soft) 90%, transparent);
 }
 
 :global(:root[data-theme="light"]) .success {
-  color: color-mix(in srgb, var(--success) 88%, #14532d);
+  color: color-mix(in srgb, var(--success) 88%, var(--text-primary));
   background: color-mix(in srgb, var(--success) 22%, white);
   border-color: color-mix(in srgb, var(--success) 34%, transparent);
 }
 
 :global(:root[data-theme="light"]) .warning {
-  color: color-mix(in srgb, var(--warning) 92%, #78350f);
+  color: color-mix(in srgb, var(--warning) 92%, var(--text-primary));
   background: color-mix(in srgb, var(--warning) 22%, white);
   border-color: color-mix(in srgb, var(--warning) 34%, transparent);
 }
 
 :global(:root[data-theme="light"]) .danger {
-  color: color-mix(in srgb, var(--danger) 90%, #7f1d1d);
+  color: color-mix(in srgb, var(--danger) 90%, var(--text-primary));
   background: color-mix(in srgb, var(--danger) 22%, white);
   border-color: color-mix(in srgb, var(--danger) 34%, transparent);
 }
 
 :global(:root[data-theme="light"]) .accent {
-  color: color-mix(in srgb, var(--accent) 88%, #1e3a8a);
+  color: color-mix(in srgb, var(--accent) 88%, var(--text-primary));
   background: color-mix(in srgb, var(--accent) 22%, white);
   border-color: color-mix(in srgb, var(--accent) 34%, transparent);
 }
 
 :global(:root[data-theme="light"]) .neutral {
   color: color-mix(in srgb, var(--text-primary) 76%, var(--text-secondary));
-  background: color-mix(in srgb, var(--surface-shell-strong) 96%, white);
-  border-color: color-mix(in srgb, var(--panel-border-soft) 92%, transparent);
+  background: var(--surface-lighten);
+  border-color: var(--border-subtle);
 }
 
 @media (max-width: 640px) {

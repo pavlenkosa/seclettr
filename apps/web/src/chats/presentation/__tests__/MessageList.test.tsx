@@ -7,6 +7,7 @@ import { I18nProvider } from "@/i18n";
 import type { Message } from "@/stores/messages";
 import { MessageList } from "../MessageList";
 import styles from "../MessageList.module.css";
+import attachmentStyles from "../message-list/MessageListAttachments.module.css";
 
 function renderMessageList(messages: Message[]) {
   return (
@@ -136,9 +137,9 @@ describe("MessageList media layout", () => {
       root.render(renderMessageList(createGroupedMediaMessages(5)));
     });
 
-    const mediaGroup = container.querySelector(`.${styles.mediaGroup}`);
+    const mediaGroup = container.querySelector(`.${attachmentStyles.mediaGroup}`);
     expect(mediaGroup?.getAttribute("data-layout")).toBe("quint");
-    expect(mediaGroup?.querySelectorAll(`.${styles.mediaGroupCell}`)).toHaveLength(5);
+    expect(mediaGroup?.querySelectorAll(`.${attachmentStyles.mediaGroupCell}`)).toHaveLength(5);
   });
 
   it("highlights grouped albums when the requested message id belongs to a non-primary tile", () => {

@@ -19,9 +19,11 @@ infra/.env
 infra/.env.dev
 infra/.env.test
 
-# Logs and docs
+# Logs, docs and other non-source artifacts
 docs/
 logs/
+.vscode
+.idea
 *.log
 npm-debug.log*
 pnpm-debug.log*
@@ -76,3 +78,18 @@ package-lock.json
 
 # Guardrail: transpiled JS should never be committed inside TS source tree
 apps/web/src/**/*.js
+
+# Capacitor Android — Gradle build cache and local machine config
+apps/web/android/.gradle/
+apps/web/android/local.properties
+apps/web/android/app/build/
+
+# Android Eclipse / ADT metadata
+apps/web/android/.project
+apps/web/android/.settings/
+apps/web/android/app/.classpath
+apps/web/android/app/.project
+apps/web/android/app/.settings/
+
+# Debug APK bundled for local testing
+apps/web/public/seclettr-debug.apk

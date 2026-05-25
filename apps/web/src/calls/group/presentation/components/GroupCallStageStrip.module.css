@@ -1,0 +1,45 @@
+/*
+ * GroupCallStageStrip — strip section chrome for the stage-following gallery.
+ *
+ * Owns:
+ * - stage strip section stacking
+ * - strip header row layout
+ * - strip scroll container contract
+ * - narrow-viewport strip header compaction
+ *
+ * Does not own shared section labels, media tile internals, or strip tile
+ * descendant selectors that still belong to the shared group-call media panel.
+ */
+
+.stageStripSection {
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+}
+
+.stageStripBar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.mediaStrip {
+  --group-call-strip-tile-width: clamp(168px, 18vw, 236px);
+  display: flex;
+  align-items: stretch;
+  gap: 0.65rem;
+  overflow-x: auto;
+  overflow-y: visible;
+  overscroll-behavior-x: contain;
+  scroll-snap-type: x proximity;
+  scrollbar-width: thin;
+  padding: 0.08rem 0.08rem 0.28rem;
+}
+
+@media (max-width: 980px) {
+  .stageStripBar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+}

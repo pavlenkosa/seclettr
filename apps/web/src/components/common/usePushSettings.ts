@@ -7,6 +7,7 @@ import {
   getPushClientStatus,
   type PushClientStatus,
 } from "@/lib/push";
+import { setNativeNotificationPreferences } from "@/lib/native-notifications";
 
 const DEFAULT_PUSH_PREFERENCES: PushPreferencesDto = {
   directMessagesEnabled: true,
@@ -74,6 +75,7 @@ export function usePushSettings(): UsePushSettingsResult {
         setPushStatus(status);
         setPushPreferences(preferences);
         pushPreferencesRef.current = preferences;
+        setNativeNotificationPreferences(preferences);
         setPushSubscriptions(subscriptions);
       } catch {
         if (cancelled) return;
@@ -151,6 +153,7 @@ export function usePushSettings(): UsePushSettingsResult {
       }
       pushPreferencesRef.current = saved;
       setPushPreferences(saved);
+      setNativeNotificationPreferences(saved);
     } catch (error) {
       if (preferenceRequestIdRef.current !== requestId) {
         return;

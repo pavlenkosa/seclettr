@@ -33,7 +33,7 @@ interface DirectCallStageProps {
   readonly screenViewerDialogAriaLabel: string;
   readonly showCameraOnStageLabel: string;
   readonly showScreenOnStageLabel: string;
-  readonly peerIsSpeaking: boolean;
+  readonly peerHasAudio: boolean;
 }
 
 type StageSource = DirectCallStageSceneState["stageLayout"]["stageSource"];
@@ -59,26 +59,35 @@ function getStageClassName(stageSource: StageSource): string {
 function StageFallback({
   isAudioOnlyStage,
   peerDisplayName,
+  peerHasAudio,
   peerInitials,
-  peerIsSpeaking,
+  callStateText,
 }: {
   readonly isAudioOnlyStage: boolean;
   readonly peerDisplayName: string;
+  readonly peerHasAudio: boolean;
   readonly peerInitials: string;
-  readonly peerIsSpeaking: boolean;
+  readonly callStateText: string;
 }) {
   if (!isAudioOnlyStage) return null;
   return (
-    <CallMediaAvatarFallback
-      label={peerDisplayName}
-      initials={peerInitials}
-      className={styles.stagePlaceholder}
-      avatarClassName={styles.audioAvatar}
-      pulseClassName={styles.stageAudioPulse}
-      pulseActiveClassName={styles.stageAudioPulseActive}
-      isSpeaking={peerIsSpeaking}
-      speakingVariant="primary-stage"
-    />
+    <>
+      <CallMediaAvatarFallback
+        label={peerDisplayName}
+        initials={peerInitials}
+        className={styles.stagePlaceholder}
+        avatarClassName={styles.audioAvatar}
+        pulseClassName={styles.stageAudioPulse}
+        pulseActiveClassName={styles.stageAudioPulseActive}
+        hasAudio={peerHasAudio}
+        isSpeaking={false}
+        speakingVariant="primary-stage"
+      />
+      <span className={styles.stagePlaceholderName} aria-hidden="true">{peerDisplayName}</span>
+      {callStateText ? (
+        <span className={styles.stagePlaceholderStatus} aria-hidden="true">{callStateText}</span>
+      ) : null}
+    </>
   );
 }
 
@@ -110,7 +119,6 @@ function StageActionRail({
           onClick={() => scene.selectSource("screen")}
           className={styles.stageActionIconBtn}
           size={34}
-          variant="glass"
           aria-label={showScreenOnStageLabel}
           title={showScreenOnStageLabel}
         >
@@ -122,7 +130,6 @@ function StageActionRail({
           onClick={scene.restoreScreenShare}
           className={styles.stageActionIconBtn}
           size={34}
-          variant="glass"
           aria-label={showScreenOnStageLabel}
           title={showScreenOnStageLabel}
         >
@@ -134,7 +141,6 @@ function StageActionRail({
           onClick={scene.stopWatchingScreen}
           className={styles.stageActionIconBtn}
           size={34}
-          variant="glass"
           aria-label={stopWatchingScreenLabel}
           title={stopWatchingScreenLabel}
         >
@@ -146,7 +152,6 @@ function StageActionRail({
           onClick={scene.openScreenViewer}
           className={styles.stageActionIconBtn}
           size={34}
-          variant="glass"
           aria-label={enterFullscreenLabel}
           title={enterFullscreenLabel}
         >
@@ -258,7 +263,7 @@ export function DirectCallStage({
   screenViewerDialogAriaLabel,
   showCameraOnStageLabel,
   showScreenOnStageLabel,
-  peerIsSpeaking,
+  peerHasAudio,
 }: DirectCallStageProps) {
   const { stageLayout } = scene;
   const isAudioOnlyStage = stageLayout.stageSource === "audio";
@@ -303,8 +308,9 @@ export function DirectCallStage({
           <StageFallback
             isAudioOnlyStage={isAudioOnlyStage}
             peerDisplayName={peerDisplayName}
+            peerHasAudio={peerHasAudio}
             peerInitials={peerInitials}
-            peerIsSpeaking={peerIsSpeaking}
+            callStateText={callStateText}
           />
         )}
         overlayTopStart={stageLayout.stageSource === "audio" ? null : (

@@ -1,16 +1,17 @@
 import { useI18n } from "@/i18n";
-import { Avatar, EntityRow, FieldSection, InlineNotice, SurfacePanel } from "@/components/ui";
+import { Avatar, EntityRow, FieldSection, InlineNotice, PillButton, SurfacePanel } from "@/components/ui";
 
 import { AudioOutputSelector } from "@/calls/shared/media/audio-output/AudioOutputSelector";
 import { getMemberInitials } from "@/calls/group/presentation/display";
-import styles from "@/calls/group/presentation/GroupCallPanel.module.css";
+import panelStyles from "@/calls/group/presentation/GroupCallPanel.module.css";
+import styles from "./GroupCallDetailsDrawer.module.css";
 
 interface GroupCallDetailsMember {
   userId: string;
   username: string;
 }
 
-interface GroupCallDetailsDrawerProps {
+export interface GroupCallDetailsDrawerProps {
   readonly isOpen: boolean;
   readonly inline?: boolean;
   readonly roomCode: string;
@@ -24,6 +25,9 @@ interface GroupCallDetailsDrawerProps {
   readonly members: GroupCallDetailsMember[];
   readonly activeParticipantSet: Set<string>;
   readonly error: string | null;
+  readonly hostActionLabel?: string;
+  readonly hostActionHint?: string;
+  readonly onHostAction?: () => void;
 }
 
 export function GroupCallDetailsDrawer({
@@ -40,8 +44,12 @@ export function GroupCallDetailsDrawer({
   members,
   activeParticipantSet,
   error,
+  hostActionLabel,
+  hostActionHint,
+  onHostAction,
 }: GroupCallDetailsDrawerProps) {
   const { t } = useI18n();
+  const showHostAction = Boolean(hostActionLabel && onHostAction);
 
   return (
     <SurfacePanel
@@ -50,23 +58,22 @@ export function GroupCallDetailsDrawer({
       className={[
         styles.detailsDrawer,
         isOpen ? styles.detailsDrawerOpen : "",
-        inline ? styles.detailsDrawerInline : "",
+        inline ? panelStyles.detailsDrawerInline : "",
       ].filter(Boolean).join(" ")}
       tone="strong"
-      glass="strong"
       padding="lg"
       radius="xl"
       aria-hidden={inline ? undefined : !isOpen}
     >
-      <FieldSection className={styles.section} label={t("group.call.roomId")}>
-        <SurfacePanel className={styles.detailsCard} padding="md" glass="soft">
+      <FieldSection className={panelStyles.section} label={t("group.call.roomId")}>
+        <SurfacePanel className={styles.detailsCard} padding="md">
           <div className={styles.roomIdCode}>{roomCode}</div>
           <div className={styles.roomIdHint}>{statusLabel}</div>
         </SurfacePanel>
       </FieldSection>
 
-      <FieldSection className={styles.section} label={t("group.call.mediaKeySection")}>
-        <SurfacePanel className={styles.detailsCard} padding="md" glass="soft">
+      <FieldSection className={panelStyles.section} label={t("group.call.mediaKeySection")}>
+        <SurfacePanel className={styles.detailsCard} padding="md">
           <div className={styles.metaPrimary}>{mediaKeyStatusLabel}</div>
           <div className={styles.metaSecondary}>{t("group.call.mediaKeyMode", { mode: mediaKeyModeLabel })}</div>
           {mediaModeDowngraded ? (
@@ -87,7 +94,7 @@ export function GroupCallDetailsDrawer({
         </SurfacePanel>
       </FieldSection>
 
-      <FieldSection className={styles.section} label={t("group.call.members")}>
+      <FieldSection className={panelStyles.section} label={t("group.call.members")}>
         <div className={styles.memberList}>
           {members.map((member) => {
             const isActiveParticipant = activeParticipantSet.has(member.userId);
@@ -96,7 +103,6 @@ export function GroupCallDetailsDrawer({
                 key={member.userId}
                 className={`${styles.memberRow} ${isActiveParticipant ? styles.memberRowActive : ""}`}
                 padding="none"
-                glass="soft"
               >
                 <EntityRow
                   as="div"
@@ -125,8 +131,8 @@ export function GroupCallDetailsDrawer({
         </div>
       </FieldSection>
 
-      <FieldSection className={styles.section} label={t("call.audioOutput.label")}>
-        <SurfacePanel className={styles.detailsCard} padding="md" glass="soft">
+      <FieldSection className={panelStyles.section} label={t("call.audioOutput.label")}>
+        <SurfacePanel className={styles.detailsCard} padding="md">
           <AudioOutputSelector className={styles.audioOutputSelector} />
         </SurfacePanel>
       </FieldSection>
@@ -137,7 +143,24 @@ export function GroupCallDetailsDrawer({
         </InlineNotice>
       ) : null}
 
-      <SurfacePanel className={styles.contractHint} padding="sm" glass="soft">
+      {showHostAction ? (
+        <FieldSection className={panelStyles.section} label={t("group.call.hostActions")}>
+          <SurfacePanel className={styles.hostActionCard} padding="md">
+            {hostActionHint ? <p className={styles.hostActionHint}>{hostActionHint}</p> : null}
+            <PillButton
+              type="button"
+              tone="danger"
+              appearance="soft"
+              size="md"
+              onClick={onHostAction}
+            >
+              {hostActionLabel}
+            </PillButton>
+          </SurfacePanel>
+        </FieldSection>
+      ) : null}
+
+      <SurfacePanel className={styles.contractHint} padding="sm">
         <p className={styles.contractHintText}>{t("group.call.contractHint")}</p>
       </SurfacePanel>
     </SurfacePanel>

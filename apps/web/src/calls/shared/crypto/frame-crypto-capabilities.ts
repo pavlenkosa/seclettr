@@ -1,3 +1,16 @@
+/**
+ * frame-crypto-capabilities — browser capability detection for encoded-frame transforms.
+ *
+ * Owns:
+ *   - supportsEncodedFrameTransforms — returns true if the browser supports either
+ *     the legacy createEncodedStreams API or the modern RTCRtpScriptTransform API,
+ *     both of which require WebCrypto, RTCRtpSender/Receiver, and a Window context
+ *   - supportsLegacyEncodedFrameTransforms — checks createEncodedStreams on prototypes
+ *   - supportsScriptEncodedFrameTransforms — checks RTCRtpScriptTransform constructor
+ *     and transform property presence on sender/receiver prototypes
+ *
+ * Does not own the actual transform binding (see frame-crypto.ts).
+ */
 interface EncodedStreamsPrototype {
   createEncodedStreams?: () => unknown;
 }

@@ -1,3 +1,19 @@
+/**
+ * useCallDialogFocusTrap — keyboard focus management for call modal dialogs.
+ *
+ * Owns:
+ *   - FOCUSABLE_SELECTOR — CSS selector covering all interactive elements
+ *   - getFocusableElements — queries focusable children of a container, filtering
+ *     aria-hidden and disabled elements
+ *   - useCallDialogFocusTrap — the React hook that:
+ *       - Sets initial focus to initialFocusRef (or first focusable element) on open
+ *       - Traps Tab/Shift+Tab within the container when trapTab=true
+ *       - Closes the dialog on Escape when closeOnEscape=true
+ *       - Restores focus to the previously focused element on close
+ *
+ * Does not own dialog rendering or positioning. Works with any containerRef element,
+ * not just HTML dialog elements.
+ */
 import { useEffect, useRef, type RefObject } from "react";
 import { resolveModalKeyAction } from "@/lib/hooks";
 

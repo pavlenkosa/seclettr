@@ -1,3 +1,18 @@
+/**
+ * call-lifecycle-contract — shared lifecycle phase definitions for all call types.
+ *
+ * Owns:
+ *   - SharedCallLifecyclePhase — 8-phase enum used by both direct and group call lifecycle mappers
+ *   - SharedCallUnloadPolicy — "none" | "leave-participant" | "end-owned-session"
+ *   - SharedCallLifecycleDefinition — per-phase metadata record
+ *   - SHARED_CALL_LIFECYCLE_CONTRACT — canonical definitions table (description, unloadPolicy,
+ *     allowsMediaMutation, allowsRetry) for all 8 phases
+ *   - canMutateCallMedia — guard predicate for the allowsMediaMutation flag
+ *   - canRetryCallLifecycle — guard predicate for the allowsRetry flag
+ *
+ * Does not own call-type-specific state machines (see group-call-lifecycle.ts or direct equivalents).
+ * This contract is purely descriptive; enforcement is each call type's responsibility.
+ */
 export type SharedCallLifecyclePhase =
   | "idle"
   | "inviting"

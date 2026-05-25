@@ -402,6 +402,40 @@ describe("direct call lifecycle manager", () => {
     ]);
   });
 
+  it("marks unanswered call as missed when caller hangs up while ringing", async () => {
+    const { authority, manager, routed, store } = createHarness();
+
+    await manager.storeOffer({
+      callId: CALL_ID,
+      callerUserId: SAMPLE_SESSION.callerUserId,
+      callerDeviceId: SAMPLE_SESSION.callerDeviceId,
+      calleeUserId: SAMPLE_SESSION.calleeUserId,
+      offer: {
+        callType: "audio",
+        sdp: "offer-sdp",
+      },
+    });
+
+    const hangupResult = await manager.hangupCall({
+      callId: CALL_ID,
+      actorUserId: SAMPLE_SESSION.callerUserId,
+      actorDeviceId: SAMPLE_SESSION.callerDeviceId,
+    });
+    expect(hangupResult).toMatchObject({
+      ok: true,
+      alreadyTerminal: false,
+      resultingStatus: "missed",
+      terminatedByRole: "caller",
+    });
+    await expect(authority.get(CALL_ID)).resolves.toMatchObject({
+      status: "missed",
+    });
+    await expect(store.get(CALL_ID)).resolves.toBeNull();
+    // both callee devices get a hangup (the harness maps calleeUserId to 2 devices)
+    expect(routed.every((r) => r.msg.type === "call.hangup")).toBe(true);
+    expect(routed.length).toBeGreaterThan(0);
+  });
+
   it("moves ringing calls into rejected and keeps the rejection explicit", async () => {
     const { authority, manager, routed, store } = createHarness();
 

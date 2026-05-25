@@ -11,40 +11,30 @@
  *   WebRTC core       → useDirectCallPeerConnectionRuntime
  *   Signaling ingress → useDirectCallSignalRuntime
  *   Negotiation       → useDirectCallNegotiationRuntime
- *   Call setup/accept → useDirectCallSetupControlRuntime
+ *   Call setup/accept → useDirectCallSetup
  *   Media controls    → useDirectCallOutgoingMediaState + useDirectCallVisualMediaControls
- *   Presentation      → useDirectCallPresentationBindings
+ *   Presentation      → useDirectCallControllerPresentationWiring → useDirectCallPresentationBindings
  */
 import {
   useCallback,
   useEffect,
-  useMemo,
 } from "react";
 import { useI18n } from "@/i18n";
-import { api } from "@/lib/api";
 import { useMessagesStore } from "@/stores/messages";
 import { useSecuritySettings } from "@/ui-settings";
-import { useDirectCallPageLifecycle } from "./useDirectCallPageLifecycle";
-import { useDirectCallDevDebug } from "./useDirectCallDevDebug";
-import { useDirectCallLocalMedia } from "./useDirectCallLocalMedia";
-import { useDirectCallIceBatch } from "./useDirectCallIceBatch";
-import { useDirectCallSecurityState } from "./useDirectCallSecurityState";
-import { useDirectCallUiFeedback } from "./useDirectCallUiFeedback";
-import { useDirectCallFrameCryptoRuntime } from "./useDirectCallFrameCryptoRuntime";
+import {
+  useDirectCallControllerControlWiring,
+  useDirectCallControllerMediaWiring,
+  useDirectCallControllerPresentationWiring,
+  useDirectCallControllerSessionWiring,
+  useDirectCallControllerState,
+  useDirectCallControllerTransportWiring,
+} from "./controller";
+import { useDirectCallDevDebug } from "./debug";
+import { useDirectCallRemoteMediaRuntime } from "./media";
 import { useDirectCallSignalRuntime } from "./useDirectCallSignalRuntime";
 import { useDirectCallNegotiationRuntime } from "./useDirectCallNegotiationRuntime";
 import { useDirectCallPeerConnectionRuntime } from "./useDirectCallPeerConnectionRuntime";
-import { useDirectCallRemoteMediaRuntime } from "./useDirectCallRemoteMediaRuntime";
-import { useDirectCallSetupControlRuntime } from "./useDirectCallSetupControlRuntime";
-import { useDirectCallOutgoingMediaState } from "./useDirectCallOutgoingMediaState";
-import { useDirectCallVisualMediaControls } from "./useDirectCallVisualMediaControls";
-import { useDirectCallControllerState } from "./useDirectCallControllerState";
-import { useDirectCallPresentationBindings } from "./useDirectCallPresentationBindings";
-import { useDirectCallSessionLifecycle } from "./useDirectCallSessionLifecycle";
-import { useDirectCallRemoteTelemetry } from "./useDirectCallRemoteTelemetry";
-import { useDirectCallMediaElementBindings } from "./useDirectCallMediaElementBindings";
-import { useDirectCallRemoteReceiverIngress } from "./useDirectCallRemoteReceiverIngress";
-import { useDirectCallVisualStateSummary } from "./useDirectCallVisualStateSummary";
 
 export function useDirectCallController() {
   const { t } = useI18n();
@@ -65,11 +55,13 @@ export function useDirectCallController() {
     incomingRef,
     acceptingIncomingCallRef,
     activeRef,
+    callChatKindRef,
     commitIncomingState,
     commitActiveState,
     isCurrentActiveCallContext,
     setActiveIfCurrent,
     directCallLifecycleTokenRef,
+    outgoingRingingTimeoutRef,
   } = sessionState;
 
   const {
@@ -91,6 +83,7 @@ export function useDirectCallController() {
     activeHangupButtonRef,
     noticeTimerRef,
     incomingRingtoneRef,
+    outgoingRingtoneRef,
     isDraggingMinimizedDock,
     isDraggingLocalPreview,
     isDraggingLocalScreenPreview,
@@ -214,28 +207,6 @@ export function useDirectCallController() {
     debugCallMedia,
   });
 
-  useDirectCallPageLifecycle({
-    activeRef,
-    debugCallMedia,
-  });
-
-  useEffect(() => {
-    supportsPeerRenegotiationV1Ref.current = active?.peerSupportsRenegotiationV1 ?? false;
-  }, [active?.peerSupportsRenegotiationV1, supportsPeerRenegotiationV1Ref]);
-
-  useEffect(() => {
-    setIsSecurityCardOpen(false);
-  }, [active?.callId, setIsSecurityCardOpen]);
-
-  const {
-    resolvePeerLabel,
-    recordCallEvent,
-    pushNotice,
-  } = useDirectCallUiFeedback({
-    setNotice,
-    noticeTimerRef,
-  });
-
   useDirectCallDevDebug({
     activeRef,
     incomingRef,
@@ -283,136 +254,140 @@ export function useDirectCallController() {
     flushOutgoingIceBatch,
     resetOutgoingIceBatch,
     enqueueOutgoingIceCandidate,
-  } = useDirectCallIceBatch(outgoingIceBatchRef);
-
-  const {
+    getTurnCredentials,
     closeDirectCallFrameCrypto,
     resolveLocalSupportedMediaEncryptionModes,
     ensureDirectCallSenderFrameCryptoBound,
     primeDirectCallSenderFrameCrypto,
-    ensureDirectCallReceiverFrameCryptoBound,
     configureDirectCallFrameCrypto,
     prepareLocalEphemeralKey,
     setPeerEphemeralPublicKey,
-  } = useDirectCallFrameCryptoRuntime({
-    peerConnectionRef,
-    cameraSenderRef,
-    screenShareSenderRef,
-    directCallFrameCryptoStateRef,
-    directCallSenderFrameHandlesRef,
-    directCallReceiverFrameHandlesRef,
-    debugCallMedia,
+    ingestRemoteReceiverTrack,
+    refreshRemoteVideoTracksFromPeer,
+  } = useDirectCallControllerTransportWiring({
+    outgoingIceBatchRef,
+    frameCrypto: {
+      peerConnectionRef,
+      cameraSenderRef,
+      screenShareSenderRef,
+      directCallFrameCryptoStateRef,
+      directCallSenderFrameHandlesRef,
+      directCallReceiverFrameHandlesRef,
+      debugCallMedia,
+    },
+    remoteReceiverIngress: {
+      activeRef,
+      peerConnectionRef,
+      remoteAudioRef,
+      remoteAudioStreamRef,
+      remoteVideoTrackRefreshTimerRef,
+      refreshRemoteVideoTracksFromPeerRef,
+      debugCallMedia,
+      isCurrentActiveCallContext,
+      ingestRemoteVideoTrack,
+      resolveRemoteReceiverSlotSource,
+    },
   });
   const {
+    resolvePeerLabel,
+    recordCallEvent,
+    pushNotice,
     finishCallSession,
     resetCallState,
     resetCallStateIfCurrent,
     sendAuthoritativeDirectCallReject,
-  } = useDirectCallSessionLifecycle({
-    active,
-    incomingCallId: incoming?.callId ?? null,
-    callSecurityMode,
-    remoteVideoReady,
-    remoteScreenReady,
-    remoteCameraSlot,
-    remoteScreenSlot,
-    remoteCameraStreamRef,
-    remoteScreenStreamRef,
-    incomingRef,
-    acceptingIncomingCallRef,
-    activeRef,
-    localVideoRef,
-    localScreenPreviewRef,
-    remoteVideoRef,
-    remoteScreenVideoRef,
-    remoteCameraProbeRef,
-    remoteScreenProbeRef,
-    remoteAudioRef,
-    remoteCameraPlaybackRef,
-    remoteScreenPlaybackRef,
-    remoteInboundVideoProgressRef,
-    callMediaStateSeqRef,
-    localMediaStateRevisionRef,
-    remoteMediaStateSeqRef,
-    remoteMediaStateRevisionRef,
-    lastIncomingMediaStateRef,
-    setIncoming: commitIncomingState,
-    setActive: commitActiveState,
-    setIsMinimized,
-    peerConnectionRef,
-    localStreamRef,
-    cameraSenderRef,
-    cameraTransceiverRef,
-    screenShareTrackRef,
-    screenShareSenderRef,
-    screenShareTransceiverRef,
-    localScreenPreviewStreamRef,
-    remoteAudioStreamRef,
-    outgoingIceBatchReset: resetOutgoingIceBatch,
-    resetRemoteMediaRuntime,
-    closeDirectCallFrameCrypto,
-    resetMinimizedDockState,
-    resetLocalPreviewState,
-    resetLocalScreenPreviewState,
-    configureDirectCallFrameCrypto,
-    pushNotice,
-    t,
-    outboundMediaEncryptionOfferRef,
-    pendingIceCandidatesRef,
-    incomingIceCandidatesRef,
-    frameModeRecoveryTimerRef,
-    frameModeRecoveryAttemptedCallIdRef,
-    incomingRingtoneRef,
-    directCallLifecycleTokenRef,
-    directCallNegotiationRoleRef,
-    supportsPeerRenegotiationV1Ref,
-    renegotiationUnsupportedRef,
-    negotiationReadyRef,
-    makingOfferRef,
-    ignoreOfferRef,
-    isSettingRemoteAnswerPendingRef,
-    renegotiationRevisionRef,
-    lastAppliedRemoteRenegotiationRevisionRef,
-    pendingLocalRenegotiationRevisionRef,
-    pendingRenegotiationReasonRef,
-    lastRenegotiationAttemptRef,
-    lastSignalingErrorRef,
-    disconnectResetTimerRef,
-    disconnectRecoveryAttemptedRef,
-    clearOutgoingMediaStateTrackBindingsRef,
-    isCurrentActiveCallContext,
-  });
-
-  const getTurnCredentials = useCallback(async () => {
-    return api.get<{
-      username: string;
-      password: string;
-      uris: string[];
-    }>("/calls/turn-credentials");
-  }, []);
-  const {
     applySignalVerificationResult,
     applyCallSecurityState,
-  } = useDirectCallSecurityState({
+  } = useDirectCallControllerSessionWiring({
     activeRef,
-    setActive: commitActiveState,
-    t,
-  });
-  const {
-    ingestRemoteReceiverTrack,
-    refreshRemoteVideoTracksFromPeer,
-  } = useDirectCallRemoteReceiverIngress({
-    activeRef,
-    peerConnectionRef,
-    remoteAudioRef,
-    remoteAudioStreamRef,
-    remoteVideoTrackRefreshTimerRef,
-    refreshRemoteVideoTracksFromPeerRef,
     debugCallMedia,
-    isCurrentActiveCallContext,
-    ensureDirectCallReceiverFrameCryptoBound,
-    ingestRemoteVideoTrack,
-    resolveRemoteReceiverSlotSource,
+    activeCallId,
+    peerSupportsRenegotiationV1: active?.peerSupportsRenegotiationV1,
+    supportsPeerRenegotiationV1Ref,
+    setIsSecurityCardOpen,
+    uiFeedback: {
+      setNotice,
+      noticeTimerRef,
+    },
+    sessionLifecycle: {
+      active,
+      incomingCallId: incoming?.callId ?? null,
+      callSecurityMode,
+      remoteVideoReady,
+      remoteScreenReady,
+      remoteCameraSlot,
+      remoteScreenSlot,
+      remoteCameraStreamRef,
+      remoteScreenStreamRef,
+      incomingRef,
+      acceptingIncomingCallRef,
+      activeRef,
+      localVideoRef,
+      localScreenPreviewRef,
+      remoteVideoRef,
+      remoteScreenVideoRef,
+      remoteCameraProbeRef,
+      remoteScreenProbeRef,
+      remoteAudioRef,
+      remoteCameraPlaybackRef,
+      remoteScreenPlaybackRef,
+      remoteInboundVideoProgressRef,
+      callMediaStateSeqRef,
+      localMediaStateRevisionRef,
+      remoteMediaStateSeqRef,
+      remoteMediaStateRevisionRef,
+      lastIncomingMediaStateRef,
+      setIncoming: commitIncomingState,
+      setActive: commitActiveState,
+      setIsMinimized,
+      peerConnectionRef,
+      localStreamRef,
+      cameraSenderRef,
+      cameraTransceiverRef,
+      screenShareTrackRef,
+      screenShareSenderRef,
+      screenShareTransceiverRef,
+      localScreenPreviewStreamRef,
+      remoteAudioStreamRef,
+      outgoingIceBatchReset: resetOutgoingIceBatch,
+      resetRemoteMediaRuntime,
+      closeDirectCallFrameCrypto,
+      resetMinimizedDockState,
+      resetLocalPreviewState,
+      resetLocalScreenPreviewState,
+      configureDirectCallFrameCrypto,
+      t,
+      outboundMediaEncryptionOfferRef,
+      pendingIceCandidatesRef,
+      incomingIceCandidatesRef,
+      frameModeRecoveryTimerRef,
+      frameModeRecoveryAttemptedCallIdRef,
+      incomingRingtoneRef,
+      outgoingRingtoneRef,
+      directCallLifecycleTokenRef,
+      directCallNegotiationRoleRef,
+      supportsPeerRenegotiationV1Ref,
+      renegotiationUnsupportedRef,
+      negotiationReadyRef,
+      makingOfferRef,
+      ignoreOfferRef,
+      isSettingRemoteAnswerPendingRef,
+      renegotiationRevisionRef,
+      lastAppliedRemoteRenegotiationRevisionRef,
+      pendingLocalRenegotiationRevisionRef,
+      pendingRenegotiationReasonRef,
+      lastRenegotiationAttemptRef,
+      lastSignalingErrorRef,
+      disconnectResetTimerRef,
+      disconnectRecoveryAttemptedRef,
+      clearOutgoingMediaStateTrackBindingsRef,
+      isCurrentActiveCallContext,
+    },
+    securityState: {
+      activeRef,
+      setActive: commitActiveState,
+      t,
+    },
   });
 
   const { createPeerConnection } = useDirectCallPeerConnectionRuntime({
@@ -443,19 +418,74 @@ export function useDirectCallController() {
     requestLocalStream,
     syncLocalPreview,
     syncLocalScreenPreview,
-  } = useDirectCallLocalMedia({
-    peerConnectionRef,
-    cameraTransceiverRef,
-    screenShareTransceiverRef,
-    cameraSenderRef,
-    screenShareSenderRef,
-    localStreamRef,
-    screenShareTrackRef,
-    localVideoRef,
-    localScreenPreviewRef,
-    localScreenPreviewStreamRef,
-    remoteReceiverSlotBindingsRef,
-    debugCallMedia,
+    hasRenderableRemoteCamera,
+    hasRenderableRemoteScreen,
+    hasRemoteVisualMedia,
+    shouldRenderLocalCameraPreview,
+  } = useDirectCallControllerMediaWiring({
+    localMedia: {
+      peerConnectionRef,
+      cameraTransceiverRef,
+      screenShareTransceiverRef,
+      cameraSenderRef,
+      screenShareSenderRef,
+      localStreamRef,
+      screenShareTrackRef,
+      localVideoRef,
+      localScreenPreviewRef,
+      localScreenPreviewStreamRef,
+      remoteReceiverSlotBindingsRef,
+      debugCallMedia,
+    },
+    resolveLocalSupportedMediaEncryptionModes,
+    visualStateSummary: {
+      active,
+      localStream: localStreamRef.current,
+      remoteCameraSlot,
+      remoteScreenSlot,
+    },
+    remoteTelemetry: {
+      activeCallId,
+      activeRef,
+      peerConnectionRef,
+      localStreamRef,
+      cameraSenderRef,
+      screenShareSenderRef,
+      remoteInboundVideoProgressRef,
+      remoteCameraSlotRef,
+      remoteScreenSlotRef,
+      remoteCameraProbeRef,
+      remoteScreenProbeRef,
+      remoteCameraPlaybackRef,
+      remoteScreenPlaybackRef,
+      debugCallMedia,
+      updateSlotProgress,
+    },
+    mediaElementBindings: {
+      activeCallId,
+      isMinimized,
+      remoteVideoReady,
+      remoteScreenReady,
+      localVideoRef,
+      localScreenPreviewRef,
+      remoteVideoRef,
+      remoteVideoCompanionRef,
+      remoteScreenVideoRef,
+      remoteScreenCompanionRef,
+      remoteCameraProbeRef,
+      remoteScreenProbeRef,
+      remoteAudioRef,
+      localStreamRef,
+      localScreenPreviewStreamRef,
+      remoteAudioStreamRef,
+      remoteCameraStreamRef,
+      remoteScreenStreamRef,
+      remoteCameraSlotStream: remoteCameraSlot.stream,
+      remoteCameraSlotTrackId: remoteCameraSlot.trackId,
+      remoteScreenSlotStream: remoteScreenSlot.stream,
+      remoteScreenSlotTrackId: remoteScreenSlot.trackId,
+      refreshRemoteVideoTracksFromPeer,
+    },
   });
 
   // Stable ref-forwarding callbacks. These are intentionally created with empty deps —
@@ -525,127 +555,6 @@ export function useDirectCallController() {
     flushPendingRenegotiationOfferRef.current = flushPendingRenegotiationOffer;
   }, [flushPendingRenegotiationOffer, flushPendingRenegotiationOfferRef]);
 
-  const localSupportedMediaEncryptionModes = useMemo(
-    () => resolveLocalSupportedMediaEncryptionModes(),
-    [resolveLocalSupportedMediaEncryptionModes],
-  );
-
-  const {
-    hasRenderableRemoteCamera,
-    hasRenderableRemoteScreen,
-    hasRemoteVisualMedia,
-    isVideoCallActive,
-    shouldRenderLocalCameraPreview,
-    localSupportsFrameEncryption,
-  } = useDirectCallVisualStateSummary({
-    active,
-    localStream: localStreamRef.current,
-    remoteCameraSlot,
-    remoteScreenSlot,
-    localSupportedMediaEncryptionModes,
-  });
-
-  useDirectCallRemoteTelemetry({
-    activeCallId,
-    activeRef,
-    peerConnectionRef,
-    localStreamRef,
-    cameraSenderRef,
-    screenShareSenderRef,
-    remoteInboundVideoProgressRef,
-    remoteCameraSlotRef,
-    remoteScreenSlotRef,
-    remoteCameraProbeRef,
-    remoteScreenProbeRef,
-    remoteCameraPlaybackRef,
-    remoteScreenPlaybackRef,
-    debugCallMedia,
-    updateSlotProgress,
-  });
-
-  useDirectCallMediaElementBindings({
-    activeCallId,
-    isMinimized,
-    isVideoCallActive,
-    hasRenderableRemoteCamera,
-    hasRenderableRemoteScreen,
-    remoteVideoReady,
-    remoteScreenReady,
-    localVideoRef,
-    localScreenPreviewRef,
-    remoteVideoRef,
-    remoteVideoCompanionRef,
-    remoteScreenVideoRef,
-    remoteScreenCompanionRef,
-    remoteCameraProbeRef,
-    remoteScreenProbeRef,
-    remoteAudioRef,
-    localStreamRef,
-    localScreenPreviewStreamRef,
-    remoteAudioStreamRef,
-    remoteCameraStreamRef,
-    remoteScreenStreamRef,
-    remoteCameraSlotStream: remoteCameraSlot.stream,
-    remoteCameraSlotTrackId: remoteCameraSlot.trackId,
-    remoteScreenSlotStream: remoteScreenSlot.stream,
-    remoteScreenSlotTrackId: remoteScreenSlot.trackId,
-    refreshRemoteVideoTracksFromPeer,
-  });
-
-  const {
-    startCall,
-    acceptCall,
-    rejectCall,
-    hangup,
-  } = useDirectCallSetupControlRuntime({
-    activeRef,
-    incomingRef,
-    acceptingIncomingCallRef,
-    peerConnectionRef,
-    directCallLifecycleTokenRef,
-    directCallNegotiationRoleRef,
-    supportsPeerRenegotiationV1Ref,
-    renegotiationUnsupportedRef,
-    negotiationReadyRef,
-    makingOfferRef,
-    ignoreOfferRef,
-    isSettingRemoteAnswerPendingRef,
-    renegotiationRevisionRef,
-    lastAppliedRemoteRenegotiationRevisionRef,
-    pendingLocalRenegotiationRevisionRef,
-    pendingIceCandidatesRef,
-    incomingIceCandidatesRef,
-    outboundMediaEncryptionOfferRef,
-    commitIncomingState,
-    commitActiveState,
-    setIsMinimized,
-    resetMinimizedDockState,
-    clearNotice,
-    callSecurityMode,
-    ensureConversationUsername,
-    resolvePeerLabel,
-    pushNotice,
-    recordCallEvent,
-    debugCallMedia,
-    createPeerConnection,
-    ensureVideoSenders,
-    requestLocalStream,
-    attachLocalTracksToPeer,
-    syncVisualTransceiverBindings,
-    syncVisualTransceiverDirections,
-    syncOutgoingVisualMediaStateTrackBindings: stableSyncOutgoing,
-    refreshRemoteVideoTracksFromPeer: stableRefreshRemote,
-    resolveLocalSupportedMediaEncryptionModes,
-    primeDirectCallSenderFrameCrypto,
-    closeDirectCallFrameCrypto,
-    configureDirectCallFrameCrypto,
-    prepareLocalEphemeralKey,
-    setPeerEphemeralPublicKey,
-    applyCallSecurityState,
-    finishCallSession,
-    t,
-  });
-
   const mediaControlsOptions = {
     activeRef,
     localStreamRef,
@@ -679,13 +588,12 @@ export function useDirectCallController() {
   };
 
   const {
-    sendCallMediaState,
+    startCall,
+    acceptCall,
+    rejectCall,
+    hangup,
     syncOutgoingVisualMediaStateTrackBindings,
     clearOutgoingMediaStateTrackBindings,
-    clearOutgoingVisualMediaStateTrackBinding,
-  } = useDirectCallOutgoingMediaState(mediaControlsOptions);
-
-  const {
     canSwitchCamera,
     isSwitchingCamera,
     switchCamera,
@@ -693,24 +601,67 @@ export function useDirectCallController() {
     toggleScreenShare,
     selectedScreenResolution,
     handleSelectScreenResolution,
-  } = useDirectCallVisualMediaControls({
-    active,
-    ...mediaControlsOptions,
-    sendCallMediaState,
-    syncOutgoingVisualMediaStateTrackBindings,
-    clearOutgoingVisualMediaStateTrackBinding,
+    toggleMute,
+  } = useDirectCallControllerControlWiring({
+    setupControl: {
+      activeRef,
+      incomingRef,
+      acceptingIncomingCallRef,
+      peerConnectionRef,
+      directCallLifecycleTokenRef,
+      outgoingRingingTimeoutRef,
+      directCallNegotiationRoleRef,
+      supportsPeerRenegotiationV1Ref,
+      renegotiationUnsupportedRef,
+      negotiationReadyRef,
+      makingOfferRef,
+      ignoreOfferRef,
+      isSettingRemoteAnswerPendingRef,
+      renegotiationRevisionRef,
+      lastAppliedRemoteRenegotiationRevisionRef,
+      pendingLocalRenegotiationRevisionRef,
+      pendingIceCandidatesRef,
+      incomingIceCandidatesRef,
+      outboundMediaEncryptionOfferRef,
+      commitIncomingState,
+      commitActiveState,
+      setIsMinimized,
+      resetMinimizedDockState,
+      clearNotice,
+      callSecurityMode,
+      ensureConversationUsername,
+      resolvePeerLabel,
+      pushNotice,
+      callChatKindRef,
+      recordCallEvent,
+      debugCallMedia,
+      createPeerConnection,
+      ensureVideoSenders,
+      requestLocalStream,
+      attachLocalTracksToPeer,
+      syncVisualTransceiverBindings,
+      syncVisualTransceiverDirections,
+      syncOutgoingVisualMediaStateTrackBindings: stableSyncOutgoing,
+      refreshRemoteVideoTracksFromPeer: stableRefreshRemote,
+      resolveLocalSupportedMediaEncryptionModes,
+      primeDirectCallSenderFrameCrypto,
+      closeDirectCallFrameCrypto,
+      configureDirectCallFrameCrypto,
+      prepareLocalEphemeralKey,
+      setPeerEphemeralPublicKey,
+      applyCallSecurityState,
+      finishCallSession,
+      t,
+    },
+    outgoingMediaState: mediaControlsOptions,
+    visualMediaControls: {
+      active,
+      ...mediaControlsOptions,
+    },
+    activeRef,
+    localStreamRef,
+    setActiveIfCurrent,
   });
-
-  const toggleMute = useCallback(() => {
-    if (!activeRef.current || !localStreamRef.current) return;
-    const nextMuted = !activeRef.current.muted;
-    const activeCallId = activeRef.current.callId;
-    localStreamRef.current.getAudioTracks().forEach((track) => {
-      track.enabled = !nextMuted;
-    });
-    setActiveIfCurrent(activeCallId, (prev) => ({ ...prev, muted: nextMuted }));
-    sendCallMediaState("mic", nextMuted ? "muted" : "on", undefined, "user-toggle");
-  }, [activeRef, localStreamRef, sendCallMediaState, setActiveIfCurrent]);
 
   useEffect(() => {
     syncOutgoingVisualMediaStateTrackBindingsRef.current = syncOutgoingVisualMediaStateTrackBindings;
@@ -745,6 +696,7 @@ export function useDirectCallController() {
     resetMinimizedDockState,
     resolvePeerLabel,
     pushNotice,
+    callChatKindRef,
     recordCallEvent,
     rejectIncomingCall: (callId) => {
       void sendAuthoritativeDirectCallReject(callId);
@@ -763,14 +715,12 @@ export function useDirectCallController() {
     surface,
     focusTrapProps,
     surfaceRendererProps,
-  } = useDirectCallPresentationBindings({
+  } = useDirectCallControllerPresentationWiring({
     active,
     incoming,
     notice,
     isMinimized,
     isSecurityCardOpen,
-    localSupportsFrameEncryption,
-    callSecurityMode,
     resolvePeerLabel,
     t,
     incomingOverlayRef,
@@ -804,37 +754,33 @@ export function useDirectCallController() {
     remoteVideoCompanionRef,
     remoteScreenVideoRef,
     remoteScreenCompanionRef,
-    onExpandMinimized: () => setIsMinimized(false),
-    onReject: rejectCall,
-    onIncomingMinimize: () => setIsMinimized(true),
-    onAccept: acceptCall,
-    onStartMinimizedDockDrag: startMinimizedDockDrag,
-    onMoveMinimizedDock: moveMinimizedDock,
-    onStopMinimizedDockDrag: stopMinimizedDockDrag,
-    onOpenIncomingDetails: () => setIsMinimized(false),
-    onOpenActiveDetails: () => setIsMinimized(false),
-    onToggleMute: toggleMute,
-    onHangup: hangup,
-    onActiveMinimize: () => setIsMinimized(true),
-    onToggleSecurityCard: () => setIsSecurityCardOpen((current) => !current),
-    onStartLocalPreviewDrag: startLocalPreviewDrag,
-    onMoveLocalPreview: moveLocalPreview,
-    onStopLocalPreviewDrag: stopLocalPreviewDrag,
-    onStartLocalPreviewResize: startLocalPreviewResize,
-    onMoveLocalPreviewResize: moveLocalPreviewResize,
-    onStopLocalPreviewResize: stopLocalPreviewResize,
-    onStartLocalScreenPreviewDrag: startLocalScreenPreviewDrag,
-    onMoveLocalScreenPreview: moveLocalScreenPreview,
-    onStopLocalScreenPreviewDrag: stopLocalScreenPreviewDrag,
-    canSwitchCamera,
-    isSwitchingCamera,
-    onSwitchCamera: switchCamera,
-    onToggleVideo: toggleVideo,
-    onToggleScreenShare: toggleScreenShare,
-    selectedScreenResolution,
-    onSelectScreenResolution: handleSelectScreenResolution,
     localStream: localStreamRef.current,
     cameraSenderRef,
+    canSwitchCamera,
+    isSwitchingCamera,
+    selectedScreenResolution,
+    setIsMinimized,
+    setIsSecurityCardOpen,
+    rejectCall,
+    acceptCall,
+    toggleMute,
+    hangup,
+    switchCamera,
+    toggleVideo,
+    toggleScreenShare,
+    handleSelectScreenResolution,
+    startMinimizedDockDrag,
+    moveMinimizedDock,
+    stopMinimizedDockDrag,
+    startLocalPreviewDrag,
+    moveLocalPreview,
+    stopLocalPreviewDrag,
+    startLocalPreviewResize,
+    moveLocalPreviewResize,
+    stopLocalPreviewResize,
+    startLocalScreenPreviewDrag,
+    moveLocalScreenPreview,
+    stopLocalScreenPreviewDrag,
   });
 
   return {

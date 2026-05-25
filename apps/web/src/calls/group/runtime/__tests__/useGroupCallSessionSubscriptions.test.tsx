@@ -10,7 +10,7 @@ import type {
   GroupCallRemoteMedia,
   GroupSfuClient,
 } from "@/calls/group/runtime/sfu";
-import type { GroupCallRuntimeMediaEncryptionMode } from "@/calls/group/runtime/group-call/media-encryption-negotiation";
+import type { GroupCallRuntimeMediaEncryptionMode } from "@/calls/group/runtime/media-key/media-encryption-negotiation";
 
 const wsMocks = vi.hoisted(() => {
   const messageHandlers: Array<(msg: unknown) => void> = [];

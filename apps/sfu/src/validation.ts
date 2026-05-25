@@ -1,12 +1,12 @@
 import type { FastifyReply } from "fastify";
-import type { ZodTypeAny, infer as zInfer } from "zod";
+import type { ZodTypeAny, TypeOf } from "zod";
 import { type StripVersion, safeParseVersionedWire } from "@seclettr/protocol";
 
 export function parseOrReply<TSchema extends ZodTypeAny>(
   reply: FastifyReply,
   schema: TSchema,
   payload: unknown
-): zInfer<TSchema> | null {
+): TypeOf<TSchema> | null {
   const parsed = schema.safeParse(payload);
   if (!parsed.success) {
     void reply.code(400).send({
@@ -15,7 +15,8 @@ export function parseOrReply<TSchema extends ZodTypeAny>(
     });
     return null;
   }
-  return parsed.data;
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-return
+  return parsed.data as TypeOf<TSchema>;
 }
 
 export function parseVersionedOrReply<TSchema extends ZodTypeAny>(
@@ -23,10 +24,11 @@ export function parseVersionedOrReply<TSchema extends ZodTypeAny>(
   schema: TSchema,
   payload: unknown,
   supportedVersion: number
-): StripVersion<zInfer<TSchema>> | null {
+): StripVersion<TypeOf<TSchema>> | null {
   const parsed = safeParseVersionedWire(schema, payload, supportedVersion);
   if (parsed.success) {
-    return parsed.data;
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-return
+    return parsed.data as StripVersion<TypeOf<TSchema>>;
   }
 
   if (parsed.error.code === "UNSUPPORTED_PROTOCOL_VERSION") {

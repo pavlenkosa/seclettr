@@ -22,13 +22,20 @@ export interface MessagesState {
     string,
     { online: boolean; lastSeenAt?: string; updatedAt: number }
   >;
-  typingByUser: Record<string, { typing: boolean; updatedAt: number }>;
+  typingByUser: Record<
+    string,
+    { typing: boolean; updatedAt: number; chatKind?: "plain" | "e2ee" }
+  >;
   wsConnected: boolean;
   historyLoaded: boolean;
 
   setActiveConversation: (userId: string | null) => void;
   fetchUserPresence: (userId: string) => Promise<void>;
-  sendTypingSignal: (targetUserId: string, isTyping: boolean) => void;
+  sendTypingSignal: (
+    targetUserId: string,
+    isTyping: boolean,
+    chatKind?: "plain" | "e2ee"
+  ) => void;
   markConversationRead: (userId: string) => Promise<void>;
   sendMessage: (
     recipientUserId: string,

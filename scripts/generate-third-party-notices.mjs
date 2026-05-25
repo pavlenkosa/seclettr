@@ -161,16 +161,15 @@ if (strictMode && unknownOrMissing.length > 0) {
 
 const lines = [];
 lines.push(
-  "# Third-Party Notices / Уведомления о сторонних лицензиях",
+  "# Third-Party Notices",
   "",
   "This file is auto-generated from workspace production dependencies.",
-  "Этот файл автоматически генерируется из production-зависимостей workspace.",
-  "Source / Источник: `pnpm licenses list --prod --json`.",
+  "Source: `pnpm licenses list --prod --json`.",
   "",
-  `- Total production packages / Всего production-пакетов: ${packages.length}`,
-  `- Packages without detected local license file / Пакеты без обнаруженного локального файла лицензии: ${missingLicenseFiles.length}`,
+  `- Total production packages: ${packages.length}`,
+  `- Packages without detected local license file: ${missingLicenseFiles.length}`,
   "",
-  "## License Summary / Сводка по лицензиям",
+  "## License Summary",
   "",
   "| License | Packages |",
   "| --- | ---: |",
@@ -180,7 +179,7 @@ for (const [license, count] of summaryRows) {
 }
 lines.push(
   "",
-  "## Package Inventory / Перечень пакетов",
+  "## Package Inventory",
   "",
   "| Package | Version | License | Homepage | License File | Author |",
   "| --- | --- | --- | --- | --- | --- |",
@@ -192,15 +191,12 @@ for (const item of packages) {
 }
 lines.push(
   "",
-  "## Compliance Notes / Примечания по соответствию",
+  "## Compliance Notes",
   "",
   "- For releases, distribute this file together with `LICENSE` and `NOTICE`.",
-  "- Для релизов распространяйте этот файл вместе с `LICENSE` и `NOTICE`.",
   "- Dependencies with `UNKNOWN`/`UNLICENSED` metadata require manual legal review before publication.",
-  "- Если у зависимости лицензия `UNKNOWN`/`UNLICENSED`, требуется ручная юридическая проверка перед публикацией.",
   "- Packages without a detected local license file in `node_modules` require manual upstream verification.",
-  "- Пакеты без обнаруженного файла лицензии в `node_modules` требуют ручной проверки по upstream-репозиторию.",
-  "- Strict check command / Команда strict-проверки: `node scripts/generate-third-party-notices.mjs --strict`.",
+  "- Strict check command: `node scripts/generate-third-party-notices.mjs --strict`.",
   "",
 );
 

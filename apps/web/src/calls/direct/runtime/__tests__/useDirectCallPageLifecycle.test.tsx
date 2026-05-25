@@ -25,7 +25,7 @@ vi.mock("@/lib/api", () => ({
   },
 }));
 
-import { useDirectCallPageLifecycle } from "@/calls/direct/runtime/useDirectCallPageLifecycle";
+import { useDirectCallPageLifecycle } from "@/calls/direct/runtime/session/useDirectCallPageLifecycle";
 
 function HookHarness(props: {
   activeRef: MutableRefObject<{ callId: string } | null>;

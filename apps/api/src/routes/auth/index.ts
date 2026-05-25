@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import type { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
 import argon2 from "argon2";
 import { nanoid } from "nanoid";
@@ -170,6 +171,29 @@ function sendRefreshSessionError(
   return reply.code(401).send({ error: resolution.error });
 }
 
+/**
+ * Capacitor Android uses `https://localhost` as its WebView origin;
+ * Capacitor iOS uses `capacitor://localhost`.  Both are cross-site relative
+ * to the server domain, so `SameSite=Strict` blocks the refresh-token cookie
+ * from being sent on subsequent requests.  Detect these origins and use
+ * `SameSite=None` (always Secure) so the cookie round-trips correctly.
+ * For regular browser sessions keep `SameSite=Strict` for CSRF hardening.
+ */
+function resolveRefreshCookieSameSite(
+  request: FastifyRequest
+): "strict" | "none" {
+  if (config.NODE_ENV === "development") return "none";
+  const origin = request.headers["origin"] ?? "";
+  if (
+    origin === "https://localhost" ||
+    origin === "capacitor://localhost" ||
+    origin === "ionic://localhost"
+  ) {
+    return "none";
+  }
+  return "strict";
+}
+
 export async function authRoutes(fastify: FastifyInstance): Promise<void> {
   fastify.post("/register", { preHandler: enforceAuthRouteRateLimit }, async (request, reply) => {
     const body = parseVersionedOrReply(
@@ -278,8 +302,8 @@ export async function authRoutes(fastify: FastifyInstance): Promise<void> {
 
     reply.setCookie("refresh_token", result.refreshToken, {
       httpOnly: true,
-      sameSite: "strict",
-      secure: config.COOKIE_SECURE,
+      sameSite: resolveRefreshCookieSameSite(request),
+      secure: config.NODE_ENV === "development" ? true : config.COOKIE_SECURE,
       path: "/",
       maxAge: config.REFRESH_TOKEN_TTL_DAYS * 86400,
     });
@@ -457,8 +481,8 @@ export async function authRoutes(fastify: FastifyInstance): Promise<void> {
 
     reply.setCookie("refresh_token", result.refreshToken, {
       httpOnly: true,
-      sameSite: "strict",
-      secure: config.COOKIE_SECURE,
+      sameSite: resolveRefreshCookieSameSite(request),
+      secure: config.NODE_ENV === "development" ? true : config.COOKIE_SECURE,
       path: "/",
       maxAge: config.REFRESH_TOKEN_TTL_DAYS * 86400,
     });
@@ -522,8 +546,8 @@ export async function authRoutes(fastify: FastifyInstance): Promise<void> {
 
     reply.setCookie("refresh_token", newRefreshToken, {
       httpOnly: true,
-      sameSite: "strict",
-      secure: config.COOKIE_SECURE,
+      sameSite: resolveRefreshCookieSameSite(request),
+      secure: config.NODE_ENV === "development" ? true : config.COOKIE_SECURE,
       path: "/",
       maxAge: config.REFRESH_TOKEN_TTL_DAYS * 86400,
     });
@@ -579,5 +603,19 @@ export async function authRoutes(fastify: FastifyInstance): Promise<void> {
       ipAddress: request.ip,
     });
     return { ok: true };
+  });
+
+  fastify.post("/background-token", { preHandler: requireAuth }, async (request, reply) => {
+    const { sub: userId, deviceId } = request.auth;
+    const token = nanoid(64);
+    const hash = createHash("sha256").update(token).digest("hex");
+    await query(
+      `INSERT INTO background_poll_tokens (user_id, device_id, token_hash)
+       VALUES ($1, $2, $3)
+       ON CONFLICT (user_id, device_id)
+       DO UPDATE SET token_hash = EXCLUDED.token_hash, created_at = now()`,
+      [userId, deviceId, hash]
+    );
+    return reply.send({ token });
   });
 }

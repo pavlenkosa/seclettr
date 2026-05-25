@@ -1,3 +1,4 @@
+import type { AuthErrorCode } from "@/lib/auth-error-codes";
 import type {
   AuthLockedSnapshot,
   AuthReadySnapshot,
@@ -11,6 +12,9 @@ export function buildSignedOutState(): Pick<AuthState, SignedOutStateFields> {
     userId: null,
     deviceId: null,
     username: null,
+    displayName: null,
+    bio: null,
+    avatarKey: null,
     accessToken: null,
     identityDhKeyPair: null,
     storageKey: null,
@@ -30,6 +34,9 @@ export function buildReadyState(
     userId: session.userId,
     deviceId: session.deviceId,
     username: session.username,
+    displayName: session.displayName,
+    bio: session.bio,
+    avatarKey: session.avatarKey,
     accessToken: session.accessToken,
     identityDhKeyPair: session.identityDhKeyPair,
     storageKey: session.storageKey,
@@ -44,12 +51,15 @@ export function buildReadyState(
 
 export function buildRecoveryRequiredState(
   reason: AuthRecoveryReason,
-  error: string
+  error: AuthErrorCode
 ): Pick<AuthState, SignedOutStateFields> {
   return {
     userId: null,
     deviceId: null,
     username: null,
+    displayName: null,
+    bio: null,
+    avatarKey: null,
     accessToken: null,
     identityDhKeyPair: null,
     storageKey: null,
@@ -69,6 +79,9 @@ export function buildLockedState(
     userId: snapshot.userId,
     deviceId: snapshot.deviceId,
     username: snapshot.username,
+    displayName: snapshot.displayName,
+    bio: snapshot.bio,
+    avatarKey: snapshot.avatarKey,
     accessToken: null,
     identityDhKeyPair: null,
     storageKey: null,

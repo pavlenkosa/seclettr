@@ -1,3 +1,15 @@
+/**
+ * CallDurationText — live-updating call duration display.
+ *
+ * Owns:
+ *   - 1-second interval tick to keep `nowMs` current while the call is running
+ *   - Duration formatting (seconds → mm:ss) via shared `call-duration` model helpers
+ *   - Optional fallback text when no active timer is present
+ *   - CSS className forwarding for caller layout control
+ *
+ * Does not own call lifecycle, timer start/stop logic, or call state.
+ * Consumed by both DirectCallActiveOverlay and group call header surfaces.
+ */
 import { useEffect, useState } from "react";
 import {
   formatCallDuration,
@@ -25,14 +37,14 @@ export function CallDurationText({
     }
 
     setNowMs(Date.now());
-    const timer = setInterval(() => {
+    const timer = globalThis.window.setInterval(() => {
       setNowMs(Date.now());
     }, 1000);
 
     return () => {
       clearInterval(timer);
     };
-  }, [isRunning, startedAtMs]) as unknown as number;
+  }, [isRunning, startedAtMs]);
 
   const label = isRunning
     ? formatCallDuration(resolveCallDurationSeconds({ baseSeconds, startedAtMs }, nowMs))

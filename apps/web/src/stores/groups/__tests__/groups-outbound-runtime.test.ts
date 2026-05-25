@@ -36,9 +36,12 @@ vi.mock("@/lib/group-sender-key", () => ({
   encryptGroupTextEnvelope: encryptGroupTextEnvelopeMock,
 }));
 
-vi.mock("@/stores/groups/group-helpers", () => ({
+vi.mock("@/stores/groups/group-sender-key-distribution", () => ({
   ensureSenderKeyDistributedToGroupMembers:
     ensureSenderKeyDistributedToGroupMembersMock,
+}));
+
+vi.mock("@/stores/groups/group-display-helpers", () => ({
   formatSenderLabel: (deviceId: string, isOwn: boolean) =>
     isOwn ? "You" : `@${deviceId}`,
 }));

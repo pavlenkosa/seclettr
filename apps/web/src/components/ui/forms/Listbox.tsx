@@ -1,3 +1,15 @@
+/**
+ * Listbox — fully-styled custom listbox that replaces native `<select>`.
+ *
+ * Owns:
+ *   - Rendering the trigger button, portal-mounted dropdown list, and animated open/close transitions.
+ *   - Full keyboard navigation (ArrowUp/Down, Home/End, Enter/Space, Escape) and ARIA combobox/listbox roles.
+ *   - Dropdown position computation (opens upward when viewport space below is insufficient).
+ *   - Outside-click and scroll dismissal with focus restoration to the trigger.
+ *
+ * Does not own runtime state, business logic, or domain-specific wiring.
+ * Use when: the option picker needs richer popup behavior or explicit custom keyboard treatment; prefer SelectField for simpler native selection flows.
+ */
 import {
   useCallback,
   useEffect,
@@ -10,6 +22,8 @@ import {
 } from "react";
 import { createPortal } from "react-dom";
 import { useAnimatedPresence } from "@/lib/hooks";
+import { MOTION_DURATION_MS } from "@/lib/motion";
+import motionStyles from "@/components/ui/motion/Motion.module.css";
 import styles from "./Listbox.module.css";
 
 export interface ListboxOption {
@@ -61,16 +75,11 @@ function getListboxKeyAction(key: string): ListboxKeyAction {
   return null;
 }
 
-function getDropdownClassName(pos: DropdownPos, isClosing: boolean): string {
-  const closingClass = pos.openUp
-    ? styles.dropdownClosingUp
-    : styles.dropdownClosingDown;
-
+function getDropdownClassName(isClosing: boolean): string {
   return [
     styles.dropdown,
-    pos.openUp ? styles.dropdownUp : styles.dropdownDown,
-    isClosing ? closingClass : "",
-  ].join(" ");
+    isClosing ? motionStyles.popoverOut : motionStyles.popoverIn,
+  ].filter(Boolean).join(" ");
 }
 
 function getDropdownStyle(pos: DropdownPos): CSSProperties {
@@ -121,6 +130,7 @@ function CheckIcon() {
  * Fully-styled custom listbox that replaces native `<select>`.
  * Renders the dropdown list into a portal to avoid overflow/z-index clipping.
  * Supports full keyboard navigation and ARIA.
+ * Choose it when the option picker needs richer popup behavior or explicit custom keyboard treatment; prefer SelectField for simpler native selection flows.
  */
 export function Listbox({
   id,
@@ -150,7 +160,7 @@ export function Listbox({
   const selectedLabel = options[selectedIndex]?.label ?? value;
   const dropdownPresence = useAnimatedPresence({
     isOpen,
-    durationMs: 160,
+    durationMs: MOTION_DURATION_MS.fast,
   });
 
   // Compute dropdown position relative to trigger
@@ -259,7 +269,7 @@ export function Listbox({
             tabIndex={0}
             aria-label={ariaLabel}
             aria-activedescendant={activeIndex >= 0 ? `${listId}-opt-${activeIndex}` : undefined}
-            className={getDropdownClassName(pos, dropdownPresence.isClosing)}
+            className={getDropdownClassName(dropdownPresence.isClosing)}
             style={getDropdownStyle(pos)}
             onKeyDown={onListKeyDown}
           >

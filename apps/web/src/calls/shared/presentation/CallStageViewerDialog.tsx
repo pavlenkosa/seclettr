@@ -1,3 +1,17 @@
+/**
+ * CallStageViewerDialog — fullscreen-capable overlay dialog for watching a shared screen or stage stream.
+ *
+ * Owns:
+ *   - Portal-mounted `<dialog>` with aria-modal and focus trap (via `useCallDialogFocusTrap`)
+ *   - Video element bound to the incoming `stream` via `useMediaElementBinding`
+ *   - Native browser fullscreen toggle (desktop only, guarded by API availability)
+ *   - Top bar with eyebrow/title metadata, expand, optional stop-watching, and close actions
+ *   - Empty-state label when no stream is present
+ *
+ * Does not own stream acquisition, screen-share signalling, call state, or call lifecycle.
+ * The caller supplies `stream`, `isOpen`, and all action callbacks.
+ * Consumed by both direct and group call stage viewer surfaces.
+ */
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { useMediaElementBinding } from "@/calls/shared/media/useMediaElementBinding";
@@ -148,7 +162,6 @@ export function CallStageViewerDialog({
               onClick={() => handleToggleNativeFullscreen()}
               className={styles.actionButton}
               size={36}
-              variant="glass"
               aria-label={isNativeFullscreen ? exitFullscreenLabel : enterFullscreenLabel}
               title={isNativeFullscreen ? exitFullscreenLabel : enterFullscreenLabel}
             >
@@ -160,7 +173,6 @@ export function CallStageViewerDialog({
               onClick={handleStopWatching}
               className={styles.actionButton}
               size={36}
-              variant="glass"
               aria-label={stopWatchingLabel}
               title={stopWatchingLabel}
             >
@@ -172,7 +184,6 @@ export function CallStageViewerDialog({
             onClick={handleClose}
             className={styles.actionButton}
             size={36}
-            variant="glass"
             aria-label={closeLabel}
             title={closeLabel}
           >

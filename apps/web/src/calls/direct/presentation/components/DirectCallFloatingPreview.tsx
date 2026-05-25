@@ -15,6 +15,7 @@ export interface DirectCallFloatingPreviewProps {
   readonly className?: string;
   readonly isDragging: boolean;
   readonly isResizing?: boolean;
+  readonly isTransitioning?: boolean;
   readonly style?: CSSProperties;
   readonly onStartDrag: PointerEventHandler<HTMLDivElement>;
   readonly onMoveDrag: PointerEventHandler<HTMLDivElement>;
@@ -36,6 +37,7 @@ export function DirectCallFloatingPreview({
   className,
   isDragging,
   isResizing = false,
+  isTransitioning = false,
   style,
   onStartDrag,
   onMoveDrag,
@@ -56,6 +58,7 @@ export function DirectCallFloatingPreview({
         className,
         isDragging ? styles.localPreviewDragging : "",
         isResizing ? styles.localPreviewResizing : "",
+        isTransitioning ? styles.localPreviewTransitioning : "",
       ].filter(Boolean).join(" ")}
       style={style}
       onPointerDown={onStartDrag}

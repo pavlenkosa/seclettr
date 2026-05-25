@@ -1,6 +1,6 @@
 import { useRef, type ReactNode } from "react";
+import { useCallAudioActivity } from "@/calls/shared/media/useCallAudioActivity";
 import { useMediaElementBinding } from "@/calls/shared/media/useMediaElementBinding";
-import { useGroupCallAudioActivity } from "@/calls/group/runtime/useGroupCallAudioActivity";
 import {
   CallMediaAvatarFallback,
   CallMediaSurface,
@@ -14,6 +14,9 @@ export interface GroupCallMediaTileProps {
   readonly label: string;
   readonly stream: MediaStream | null;
   readonly audioStream?: MediaStream | null;
+  /** Stream used only for voice activity detection; never played back. */
+  readonly activityStream?: MediaStream | null;
+  readonly hasAudio?: boolean;
   readonly fallbackInitials: string;
   readonly badge?: string;
   readonly muted?: boolean;
@@ -34,6 +37,7 @@ function StreamVideo({
   fallbackInitials,
   isSpeaking,
   speakingVariant,
+  hasAudio,
 }: {
   readonly stream: MediaStream | null;
   readonly className?: string;
@@ -41,6 +45,7 @@ function StreamVideo({
   readonly fallbackInitials: string;
   readonly isSpeaking: boolean;
   readonly speakingVariant: "primary-stage" | "strip";
+  readonly hasAudio: boolean;
 }) {
   const { elementRef, isReady } = useMediaElementBinding<HTMLVideoElement>({
     kind: "video",
@@ -65,6 +70,7 @@ function StreamVideo({
           avatarClassName={styles.mediaAvatarFallback}
           pulseClassName={styles.mediaAudioPulse}
           pulseActiveClassName={styles.mediaAudioPulseActive}
+          hasAudio={hasAudio}
           isSpeaking={isSpeaking}
           speakingVariant={speakingVariant}
         />
@@ -73,13 +79,19 @@ function StreamVideo({
   );
 }
 
-function StreamAudioSink({ stream }: { readonly stream: MediaStream | null }) {
+function StreamAudioSink({
+  stream,
+  muted = false,
+}: {
+  readonly stream: MediaStream | null;
+  readonly muted?: boolean;
+}) {
   const { elementRef } = useMediaElementBinding<HTMLAudioElement>({
     kind: "audio",
     stream,
   });
 
-  return <audio ref={elementRef} className={styles.hiddenAudio} autoPlay><track kind="captions" /></audio>;
+  return <audio ref={elementRef} className={styles.hiddenAudio} autoPlay muted={muted}><track kind="captions" /></audio>;
 }
 
 function getVariantClassName(variant: GroupCallMediaTileProps["variant"]): string {
@@ -96,13 +108,13 @@ function getTileClassName({
   variant,
   videoSource,
   isAudioOnly,
-  hasVoiceActivity,
+  isAudioActive,
   className,
 }: {
   variant: GroupCallMediaTileProps["variant"];
   videoSource: GroupCallMediaTileProps["videoSource"];
   isAudioOnly: boolean;
-  hasVoiceActivity: boolean;
+  isAudioActive: boolean;
   className?: string;
 }): string {
   return [
@@ -110,7 +122,7 @@ function getTileClassName({
     getVariantClassName(variant),
     videoSource === "screen" ? styles.mediaTileScreen : "",
     isAudioOnly ? styles.mediaTileAudioOnly : "",
-    hasVoiceActivity ? styles.mediaTileAudioActive : "",
+    isAudioActive ? styles.mediaTileAudioActive : "",
     className ?? "",
   ].join(" ");
 }
@@ -122,10 +134,36 @@ function getVideoClassName(videoSource: GroupCallMediaTileProps["videoSource"]):
   ].join(" ").trim();
 }
 
+function hasLiveAudioTrack(stream: MediaStream | null): boolean {
+  return Boolean(stream?.getAudioTracks().some((track) => track.readyState === "live"));
+}
+
+function resolveAudioActivityStream({
+  stream,
+  audioStream,
+  activityStream,
+}: {
+  readonly stream: MediaStream | null;
+  readonly audioStream: MediaStream | null;
+  readonly activityStream: MediaStream | null;
+}): MediaStream | null {
+  if (hasLiveAudioTrack(activityStream)) {
+    return activityStream;
+  }
+
+  if (hasLiveAudioTrack(audioStream)) {
+    return audioStream;
+  }
+
+  return hasLiveAudioTrack(stream) ? stream : null;
+}
+
 export function GroupCallMediaTile({
   label,
   stream,
   audioStream = null,
+  activityStream = null,
+  hasAudio,
   fallbackInitials,
   badge,
   muted = false,
@@ -140,7 +178,13 @@ export function GroupCallMediaTile({
 }: GroupCallMediaTileProps) {
   const hasVideo = Boolean(stream?.getVideoTracks().length);
   const isAudioOnly = !hasVideo;
-  const hasVoiceActivity = useGroupCallAudioActivity(audioStream, isAudioOnly && !muted);
+  const audioActivityStream = resolveAudioActivityStream({
+    stream,
+    audioStream,
+    activityStream,
+  });
+  const hasAudioIndicator = hasAudio ?? hasLiveAudioTrack(audioActivityStream);
+  const isAudioActive = useCallAudioActivity(audioActivityStream, hasAudioIndicator);
   const speakingVariant = variant === "strip" ? "strip" : "primary-stage";
 
   // Visibility-based video virtualization: suspend <video> rendering when
@@ -159,7 +203,7 @@ export function GroupCallMediaTile({
         variant,
         videoSource,
         isAudioOnly,
-        hasVoiceActivity,
+        isAudioActive,
         className,
       })}
       interactiveClassName={styles.mediaTileInteractive}
@@ -169,7 +213,8 @@ export function GroupCallMediaTile({
           className={getVideoClassName(videoSource)}
           label={label}
           fallbackInitials={fallbackInitials}
-          isSpeaking={hasVoiceActivity}
+          hasAudio={false}
+          isSpeaking={isAudioActive}
           speakingVariant={speakingVariant}
         />
       ) : null}
@@ -181,7 +226,8 @@ export function GroupCallMediaTile({
           avatarClassName={styles.mediaAvatarFallback}
           pulseClassName={styles.mediaAudioPulse}
           pulseActiveClassName={styles.mediaAudioPulseActive}
-          isSpeaking={hasVoiceActivity}
+          hasAudio={false}
+          isSpeaking={isAudioActive}
           speakingVariant={speakingVariant}
         />
       ) : null}
@@ -205,7 +251,7 @@ export function GroupCallMediaTile({
       {/* Sentinel fills the tile for IntersectionObserver (tile has position:relative). */}
       <span ref={sentinelRef} style={{ position: "absolute", inset: 0, pointerEvents: "none" }} aria-hidden />
       {/* Audio sink is always active regardless of visibility. */}
-      {audioStream ? <StreamAudioSink stream={audioStream} /> : null}
+      {audioStream ? <StreamAudioSink stream={audioStream} muted={muted} /> : null}
     </CallMediaSurface>
   );
 }

@@ -195,8 +195,12 @@ export async function ratchetEncrypt(
 
   const headerBytes = encodeHeader(header);
   const ad = concat(associatedData, headerBytes);
-  const ciphertext = await aeadEncrypt(mk, plaintext, ad);
-  mk.fill(0);
+  let ciphertext;
+  try {
+    ciphertext = await aeadEncrypt(mk, plaintext, ad);
+  } finally {
+    mk.fill(0);
+  }
 
   return { header, ciphertext };
 }
@@ -212,9 +216,12 @@ export async function ratchetDecrypt(
 
   const mk = trySkippedMessageKey(state, header);
   if (mk) {
-    const plain = await aeadDecrypt(mk, ciphertext, ad);
-    mk.fill(0);
-    return plain;
+    try {
+      const plain = await aeadDecrypt(mk, ciphertext, ad);
+      return plain;
+    } finally {
+      mk.fill(0);
+    }
   }
 
   const dhPubKey = header.dh;
@@ -232,8 +239,12 @@ export async function ratchetDecrypt(
   state.CKr = nextCk;
   state.Nr++;
 
-  const plain = await aeadDecrypt(msgKey, ciphertext, ad);
-  msgKey.fill(0);
+  let plain;
+  try {
+    plain = await aeadDecrypt(msgKey, ciphertext, ad);
+  } finally {
+    msgKey.fill(0);
+  }
   return plain;
 }
 

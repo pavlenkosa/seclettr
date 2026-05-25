@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
-import { GroupCallNotice } from "@/calls/group";
-import { Avatar, IconButton, StatusBadge, SurfacePanel } from "@/components/ui";
+import { GroupCallNotice } from "@/calls/group/presentation/GroupCallNotice";
+import { Avatar, IconButton, SurfacePanel } from "@/components/ui";
+import { SecurityStatusIndicator } from "./security/SecurityStatusIndicator";
 
 import styles from "./ChatThreadChrome.module.css";
 
@@ -14,27 +15,33 @@ interface ChatThreadChromeCallNotice {
   onJoin: () => void;
 }
 
-function resolveStatusBadgeTone(statusTone: ChatThreadChromeStatusTone): "success" | "danger" | "warning" {
-  if (statusTone === "verified") {
-    return "success";
-  }
-  if (statusTone === "attention") {
-    return "danger";
-  }
-  return "warning";
-}
-
 export interface ChatThreadChromeProps {
   /** Primary thread label shown in the sticky header. */
   readonly title: string;
   /** Secondary status line such as presence or group member count. */
   readonly subtitle: string;
-  /** Text content displayed inside the security badge. */
-  readonly statusLabel: string;
-  /** Visual tone applied to the security badge. */
-  readonly statusTone: ChatThreadChromeStatusTone;
+  /** Compact text displayed inside the security indicator. Pass null to hide. */
+  readonly statusLabel: string | null;
+  /** Full accessible description for the security indicator. Pass null to hide. */
+  readonly statusAriaLabel: string | null;
+  /** Visual tone applied to the security indicator. Pass null to hide. */
+  readonly statusTone: ChatThreadChromeStatusTone | null;
+  /** Optional action opening the matching security details surface. */
+  readonly onStatusClick?: (() => void) | null;
   /** Source label used to derive the avatar initials. */
   readonly avatarLabel: string;
+  /** Optional custom avatar node — replaces the generated initials avatar when provided. */
+  readonly avatarSlot?: ReactNode;
+  /**
+   * When provided the avatar is wrapped in a button. Used to open the contact's
+   * profile sheet on direct threads.
+   */
+  readonly onAvatarClick?: (() => void) | null;
+  /**
+   * Blob URL of the peer's profile photo. When set the Avatar shows the photo
+   * instead of initials. Works alongside onAvatarClick (they're not exclusive).
+   */
+  readonly avatarImageUrl?: string | null;
   /** Accessible label for the mobile back button. */
   readonly backAriaLabel: string;
   /** Back handler used on mobile layouts. */
@@ -53,8 +60,13 @@ export function ChatThreadChrome({
   title,
   subtitle,
   statusLabel,
+  statusAriaLabel,
   statusTone,
+  onStatusClick,
   avatarLabel,
+  avatarSlot,
+  onAvatarClick,
+  avatarImageUrl,
   backAriaLabel,
   onBack,
   actions,
@@ -66,15 +78,14 @@ export function ChatThreadChrome({
         as="header"
         className={styles.headerSurface}
         padding="none"
-        radius="xl"
-        glass="strong"
+        radius="md"
       >
         <div className={styles.header}>
           <IconButton
             onClick={onBack}
             className={`${styles.iconBtn} ${styles.backBtn}`}
             size={40}
-            variant="glass"
+            variant="ghost"
             aria-label={backAriaLabel}
           >
             <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
@@ -82,30 +93,53 @@ export function ChatThreadChrome({
             </svg>
           </IconButton>
 
-          <Avatar
-            label={avatarLabel}
-            size={42}
-            fontSize="0.86rem"
-            ariaHidden
-          />
+          {avatarSlot ?? (
+            onAvatarClick ? (
+              <button
+                type="button"
+                className={styles.avatarBtn}
+                onClick={onAvatarClick}
+                aria-label={avatarLabel}
+              >
+                <Avatar
+                  label={avatarLabel}
+                  size={38}
+                  fontSize="0.82rem"
+                  ariaHidden
+                  imageUrl={avatarImageUrl ?? undefined}
+                />
+              </button>
+            ) : (
+              <Avatar
+                label={avatarLabel}
+                size={38}
+                fontSize="0.82rem"
+                ariaHidden
+                imageUrl={avatarImageUrl ?? undefined}
+              />
+            )
+          )}
 
           <div className={styles.info}>
             <span className={styles.title}>{title}</span>
             <span className={styles.subtitle}>{subtitle}</span>
-            <StatusBadge
-              className={styles.statusBadge}
-              tone={resolveStatusBadgeTone(statusTone)}
-              size="sm"
-              iconSize={10}
-            >
-              <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
-                <path d="M5 1L8 3V7C8 8.5 5 10 5 10C5 10 2 8.5 2 7V3L5 1Z" fill="currentColor" />
-              </svg>
-              {statusLabel}
-            </StatusBadge>
           </div>
 
-          <div className={styles.actions}>{actions}</div>
+          <div className={styles.actions}>
+            {statusLabel !== null && statusTone !== null && statusAriaLabel !== null && (
+              <>
+                <SecurityStatusIndicator
+                  className={styles.statusBadge}
+                  tone={statusTone}
+                  label={statusLabel}
+                  ariaLabel={statusAriaLabel}
+                  onClick={onStatusClick ?? undefined}
+                />
+                <span className={styles.actionsDivider} aria-hidden="true" />
+              </>
+            )}
+            {actions}
+          </div>
         </div>
       </SurfacePanel>
 

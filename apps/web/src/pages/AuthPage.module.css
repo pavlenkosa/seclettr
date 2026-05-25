@@ -1,26 +1,27 @@
+/* === shell === */
+
 .container {
   display: flex;
   align-items: center;
   justify-content: center;
   min-height: 100dvh;
   padding: clamp(1rem, 4vw, 2.5rem);
-  background:
-    radial-gradient(960px 520px at 12% -8%, rgb(30 64 175 / 0.12), transparent 56%),
-    radial-gradient(840px 520px at 100% 110%, rgb(8 47 73 / 0.08), transparent 54%),
-    linear-gradient(180deg, var(--bg-primary), color-mix(in srgb, var(--bg-primary) 92%, #050b14));
+  background: var(--bg-primary);
 }
 
 .card {
   width: 100%;
   max-width: 420px;
-  background: color-mix(in srgb, var(--panel-header-bg) 76%, var(--bg-secondary));
-  border: 1px solid var(--panel-border-soft);
-  border-radius: 24px;
-  padding: clamp(1.25rem, 3vw, 2rem);
   display: flex;
   flex-direction: column;
   gap: 1.125rem;
-  box-shadow: 0 12px 30px rgb(2 6 23 / 0.14);
+}
+
+.cardFooter {
+  display: flex;
+  flex-direction: column;
+  gap: 0.875rem;
+  margin-top: auto;
 }
 
 .cardTop {
@@ -75,6 +76,8 @@
   margin: -0.35rem 0 0;
 }
 
+/* === form === */
+
 .form {
   display: flex;
   flex-direction: column;
@@ -89,14 +92,10 @@
 
 .label {
   font-size: 0.75rem;
-  font-weight: 650;
+  font-weight: 600;
   letter-spacing: 0.04em;
   text-transform: uppercase;
   color: var(--text-secondary);
-}
-
-.input {
-  /* Inherits from global */
 }
 
 .passwordWrapper {
@@ -105,37 +104,24 @@
   align-items: center;
 }
 
-.passwordWrapper .input {
-  flex: 1;
+.passwordInputShell {
+  width: 100%;
+}
+
+.passwordInputShell :global(input) {
   padding-right: 2.75rem;
 }
 
 .passwordToggle {
   position: absolute;
   right: 0.625rem;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 32px;
-  height: 32px;
-  border-radius: 8px;
-  border: none;
-  background: transparent;
-  color: var(--text-secondary);
-  cursor: pointer;
-  transition: color var(--motion-duration-fast) var(--motion-ease-standard);
-}
-
-.passwordToggle:hover {
-  color: var(--text-primary);
-}
-
-.error {
-  background: var(--danger-soft-bg);
-  border: 1px solid var(--danger-soft-border);
-  border-radius: 14px;
-  color: var(--danger-contrast);
-  padding: 0.7rem 0.85rem;
+  --icon-button-size: 32px;
+  --icon-button-bg-base: transparent;
+  --icon-button-border-base: transparent;
+  --icon-button-bg-hover-base: color-mix(in srgb, var(--accent) 8%, transparent);
+  --icon-button-border-hover-base: transparent;
+  --icon-button-color-base: var(--text-secondary);
+  --icon-button-color-hover-base: var(--text-primary);
 }
 
 .errorText {
@@ -152,16 +138,10 @@
 }
 
 .submit {
-  min-height: 52px;
-  background: linear-gradient(180deg, var(--accent), var(--accent-hover));
-  color: white;
-  padding: 0.75rem 1.25rem;
-  font-weight: 650;
-  border-radius: 999px;
-  width: 100%;
   margin-top: 0.35rem;
-  border: 1px solid color-mix(in srgb, var(--accent) 64%, #dbeafe);
 }
+
+/* === footer === */
 
 .helpRow {
   display: flex;
@@ -181,10 +161,6 @@
   text-decoration: underline;
 }
 
-.submit:hover:not(:disabled) {
-  background: linear-gradient(180deg, var(--accent-hover), color-mix(in srgb, var(--accent-hover) 88%, #2563eb));
-}
-
 .toggle {
   text-align: center;
   font-size: 0.875rem;
@@ -200,34 +176,23 @@
   padding: 0;
   cursor: pointer;
   font-weight: 600;
+  appearance: none;
+  -webkit-appearance: none;
 }
 
 .link:hover {
   color: var(--accent-hover);
+  text-decoration: underline;
 }
 
-.e2eeBadge {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.375rem;
-  min-height: 34px;
-  padding: 0 0.8rem;
+.versionBadge {
   width: fit-content;
   margin: 0 auto;
-  border-radius: 999px;
-  background: color-mix(in srgb, var(--bg-secondary) 82%, var(--panel-header-bg));
-  border: 1px solid color-mix(in srgb, var(--panel-border-soft) 84%, transparent);
-  font-size: 0.75rem;
-  color: var(--text-secondary);
-  margin-top: auto;
 }
 
 @media (max-width: 640px) {
   .card {
     max-width: 100%;
-    border-radius: 20px;
-    padding: 1.1rem;
     gap: 1rem;
   }
 
@@ -253,3 +218,206 @@
     font-size: 1.05rem;
   }
 }
+
+/* ─── Native full-screen layout (no card wrapper) ───────────────────────── */
+
+.nativeContainer {
+  display: flex;
+  flex-direction: column;
+  min-height: 100dvh;
+  padding:
+    calc(env(safe-area-inset-top, 0px) + 2.5rem)
+    calc(env(safe-area-inset-right, 0px) + 1.5rem)
+    calc(env(safe-area-inset-bottom, 0px) + 1.5rem)
+    calc(env(safe-area-inset-left, 0px) + 1.5rem);
+  background: var(--bg-primary);
+}
+
+.nativeTop {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 2.5rem;
+}
+
+.nativeLogoImg {
+  border-radius: 18px;
+  display: block;
+}
+
+.nativeTitle {
+  font-size: 1.6rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  letter-spacing: -0.02em;
+  margin: 0.4rem 0 0;
+}
+
+.nativeSubtitle {
+  font-size: 0.88rem;
+  color: var(--text-secondary);
+  margin: 0;
+  text-align: center;
+}
+
+.nativeForm {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  flex: 1;
+}
+
+.nativeFieldGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+}
+
+.nativeLabel {
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+}
+
+.nativeInput {
+  width: 100%;
+  padding: 0.82rem 1rem;
+  border: 1.5px solid var(--border);
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--bg-secondary) 60%, transparent);
+  color: var(--text-primary);
+  font-size: 1rem;
+  outline: none;
+  transition: border-color var(--motion-duration-fast) ease;
+  box-sizing: border-box;
+}
+
+.nativeInput:focus {
+  border-color: var(--accent);
+}
+
+.nativeInput::placeholder {
+  color: var(--text-secondary);
+  opacity: 0.55;
+}
+
+.nativeInputError {
+  border-color: var(--danger);
+}
+
+.nativePasswordWrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.nativePasswordWrapper .nativeInput {
+  padding-right: 3rem;
+}
+
+.nativePasswordToggle {
+  position: absolute;
+  right: 0.75rem;
+  background: none;
+  border: none;
+  padding: 0.25rem;
+  cursor: pointer;
+  color: var(--text-secondary);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  transition: color 140ms ease;
+}
+
+.nativePasswordToggle:hover {
+  color: var(--text-primary);
+}
+
+.nativeError {
+  padding: 0.7rem 0.9rem;
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--danger) 12%, transparent);
+  color: var(--danger);
+  font-size: 0.85rem;
+  line-height: 1.45;
+  outline: none;
+}
+
+.nativeErrorDetail {
+  display: block;
+  margin-top: 0.25rem;
+  font-size: 0.75rem;
+  opacity: 0.75;
+}
+
+.nativeSubmit {
+  width: 100%;
+  padding: 0.9rem 1rem;
+  border: none;
+  border-radius: 14px;
+  background: var(--accent);
+  color: #fff;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  margin-top: 0.25rem;
+  transition: opacity var(--motion-duration-fast) ease;
+}
+
+.nativeSubmit:hover:not(:disabled) {
+  opacity: 0.88;
+}
+
+.nativeSubmit:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.nativeToggle {
+  text-align: center;
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+  margin: 0;
+}
+
+.nativeToggleLink {
+  background: none;
+  border: none;
+  color: var(--accent);
+  font-size: inherit;
+  padding: 0;
+  cursor: pointer;
+  font-weight: 600;
+  appearance: none;
+  -webkit-appearance: none;
+}
+
+.nativeToggleLink:hover {
+  text-decoration: underline;
+}
+
+.nativeRecoveryLink {
+  display: block;
+  text-align: center;
+  color: var(--text-secondary);
+  font-size: 0.82rem;
+  text-decoration: none;
+  margin-top: -0.25rem;
+}
+
+.nativeRecoveryLink:hover {
+  color: var(--accent);
+}
+
+.nativeFooter {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 2rem;
+  padding-top: 1rem;
+}
+

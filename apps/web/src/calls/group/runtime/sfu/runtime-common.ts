@@ -1,15 +1,29 @@
+/**
+ * runtime-common — shared SFU runtime utilities used by both consumer and producer runtimes.
+ *
+ * Owns:
+ *   - emitRemoteMediaUpdate — builds and emits a GroupCallRemoteMedia[] snapshot via callback
+ *   - upsertRemoteEntry — idempotently creates a RemoteParticipantMediaInternal entry
+ *   - toFrameKeyContext — converts a media key to a GroupCallFrameKeyContext (via cloneKeyContext)
+ *   - mergeRemoteFrameKeyContexts — maintains a bounded window (max 4) of key contexts
+ *     for a remote device, deduplicating by keyId+epoch; used for graceful key rotation
+ *   - snapshotMediaTrack — serializes a MediaStreamTrack to a plain debug record
+ *   - Re-exports: GroupCallRemoteMedia, RemoteParticipantMediaInternal, RemoteVideoSlot
+ *
+ * Does not own consumer or producer lifecycle — this file contains only stateless helpers.
+ */
 import { cloneKeyContext, type GroupCallFrameKeyContext } from "@/calls/shared/crypto/frame-crypto-core";
 import type {
   LocalGroupCallMediaKey,
   ReceivedGroupCallMediaKey,
-} from "@/calls/group/runtime/group-call/media-key";
+} from "@/calls/group/runtime/media-key/media-key";
 import {
   buildRemoteMediaSnapshot,
   type GroupCallRemoteMedia,
   type RemoteParticipantMediaInternal,
   type RemoteVideoSlot,
-} from "@/calls/group/runtime/group-call/remote-media";
-export type { GroupCallRemoteMedia, RemoteParticipantMediaInternal, RemoteVideoSlot } from "@/calls/group/runtime/group-call/remote-media";
+} from "@/calls/group/runtime/media-key/remote-media";
+export type { GroupCallRemoteMedia, RemoteParticipantMediaInternal, RemoteVideoSlot } from "@/calls/group/runtime/media-key/remote-media";
 
 export function emitRemoteMediaUpdate(
   remoteMediaByUserId: Map<string, RemoteParticipantMediaInternal>,
@@ -59,7 +73,7 @@ export function mergeRemoteFrameKeyContexts(
     ...(currentKeyContexts ?? [])
       .filter((existing) => !(existing.keyId === next.keyId && existing.epoch === next.epoch))
       .map(cloneKeyContext)
-      .slice(0, 1),
+      .slice(0, 3),
   ];
 }
 

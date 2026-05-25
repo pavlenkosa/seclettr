@@ -1,0 +1,550 @@
+/* ── Fullscreen video recording overlay ─────────────────────────────────── */
+
+/* Feature-local: fullscreen recording mode backdrop and copy layout. */
+
+.videoRecordingOverlay {
+  position: fixed;
+  inset: 0;
+  /* Above chat chrome/resizer artifacts, below global modals. */
+  z-index: var(--z-450);
+  pointer-events: none;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  padding: 1.4rem 1rem calc(8.6rem + var(--safe-bottom));
+  background: color-mix(in srgb, var(--bg-primary) 82%, var(--surface-shell-strong));
+  /* A solid dark background keeps recording mode predictable over messages. */
+}
+
+.videoRecordingOverlayChrome {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.3rem;
+  text-align: center;
+}
+
+.videoRecordingOverlayEyebrow {
+  font-size: 0.72rem;
+  font-weight: 700;
+  line-height: 1.1;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: color-mix(in srgb, var(--text-secondary) 88%, white 12%);
+}
+
+.videoRecordingOverlayTitle {
+  max-width: min(78vw, 30rem);
+  font-size: clamp(1rem, 1.4vw + 0.78rem, 1.28rem);
+  font-weight: 700;
+  line-height: 1.16;
+  color: var(--text-primary);
+}
+
+.videoRecordingOverlayCircle {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.videoRecordingOverlayGlow {
+  position: absolute;
+  inset: -13%;
+  border-radius: 50%;
+  display: none;
+}
+
+/* Compound rules within this module — both classes live here, so no cross-module issue. */
+.videoRecordingOverlayCircle .recordingVideoShell {
+  width: min(72vw, 320px);
+  height: min(72vw, 320px);
+  border-width: 1px;
+  border-color: color-mix(in srgb, var(--text-primary) 16%, transparent);
+}
+
+.videoRecordingOverlayCircle .recordingVideoTimeBadge {
+  bottom: 12px;
+  min-width: 56px;
+  padding: 0.18rem 0.56rem;
+  font-size: 0.78rem;
+}
+
+.videoRecordingOverlayFooter {
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.38rem;
+  text-align: center;
+  font-size: 0.82rem;
+  line-height: 1.2;
+  color: var(--text-secondary);
+}
+
+.videoRecordingOverlayFooterStrong {
+  font-variant-numeric: tabular-nums;
+  color: var(--text-primary);
+}
+
+.videoRecordingOverlayControls {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: calc(1.1rem + var(--safe-bottom));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.72rem;
+  pointer-events: auto;
+}
+
+/* Reusable: lift later. Overlay action shells mirror the local composer control system. */
+.videoRecordingOverlayCancelBtn,
+.videoRecordingOverlayStopBtn {
+  width: 54px;
+  height: 54px;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 0;
+  cursor: pointer;
+  border: 1px solid transparent;
+  transition:
+    background-color var(--motion-duration-fast) var(--motion-ease-standard),
+    border-color var(--motion-duration-fast) var(--motion-ease-standard),
+    color var(--motion-duration-fast) var(--motion-ease-standard);
+}
+
+.videoRecordingOverlayCancelBtn {
+  color: var(--icon-btn-color);
+  border-color: var(--border-subtle);
+  background: color-mix(in srgb, var(--surface-shell-strong) 94%, var(--bg-primary));
+}
+
+/* Feature-local exception: there is no shared on-danger token for icon contrast yet. */
+.videoRecordingOverlayStopBtn {
+  color: #fff;
+  border-color: color-mix(in srgb, var(--danger) 44%, transparent);
+  background: color-mix(in srgb, var(--danger) 88%, black 12%);
+}
+
+.videoRecordingOverlayCancelBtn:hover {
+  background: var(--icon-btn-hover-bg);
+  border-color: color-mix(in srgb, var(--accent) 24%, transparent);
+}
+
+.videoRecordingOverlayStopBtn:hover {
+  background: color-mix(in srgb, var(--danger) 82%, black 18%);
+  border-color: color-mix(in srgb, var(--danger) 58%, transparent);
+}
+
+/* ── Inline recorder surface ────────────────────────────────────────────── */
+
+/* Feature-local: recorder stage layout, live waveform, and media preview affordances. */
+.recordingSurface {
+  flex: 1;
+  min-width: 0;
+  max-inline-size: 100%;
+  display: flex;
+  align-items: center;
+  gap: 0.72rem;
+}
+
+.recordingSurfaceVoice {
+  min-height: 52px;
+}
+
+.recordingSurfaceVideo {
+  min-height: 52px;
+}
+
+.recordingVoiceStrip {
+  flex: 1;
+  min-width: 0;
+  max-inline-size: 100%;
+  display: flex;
+  align-items: center;
+  gap: 0.72rem;
+  overflow: hidden;
+}
+
+.recordingVoiceShell {
+  position: relative;
+  width: 44px;
+  height: 44px;
+  border-radius: 999px;
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid color-mix(in srgb, var(--danger) 28%, transparent);
+  background: color-mix(in srgb, var(--composer-inner-bg) 94%, var(--surface-float));
+}
+
+.recordingVoicePulse {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--danger);
+  animation: recordingPulse 1.5s ease-in-out infinite;
+}
+
+.recordingVideoShell {
+  position: relative;
+  width: 88px;
+  height: 88px;
+  border-radius: 50%;
+  overflow: hidden;
+  flex-shrink: 0;
+  background: color-mix(in srgb, var(--surface-shell-strong) 88%, var(--bg-secondary));
+  border: 1px solid color-mix(in srgb, var(--message-ui-accent) 36%, transparent);
+}
+
+.recordingVoiceTrack,
+.recordingVideoStrip {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 0.28rem;
+}
+
+.recordingVoiceHeader {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.36rem;
+  overflow: hidden;
+  color: var(--text-secondary);
+  font-size: 0.74rem;
+  line-height: 1.2;
+}
+
+.recordingVoiceTitle {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: var(--text-primary);
+  font-size: 0.9rem;
+  font-weight: 700;
+  line-height: 1.12;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.recordingVoiceHint {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.recordingVoiceWaveform {
+  display: flex;
+  align-items: flex-end;
+  gap: 2px;
+  height: 18px;
+  width: 100%;
+  overflow: hidden;
+}
+
+.recordingVoiceWaveformBar {
+  --recording-wave-level: 0.5;
+  flex: 1 1 0;
+  min-width: 3px;
+  height: calc(100% * var(--recording-wave-level));
+  min-height: 3px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--danger) 72%, white 10%);
+}
+
+.recordingVideoPreview {
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: cover;
+  background: color-mix(in srgb, var(--message-ui-accent) 12%, var(--bg-secondary));
+}
+
+.recordingVideoFrame {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  border: 1px solid color-mix(in srgb, var(--text-primary) 18%, transparent);
+  pointer-events: none;
+}
+
+.recordingVideoTimeBadge {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 8px;
+  z-index: var(--z-2);
+  width: fit-content;
+  min-width: 44px;
+  margin-inline: auto;
+  padding: 0.14rem 0.46rem;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--bg-primary) 74%, transparent);
+  color: var(--text-primary);
+  font-size: 0.68rem;
+  line-height: 1.1;
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+}
+
+.recordingModeBadge {
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--icon-btn-color);
+  background: color-mix(in srgb, var(--composer-inner-bg) 92%, var(--surface-float));
+  border: 1px solid color-mix(in srgb, var(--message-ui-accent) 28%, transparent);
+}
+
+.recordingStageCopy {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.22rem;
+}
+
+.recordingStageEyebrow {
+  font-size: 0.66rem;
+  font-weight: 700;
+  line-height: 1.1;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+}
+
+.recordingStageTitle {
+  font-size: 0.9rem;
+  font-weight: 700;
+  line-height: 1.16;
+  color: var(--text-primary);
+}
+
+.recordingStageMeta {
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.34rem;
+  font-size: 0.74rem;
+  line-height: 1.2;
+  color: var(--text-secondary);
+}
+
+.recordingStageMetaStrong {
+  font-variant-numeric: tabular-nums;
+  color: var(--text-primary);
+}
+
+.recordingStageSeparator {
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--text-secondary) 68%, transparent);
+}
+
+.recordingDot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--danger);
+}
+
+/* ── Theme overrides ────────────────────────────────────────────────────── */
+
+/* Feature-local: light theme overlay follows app background instead of chat content. */
+:global(:root[data-theme="light"]) .videoRecordingOverlay {
+  background: var(--bg-primary);
+}
+
+:global(:root[data-theme="light"]) .videoRecordingOverlayEyebrow {
+  color: var(--text-secondary);
+}
+
+:global(:root[data-theme="light"]) .videoRecordingOverlayTitle {
+  color: var(--text-primary);
+}
+
+:global(:root[data-theme="light"]) .videoRecordingOverlayFooter {
+  color: var(--text-secondary);
+}
+
+:global(:root[data-theme="light"]) .videoRecordingOverlayFooterStrong {
+  color: var(--text-primary);
+}
+
+/* ── Responsive adjustments ─────────────────────────────────────────────── */
+
+@media (max-width: 760px) {
+  .videoRecordingOverlay {
+    gap: 0.74rem;
+    padding: 1rem 0.8rem calc(7.8rem + var(--safe-bottom));
+  }
+
+  .videoRecordingOverlayEyebrow {
+    font-size: 0.62rem;
+  }
+
+  .videoRecordingOverlayTitle {
+    max-width: min(82vw, 20rem);
+    font-size: clamp(0.9rem, 1.2vw + 0.72rem, 1.08rem);
+  }
+
+  .videoRecordingOverlayCircle .recordingVideoShell {
+    width: min(72vw, 252px);
+    height: min(72vw, 252px);
+  }
+
+  .videoRecordingOverlayCircle .recordingVideoTimeBadge {
+    bottom: 10px;
+    min-width: 50px;
+    padding: 0.16rem 0.48rem;
+    font-size: 0.7rem;
+  }
+
+  .videoRecordingOverlayFooter {
+    font-size: 0.74rem;
+  }
+
+  .videoRecordingOverlayControls {
+    bottom: calc(0.9rem + var(--safe-bottom));
+    gap: 0.62rem;
+  }
+
+  .videoRecordingOverlayCancelBtn,
+  .videoRecordingOverlayStopBtn {
+    width: 50px;
+    height: 50px;
+  }
+
+  .recordingSurface {
+    gap: 0.56rem;
+  }
+
+  .recordingSurfaceVoice {
+    min-height: 48px;
+  }
+
+  .recordingSurfaceVideo {
+    min-height: 48px;
+  }
+
+  .recordingVoiceStrip {
+    gap: 0.56rem;
+  }
+
+  .recordingVoiceShell {
+    width: 40px;
+    height: 40px;
+  }
+
+  .recordingVoicePulse {
+    width: 8px;
+    height: 8px;
+  }
+
+  .recordingVideoShell {
+    width: 72px;
+    height: 72px;
+  }
+
+  .recordingVideoTimeBadge {
+    bottom: 6px;
+    min-width: 40px;
+    padding: 0.12rem 0.4rem;
+    font-size: 0.62rem;
+  }
+
+  .recordingModeBadge {
+    width: 44px;
+    height: 44px;
+  }
+
+  .recordingVoiceTitle {
+    font-size: 0.82rem;
+  }
+
+  .recordingVoiceHeader,
+  .recordingStageMeta {
+    gap: 0.28rem;
+    font-size: 0.68rem;
+  }
+
+  .recordingVoiceWaveform {
+    height: 14px;
+  }
+
+  .recordingStageEyebrow {
+    font-size: 0.58rem;
+  }
+
+  .recordingStageTitle {
+    font-size: 0.82rem;
+  }
+}
+
+@media (max-width: 640px) {
+  .recordingSurface {
+    gap: 0.42rem;
+  }
+
+  .recordingVoiceStrip {
+    gap: 0.42rem;
+  }
+
+  .recordingVoiceShell {
+    width: 38px;
+    height: 38px;
+  }
+
+  .recordingVoiceHeader {
+    gap: 0.24rem;
+  }
+
+  /* Compound rule within this module — both classes defined here. */
+  .recordingVoiceHeader .recordingStageSeparator,
+  .recordingVoiceHint {
+    display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .recordingSurface,
+  .videoRecordingOverlay,
+  .videoRecordingOverlayChrome,
+  .videoRecordingOverlayCircle,
+  .videoRecordingOverlayFooter {
+    transition: none !important;
+    animation: none !important;
+  }
+
+  .recordingVoicePulse {
+    animation: none !important;
+  }
+}
+
+/* Feature-local: pulse animation belongs to live recording feedback only. */
+@keyframes recordingPulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+
+  50% {
+    opacity: 0.82;
+  }
+}

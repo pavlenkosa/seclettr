@@ -1,0 +1,201 @@
+/*
+ * GroupCallDetailsDrawer — group-call details surface and member/security
+ * cards.
+ *
+ * Owns:
+ * - floating details drawer shell
+ * - room/media-key/member/host-action card styling
+ * - drawer-specific mobile/light/reduced-motion tuning
+ *
+ * Does not own shared section scaffolding or side-panel parent overrides that
+ * still live in the shared group-call panel stylesheet.
+ */
+
+.detailsDrawer {
+  --surface-panel-shadow: none;
+  --surface-panel-bg-start: color-mix(in srgb, var(--surface-shell) 98%, var(--bg-primary));
+  --surface-panel-bg-end: color-mix(in srgb, var(--surface-shell-strong) 96%, var(--bg-primary));
+  --surface-panel-border: color-mix(in srgb, var(--panel-border-soft) 86%, transparent);
+  position: absolute;
+  top: calc(env(safe-area-inset-top, 0px) + 6.2rem);
+  right: max(
+    clamp(0.85rem, 1.6vw, 1.35rem),
+    calc((100% - 1560px) / 2 + clamp(0.85rem, 1.6vw, 1.35rem))
+  );
+  bottom: calc(env(safe-area-inset-bottom, 0px) + 5.8rem);
+  z-index: var(--z-8);
+  width: clamp(360px, 26vw, 430px);
+  max-height: none;
+  border-radius: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 0.78rem;
+  overflow: auto;
+  overscroll-behavior: contain;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.16s ease;
+}
+
+.detailsDrawerOpen {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.detailsCard {
+  --surface-panel-shadow: none;
+  --surface-panel-bg-start: color-mix(in srgb, var(--surface-shell) 94%, transparent);
+  --surface-panel-bg-end: color-mix(in srgb, var(--surface-shell-strong) 90%, transparent);
+  display: flex;
+  flex-direction: column;
+  gap: 0.28rem;
+}
+
+.hostActionCard {
+  --surface-panel-shadow: none;
+  --surface-panel-bg-start: color-mix(in srgb, var(--danger) 8%, var(--surface-shell));
+  --surface-panel-bg-end: color-mix(in srgb, var(--surface-shell-strong) 92%, transparent);
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.72rem;
+}
+
+.hostActionHint {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 0.78rem;
+  line-height: 1.45;
+}
+
+.audioOutputSelector {
+  width: 100%;
+}
+
+.roomIdCode {
+  color: var(--text-primary);
+  font-family: "SF Mono", "Fira Mono", "Consolas", monospace;
+  font-size: 1rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+
+.roomIdHint {
+  color: var(--text-secondary);
+  font-size: 0.76rem;
+  line-height: 1.45;
+}
+
+.metaPrimary {
+  color: var(--text-primary);
+  font-size: 0.84rem;
+  font-weight: 700;
+}
+
+.metaSecondary {
+  color: var(--text-secondary);
+  font-size: 0.77rem;
+  line-height: 1.45;
+}
+
+.metaNotice {
+  margin-top: 0.12rem;
+}
+
+.memberList {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.5rem;
+}
+
+.memberRow {
+  --surface-panel-shadow: none;
+  --surface-panel-bg-start: color-mix(in srgb, var(--surface-shell) 88%, transparent);
+  --surface-panel-bg-end: color-mix(in srgb, var(--surface-shell-strong) 84%, transparent);
+}
+
+.memberRowActive {
+  --surface-panel-border: color-mix(in srgb, var(--success) 28%, var(--panel-border-soft));
+  --surface-panel-bg-start: color-mix(in srgb, var(--success) 8%, var(--surface-shell));
+  --surface-panel-bg-end: color-mix(in srgb, var(--success) 5%, var(--surface-shell-strong));
+}
+
+.memberRowContent {
+  min-height: 48px;
+}
+
+.memberAvatar {
+  --avatar-size: 32px;
+  --avatar-font-size: 0.72rem;
+  flex-shrink: 0;
+}
+
+.memberName {
+  min-width: 0;
+  color: var(--text-primary);
+  font-size: 0.82rem;
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.memberPresenceDot {
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  margin-left: auto;
+  flex-shrink: 0;
+  background: color-mix(in srgb, var(--panel-border-soft) 88%, transparent);
+}
+
+.memberPresenceDotActive {
+  background: var(--success);
+}
+
+.contractHint {
+  --surface-panel-shadow: none;
+  --surface-panel-bg-start: color-mix(in srgb, var(--surface-shell) 86%, transparent);
+  --surface-panel-bg-end: color-mix(in srgb, var(--surface-shell-strong) 82%, transparent);
+}
+
+.contractHintText {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 0.8rem;
+  line-height: 1.5;
+}
+
+.errorNotice {
+  margin-top: -0.1rem;
+}
+
+@media (max-width: 980px) {
+  .memberList {
+    grid-template-columns: 1fr;
+  }
+
+  .detailsDrawer {
+    top: calc(env(safe-area-inset-top, 0px) + 6.8rem);
+    right: max(0.7rem, env(safe-area-inset-right, 0px));
+    bottom: calc(env(safe-area-inset-bottom, 0px) + 5.9rem);
+    left: max(0.7rem, env(safe-area-inset-left, 0px));
+    width: auto;
+    max-height: none;
+    padding: 0.72rem;
+    border-radius: 12px;
+  }
+}
+
+:global(:root[data-theme="light"]) .detailsDrawer {
+  --surface-panel-bg-start: color-mix(in srgb, var(--surface-shell-strong) 98%, white);
+  --surface-panel-bg-end: color-mix(in srgb, var(--surface-shell) 96%, white);
+  --surface-panel-border: var(--border-subtle);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .detailsDrawer {
+    animation: none !important;
+    transition: none !important;
+  }
+}

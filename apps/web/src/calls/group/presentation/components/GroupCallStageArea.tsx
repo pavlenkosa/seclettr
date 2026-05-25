@@ -55,7 +55,6 @@ function GroupCallStageActions({
           onClick={onResetStageFocus}
           className={styles.stageActionIconBtn}
           size={34}
-          variant="glass"
           aria-label={resetStageFocusLabel}
           title={resetStageFocusLabel}
         >
@@ -67,7 +66,6 @@ function GroupCallStageActions({
           onClick={onStopWatchingStageTile}
           className={styles.stageActionIconBtn}
           size={34}
-          variant="glass"
           aria-label={stopWatchingStageLabel}
           title={stopWatchingStageLabel}
         >
@@ -79,7 +77,6 @@ function GroupCallStageActions({
           onClick={() => { void onToggleStagePresentation(); }}
           className={styles.stageActionIconBtn}
           size={34}
-          variant="glass"
           aria-label={fullscreenToggleLabel}
           title={fullscreenToggleLabel}
         >
@@ -115,6 +112,8 @@ export function GroupCallStageArea({
         label={stageTile.label}
         stream={stageTile.stream}
         audioStream={stageTile.audioStream}
+        activityStream={stageTile.activityStream}
+        hasAudio={stageTile.hasAudio}
         fallbackInitials={stageTile.fallbackInitials}
         badge={stageTile.badge}
         muted={stageTile.isLocal}

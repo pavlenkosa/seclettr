@@ -1,3 +1,18 @@
+/**
+ * http-client — typed HTTP client for the SFU media server.
+ *
+ * Owns:
+ *   - SfuHttpClient interface: all SFU REST endpoints used by the call runtime
+ *   - createSfuHttpClient factory: implements the interface using fetch with
+ *     bearer-token auth, automatic 401 token refresh, and 10-second timeouts
+ *   - Protocol version injection (SFU_PROTOCOL_VERSION) and versioned payload
+ *     validation via safeParseVersionedWire
+ *   - toTransportOptions — maps SfuCreateTransportResponse to MediasoupTypes.TransportOptions
+ *   - Token resolution: reads from auth store or refreshes via session.ts
+ *
+ * Does not own WebSocket signaling, transport creation, or consumer/producer lifecycle.
+ * Authorization token refresh is delegated to refreshSessionAccessToken in session.ts.
+ */
 import { getAccessToken } from "@/lib/api";
 import { refreshSessionAccessToken } from "@/lib/session";
 import type { types as MediasoupTypes } from "mediasoup-client";
@@ -29,6 +44,8 @@ interface SfuRequestOptions extends RequestInit {
 
 interface CreateSfuHttpClientOptions {
   sfuBaseUrl: string;
+  /** If provided, use this token directly instead of reading from the auth store. */
+  staticToken?: string;
 }
 
 type RawSfuHeaders = SfuRequestOptions["headers"];
@@ -101,7 +118,7 @@ async function readSfuErrorMessage(response: Response): Promise<string> {
     if (text.trim()) {
       message = text;
     }
-  } catch {}
+  } catch { /* ignore */ }
   return message;
 }
 
@@ -119,6 +136,7 @@ export function createSfuHttpClient(
   options: CreateSfuHttpClientOptions
 ): SfuHttpClient {
   const ensureSfuAccessToken = async (): Promise<string | null> => {
+    if (options.staticToken) return options.staticToken;
     const token = getAccessToken();
     if (token) return token;
     // Shared refresh — deduplication across HTTP, WS, and SFU is in session.ts.

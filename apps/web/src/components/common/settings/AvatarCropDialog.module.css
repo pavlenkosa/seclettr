@@ -1,0 +1,133 @@
+.overlay {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-200);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  padding: 1.5rem;
+}
+
+.dialog {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.1rem;
+  background: var(--surface-shell, var(--bg-secondary));
+  border-radius: 20px;
+  padding: 1.75rem 1.5rem 1.5rem;
+  width: min(360px, 100%);
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.45);
+}
+
+.title {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin: 0;
+  text-align: center;
+}
+
+.hint {
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+  margin: 0;
+  text-align: center;
+  line-height: 1.4;
+}
+
+/* Crop viewport — fixed 300×300 square */
+.viewport {
+  position: relative;
+  width: 300px;
+  height: 300px;
+  border-radius: 50%;
+  overflow: hidden;
+  flex-shrink: 0;
+  border: 2px solid color-mix(in srgb, var(--accent) 50%, transparent);
+  box-shadow: 0 0 0 1000px rgba(0, 0, 0, 0.55);
+}
+
+.canvas {
+  display: block;
+  width: 300px;
+  height: 300px;
+  user-select: none;
+  -webkit-user-drag: none;
+}
+
+/* Circle mask covers corners outside the circle — handled by border-radius on .viewport.
+   We add a subtle ring on top for clarity. */
+.circleMask {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--accent) 55%, white 20%);
+  pointer-events: none;
+  z-index: var(--z-1);
+}
+
+.actions {
+  display: flex;
+  gap: 0.6rem;
+  width: 100%;
+  justify-content: flex-end;
+}
+
+.cancelBtn {
+  font-size: 0.86rem;
+  font-weight: 600;
+  padding: 0.5rem 1.1rem;
+  border-radius: 999px;
+  border: 1px solid color-mix(in srgb, var(--panel-border) 70%, transparent);
+  background: transparent;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition:
+    background-color var(--motion-duration-fast) var(--motion-ease-standard),
+    border-color var(--motion-duration-fast) var(--motion-ease-standard);
+}
+
+.cancelBtn:hover {
+  background: color-mix(in srgb, var(--panel-border) 30%, transparent);
+}
+
+.confirmBtn {
+  font-size: 0.86rem;
+  font-weight: 600;
+  padding: 0.5rem 1.1rem;
+  border-radius: 999px;
+  border: none;
+  background: var(--accent);
+  color: #fff;
+  cursor: pointer;
+  transition: opacity var(--motion-duration-fast) var(--motion-ease-standard);
+}
+
+.confirmBtn:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+.confirmBtn:hover:not(:disabled) {
+  opacity: 0.88;
+}
+
+@media (max-width: 400px) {
+  .dialog {
+    padding: 1.25rem 1rem 1.1rem;
+  }
+
+  .viewport {
+    width: 260px;
+    height: 260px;
+  }
+
+  .canvas {
+    width: 260px;
+    height: 260px;
+  }
+}

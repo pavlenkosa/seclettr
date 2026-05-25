@@ -1,22 +1,12 @@
-import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { createPortal } from "react-dom";
+import { useCallback, useRef } from "react";
 import { useIsMobileViewport } from "@/lib/hooks";
 import { useI18n } from "@/i18n";
-import { GroupCallControls } from "@/calls/group/presentation/components/GroupCallControls";
-import { GroupCallDetailsDrawer } from "@/calls/group/presentation/components/GroupCallDetailsDrawer";
-import { GroupCallDock } from "@/calls/group/presentation/components/GroupCallDock";
-import { GroupCallHeader } from "@/calls/group/presentation/components/GroupCallHeader";
-import { GroupCallMediaSection } from "@/calls/group/presentation/components/GroupCallMediaSection";
-import { GroupCallRemoteAudioTargets } from "@/calls/group/presentation/components/GroupCallRemoteAudioTargets";
-import type { UseGroupCallDevDebugOptions } from "@/calls/group/runtime/useGroupCallDevDebug";
-import type { GroupCallRemoteMedia } from "@/calls/group/runtime/sfu";
 import { useGroupCallPanelDock } from "@/calls/group/presentation/useGroupCallPanelDock";
 import { useGroupCallPanelPresentation } from "@/calls/group/presentation/useGroupCallPanelPresentation";
 import {
   useGroupCallPanelUiState,
   useGroupCallPanelUiStateSync,
 } from "@/calls/group/presentation/useGroupCallPanelUiState";
-import { CallAudioOutputProvider } from "@/calls/shared/media/audio-output/CallAudioOutputProvider";
 import { useCallInputDevices } from "@/calls/shared/media/input-devices/useCallInputDevices";
 import {
   useGroupCallPanelRuntime,
@@ -28,16 +18,14 @@ import { CallDurationText } from "@/calls/shared/presentation/CallDurationText";
 import { resolveGroupCallDockInlineStyle } from "@/calls/group/presentation/display";
 import { resolveGroupCallPanelSurface } from "@/calls/group/presentation/group-call-panel-surface";
 import type { GroupCallPanelSession } from "@/calls/group/model/entry";
+import { GroupCallPanelDockBranch } from "@/calls/group/presentation/GroupCallPanelDockBranch";
+import { GroupCallPanelDevDebug } from "@/calls/group/presentation/GroupCallPanelDevDebug";
+import { GroupCallPanelShellView } from "@/calls/group/presentation/GroupCallPanelShellView";
+import { buildGroupCallPanelViewProps } from "@/calls/group/presentation/buildGroupCallPanelViewProps";
+import { useGroupCallDetailsDismiss } from "@/calls/group/presentation/useGroupCallDetailsDismiss";
+import { useGroupCallPanelDevMocks } from "@/calls/group/presentation/useGroupCallPanelDevMocks";
 
 import styles from "./GroupCallPanel.module.css";
-
-const GroupCallDevDebugBridge = import.meta.env.DEV
-  ? lazy(() =>
-      import("@/calls/group/runtime/GroupCallDevDebugBridge").then(({ GroupCallDevDebugBridge: Component }) => ({
-        default: Component,
-      }))
-    )
-  : null;
 
 interface Props {
   readonly session: GroupCallPanelSession | null;
@@ -95,51 +83,7 @@ export function GroupCallPanel({ session, onClose }: Props) {
     selectedCameraId,
   } = useCallInputDevices(runtime.localStream);
 
-  // ─── Dev-only: mock remote participants for layout testing ──────────────────
-  const [mockRemoteMedia, setMockRemoteMedia] = useState<GroupCallRemoteMedia[]>([]);
-
-  useEffect(() => {
-    if (!import.meta.env.DEV) return;
-
-    type MockWindow = Window & {
-      __scInjectMockParticipants?: (count: number) => void;
-      __scClearMockParticipants?: () => void;
-    };
-    const w = globalThis as unknown as MockWindow;
-
-    w.__scInjectMockParticipants = (count: number) => {
-      const participants: GroupCallRemoteMedia[] = [];
-      for (let i = 0; i < count; i++) {
-        // Alternate: even → audio-only tile, odd → camera tile (no real stream)
-        const hasVideo = i % 3 !== 0;
-        participants.push({
-          mediaId: `mock-${i}:${hasVideo ? "cam" : "audio"}`,
-          userId: `mock-user-${i}`,
-          deviceId: hasVideo ? `mock-device-${i}` : null,
-          hasAudio: true,
-          hasVideo,
-          audioStream: null,
-          videoStream: null,
-          videoSource: hasVideo ? "camera" : null,
-        });
-      }
-      setMockRemoteMedia(participants);
-    };
-
-    w.__scClearMockParticipants = () => setMockRemoteMedia([]);
-
-    return () => {
-      delete w.__scInjectMockParticipants;
-      delete w.__scClearMockParticipants;
-    };
-  }, []);
-
-  // Merge real remote media with mocks — mocks appear after real participants.
-  const combinedRemoteMedia = useMemo(
-    () => (mockRemoteMedia.length > 0 ? [...runtime.remoteMedia, ...mockRemoteMedia] : runtime.remoteMedia),
-    [runtime.remoteMedia, mockRemoteMedia],
-  );
-  // ────────────────────────────────────────────────────────────────────────────
+  const combinedRemoteMedia = useGroupCallPanelDevMocks(runtime.remoteMedia);
 
   const surface = resolveGroupCallPanelSurface(isMinimized);
   const { isStageFullscreen, handleToggleStageFullscreen } = useGroupCallStageFullscreen({
@@ -189,21 +133,7 @@ export function GroupCallPanel({ session, onClose }: Props) {
     setIsStageViewerOpen,
   });
 
-  // Close the details drawer when clicking outside of it.
-  useEffect(() => {
-    if (!isDetailsOpen) return;
-
-    function handleMouseDown(e: MouseEvent) {
-      const target = e.target as Element;
-      const drawer = document.getElementById("group-call-details");
-      if (drawer?.contains(target)) return;
-      if (target.closest("[data-call-details-toggle]")) return;
-      setIsDetailsOpen(false);
-    }
-
-    document.addEventListener("mousedown", handleMouseDown);
-    return () => document.removeEventListener("mousedown", handleMouseDown);
-  }, [isDetailsOpen, setIsDetailsOpen]);
+  useGroupCallDetailsDismiss(isDetailsOpen, setIsDetailsOpen);
 
   const handleToggleStagePresentation = useCallback(() => {
     if (isCompactStagePreview) {
@@ -219,37 +149,16 @@ export function GroupCallPanel({ session, onClose }: Props) {
     : t("group.call.stage.enterFullscreen");
   const stageExpandLabel = isCompactStagePreview ? compactStageLabel : presentation.fullscreenToggleLabel;
   const canToggleStagePresentation = isCompactStagePreview || presentation.canToggleStageFullscreen;
+  const shouldRenderInlineDetails = false;
+  const bodyClassName = presentation.bodyClassName;
 
-  const devDebugOptions: UseGroupCallDevDebugOptions = {
-    session,
-    status: runtime.status,
-    callId: runtime.callId,
-    accessGranted: runtime.accessGranted,
-    isVideoSwitching: runtime.isVideoSwitching,
-    isScreenSwitching: runtime.isScreenSwitching,
-    callHostUserId: runtime.callHostUserId,
-    userId: runtime.userId,
-    deviceId: runtime.deviceId,
-    localStreamRef: runtime.localStreamRef,
-    localScreenStreamRef: runtime.localScreenStreamRef,
-    remoteMedia: combinedRemoteMedia,
-    activeParticipantUserIds: runtime.activeParticipantUserIds,
-    activeParticipantDeviceIdsByUserId: runtime.activeParticipantDeviceIdsByUserId,
-    remoteParticipantMediaModes: runtime.remoteParticipantMediaModes,
-    localRequestedMediaEncryptionMode: runtime.localRequestedMediaEncryptionMode,
-    localAdvertisedMediaEncryptionMode: runtime.localAdvertisedMediaEncryptionMode,
-    effectiveMediaEncryptionMode: runtime.effectiveMediaEncryptionMode,
-    localMediaKey: runtime.localMediaKey,
-    sharedMediaKeyDeviceCount: runtime.sharedMediaKeyDeviceCount,
-    receivedMediaKeyCount: runtime.receivedMediaKeyCount,
-    expectedRemoteDeviceIds: runtime.expectedRemoteDeviceIds,
-    sfuClientRef: runtime.sfuClientRef,
-  };
-  const devDebugBridge = GroupCallDevDebugBridge ? (
-    <Suspense fallback={null}>
-      <GroupCallDevDebugBridge {...devDebugOptions} />
-    </Suspense>
-  ) : null;
+  const devDebugBridge = (
+    <GroupCallPanelDevDebug
+      session={session}
+      runtime={runtime}
+      remoteMedia={combinedRemoteMedia}
+    />
+  );
 
   if (!session) return devDebugBridge;
 
@@ -269,151 +178,115 @@ export function GroupCallPanel({ session, onClose }: Props) {
     : presentation.statusLabel;
 
   if (surface === "dock") {
-    const dockContent = (
-      <CallAudioOutputProvider>
-        <GroupCallRemoteAudioTargets remoteMedia={combinedRemoteMedia} />
-        <GroupCallDock
-          groupName={session.groupName}
-          groupInitials={presentation.groupInitials}
-          isDragging={isDraggingMinimizedDock}
-          dockRef={minimizedDockRef}
-          inlineStyle={resolvedDockInlineStyle}
-          dockMetaLabel={dockMetaLabel}
-          leaveActionLabel={presentation.leaveActionLabel}
-          onRestore={handleRestore}
-          onLeave={runtime.handleLeave}
-          onDragStart={startMinimizedDockDrag}
-          onDragMove={moveMinimizedDock}
-          onDragEnd={stopMinimizedDockDrag}
-        />
-      </CallAudioOutputProvider>
-    );
     return (
       <>
         {devDebugBridge}
-        {createPortal(dockContent, document.body)}
+        <GroupCallPanelDockBranch
+          remoteMedia={combinedRemoteMedia}
+          dockProps={{
+            groupName: session.groupName,
+            groupInitials: presentation.groupInitials,
+            isDragging: isDraggingMinimizedDock,
+            dockRef: minimizedDockRef,
+            inlineStyle: resolvedDockInlineStyle,
+            dockMetaLabel,
+            leaveActionLabel: presentation.leaveActionLabel,
+            onRestore: handleRestore,
+            onLeave: runtime.handleLeave,
+            onDragStart: startMinimizedDockDrag,
+            onDragMove: moveMinimizedDock,
+            onDragEnd: stopMinimizedDockDrag,
+          }}
+        />
       </>
     );
   }
 
-  const panelDialog = (
-    <dialog open className={styles.backdrop} aria-modal="true" aria-label={t("group.call.dialogAria")}>
-      <div className={styles.panel}>
-        <GroupCallHeader
-          groupName={session.groupName}
-          memberCount={session.members.length}
-          title={presentation.title}
-          callDurationSeconds={runtime.callDurationSeconds}
-          callDurationStartedAtMs={runtime.callDurationStartedAtMs}
-          hasVisibleVideo={presentation.hasVisibleVideo}
-          hasRemoteScreenShare={presentation.hasRemoteScreenShare}
-          heroStatusLabel={presentation.heroStatusLabel}
-          heroStatusTone={presentation.heroStatusTone}
-          detailsLabel={detailsLabel}
-          detailsToggleLabel={presentation.detailsToggleLabel}
-          isDetailsOpen={isDetailsOpen}
-          onToggleDetails={handleToggleDetails}
-          onMinimize={handleMinimize}
-        />
-
-        <div className={presentation.bodyClassName}>
-          <div className={styles.mainColumn}>
-            <GroupCallMediaSection
-              stageShellRef={stageShellRef}
-              shouldUseStageLayout={presentation.shouldUseStageLayout}
-              stageTile={presentation.stageTile}
-              stripTiles={presentation.stripTiles}
-              galleryTiles={presentation.galleryTiles}
-              hasPinnedStageSelection={presentation.hasPinnedStageSelection}
-              canToggleStageFullscreen={canToggleStagePresentation}
-              isStageViewerOpen={isStageViewerOpen}
-              isCompactStagePreview={isCompactStagePreview}
-              isWaitingSoloAudioLayout={presentation.isWaitingSoloAudioLayout}
-              isCrowdedGalleryLayout={presentation.isCrowdedGalleryLayout}
-              localVideoStatusLabel={presentation.localVideoStatusLabel}
-              stageEyebrowLabel={presentation.stageEyebrowLabel}
-              focusHintLabel={presentation.focusHintLabel}
-              enterFullscreenLabel={stageExpandLabel}
-              exitFullscreenLabel={t("group.call.stage.exitFullscreen")}
-              closeViewerLabel={t("group.call.stage.closeViewer")}
-              resetStageFocusLabel={presentation.resetStageFocusLabel}
-              mediaGridClassName={presentation.mediaGridClassName}
-              mediaEmptyClassName={presentation.mediaEmptyClassName}
-              hasRemoteScreenShare={presentation.hasRemoteScreenShare}
-              remoteMediaCount={runtime.remoteMedia.length}
-              onResetStageFocus={handleResetStageFocus}
-              onStopWatchingStageTile={handleStopWatchingStageTile}
-              onToggleStageFullscreen={handleToggleStagePresentation}
-              onSelectTile={handleSelectTile}
-            />
-          </div>
-        </div>
-
-        <GroupCallDetailsDrawer
-          isOpen={isDetailsOpen}
-          roomCode={presentation.roomCode}
-          statusLabel={presentation.statusLabel}
-          mediaKeyStatusLabel={presentation.mediaKeyStatusLabel}
-          mediaKeyModeLabel={presentation.mediaKeyModeLabel}
-          mediaModeDowngraded={presentation.mediaModeDowngraded}
-          effectiveFrameEncryptionEnabled={runtime.effectiveFrameEncryptionEnabled}
-          sharedMediaKeyDeviceCount={runtime.sharedMediaKeyDeviceCount}
-          receivedMediaKeyCount={runtime.receivedMediaKeyCount}
-          members={presentation.sortedMembers}
-          activeParticipantSet={presentation.activeParticipantSet}
-          error={runtime.error}
-        />
-
-        <div className={styles.bottomDock}>
-          <GroupCallControls
-            className={presentation.controlRailClassName}
-            layout="inline"
-            hasLocalMedia={Boolean(runtime.localStream)}
-            status={runtime.status}
-            isAudioMuted={runtime.isLocalAudioMuted}
-            isLocalVideoEnabled={presentation.isLocalVideoEnabled}
-            isLocalScreenSharing={runtime.isLocalScreenSharing}
-            isVideoSwitching={runtime.isVideoSwitching}
-            isScreenSwitching={runtime.isScreenSwitching}
-            muteToggleLabel={presentation.muteToggleLabel}
-            videoToggleLabel={presentation.videoToggleLabel}
-            screenShareToggleLabel={presentation.screenShareToggleLabel}
-            leaveActionLabel={presentation.leaveActionLabel}
-            endForEveryoneLabel={presentation.endForEveryoneLabel}
-            canEndForEveryone={presentation.canEndForEveryone}
-            micDevices={micDevices}
-            cameraDevices={cameraDevices}
-            selectedMicId={selectedMicId}
-            selectedCameraId={selectedCameraId}
-            selectedVideoResolution={runtime.selectedVideoResolution}
-            onToggleMute={runtime.handleToggleMute}
-            onToggleVideo={runtime.handleToggleVideo}
-            onToggleScreenShare={runtime.handleToggleScreenShare}
-            onLeave={runtime.handleLeave}
-            onEndForEveryone={runtime.handleEndForEveryone}
-            onSelectMic={runtime.handleSwitchMic}
-            onSelectCamera={runtime.handleSwitchCamera}
-            onSelectVideoResolution={runtime.handleSelectVideoResolution}
-            selectedScreenResolution={runtime.selectedScreenResolution}
-            onSelectScreenResolution={runtime.handleSelectScreenResolution}
-          />
-        </div>
-
-      </div>
-    </dialog>
-  );
-
-  const panelContent = (
-    <CallAudioOutputProvider>
-      <GroupCallRemoteAudioTargets remoteMedia={combinedRemoteMedia} />
-      {panelDialog}
-    </CallAudioOutputProvider>
-  );
+  const {
+    headerProps,
+    mediaSectionProps,
+    detailsDrawerProps,
+    controlsProps,
+  } = buildGroupCallPanelViewProps({
+    session,
+    stageShellRef,
+    isDraggingMinimizedDock,
+    minimizedDockRef,
+    resolvedDockInlineStyle,
+    dockMetaLabel,
+    detailsLabel,
+    isDetailsOpen,
+    isStageViewerOpen,
+    isCompactStagePreview,
+    canToggleStagePresentation,
+    shouldRenderInlineDetails,
+    stageExpandLabel,
+    closeViewerLabel: t("group.call.stage.closeViewer"),
+    exitFullscreenLabel: t("group.call.stage.exitFullscreen"),
+    endForEveryoneHint: t("group.call.endForEveryoneHint"),
+    presentation,
+    runtime: {
+      callDurationSeconds: runtime.callDurationSeconds,
+      callDurationStartedAtMs: runtime.callDurationStartedAtMs,
+      remoteMediaCount: runtime.remoteMedia.length,
+      effectiveFrameEncryptionEnabled: runtime.effectiveFrameEncryptionEnabled,
+      sharedMediaKeyDeviceCount: runtime.sharedMediaKeyDeviceCount,
+      receivedMediaKeyCount: runtime.receivedMediaKeyCount,
+      error: runtime.error,
+      localStream: runtime.localStream,
+      status: runtime.status,
+      isLocalAudioMuted: runtime.isLocalAudioMuted,
+      isLocalScreenSharing: runtime.isLocalScreenSharing,
+      isVideoSwitching: runtime.isVideoSwitching,
+      isScreenSwitching: runtime.isScreenSwitching,
+      selectedVideoResolution: runtime.selectedVideoResolution,
+      selectedScreenResolution: runtime.selectedScreenResolution,
+      handleLeave: () => { void runtime.handleLeave(); },
+      handleEndForEveryone: () => { void runtime.handleEndForEveryone(); },
+      handleToggleMute: runtime.handleToggleMute,
+      handleToggleVideo: () => { void runtime.handleToggleVideo(); },
+      handleToggleScreenShare: () => { void runtime.handleToggleScreenShare(); },
+      handleSwitchMic: (deviceId) => { void runtime.handleSwitchMic(deviceId); },
+      handleSwitchCamera: (deviceId) => { void runtime.handleSwitchCamera(deviceId); },
+      handleSelectVideoResolution: (resolution) => { void runtime.handleSelectVideoResolution(resolution); },
+      handleSelectScreenResolution: runtime.handleSelectScreenResolution,
+    },
+    devices: {
+      micDevices,
+      cameraDevices,
+      selectedMicId,
+      selectedCameraId,
+    },
+    handlers: {
+      handleRestore,
+      startMinimizedDockDrag,
+      moveMinimizedDock,
+      stopMinimizedDockDrag,
+      handleToggleDetails,
+      handleMinimize,
+      handleResetStageFocus,
+      handleStopWatchingStageTile,
+      handleToggleStagePresentation,
+      handleSelectTile,
+    },
+  });
 
   return (
     <>
       {devDebugBridge}
-      {createPortal(panelContent, document.body)}
+      <GroupCallPanelShellView
+        remoteMedia={combinedRemoteMedia}
+        ariaLabel={t("group.call.dialogAria")}
+        backdropClassName={styles.backdrop}
+        panelClassName={styles.panel}
+        bodyClassName={bodyClassName}
+        mainColumnClassName={styles.mainColumn}
+        bottomDockClassName={styles.bottomDock}
+        headerProps={headerProps}
+        mediaSectionProps={mediaSectionProps}
+        detailsDrawerProps={detailsDrawerProps}
+        controlsProps={controlsProps}
+      />
     </>
   );
 }

@@ -1,3 +1,5 @@
+/* ── Dialog shell / backdrop ───────────────────────────────────────────── */
+
 .overlay {
   /* dialog UA style resets */
   margin: 0;
@@ -15,53 +17,45 @@
   outline: none;
   position: fixed;
   inset: 0;
-  z-index: 900;
+  z-index: var(--z-900);
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  animation: overlayIn 180ms var(--motion-ease-emphasized, cubic-bezier(0.2, 0, 0, 1)) both;
 }
 
-.overlayClosing {
-  pointer-events: none;
-  animation: overlayOut 180ms var(--motion-ease-exit, cubic-bezier(0.4, 0, 1, 1)) both;
-}
-
-@keyframes overlayIn {
-  from { opacity: 0; }
-  to   { opacity: 1; }
+.overlayWithCaption {
+  --media-lightbox-has-caption: 1;
 }
 
 .backdrop {
   position: absolute;
   inset: 0;
   background: rgb(2 6 23 / 0.88);
-  -webkit-backdrop-filter: blur(6px);
-  backdrop-filter: blur(6px);
   cursor: zoom-out;
 }
 
-.backdropClosing {
-  animation: overlayOut 180ms var(--motion-ease-exit, cubic-bezier(0.4, 0, 1, 1)) both;
-}
-
 :global(:root[data-theme="light"]) .backdrop {
-  background: rgb(238 243 250 / 0.94);
+  background: color-mix(in srgb, var(--bg-primary) 94%, transparent);
 }
 
 :global(:root[data-theme="light"]) .toolbar {
-  background: linear-gradient(to bottom, rgb(238 243 250 / 0.9), transparent);
+  background: linear-gradient(to bottom, color-mix(in srgb, var(--bg-primary) 90%, transparent), transparent);
 }
 
 :global(:root[data-theme="light"]) .toolbarFileName {
   color: var(--text-primary);
 }
 
+:global(:root[data-theme="light"]) .toolbarCounter {
+  color: color-mix(in srgb, var(--text-primary) 70%, transparent);
+}
+
 :global(:root[data-theme="light"]) .iconBtn {
   border-color: rgb(0 0 0 / 0.1);
   background: rgb(0 0 0 / 0.06);
-  color: var(--text-primary);
+  --icon-button-color: var(--text-primary);
+  --icon-button-color-hover: var(--text-primary);
 }
 
 :global(:root[data-theme="light"]) .captionBar {
@@ -70,12 +64,12 @@
   border-color: rgb(0 0 0 / 0.08);
 }
 
-/* ── Top toolbar ── */
+/* ── Top toolbar / chrome ──────────────────────────────────────────────── */
 .toolbar {
   position: absolute;
   top: 0;
   inset-inline: 0;
-  z-index: 2;
+  z-index: var(--z-2);
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -131,15 +125,15 @@
   --icon-button-transform-hover: none;
   --icon-button-transform-active: none;
   --icon-button-blur: 8px;
-  z-index: 1;
+  z-index: var(--z-1);
 }
 
-/* ── Navigation arrows ── */
+/* ── Navigation arrows ─────────────────────────────────────────────────── */
 .navBtn {
   position: absolute;
   top: 50%;
   transform: translateY(-50%);
-  z-index: 2;
+  z-index: var(--z-2);
   --icon-button-size: 44px;
 }
 
@@ -151,17 +145,17 @@
   right: 1rem;
 }
 
-/* ── Media area ── */
+/* ── Media viewer stage ────────────────────────────────────────────────── */
 .content {
   position: relative;
-  z-index: 1;
+  z-index: var(--z-1);
   display: flex;
   align-items: center;
   justify-content: center;
   width: 100%;
   height: 100%;
   padding: 5rem 4rem 3rem;
-  touch-action: pan-y pinch-zoom;
+  touch-action: none;
 }
 
 .contentSwiping {
@@ -187,15 +181,15 @@
 }
 
 .mediaStageEnter {
-  animation: mediaFadeIn 220ms var(--motion-ease-emphasized, cubic-bezier(0.2, 0, 0, 1)) both;
+  animation: mediaFadeIn var(--motion-duration-base) var(--motion-ease-emphasized, cubic-bezier(0.2, 0, 0, 1)) both;
 }
 
 .mediaStageSlideNext {
-  animation: mediaSlideInFromRight 240ms var(--motion-ease-emphasized, cubic-bezier(0.2, 0, 0, 1)) both;
+  animation: mediaSlideInFromRight var(--motion-duration-slow) var(--motion-ease-emphasized, cubic-bezier(0.2, 0, 0, 1)) both;
 }
 
 .mediaStageSlidePrev {
-  animation: mediaSlideInFromLeft 240ms var(--motion-ease-emphasized, cubic-bezier(0.2, 0, 0, 1)) both;
+  animation: mediaSlideInFromLeft var(--motion-duration-slow) var(--motion-ease-emphasized, cubic-bezier(0.2, 0, 0, 1)) both;
 }
 
 .image {
@@ -220,11 +214,13 @@
   background: #000;
 }
 
+/* ── Caption overlay ───────────────────────────────────────────────────── */
+
 .captionBar {
   position: absolute;
   left: 50%;
   bottom: calc(env(safe-area-inset-bottom, 0px) + 1.1rem);
-  z-index: 2;
+  z-index: var(--z-2);
   width: min(640px, calc(100vw - 2rem));
   max-height: min(34vh, 220px);
   overflow: auto;
@@ -234,8 +230,6 @@
   background: rgb(2 6 23 / 0.68);
   color: rgb(255 255 255 / 0.92);
   box-shadow: 0 16px 44px rgb(0 0 0 / 0.28);
-  -webkit-backdrop-filter: blur(14px);
-  backdrop-filter: blur(14px);
   font-size: 0.92rem;
   line-height: 1.45;
   overflow-wrap: anywhere;
@@ -258,35 +252,27 @@
   to { opacity: 1; transform: translate3d(0, 0, 0) scale(1); }
 }
 
+/* ── Mobile-specific sequence affordances ──────────────────────────────── */
+
 .mobileSequenceHint {
   display: none;
 }
 
 @media (max-width: 720px) {
   .toolbar {
-    padding: 0.72rem 0.88rem;
+    padding: calc(env(safe-area-inset-top, 0px) + 0.72rem) 0.88rem 0.72rem;
   }
 
   .navBtn {
-    top: auto;
-    bottom: 1rem;
-    transform: none;
-  }
-
-  .navBtnPrev {
-    left: max(1rem, env(safe-area-inset-left));
-  }
-
-  .navBtnNext {
-    right: max(1rem, env(safe-area-inset-right));
+    display: none;
   }
 
   .content {
     padding:
-      calc(3.5rem + env(safe-area-inset-top))
-      0.85rem
-      calc(7.5rem + env(safe-area-inset-bottom))
-      0.85rem;
+      calc(4.5rem + env(safe-area-inset-top, 0px))
+      env(safe-area-inset-right, 0.85rem)
+      calc(4.5rem + env(safe-area-inset-bottom, 0px))
+      env(safe-area-inset-left, 0.85rem);
   }
 
   .mediaStage {
@@ -304,7 +290,7 @@
     position: absolute;
     left: 50%;
     bottom: calc(env(safe-area-inset-bottom, 0px) + 1.1rem);
-    z-index: 2;
+    z-index: var(--z-2);
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -320,10 +306,22 @@
   .captionBar {
     bottom: calc(env(safe-area-inset-bottom, 0px) + 0.85rem);
     width: calc(100vw - 1.7rem);
-    max-height: 28vh;
+    max-height: min(18dvh, 7rem);
     padding: 0.62rem 0.74rem;
     border-radius: 12px;
     font-size: 0.86rem;
+  }
+
+  .overlayWithCaption .content {
+    padding-bottom: calc(6.5rem + env(safe-area-inset-bottom, 0px));
+  }
+
+  .overlayWithCaption .mobileSequenceHint {
+    bottom: calc(env(safe-area-inset-bottom, 0px) + 6.75rem);
+  }
+
+  .overlayWithCaption .mobileSwipeHint {
+    display: none;
   }
 
   .mobileSequenceDots {
@@ -333,7 +331,6 @@
     padding: 0.45rem 0.62rem;
     border-radius: 999px;
     background: rgb(2 6 23 / 0.5);
-    backdrop-filter: blur(10px);
   }
 
   .mobileSequenceDot {
@@ -359,7 +356,6 @@
     color: rgb(255 255 255 / 0.8);
     font-size: 0.72rem;
     font-weight: 600;
-    backdrop-filter: blur(10px);
   }
 
   .mobileSwipeChevron {

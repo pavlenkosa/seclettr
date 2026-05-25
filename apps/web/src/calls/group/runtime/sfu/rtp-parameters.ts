@@ -1,3 +1,15 @@
+/**
+ * rtp-parameters — mediasoup RTP parameter normalization for the SFU protocol.
+ *
+ * Owns:
+ *   - SFU_RTP_PARAMETER_KEYS — expected set of top-level RTP parameter keys
+ *   - getUnexpectedSfuRtpParameterKeys — validation helper to surface unknown keys
+ *   - normalizeSfuRtpParameters — converts a MediasoupTypes.RtpParameters object to
+ *     the SfuRtpParameters protocol shape, omitting optional fields that are undefined
+ *     and normalizing codec / headerExtension / encoding / RTCP structures
+ *
+ * Does not own transport setup, producer creation, or codec negotiation.
+ */
 import type { SfuRtpParameters } from "@seclettr/protocol";
 import type { types as MediasoupTypes } from "mediasoup-client";
 

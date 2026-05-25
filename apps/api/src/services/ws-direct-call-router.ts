@@ -57,6 +57,7 @@ type CallMediaStateMessage = Extract<
   { type: "call.media_state" }
 >;
 type CallOfferMessageCompat = CallOfferMessage & {
+  chatKind?: "plain" | "e2ee";
   mediaEncryption?: CallMediaEncryptionOffer;
   features?: DirectCallFeatures;
 };
@@ -107,8 +108,8 @@ function isCallerSignal(senderDeviceId: string, session: CallSession): boolean {
 
 export function supportsRenegotiationV1(session: CallSession): boolean {
   return (
-    session.callerSupportsRenegotiationV1 !== false &&
-    session.calleeSupportsRenegotiationV1 !== false
+    session.callerSupportsRenegotiationV1 === true &&
+    session.calleeSupportsRenegotiationV1 === true
   );
 }
 
@@ -753,6 +754,7 @@ export function createDirectCallSignalRouter(
     targetUserId: msg.targetUserId,
     sdp: msg.sdp,
     callType: msg.callType,
+    ...(msg.chatKind ? { chatKind: msg.chatKind } : {}),
     ...(msg.mediaEncryption ? { mediaEncryption: msg.mediaEncryption } : {}),
     ...(msg.features ? { features: msg.features } : {}),
     auth: msg.auth,

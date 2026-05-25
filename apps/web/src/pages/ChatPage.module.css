@@ -6,266 +6,40 @@
   background: var(--bg-primary);
 }
 
-.sidebar {
-  /* Width is driven by --sidebar-width set by useSidebarResize on the root div.
-     CSS min/max act as a safety clamp. */
-  width: var(--sidebar-width, 340px);
-  min-width: 220px;
-  max-width: 540px;
-  flex-shrink: 0;
-  background:
-    linear-gradient(180deg, color-mix(in srgb, var(--panel-header-bg) 72%, transparent), transparent 20%),
-    var(--panel-sidebar-bg);
-  /* border-right removed — replaced by .resizer which also acts as the divider */
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-  padding: 0.72rem 0.72rem 0.86rem;
-  gap: 0.62rem;
-}
-
-/* ─── Resize handle between sidebar and main ─────────────────────────────── */
-
 .resizer {
   position: relative;
-  z-index: 20;
-  width: 5px;
+  z-index: var(--z-20);
+  width: 0;
   flex-shrink: 0;
   cursor: col-resize;
-  /* Visual separator — matches the old sidebar border-right */
-  background: transparent;
 }
 
+/* Visible separator line — drawn as a 1px pseudo on top of the zero-width element */
 .resizer::before {
   content: "";
   position: absolute;
-  inset: 0;
-  left: 2px;
+  top: 0;
+  bottom: 0;
+  left: -1px;
   width: 1px;
   background: var(--panel-border);
-  transition: left 140ms ease, width 140ms ease, background 140ms ease;
+  transition: width 140ms ease, left 140ms ease, background 140ms ease;
 }
 
-.resizer:hover::before {
-  left: 1px;
-  width: 3px;
-  background: color-mix(in srgb, var(--accent) 64%, transparent);
-}
-
-/* Small grip dots in the vertical center */
+/* Wider hit area for grabbing — invisible but hoverable */
 .resizer::after {
   content: "";
   position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
+  top: 0;
+  bottom: 0;
+  left: -3px;
+  width: 7px;
+}
+
+.resizer:hover::before {
+  left: -2px;
   width: 3px;
-  height: 24px;
-  border-radius: 999px;
-  background: repeating-linear-gradient(
-    to bottom,
-    color-mix(in srgb, var(--text-muted) 0%, transparent) 0px,
-    color-mix(in srgb, var(--text-muted) 0%, transparent) 3px,
-    transparent 3px,
-    transparent 5px
-  );
-  opacity: 0;
-  transition: opacity 140ms ease, background 140ms ease;
-}
-
-.resizer:hover::after {
-  background: repeating-linear-gradient(
-    to bottom,
-    color-mix(in srgb, var(--accent) 80%, transparent) 0px,
-    color-mix(in srgb, var(--accent) 80%, transparent) 3px,
-    transparent 3px,
-    transparent 5px
-  );
-  opacity: 1;
-}
-
-.sidebarHeader {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0.85rem 0.95rem;
-  border: 1px solid color-mix(in srgb, var(--panel-border) 84%, transparent);
-  border-radius: 24px;
-  background: color-mix(in srgb, var(--surface-float) 86%, transparent);
-  -webkit-backdrop-filter: blur(var(--glass-blur-medium, 16px)) saturate(var(--glass-saturate, 1.08));
-  backdrop-filter: blur(var(--glass-blur-medium, 16px)) saturate(var(--glass-saturate, 1.08));
-  box-shadow: var(--elevated-shadow-sm);
-}
-
-.sidebarBrand {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.62rem;
-  min-width: 0;
-}
-
-.sidebarBrandMark {
-  width: 30px;
-  height: 30px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  color: var(--accent);
-  flex-shrink: 0;
-}
-
-.sidebarBrandMark :global(svg) {
-  width: 100%;
-  height: 100%;
-  display: block;
-}
-
-.sidebarTitle {
-  font-size: 1.08rem;
-  font-weight: 720;
-  color: var(--text-primary);
-  letter-spacing: -0.02em;
-  white-space: nowrap;
-}
-
-.sidebarActions {
-  display: flex;
-  gap: 0.42rem;
-}
-
-.sidebarMeta {
-  display: flex;
-  flex-direction: column;
-  gap: 0.62rem;
-}
-
-.myUsername {
-  display: inline-flex;
-  align-items: center;
-  width: fit-content;
-  min-height: 30px;
-  padding: 0.22rem 0.82rem;
-  margin-left: 0.2rem;
-  border-radius: 999px;
-  border: 1px solid color-mix(in srgb, var(--panel-border-soft) 95%, transparent);
-  background: color-mix(in srgb, var(--surface-float) 82%, transparent);
-  color: var(--text-secondary);
-  font-size: 0.74rem;
-  font-weight: 600;
-  letter-spacing: 0.01em;
-}
-
-.sidebarSearch {
-  position: relative;
-  display: flex;
-  align-items: center;
-  gap: 0.4rem;
-  padding: 0 0.5rem 0 0.62rem;
-  height: 36px;
-  border-radius: 20px;
-  border: 1px solid color-mix(in srgb, var(--panel-border-soft) 80%, transparent);
-  background: color-mix(in srgb, var(--surface-float) 64%, transparent);
-  transition: border-color var(--motion-duration-fast) ease, background var(--motion-duration-fast) ease;
-}
-
-.sidebarSearch:focus-within {
-  border-color: var(--accent);
-  background: color-mix(in srgb, var(--surface-float) 88%, transparent);
-}
-
-.sidebarSearchIcon {
-  flex-shrink: 0;
-  color: var(--text-secondary);
-  pointer-events: none;
-}
-
-.sidebarSearchInput {
-  flex: 1;
-  min-width: 0;
-  background: transparent;
-  border: none;
-  outline: none;
-  color: var(--text-primary);
-  font-size: 0.8rem;
-  line-height: 1;
-}
-
-.sidebarSearchInput::placeholder {
-  color: var(--text-muted);
-}
-
-.sidebarSearchInput::-webkit-search-decoration,
-.sidebarSearchInput::-webkit-search-cancel-button {
-  appearance: none;
-}
-
-.sidebarSearchClear {
-  all: unset;
-  flex-shrink: 0;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 18px;
-  height: 18px;
-  border-radius: 50%;
-  color: var(--text-secondary);
-  cursor: pointer;
-  transition: background var(--motion-duration-fast) ease, color var(--motion-duration-fast) ease;
-}
-
-.sidebarSearchClear:hover {
-  background: color-mix(in srgb, var(--accent) 14%, transparent);
-  color: var(--text-primary);
-}
-
-.quickActions {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 0.5rem;
-}
-
-.quickActionBtn {
-  min-height: 60px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: flex-start;
-  gap: 0.62rem;
-  padding: 0.68rem 0.8rem;
-  border-radius: 20px;
-  border: 1px solid color-mix(in srgb, var(--panel-border-soft) 92%, transparent);
-  background:
-    linear-gradient(180deg, color-mix(in srgb, var(--surface-float) 92%, transparent), color-mix(in srgb, var(--surface-shell) 90%, transparent));
-  color: var(--text-primary);
-  text-align: left;
-  box-shadow: var(--elevated-shadow-sm);
-  transition:
-    transform var(--motion-duration-fast) var(--motion-ease-standard),
-    border-color var(--motion-duration-fast) var(--motion-ease-standard),
-    background-color var(--motion-duration-fast) var(--motion-ease-standard),
-    box-shadow var(--motion-duration-fast) var(--motion-ease-standard);
-}
-
-.quickActionBtn:hover {
-  transform: translateY(-1px);
-  border-color: color-mix(in srgb, var(--accent) 34%, var(--panel-border-soft));
-}
-
-.quickActionIcon {
-  width: 34px;
-  height: 34px;
-  border-radius: 14px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-  color: #eff6ff;
-  background: linear-gradient(145deg, color-mix(in srgb, var(--accent) 82%, white 18%), var(--accent));
-}
-
-.quickActionLabel {
-  font-size: 0.83rem;
-  font-weight: 650;
-  line-height: 1.25;
+  background: color-mix(in srgb, var(--accent) 64%, transparent);
 }
 
 .main {
@@ -276,77 +50,46 @@
   position: relative;
   isolation: isolate;
   background: transparent;
-  padding: 0.72rem;
 }
 
-.iconBtn {
-  --icon-button-size: 40px;
-}
-
-.iconBtnActive {
-  background: color-mix(in srgb, var(--accent) 16%, transparent) !important;
-  color: var(--accent) !important;
-}
-
-.threadActionGroup {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.38rem;
+.settingsOverlay {
+  position: absolute;
+  inset: 0;
+  z-index: var(--z-50);
+  overflow: hidden;
+  --motion-enter-duration: 180ms;
+  --motion-exit-duration: 140ms;
 }
 
 .searchBarPresence {
   flex-shrink: 0;
 }
 
-.searchBarPresenceClosing {
-  pointer-events: none;
-  animation: searchBarPresenceOut var(--motion-duration-fast) var(--motion-ease-exit) both;
-}
-
 .searchBarLazyFallback {
   height: 40px;
   flex-shrink: 0;
   border-bottom: 1px solid color-mix(in srgb, var(--panel-border-soft) 70%, transparent);
-  background:
-    linear-gradient(
-      90deg,
-      color-mix(in srgb, var(--surface-shell) 78%, transparent),
-      color-mix(in srgb, var(--surface-float) 92%, transparent),
-      color-mix(in srgb, var(--surface-shell) 78%, transparent)
-    );
-  background-size: 220% 100%;
-  animation: lazyPanelShimmer 900ms linear infinite;
+  background: color-mix(in srgb, var(--surface-float) 82%, transparent);
+  animation: lazyPanelPulse 900ms ease-in-out infinite;
 }
 
 .mediaPanelPresence {
   position: absolute;
   inset: 0;
-  z-index: 30;
-}
-
-.mediaPanelPresenceClosing {
-  pointer-events: none;
-  animation: mediaPanelPresenceOut var(--motion-duration-base) var(--motion-ease-exit) both;
+  z-index: var(--z-30);
 }
 
 .mediaPanelLazyFallback {
   position: absolute;
   inset: 0;
-  border-radius: 20px;
-  background:
-    linear-gradient(
-      90deg,
-      color-mix(in srgb, var(--bg-secondary) 94%, var(--bg-primary)),
-      color-mix(in srgb, var(--surface-float) 86%, var(--bg-secondary)),
-      color-mix(in srgb, var(--bg-secondary) 94%, var(--bg-primary))
-    );
-  background-size: 220% 100%;
-  animation: lazyPanelShimmer 900ms linear infinite;
+  border-radius: 0;
+  background: color-mix(in srgb, var(--bg-secondary) 94%, var(--bg-primary));
+  animation: lazyPanelPulse 900ms ease-in-out infinite;
 }
 
 .composerLazyFallback {
   position: relative;
-  z-index: 40;
+  z-index: var(--z-40);
   flex-shrink: 0;
   inline-size: 100%;
   max-inline-size: 100%;
@@ -365,27 +108,12 @@
   min-block-size: calc(40px + 0.88rem + 2px);
   border: 1px solid color-mix(in srgb, var(--composer-inner-border) 94%, transparent);
   border-radius: 28px;
-  background:
-    linear-gradient(
-      90deg,
-      color-mix(in srgb, var(--surface-float) 80%, var(--glass-surface-fill, transparent)),
-      color-mix(in srgb, var(--composer-inner-bg) 84%, var(--glass-surface-fill, transparent)),
-      color-mix(in srgb, var(--surface-float) 80%, var(--glass-surface-fill, transparent))
-    );
-  background-size: 220% 100%;
-  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.2);
+  background: color-mix(in srgb, var(--composer-inner-bg) 96%, var(--surface-float));
   box-sizing: border-box;
-  animation: lazyPanelShimmer 900ms linear infinite;
 }
 
 :global(:root[data-theme="light"]) .composerLazyFallback::before {
-  background:
-    linear-gradient(
-      90deg,
-      color-mix(in srgb, var(--surface-float) 84%, white),
-      color-mix(in srgb, var(--composer-inner-bg) 90%, white),
-      color-mix(in srgb, var(--surface-float) 84%, white)
-    );
+  background: color-mix(in srgb, var(--composer-inner-bg) 90%, white);
 }
 
 .modalLazyFallback {
@@ -395,8 +123,6 @@
   display: grid;
   place-items: center;
   background: rgb(2 6 23 / 0.28);
-  -webkit-backdrop-filter: blur(var(--glass-blur-soft, 10px));
-  backdrop-filter: blur(var(--glass-blur-soft, 10px));
 }
 
 .modalLazyFallback::after {
@@ -409,19 +135,9 @@
   animation: modalLazySpin 800ms linear infinite;
 }
 
-@keyframes searchBarPresenceOut {
-  from { opacity: 1; transform: translateY(0); }
-  to   { opacity: 0; transform: translateY(-6px); }
-}
-
-@keyframes mediaPanelPresenceOut {
-  from { opacity: 1; transform: translateX(0); }
-  to   { opacity: 0; transform: translateX(18px); }
-}
-
-@keyframes lazyPanelShimmer {
-  from { background-position: 100% 0; }
-  to   { background-position: -120% 0; }
+@keyframes lazyPanelPulse {
+  0%, 100% { opacity: 0.62; }
+  50% { opacity: 1; }
 }
 
 @keyframes modalLazySpin {
@@ -457,60 +173,9 @@
   line-height: 1.45;
 }
 
-:global(:root[data-theme="light"]) .sidebarHeader,
-:global(:root[data-theme="light"]) .quickActionBtn {
-  border-color: color-mix(in srgb, var(--panel-border-soft) 92%, transparent);
-}
-
-:global(:root[data-theme="light"]) .sidebarHeader {
-  background: color-mix(in srgb, var(--surface-float) 82%, white);
-}
-
-:global(:root[data-theme="light"]) .myUsername {
-  color: color-mix(in srgb, var(--text-primary) 74%, var(--text-secondary));
-  background: color-mix(in srgb, var(--surface-float) 78%, white);
-}
-
-:global(:root[data-theme="light"]) .quickActionBtn {
-  background:
-    linear-gradient(
-      180deg,
-      color-mix(in srgb, var(--surface-float) 84%, white),
-      color-mix(in srgb, var(--surface-shell-strong) 88%, white)
-    );
-}
-
 @media (max-width: 640px) {
-  .sidebar {
-    position: absolute;
-    inset: 0;
-    width: 100%;
-    min-width: 0;
-    max-width: 100%;
-    border-right: 0;
-    padding: 0.65rem;
-    padding-right: 0.65rem;
-    padding-bottom: calc(6.5rem + var(--safe-bottom));
-  }
-
-  .iconBtn {
-    --icon-button-size: 38px;
-  }
-
-  .threadActionGroup {
-    gap: 0.24rem;
-  }
-
-  .threadChromeSlot {
-    padding: 0 0 0.14rem;
-  }
-
-  .quickActions {
-    grid-template-columns: 1fr;
-  }
-
-  .desktopOnlyAction {
-    display: none !important;
+  :global(:root) {
+    --panel-header-height: 68px;
   }
 }
 
@@ -519,7 +184,7 @@
   top: 0;
   left: 0;
   right: 0;
-  z-index: 400;
+  z-index: var(--z-400);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -530,66 +195,44 @@
   font-size: 0.8rem;
   font-weight: 600;
   letter-spacing: 0.01em;
-  animation: bannerIn 200ms cubic-bezier(0.18, 0.9, 0.2, 1) both;
-}
-
-.chatNoticeClosing {
-  pointer-events: none;
-  animation: bannerOut 180ms cubic-bezier(0.4, 0, 1, 1) both;
-}
-
-@keyframes bannerIn {
-  from { opacity: 0; transform: translateY(-100%); }
-  to   { opacity: 1; transform: translateY(0); }
-}
-
-@keyframes bannerOut {
-  from { opacity: 1; transform: translateY(0); }
-  to   { opacity: 0; transform: translateY(-100%); }
 }
 
 /* ─── Call notification banners ─────────────────────────────────────────────── */
 
 .callAlertBanners {
   position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  z-index: 390;
+  top: 0.6rem;
+  left: 1rem;
+  right: 1rem;
+  z-index: var(--z-390);
   display: flex;
   flex-direction: column;
-}
-
-.callAlertBannersClosing {
-  pointer-events: none;
-  animation: bannerOut 180ms cubic-bezier(0.4, 0, 1, 1) both;
-}
-
-.callAlertBannersClosing .callAlertBanner {
-  animation: none;
+  align-items: center;
+  gap: 0.4rem;
+  width: auto;
 }
 
 .callAlertBannersBelowNotice {
-  top: 2rem;
+  top: calc(2rem + 0.6rem);
 }
 
 .callAlertBanner {
   display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 0.75rem;
-  padding: 0.48rem 0.9rem;
-  background: color-mix(in srgb, var(--accent) 12%, var(--bg-primary));
-  border-bottom: 1px solid color-mix(in srgb, var(--accent) 32%, transparent);
+  align-items: center;
+  gap: 0.6rem;
+  width: max-content;
+  max-width: min(440px, calc(100vw - 2rem));
+  padding: 0.36rem 0.46rem 0.36rem 1rem;
+  background: var(--surface-shell-strong);
+  border: 1px solid color-mix(in srgb, var(--panel-border-soft) 80%, transparent);
+  border-radius: 999px;
   color: var(--text-primary);
   font-size: 0.8rem;
   font-weight: 500;
-  animation: bannerIn 200ms cubic-bezier(0.18, 0.9, 0.2, 1) both;
 }
 
 .callAlertBannerMissed {
-  background: color-mix(in srgb, var(--danger, #ef4444) 14%, var(--bg-primary));
-  border-bottom-color: color-mix(in srgb, var(--danger, #ef4444) 36%, transparent);
+  border-color: color-mix(in srgb, var(--danger, #ef4444) 40%, transparent);
 }
 
 .callAlertBannerText {
@@ -597,41 +240,40 @@
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
-  white-space: normal;
+  white-space: nowrap;
   line-height: 1.25;
 }
 
 .callAlertBannerActions {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: 0.36rem;
   flex-shrink: 0;
-  margin-left: auto;
 }
 
 .callAlertBannerBtn {
-  padding: 0.18rem 0.6rem;
-  border: 1px solid color-mix(in srgb, var(--accent) 50%, transparent);
+  padding: 0.24rem 0.7rem;
+  border: none;
   border-radius: 999px;
-  background: color-mix(in srgb, var(--accent) 16%, transparent);
-  color: var(--accent);
-  font-size: 0.75rem;
+  background: var(--accent);
+  color: #fff;
+  font-size: 0.74rem;
   font-weight: 600;
   cursor: pointer;
   white-space: nowrap;
 }
 
 .callAlertBannerBtn:hover {
-  background: color-mix(in srgb, var(--accent) 24%, transparent);
+  opacity: 0.88;
 }
 
 .callAlertBannerDismiss {
-  padding: 0.2rem 0.56rem;
-  border: 1px solid color-mix(in srgb, var(--panel-border-soft) 90%, transparent);
+  padding: 0.24rem 0.7rem;
+  border: 1px solid color-mix(in srgb, var(--panel-border-soft) 80%, transparent);
   border-radius: 999px;
-  background: color-mix(in srgb, var(--surface-float) 68%, transparent);
+  background: color-mix(in srgb, var(--surface-float) 60%, transparent);
   color: var(--text-secondary);
-  font-size: 0.72rem;
+  font-size: 0.74rem;
   font-weight: 600;
   cursor: pointer;
   white-space: nowrap;
@@ -639,59 +281,33 @@
 
 .callAlertBannerDismiss:hover {
   color: var(--text-primary);
-  background: color-mix(in srgb, var(--surface-float) 86%, transparent);
+  background: color-mix(in srgb, var(--surface-float) 90%, transparent);
 }
 
 @media (max-width: 760px) {
   .callAlertBanners {
-    gap: 0.2rem;
-    padding: 0.24rem 0.36rem 0;
+    top: 0.4rem;
+    max-width: calc(100vw - 1.5rem);
   }
 
   .callAlertBanner {
-    border: 1px solid color-mix(in srgb, var(--panel-border-soft) 88%, transparent);
-    border-radius: 14px;
-    padding: 0.52rem 0.62rem;
-    box-shadow: var(--elevated-shadow-sm);
-  }
-
-  .callAlertBannerText {
-    font-size: 0.76rem;
-  }
-
-  .callAlertBannerActions {
-    width: 100%;
-    justify-content: flex-end;
-  }
-
-  .callAlertBannerBtn,
-  .callAlertBannerDismiss {
-    min-height: 30px;
-    font-size: 0.7rem;
-    padding-inline: 0.58rem;
+    padding: 0.36rem 0.42rem 0.36rem 0.9rem;
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .iconBtn,
-  .quickActionBtn,
-  .sidebar,
   .main,
   .chatNotice,
-  .chatNoticeClosing,
   .callAlertBanners,
-  .callAlertBannersClosing,
   .callAlertBanner {
     transition: none !important;
     transform: none !important;
     animation: none !important;
   }
 
-  .searchBarPresenceClosing,
   .searchBarLazyFallback,
   .composerLazyFallback,
   .composerLazyFallback::before,
-  .mediaPanelPresenceClosing,
   .mediaPanelLazyFallback,
   .modalLazyFallback,
   .modalLazyFallback::after {

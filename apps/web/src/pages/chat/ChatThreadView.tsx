@@ -1,5 +1,6 @@
 import { lazy, memo, Suspense, type ReactNode } from "react";
 import { ErrorBoundary, ThreadErrorFallback } from "@/components/common/ErrorBoundary";
+import motionStyles from "@/components/ui/motion/Motion.module.css";
 import { ChatThreadPane } from "./ChatThreadPane";
 import type { ChatPresence, ThreadPaneState, WorkspaceEntryState } from "./chat-page-types";
 import styles from "../ChatPage.module.css";
@@ -19,28 +20,40 @@ export const ChatThreadView = memo(function ChatThreadView({
   activeThreadKind,
   activeListId,
   activeMessages,
+  activeHistoryLoading,
   groupSenderLabels,
   threadChrome,
   threadComposer,
   activeTyping,
+  plainActiveTyping,
   searchBarPresence,
   mediaPanelPresence,
   threadPaneState,
   handleRetryMessage,
+  handleDeleteMessage,
+  handleForwardMessage,
+  handleBulkDeleteMessage,
+  handleBulkForwardMessage,
   directTrustBlocked,
   handleDropFiles,
 }: {
   activeThreadKind: WorkspaceEntryState["activeThreadKind"];
   activeListId: WorkspaceEntryState["activeListId"];
   activeMessages: WorkspaceEntryState["activeMessages"];
+  activeHistoryLoading?: boolean;
   groupSenderLabels: WorkspaceEntryState["groupSenderLabels"];
   threadChrome: ReactNode;
   threadComposer: ReactNode;
   activeTyping: WorkspaceEntryState["activeTyping"];
+  plainActiveTyping: WorkspaceEntryState["plainActiveTyping"];
   searchBarPresence: ChatPresence;
   mediaPanelPresence: ChatPresence;
   threadPaneState: ThreadPaneState;
   handleRetryMessage: WorkspaceEntryState["handleRetryMessage"];
+  handleDeleteMessage?: (messageId: string) => void;
+  handleForwardMessage?: (messageId: string) => void;
+  handleBulkDeleteMessage?: (messageIds: string[]) => void;
+  handleBulkForwardMessage?: (messageIds: string[]) => void;
   directTrustBlocked: WorkspaceEntryState["directTrustBlocked"];
   handleDropFiles: (files: File[]) => Promise<void>;
 }) {
@@ -53,12 +66,17 @@ export const ChatThreadView = memo(function ChatThreadView({
         hasActiveThread={activeThreadKind !== null}
         threadKey={activeListId ?? undefined}
         messages={activeMessages}
-        senderLabels={activeThreadKind === "group" ? groupSenderLabels : undefined}
+        isLoadingHistory={activeHistoryLoading ?? false}
+        senderLabels={activeThreadKind === "group" || activeThreadKind === "plain-group" ? groupSenderLabels : undefined}
         topChrome={threadChrome}
         composer={threadComposer}
-        isTyping={activeThreadKind === "direct" ? activeTyping : undefined}
+        isTyping={activeThreadKind === "direct"
+          ? activeTyping
+          : activeThreadKind === "plain-direct"
+            ? plainActiveTyping
+            : undefined}
         searchBar={searchBarPresence.isMounted ? (
-          <div className={`${styles.searchBarPresence} ${searchBarPresence.isClosing ? styles.searchBarPresenceClosing : ""}`}>
+          <div className={`${styles.searchBarPresence} ${searchBarPresence.isClosing ? motionStyles.panelOut : motionStyles.panelIn}`}>
             <Suspense fallback={<div className={styles.searchBarLazyFallback} aria-hidden="true" />}>
               <MessageSearchBar
                 query={threadPaneState.messageSearchQuery}
@@ -75,7 +93,7 @@ export const ChatThreadView = memo(function ChatThreadView({
           </div>
         ) : undefined}
         mediaPanel={mediaPanelPresence.isMounted ? (
-          <div className={`${styles.mediaPanelPresence} ${mediaPanelPresence.isClosing ? styles.mediaPanelPresenceClosing : ""}`}>
+          <div className={`${styles.mediaPanelPresence} ${mediaPanelPresence.isClosing ? motionStyles.panelOut : motionStyles.panelIn}`}>
             <Suspense fallback={<div className={styles.mediaPanelLazyFallback} aria-hidden="true" />}>
               <SharedMediaPanel
                 messages={threadPaneState.mediaAttachmentMessages}
@@ -88,6 +106,18 @@ export const ChatThreadView = memo(function ChatThreadView({
         highlightMessageId={threadPaneState.highlightMessageId}
         onRetry={activeThreadKind === null ? undefined : handleRetryMessage}
         onReply={threadPaneState.handleReply}
+        onDelete={
+          activeThreadKind === "plain-direct" || activeThreadKind === "plain-group"
+            ? handleDeleteMessage
+            : undefined
+        }
+        onForward={handleForwardMessage}
+        onBulkDelete={
+          activeThreadKind === "plain-direct" || activeThreadKind === "plain-group"
+            ? handleBulkDeleteMessage
+            : undefined
+        }
+        onBulkForward={handleBulkForwardMessage}
         onScrollToMessage={threadPaneState.handleScrollToMessage}
         onDropFiles={
           activeThreadKind === "group" || (activeThreadKind === "direct" && !directTrustBlocked)

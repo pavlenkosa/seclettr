@@ -6,13 +6,17 @@ import {
 } from "@/lib/group-sender-key-events";
 import {
   fetchGroupDetails,
+} from "./group-roster-runtime";
+import {
   formatUnknownGroupName,
+  GROUP_UNKNOWN_SENDER_LABEL,
   scheduleGroupLabelRefresh,
   toGroupChat,
+} from "./group-display-helpers";
+import {
   toGroupMessageResult,
   toProcessedMessageKey,
-  GROUP_UNKNOWN_SENDER_LABEL,
-} from "./group-helpers";
+} from "./group-message-mapping";
 import {
   isPendingGroupDecryptItemForDistribution,
   loadAllPendingGroupDecryptItems,

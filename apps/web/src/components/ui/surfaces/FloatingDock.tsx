@@ -1,3 +1,14 @@
+/**
+ * FloatingDock — shared floating dock shell for minimized call surfaces.
+ *
+ * Owns:
+ *   - Rendering a `<dialog>` with a drag handle, middle summary slot, and trailing actions slot.
+ *   - Tracking active dock count to set/clear the `--call-dock-clearance` CSS variable for layout clearance.
+ *   - Applying enter/exit animations via motion CSS classes and propagating `isDragging` state styling.
+ *
+ * Does not own runtime state, business logic, or domain-specific wiring.
+ * Use when: rendering a draggable minimized call dock; do not generalize it into a generic floating action or modal shell.
+ */
 import {
   forwardRef,
   useCallback,
@@ -9,6 +20,7 @@ import {
   type PointerEventHandler,
   type ReactNode,
 } from "react";
+import motionStyles from "@/components/ui/motion/Motion.module.css";
 import styles from "./FloatingDock.module.css";
 
 // Tracks the number of mounted FloatingDock instances so the CSS clearance
@@ -50,6 +62,7 @@ function assignRef<TValue>(ref: ForwardedRef<TValue> | undefined, value: TValue 
  * Shared floating dock shell for minimized call surfaces.
  * It aligns drag handle, summary content, and trailing actions across direct
  * and group call UIs while keeping positioning adjustable via CSS variables.
+ * Choose it for draggable minimized call surfaces only; do not generalize it into a generic floating action or modal shell.
  */
 export const FloatingDock = forwardRef<HTMLDialogElement, FloatingDockProps>(function FloatingDock(
   {
@@ -122,7 +135,7 @@ export const FloatingDock = forwardRef<HTMLDialogElement, FloatingDockProps>(fun
       className={[
         styles.root,
         isDragging ? styles.dragging : "",
-        isClosing ? styles.closing : "",
+        isClosing ? motionStyles.fadeOut : motionStyles.fadeIn,
         className,
       ]
         .filter(Boolean)

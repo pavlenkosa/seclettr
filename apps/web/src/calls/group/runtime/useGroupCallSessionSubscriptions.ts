@@ -1,3 +1,20 @@
+/**
+ * useGroupCallSessionSubscriptions — event-driven session state subscriptions.
+ *
+ * Owns:
+ *   - WebSocket message subscription for all group.call.* session signals
+ *     (participant_joined, participant_device_joined, participant_device_left,
+ *     participant_left, media-mode, ended)
+ *   - WebSocket connection-change subscription: maps connect/disconnect to
+ *     SESSION_READY / RECONNECT_START dispatch actions
+ *   - Page-unload subscription (pagehide / beforeunload): triggers
+ *     performUnloadCleanup before the document is discarded
+ *   - Pure participant-state reducer helpers (addParticipantDevice,
+ *     removeParticipantDevice, removeParticipantUserDevices, etc.)
+ *
+ * Does not own session bootstrap, SFU client lifecycle, or media-key exchange.
+ * All state updates are applied via the React setters passed in through options.
+ */
 import {
   useEffect,
   useRef,
@@ -7,12 +24,12 @@ import {
 } from "react";
 import type { WsServerMessage } from "@seclettr/protocol";
 import { wsClient } from "@/lib/websocket";
-import { logGroupCallError } from "@/calls/group/runtime/group-call/logger";
+import { logGroupCallError } from "@/calls/group/runtime/media-key/logger";
 import type {
   GroupCallRemoteMedia,
   GroupSfuClient,
 } from "@/calls/group/runtime/sfu";
-import type { GroupCallRuntimeMediaEncryptionMode } from "@/calls/group/runtime/group-call/media-encryption-negotiation";
+import type { GroupCallRuntimeMediaEncryptionMode } from "@/calls/group/runtime/media-key/media-encryption-negotiation";
 import type {
   GroupCallPanelSession,
   GroupCallStatusAction,

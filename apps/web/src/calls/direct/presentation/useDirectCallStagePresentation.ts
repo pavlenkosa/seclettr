@@ -1,3 +1,22 @@
+/**
+ * useDirectCallStagePresentation — stage scene state hook for 1:1 call video layout.
+ *
+ * Owns:
+ *   - preferredSource — user's explicit source selection (camera | screen | null);
+ *     auto-reset when the selected source becomes unavailable
+ *   - isRemoteScreenSuppressed — user has dismissed the screen share via stopWatchingScreen;
+ *     auto-cleared when the remote screen disappears
+ *   - isScreenViewerOpen — fullscreen screen-share viewer dialog open state;
+ *     auto-closed when stage source changes away from "screen"
+ *   - stageLayout derivation via resolveDirectCallStageLayout (see direct-call-stage-layout)
+ *   - Public callbacks: selectSource, openScreenViewer, closeScreenViewer,
+ *     stopWatchingScreen, restoreScreenShare
+ *   - Derived read-only flags: canOpenScreenViewer, canStopWatchingScreen,
+ *     canRestoreScreenShare
+ *
+ * Does not own rendering, peer-connection state, or call lifecycle.
+ * Consumed by DirectCallStage via useDirectCallPresentationBindings.
+ */
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   resolveDirectCallStageLayout,

@@ -19,10 +19,17 @@ interface ParsedRedisWsForceDisconnectPayload {
   deviceId: string;
 }
 
+interface ParsedRedisWsUserPayload {
+  scope: "user";
+  recipientUserId: string;
+  payload: WsServerMessage;
+}
+
 export type ParsedRedisWsPayload =
   | ParsedRedisWsDevicePayload
   | ParsedRedisWsPresencePayload
-  | ParsedRedisWsForceDisconnectPayload;
+  | ParsedRedisWsForceDisconnectPayload
+  | ParsedRedisWsUserPayload;
 
 export function parseRedisWsPayload(
   rawPayload: string
@@ -55,6 +62,7 @@ export function parseRedisWsPayload(
   };
   delete payloadEnvelope["scope"];
   delete payloadEnvelope["recipientDeviceId"];
+  delete payloadEnvelope["recipientUserId"];
 
   const payloadResult = safeParseWsServerMessage(payloadEnvelope);
   if (!payloadResult.success) {
@@ -70,6 +78,17 @@ export function parseRedisWsPayload(
       scope: "presence.broadcast",
       payload,
     };
+  }
+
+  if (scopeRaw === "user") {
+    const recipientUserIdRaw =
+      "recipientUserId" in parsedPayload
+        ? (parsedPayload as { recipientUserId?: unknown }).recipientUserId
+        : null;
+    const recipientUserId =
+      typeof recipientUserIdRaw === "string" ? recipientUserIdRaw : null;
+    if (!recipientUserId) return null;
+    return { scope: "user", recipientUserId, payload };
   }
 
   const recipientDeviceIdRaw =

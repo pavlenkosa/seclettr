@@ -1,0 +1,70 @@
+module.exports = {
+  root: true,
+  env: {
+    es2022: true,
+    node: true,
+  },
+  parser: "@typescript-eslint/parser",
+  parserOptions: {
+    ecmaVersion: "latest",
+    sourceType: "module",
+    project: "./tsconfig.json",
+  },
+  plugins: ["@typescript-eslint"],
+  extends: [
+    "eslint:recommended",
+    "plugin:@typescript-eslint/recommended",
+    "plugin:@typescript-eslint/recommended-requiring-type-checking",
+  ],
+  rules: {
+    "@typescript-eslint/no-unused-vars": [
+      "error",
+      {
+        argsIgnorePattern: "^_",
+        caughtErrorsIgnorePattern: "^_",
+        ignoreRestSiblings: true,
+        varsIgnorePattern: "^_",
+      },
+    ],
+    "@typescript-eslint/no-floating-promises": ["warn", { ignoreIIFE: true }],
+    "@typescript-eslint/no-misused-promises": [
+      "error",
+      { checksVoidReturn: false },
+    ],
+    "@typescript-eslint/require-await": "warn",
+    "@typescript-eslint/no-unsafe-assignment": "warn",
+    "@typescript-eslint/no-unsafe-argument": "warn",
+    "@typescript-eslint/no-unsafe-member-access": "warn",
+    "@typescript-eslint/no-unsafe-return": "warn",
+    "@typescript-eslint/no-explicit-any": "warn",
+    "@typescript-eslint/consistent-type-imports": [
+      "error",
+      { prefer: "type-imports", fixStyle: "inline-type-imports" },
+    ],
+  },
+  overrides: [
+    {
+      files: ["**/__tests__/**", "**/*.test.ts", "**/*.test.tsx"],
+      rules: {
+        "@typescript-eslint/await-thenable": "off",
+        "@typescript-eslint/no-base-to-string": "off",
+        "@typescript-eslint/no-floating-promises": "off",
+        "@typescript-eslint/no-for-in-array": "off",
+        "@typescript-eslint/no-implied-eval": "off",
+        "@typescript-eslint/no-misused-promises": "off",
+        "@typescript-eslint/no-unnecessary-type-assertion": "off",
+        "@typescript-eslint/no-unsafe-argument": "off",
+        "@typescript-eslint/no-unsafe-assignment": "off",
+        "@typescript-eslint/no-unsafe-call": "off",
+        "@typescript-eslint/no-unsafe-member-access": "off",
+        "@typescript-eslint/no-unsafe-return": "off",
+        "@typescript-eslint/no-unused-vars": "off",
+        "@typescript-eslint/require-await": "off",
+        "@typescript-eslint/restrict-plus-operands": "off",
+        "@typescript-eslint/restrict-template-expressions": "off",
+        "@typescript-eslint/unbound-method": "off",
+        "no-empty": "off",
+      },
+    },
+  ],
+};

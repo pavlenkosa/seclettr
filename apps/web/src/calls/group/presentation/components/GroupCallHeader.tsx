@@ -8,7 +8,7 @@ import {
   MinimizeIcon,
   PhoneIcon,
 } from "./GroupCallIcons";
-import styles from "@/calls/group/presentation/GroupCallPanel.module.css";
+import styles from "./GroupCallHeader.module.css";
 
 interface GroupCallHeaderProps {
   readonly groupName: string;
@@ -99,7 +99,6 @@ export function GroupCallHeader({
             onClick={onMinimize}
             className={styles.iconBtn}
             size={38}
-            variant="glass"
             aria-label={t("group.call.minimize")}
           >
             <MinimizeIcon />

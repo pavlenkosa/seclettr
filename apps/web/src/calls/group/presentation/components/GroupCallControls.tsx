@@ -25,8 +25,6 @@ interface GroupCallControlsProps {
   readonly videoToggleLabel: string;
   readonly screenShareToggleLabel: string;
   readonly leaveActionLabel: string;
-  readonly endForEveryoneLabel: string;
-  readonly canEndForEveryone: boolean;
   readonly micDevices?: InputDeviceOption[];
   readonly cameraDevices?: InputDeviceOption[];
   readonly selectedMicId?: string | null;
@@ -37,7 +35,6 @@ interface GroupCallControlsProps {
   readonly onToggleVideo: () => void | Promise<void>;
   readonly onToggleScreenShare: () => void | Promise<void>;
   readonly onLeave: () => void;
-  readonly onEndForEveryone: () => void;
   readonly onSelectMic?: (deviceId: string) => void;
   readonly onSelectCamera?: (deviceId: string) => void;
   readonly onSelectVideoResolution?: (res: VideoResolution) => void;
@@ -62,8 +59,6 @@ export function GroupCallControls({
   videoToggleLabel,
   screenShareToggleLabel,
   leaveActionLabel,
-  endForEveryoneLabel,
-  canEndForEveryone,
   micDevices = [],
   cameraDevices = [],
   selectedMicId = null,
@@ -74,7 +69,6 @@ export function GroupCallControls({
   onToggleVideo,
   onToggleScreenShare,
   onLeave,
-  onEndForEveryone,
   onSelectMic,
   onSelectCamera,
   onSelectVideoResolution,
@@ -175,19 +169,6 @@ export function GroupCallControls({
         compactOnNarrow
         aria-label={leaveActionLabel}
       />
-      {canEndForEveryone ? (
-        <CallControlButton
-          onClick={onEndForEveryone}
-          layout={layout}
-          className={styles.controlBtn}
-          tone="danger"
-          icon={<HangupIcon />}
-          label={endForEveryoneLabel}
-          collapseLabelOnNarrow
-          compactOnNarrow
-          aria-label={endForEveryoneLabel}
-        />
-      ) : null}
     </div>
   );
 }

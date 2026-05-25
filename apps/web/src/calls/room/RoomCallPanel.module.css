@@ -1,0 +1,243 @@
+/*
+ * Ownership map
+ * - Feature-local: room side-panel layout, media-grid sizing, side-panel open/closed behavior,
+ *   and room-specific participant/invite composition.
+ * - Migrated: wrappers that now tune shared SurfacePanel, FieldSection, EntityRow, InlineNotice,
+ *   and PillButton contracts.
+ * - Reusable: lift later. Room-specific invite/participant sections may converge further with
+ *   group details patterns only after room runtime-heavy render flow is reduced.
+ */
+
+.sideSection {
+  width: 100%;
+}
+
+.inviteCard {
+  width: min(100%, 620px);
+  margin-inline: auto;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.85rem;
+}
+
+.inviteText {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.28rem;
+}
+
+.inviteTitle {
+  color: var(--text-primary);
+  font-size: 0.92rem;
+  font-weight: 700;
+}
+
+.inviteHint {
+  color: var(--text-secondary);
+  font-size: 0.76rem;
+  line-height: 1.38;
+}
+
+.inviteUrl {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  padding: 0.38rem 0.48rem;
+  border-radius: 9px;
+  border: 1px solid color-mix(in srgb, var(--panel-border-soft) 78%, transparent);
+  background: color-mix(in srgb, var(--bg-secondary) 78%, var(--surface-shell));
+  color: var(--text-secondary);
+  font-family: "SF Mono", "Fira Mono", "Consolas", monospace;
+  font-size: 0.72rem;
+}
+
+.roomSidePanel {
+  flex: 0 0 clamp(330px, 24vw, 400px);
+  width: clamp(330px, 24vw, 400px);
+  max-height: calc(100dvh - 9.25rem);
+  align-self: flex-start;
+  display: flex;
+  flex-direction: column;
+  gap: 0.82rem;
+  padding: 0.85rem;
+  overflow: auto;
+  border-radius: 18px;
+  border: 1px solid color-mix(in srgb, var(--panel-border-soft) 82%, transparent);
+  background: color-mix(in srgb, var(--surface-shell) 92%, var(--bg-primary));
+}
+
+
+.roomSidePanelOverlay {
+  position: absolute;
+  top: calc(env(safe-area-inset-top, 0px) + 6.2rem);
+  right: max(
+    clamp(0.85rem, 1.6vw, 1.35rem),
+    calc((100% - 1560px) / 2 + clamp(0.85rem, 1.6vw, 1.35rem))
+  );
+  bottom: calc(env(safe-area-inset-bottom, 0px) + 5.8rem);
+  z-index: var(--z-8);
+  width: clamp(330px, 24vw, 400px);
+  max-height: none;
+  margin: 0;
+  animation: groupCallSidePanelIn var(--motion-duration-base) cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.roomSidePanel .inviteCard {
+  width: 100%;
+  margin-inline: 0;
+}
+
+.roomMediaGrid {
+  width: min(100%, 1320px);
+  margin-inline: auto;
+}
+
+.roomMediaGridSolo {
+  width: min(100%, 1080px);
+  grid-template-columns: minmax(0, 1fr);
+  align-items: center;
+  justify-items: center;
+  margin-inline: auto;
+}
+
+.roomMediaTile {
+  border-radius: 12px;
+}
+
+.roomMediaTileSoloVideo {
+  width: min(100%, calc((100dvh - 16rem) * 16 / 9), 980px);
+  min-height: 0;
+  aspect-ratio: 16 / 9;
+  align-self: center;
+  justify-self: center;
+}
+
+.roomMediaTileSoloVideo video {
+  object-fit: contain;
+}
+
+.centeredState {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  width: min(100%, 420px);
+  margin-inline: auto;
+  min-height: 140px;
+}
+
+.stateActions {
+  display: flex;
+  justify-content: center;
+}
+
+.mutedText {
+  color: var(--text-muted);
+  font-size: 0.875rem;
+  text-align: center;
+}
+
+.errorNotice {
+  width: 100%;
+}
+
+.participantsList {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.participantsEmpty {
+  width: 100%;
+}
+
+.participantCard {
+  width: 100%;
+}
+
+.participantRow {
+  width: 100%;
+  min-width: 0;
+}
+
+.participantAvatar {
+  --avatar-size: 32px;
+  --avatar-font-size: 0.72rem;
+  --avatar-shadow: none;
+}
+
+.participantName {
+  font-size: 0.875rem;
+  color: var(--text-primary);
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.participantActions {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.hostBadge {
+  font-size: 0.68rem;
+  color: var(--text-muted);
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.hostActions {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.62rem;
+}
+
+.hostActionHint {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 0.78rem;
+  line-height: 1.42;
+}
+
+@media (max-width: 960px) {
+  .roomSidePanelOverlay {
+    top: calc(env(safe-area-inset-top, 0px) + 6.8rem);
+    left: max(0.75rem, env(safe-area-inset-left, 0px));
+    right: max(0.75rem, env(safe-area-inset-right, 0px));
+    bottom: calc(env(safe-area-inset-bottom, 0px) + 5.95rem);
+    width: auto;
+    max-height: none;
+  }
+}
+
+@media (max-width: 760px) {
+  .inviteCard {
+    flex-direction: column;
+    align-items: stretch;
+    border-radius: 12px;
+  }
+
+  .roomSidePanel {
+    width: 100%;
+  }
+
+  .roomSidePanelOverlay {
+    left: max(0.7rem, env(safe-area-inset-left, 0px));
+    right: max(0.7rem, env(safe-area-inset-right, 0px));
+  }
+
+  .roomMediaGridSolo {
+    width: 100%;
+  }
+
+  .roomMediaTileSoloVideo {
+    width: 100%;
+  }
+}

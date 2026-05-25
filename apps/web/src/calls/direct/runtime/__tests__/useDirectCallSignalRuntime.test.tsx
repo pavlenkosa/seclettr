@@ -19,7 +19,7 @@ const signalRuntimeMocks = vi.hoisted(() => {
   };
 });
 
-vi.mock("@/calls/direct/runtime/useDirectCallSignalSubscription", () => ({
+vi.mock("@/calls/direct/runtime/signal/useDirectCallSignalSubscription", () => ({
   useDirectCallSignalSubscription: (handlers: Record<string, unknown>) => {
     signalRuntimeMocks.subscriptionState.handlers = handlers;
   },
@@ -83,6 +83,7 @@ function HookHarness(props: {
     resetMinimizedDockState: vi.fn(),
     resolvePeerLabel: (userId: string, fallbackLabel?: string) => fallbackLabel ?? userId,
     pushNotice: vi.fn(),
+    callChatKindRef: { current: null },
     recordCallEvent: vi.fn(),
     rejectIncomingCall: props.rejectIncomingCall ?? vi.fn(),
     finishCallSession: props.finishCallSession ?? vi.fn((opts: DirectCallFinishSessionOptions) => {

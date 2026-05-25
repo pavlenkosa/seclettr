@@ -2,7 +2,7 @@ import type { CSSProperties, PointerEventHandler, RefObject } from "react";
 import { AvatarSummaryButton, FloatingDock, IconButton } from "@/components/ui";
 
 import { CameraIcon, ExpandIcon, HangupIcon, PhoneIcon } from "@/calls/shared/presentation/CallIcons";
-import styles from "@/calls/direct/presentation/DirectCallPanel.module.css";
+import styles from "./DirectCallMinimizedDock.module.css";
 
 interface DirectCallIncomingMinimizedProps {
   readonly minimizedDockRef: RefObject<HTMLDialogElement>;
@@ -55,7 +55,7 @@ export function DirectCallIncomingMinimized({
   return (
     <FloatingDock
       ref={minimizedDockRef}
-      className={styles.minimizedCall}
+      className={styles.dock}
       style={style}
       tabIndex={-1}
       dialogAriaLabel={incomingDialogAriaLabel}
@@ -68,7 +68,7 @@ export function DirectCallIncomingMinimized({
         <AvatarSummaryButton
           ref={incomingMinimizedSummaryRef}
           onClick={onOpenDetails}
-          className={styles.minimizedSummary}
+          className={styles.dockSummary}
           avatarLabel={incomingPeerDisplayName}
           avatarInitials={incomingPeerInitials}
           primaryText={incomingPeerDisplayName}
@@ -77,10 +77,10 @@ export function DirectCallIncomingMinimized({
         />
       )}
       actions={(
-        <div className={styles.minimizedActions}>
+        <div className={styles.dockActions}>
           <IconButton
             onClick={onReject}
-            className={styles.minimizedBtn}
+            className={styles.dockBtn}
             size={38}
             tone="danger"
             aria-label={rejectAriaLabel}
@@ -90,7 +90,7 @@ export function DirectCallIncomingMinimized({
           <IconButton
             ref={incomingMinimizedAcceptButtonRef}
             onClick={() => onAccept()}
-            className={styles.minimizedBtn}
+            className={styles.dockBtn}
             size={38}
             tone="success"
             aria-label={acceptAriaLabel}
@@ -99,9 +99,8 @@ export function DirectCallIncomingMinimized({
           </IconButton>
           <IconButton
             onClick={onOpenDetails}
-            className={styles.minimizedBtn}
+            className={styles.dockBtn}
             size={38}
-            variant="glass"
             aria-label={expandAriaLabel}
           >
             <ExpandIcon />
@@ -112,4 +111,3 @@ export function DirectCallIncomingMinimized({
     </FloatingDock>
   );
 }
-

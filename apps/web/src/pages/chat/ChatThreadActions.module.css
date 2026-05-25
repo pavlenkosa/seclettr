@@ -1,0 +1,31 @@
+.group {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.38rem;
+}
+
+.iconBtn {
+  --icon-button-size: 40px;
+}
+
+.iconBtnActive {
+  background: color-mix(in srgb, var(--accent) 16%, transparent) !important;
+  color: var(--accent) !important;
+}
+
+@media (max-width: 640px) {
+  .group {
+    gap: 0.24rem;
+  }
+
+  .iconBtn {
+    --icon-button-size: 38px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .iconBtn {
+    transition: none !important;
+    animation: none !important;
+  }
+}

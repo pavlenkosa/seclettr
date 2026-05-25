@@ -21,7 +21,7 @@ vi.mock("@/stores/messages", () => ({
   },
 }));
 
-import { useDirectCallUiFeedback } from "@/calls/direct/runtime/useDirectCallUiFeedback";
+import { useDirectCallUiFeedback } from "@/calls/direct/runtime/session/useDirectCallUiFeedback";
 import type { CallNotice } from "@/calls/direct/model/direct-call-types";
 
 type UiFeedbackHandlers = ReturnType<typeof useDirectCallUiFeedback>;

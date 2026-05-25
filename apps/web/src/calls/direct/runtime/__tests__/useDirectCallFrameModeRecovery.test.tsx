@@ -10,7 +10,8 @@ import {
   type RemoteMediaSource,
 } from "@/calls/direct/model/call-media-slots";
 import type { ActiveCall } from "@/calls/direct/model/direct-call-types";
-import { useDirectCallFrameModeRecovery } from "@/calls/direct/runtime/useDirectCallFrameModeRecovery";
+import type { LastIncomingMediaState } from "@/calls/direct/model/call-media-state";
+import { useDirectCallFrameModeRecovery } from "@/calls/direct/runtime/session/useDirectCallFrameModeRecovery";
 
 type FrameModeRecoveryOptions = Parameters<typeof useDirectCallFrameModeRecovery>[0];
 
@@ -45,6 +46,19 @@ function createLiveVideoStream(trackId = "remote-video"): MediaStream {
       enabled: true,
       readyState: "live",
     }],
+    getAudioTracks: () => [],
+  } as unknown as MediaStream;
+}
+
+function createLiveAudioStream(trackId = "remote-audio"): MediaStream {
+  return {
+    getVideoTracks: () => [],
+    getAudioTracks: () => [{
+      id: trackId,
+      enabled: true,
+      muted: false,
+      readyState: "live",
+    }],
   } as unknown as MediaStream;
 }
 
@@ -76,10 +90,13 @@ function HookHarness(props: {
   pushNotice: FrameModeRecoveryOptions["pushNotice"];
   remoteCameraStreamRef: MutableRefObject<MediaStream | null>;
   remoteScreenStreamRef: MutableRefObject<MediaStream | null>;
+  remoteAudioRef: MutableRefObject<HTMLAudioElement | null>;
+  remoteAudioStreamRef: MutableRefObject<MediaStream | null>;
   remoteCameraSlot: RemoteMediaSlot;
   remoteScreenSlot: RemoteMediaSlot;
   remoteVideoReady: boolean;
   remoteScreenReady: boolean;
+  lastIncomingMediaStateRef: MutableRefObject<Record<"camera" | "screen" | "mic", LastIncomingMediaState | null>>;
   frameModeRecoveryTimerRef: MutableRefObject<number | null>;
   frameModeRecoveryAttemptedCallIdRef: MutableRefObject<string | null>;
 }) {
@@ -93,6 +110,9 @@ function HookHarness(props: {
     remoteScreenSlot: props.remoteScreenSlot,
     remoteCameraStreamRef: props.remoteCameraStreamRef,
     remoteScreenStreamRef: props.remoteScreenStreamRef,
+    remoteAudioRef: props.remoteAudioRef,
+    remoteAudioStreamRef: props.remoteAudioStreamRef,
+    lastIncomingMediaStateRef: props.lastIncomingMediaStateRef,
     setActive: props.setActive,
     configureDirectCallFrameCrypto: props.configureDirectCallFrameCrypto,
     pushNotice: props.pushNotice,
@@ -112,6 +132,11 @@ function createRecoveryRefs(active: ActiveCall) {
     }),
     configureDirectCallFrameCrypto: vi.fn(async () => true),
     pushNotice: vi.fn(),
+    remoteAudioRef: { current: null } as MutableRefObject<HTMLAudioElement | null>,
+    remoteAudioStreamRef: { current: null } as MutableRefObject<MediaStream | null>,
+    lastIncomingMediaStateRef: {
+      current: { camera: null, screen: null, mic: null },
+    } as MutableRefObject<Record<"camera" | "screen" | "mic", LastIncomingMediaState | null>>,
     frameModeRecoveryTimerRef: { current: null } as MutableRefObject<number | null>,
     frameModeRecoveryAttemptedCallIdRef: { current: null } as MutableRefObject<string | null>,
   };
@@ -149,6 +174,9 @@ describe("useDirectCallFrameModeRecovery", () => {
       frameModeRecoveryAttemptedCallIdRef,
       frameModeRecoveryTimerRef,
       pushNotice,
+      remoteAudioRef,
+      remoteAudioStreamRef,
+      lastIncomingMediaStateRef,
       setActive,
     } = createRecoveryRefs(createActiveCall());
 
@@ -162,10 +190,13 @@ describe("useDirectCallFrameModeRecovery", () => {
           pushNotice={pushNotice}
           remoteCameraStreamRef={{ current: remoteCameraStream }}
           remoteScreenStreamRef={{ current: null }}
+          remoteAudioRef={remoteAudioRef}
+          remoteAudioStreamRef={remoteAudioStreamRef}
           remoteCameraSlot={remoteCameraSlot}
           remoteScreenSlot={remoteScreenSlot}
           remoteVideoReady={false}
           remoteScreenReady={false}
+          lastIncomingMediaStateRef={lastIncomingMediaStateRef}
           frameModeRecoveryTimerRef={frameModeRecoveryTimerRef}
           frameModeRecoveryAttemptedCallIdRef={frameModeRecoveryAttemptedCallIdRef}
         />
@@ -200,6 +231,9 @@ describe("useDirectCallFrameModeRecovery", () => {
       frameModeRecoveryAttemptedCallIdRef,
       frameModeRecoveryTimerRef,
       pushNotice,
+      remoteAudioRef,
+      remoteAudioStreamRef,
+      lastIncomingMediaStateRef,
       setActive,
     } = createRecoveryRefs(createActiveCall({ callType: "audio", videoOff: true }));
 
@@ -213,10 +247,13 @@ describe("useDirectCallFrameModeRecovery", () => {
           pushNotice={pushNotice}
           remoteCameraStreamRef={{ current: remoteCameraStream }}
           remoteScreenStreamRef={{ current: null }}
+          remoteAudioRef={remoteAudioRef}
+          remoteAudioStreamRef={remoteAudioStreamRef}
           remoteCameraSlot={remoteCameraSlot}
           remoteScreenSlot={remoteScreenSlot}
           remoteVideoReady={false}
           remoteScreenReady={false}
+          lastIncomingMediaStateRef={lastIncomingMediaStateRef}
           frameModeRecoveryTimerRef={frameModeRecoveryTimerRef}
           frameModeRecoveryAttemptedCallIdRef={frameModeRecoveryAttemptedCallIdRef}
         />
@@ -247,6 +284,9 @@ describe("useDirectCallFrameModeRecovery", () => {
       frameModeRecoveryAttemptedCallIdRef,
       frameModeRecoveryTimerRef,
       pushNotice,
+      remoteAudioRef,
+      remoteAudioStreamRef,
+      lastIncomingMediaStateRef,
       setActive,
     } = createRecoveryRefs(createActiveCall());
 
@@ -260,10 +300,13 @@ describe("useDirectCallFrameModeRecovery", () => {
           pushNotice={pushNotice}
           remoteCameraStreamRef={{ current: remoteCameraStream }}
           remoteScreenStreamRef={{ current: null }}
+          remoteAudioRef={remoteAudioRef}
+          remoteAudioStreamRef={remoteAudioStreamRef}
           remoteCameraSlot={remoteCameraSlot}
           remoteScreenSlot={remoteScreenSlot}
           remoteVideoReady={false}
           remoteScreenReady={false}
+          lastIncomingMediaStateRef={lastIncomingMediaStateRef}
           frameModeRecoveryTimerRef={frameModeRecoveryTimerRef}
           frameModeRecoveryAttemptedCallIdRef={frameModeRecoveryAttemptedCallIdRef}
         />
@@ -295,6 +338,9 @@ describe("useDirectCallFrameModeRecovery", () => {
       frameModeRecoveryAttemptedCallIdRef,
       frameModeRecoveryTimerRef,
       pushNotice,
+      remoteAudioRef,
+      remoteAudioStreamRef,
+      lastIncomingMediaStateRef,
       setActive,
     } = createRecoveryRefs(createActiveCall());
 
@@ -308,15 +354,162 @@ describe("useDirectCallFrameModeRecovery", () => {
           pushNotice={pushNotice}
           remoteCameraStreamRef={{ current: remoteCameraStream }}
           remoteScreenStreamRef={{ current: null }}
+          remoteAudioRef={remoteAudioRef}
+          remoteAudioStreamRef={remoteAudioStreamRef}
           remoteCameraSlot={remoteCameraSlot}
           remoteScreenSlot={remoteScreenSlot}
           remoteVideoReady={false}
           remoteScreenReady={false}
+          lastIncomingMediaStateRef={lastIncomingMediaStateRef}
           frameModeRecoveryTimerRef={frameModeRecoveryTimerRef}
           frameModeRecoveryAttemptedCallIdRef={frameModeRecoveryAttemptedCallIdRef}
         />
       );
     });
+
+    await act(async () => {
+      vi.advanceTimersByTime(3500);
+      await Promise.resolve();
+    });
+
+    expect(configureDirectCallFrameCrypto).not.toHaveBeenCalled();
+    expect(activeRef.current?.mediaEncryptionMode).toBe("frame-v1");
+    expect(pushNotice).not.toHaveBeenCalled();
+  });
+
+  it("falls back to transport when remote audio playback is stalled under frame mode", async () => {
+    const remoteAudioStream = createLiveAudioStream();
+    const remoteAudioElement = {
+      srcObject: remoteAudioStream,
+      currentTime: 0,
+      paused: true,
+      ended: false,
+      readyState: HTMLMediaElement.HAVE_CURRENT_DATA,
+      error: null,
+    } as unknown as HTMLAudioElement;
+    const remoteCameraSlot = createEmptyRemoteMediaSlot("camera");
+    const remoteScreenSlot = createEmptyRemoteMediaSlot("screen");
+    const {
+      activeRef,
+      configureDirectCallFrameCrypto,
+      frameModeRecoveryAttemptedCallIdRef,
+      frameModeRecoveryTimerRef,
+      pushNotice,
+      remoteAudioRef,
+      remoteAudioStreamRef,
+      lastIncomingMediaStateRef,
+      setActive,
+    } = createRecoveryRefs(createActiveCall({ callType: "audio" }));
+    remoteAudioRef.current = remoteAudioElement;
+    remoteAudioStreamRef.current = remoteAudioStream;
+    lastIncomingMediaStateRef.current.mic = {
+      seq: 1,
+      streamRevision: 1,
+      state: "on",
+      activity: "active",
+      reason: null,
+      mid: null,
+    };
+
+    act(() => {
+      root.render(
+        <HookHarness
+          active={activeRef.current}
+          activeRef={activeRef}
+          setActive={setActive}
+          configureDirectCallFrameCrypto={configureDirectCallFrameCrypto}
+          pushNotice={pushNotice}
+          remoteCameraStreamRef={{ current: null }}
+          remoteScreenStreamRef={{ current: null }}
+          remoteAudioRef={remoteAudioRef}
+          remoteAudioStreamRef={remoteAudioStreamRef}
+          remoteCameraSlot={remoteCameraSlot}
+          remoteScreenSlot={remoteScreenSlot}
+          remoteVideoReady={false}
+          remoteScreenReady={false}
+          lastIncomingMediaStateRef={lastIncomingMediaStateRef}
+          frameModeRecoveryTimerRef={frameModeRecoveryTimerRef}
+          frameModeRecoveryAttemptedCallIdRef={frameModeRecoveryAttemptedCallIdRef}
+        />
+      );
+    });
+
+    await act(async () => {
+      vi.advanceTimersByTime(3500);
+      await Promise.resolve();
+    });
+
+    expect(configureDirectCallFrameCrypto).toHaveBeenCalledWith({
+      callId: "call-1",
+      mediaEncryptionMode: "transport",
+      peerUserId: "peer-1",
+      peerDeviceId: "device-1",
+    });
+    expect(activeRef.current?.mediaEncryptionMode).toBe("transport");
+    expect(pushNotice).toHaveBeenCalledWith({
+      kind: "info",
+      message: "callSecurity.frameFallbackTransport",
+    });
+  });
+
+  it("does not fall back when remote audio timeline makes progress", async () => {
+    const remoteAudioStream = createLiveAudioStream();
+    const remoteAudioElement = {
+      srcObject: remoteAudioStream,
+      currentTime: 0,
+      paused: false,
+      ended: false,
+      readyState: HTMLMediaElement.HAVE_CURRENT_DATA,
+      error: null,
+    } as unknown as HTMLAudioElement;
+    const remoteCameraSlot = createEmptyRemoteMediaSlot("camera");
+    const remoteScreenSlot = createEmptyRemoteMediaSlot("screen");
+    const {
+      activeRef,
+      configureDirectCallFrameCrypto,
+      frameModeRecoveryAttemptedCallIdRef,
+      frameModeRecoveryTimerRef,
+      pushNotice,
+      remoteAudioRef,
+      remoteAudioStreamRef,
+      lastIncomingMediaStateRef,
+      setActive,
+    } = createRecoveryRefs(createActiveCall({ callType: "audio" }));
+    remoteAudioRef.current = remoteAudioElement;
+    remoteAudioStreamRef.current = remoteAudioStream;
+    lastIncomingMediaStateRef.current.mic = {
+      seq: 1,
+      streamRevision: 1,
+      state: "on",
+      activity: "active",
+      reason: null,
+      mid: null,
+    };
+
+    act(() => {
+      root.render(
+        <HookHarness
+          active={activeRef.current}
+          activeRef={activeRef}
+          setActive={setActive}
+          configureDirectCallFrameCrypto={configureDirectCallFrameCrypto}
+          pushNotice={pushNotice}
+          remoteCameraStreamRef={{ current: null }}
+          remoteScreenStreamRef={{ current: null }}
+          remoteAudioRef={remoteAudioRef}
+          remoteAudioStreamRef={remoteAudioStreamRef}
+          remoteCameraSlot={remoteCameraSlot}
+          remoteScreenSlot={remoteScreenSlot}
+          remoteVideoReady={false}
+          remoteScreenReady={false}
+          lastIncomingMediaStateRef={lastIncomingMediaStateRef}
+          frameModeRecoveryTimerRef={frameModeRecoveryTimerRef}
+          frameModeRecoveryAttemptedCallIdRef={frameModeRecoveryAttemptedCallIdRef}
+        />
+      );
+    });
+
+    remoteAudioElement.currentTime = 0.25;
 
     await act(async () => {
       vi.advanceTimersByTime(3500);

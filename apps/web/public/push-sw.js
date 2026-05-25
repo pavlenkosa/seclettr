@@ -66,8 +66,12 @@ function getStringPayloadValue(value, fallback) {
   return typeof value === "string" ? value : fallback;
 }
 
-function getNotificationAsset(value) {
+function getNotificationIcon(value) {
   return isNonEmptyString(value) ? value : "/favicon.svg";
+}
+
+function getNotificationBadge(value) {
+  return isNonEmptyString(value) ? value : "/notification-badge.svg";
 }
 
 function getNotificationMaxActions() {
@@ -98,8 +102,8 @@ function buildNotificationOptions(payload) {
     body: getStringPayloadValue(payload.body, "New message"),
     tag: getStringPayloadValue(payload.tag, "seclettr-message"),
     data: payload.data && typeof payload.data === "object" ? payload.data : {},
-    icon: getNotificationAsset(payload.icon),
-    badge: getNotificationAsset(payload.badge),
+    icon: getNotificationIcon(payload.icon),
+    badge: getNotificationBadge(payload.badge),
   };
 
   if (typeof payload.timestamp === "number") {
@@ -152,6 +156,18 @@ self.addEventListener("push", (event) => {
 self.addEventListener("notificationclick", (event) => {
   event.notification.close();
   const data = event.notification.data || {};
+  const action = event.action || "";
+
+  if (action === "mark-read") {
+    event.waitUntil((async () => {
+      const allClients = await clients.matchAll({ type: "window", includeUncontrolled: true });
+      for (const client of allClients) {
+        client.postMessage({ type: "push:action", action: "mark-read", data });
+      }
+    })());
+    return;
+  }
+
   const targetUrl = normalizeTargetUrl(data.url);
 
   event.waitUntil((async () => {

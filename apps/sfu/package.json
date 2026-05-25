@@ -9,6 +9,7 @@
     "build": "tsc",
     "start": "node dist/index.js",
     "typecheck": "tsc --noEmit",
+    "lint": "eslint src --ext .ts",
     "test": "vitest run",
     "test:watch": "vitest"
   },
@@ -17,16 +18,19 @@
     "@fastify/jwt": "8.0.1",
     "@fastify/websocket": "^10.0.1",
     "@seclettr/protocol": "workspace:*",
-    "fastify": "^4.26.2",
+    "fastify": "^4.29.1",
     "mediasoup": "^3.13.18",
     "nanoid": "^5.0.7",
     "zod": "^3.22.4"
   },
   "devDependencies": {
     "@types/node": "^20.11.0",
-    "vitest": "^1.6.1",
+    "@typescript-eslint/eslint-plugin": "6.21.0",
+    "@typescript-eslint/parser": "6.21.0",
+    "eslint": "8.57.0",
     "tsx": "^4.7.0",
-    "typescript": "^5.3.0"
+    "typescript": "^5.3.0",
+    "vitest": "^1.6.1"
   },
   "license": "Apache-2.0"
 }

@@ -1,6 +1,5 @@
 import { z } from "zod";
 import {
-  type JsonObject,
   JsonObjectSchema,
   SFU_PROTOCOL_VERSION,
   type StripVersion,
@@ -333,4 +332,4 @@ export type SfuRoomProducersResponseWire = z.infer<
 export type SfuRoomProducersResponse =
   StripVersion<SfuRoomProducersResponseWire>;
 
-export type SfuOpaqueJson = JsonObject;
+

@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 import {
   dispatchDirectCallSignal,
   type DirectCallSignalHandlers,
-} from "@/calls/direct/runtime/direct-call-signal-dispatch";
+} from "@/calls/direct/runtime/signal/direct-call-signal-dispatch";
 
 function createHandlers(): DirectCallSignalHandlers {
   return {

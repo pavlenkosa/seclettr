@@ -8,19 +8,14 @@ import {
   findPeerByTransport,
   getOrCreatePeer,
 } from "../src/room-state.js";
+import type { Closable } from "../src/room-state.js";
 
-interface MockClosable {
+interface MockClosable extends Closable {
   closed: boolean;
-  close(): void;
 }
 
 function createClosable(): MockClosable {
-  return {
-    closed: false,
-    close() {
-      this.closed = true;
-    },
-  };
+  return { closed: false, close() { this.closed = true; } };
 }
 
 describe("SFU rate limiter", () => {
@@ -60,9 +55,7 @@ describe("SFU rate limiter", () => {
 describe("SFU room state", () => {
   it("keys peers by user + device + session so multiple devices coexist", () => {
     const room = createRoomRecord<MockClosable, MockClosable, MockClosable, MockClosable>(
-      "room-1",
-      createClosable(),
-      0
+      "room-1", createClosable(), 0
     );
 
     const peerA = getOrCreatePeer(
@@ -94,9 +87,7 @@ describe("SFU room state", () => {
 
   it("tracks transport ownership without scanning all peers", () => {
     const room = createRoomRecord<MockClosable, MockClosable, MockClosable, MockClosable>(
-      "room-2",
-      createClosable(),
-      0
+      "room-2", createClosable(), 0
     );
     const peer = getOrCreatePeer(
       room,
@@ -116,9 +107,7 @@ describe("SFU room state", () => {
 
   it("evicts stale peers first and then removes empty rooms after TTL", () => {
     const room = createRoomRecord<MockClosable, MockClosable, MockClosable, MockClosable>(
-      "room-3",
-      createClosable(),
-      0
+      "room-3", createClosable(), 0
     );
     const rooms = new Map<string, typeof room>();
     rooms.set(room.roomId, room);

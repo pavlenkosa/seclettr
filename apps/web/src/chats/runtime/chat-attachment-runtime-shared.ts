@@ -1,6 +1,7 @@
 import { decryptAttachment, fromBase64Url } from "@seclettr/crypto";
 import { ApiError, api } from "@/lib/api";
 import { sanitizeDownloadName } from "@/lib/file-names";
+import { isNativePlatform } from "@/lib/native-platform";
 import { getUploadLocalSource } from "@/lib/upload-progress";
 import type { AttachmentMessageMeta } from "@/stores/messages";
 
@@ -157,6 +158,32 @@ export function resolveChatAttachmentErrorCause(
   return fallback;
 }
 
+async function fetchPlainAttachmentBlob(attachment: AttachmentMessageMeta): Promise<Blob> {
+  // If we still have a local blob URL from optimistic sending, use it directly
+  if (attachment.localUrl && !attachment.localUrl.startsWith("https://in-memory")) {
+    try {
+      const resp = await fetch(attachment.localUrl);
+      if (resp.ok) return new Blob([await resp.arrayBuffer()], { type: attachment.mimeType });
+    } catch {
+      // fall through to API fetch
+    }
+  }
+
+  // Fetch a fresh presigned download URL from the plain attachments API
+  const meta = await api.get<{ attachmentId: string; downloadUrl: string }>(
+    `/plain/attachments/${encodeURIComponent(attachment.attachmentId)}`
+  );
+
+  const response = await fetch(meta.downloadUrl);
+  if (!response.ok) {
+    throw createChatAttachmentRuntimeError(
+      "downloadFailed",
+      `Plain attachment download failed (${response.status})`
+    );
+  }
+  return new Blob([await response.arrayBuffer()], { type: attachment.mimeType });
+}
+
 export async function fetchAndDecryptAttachmentBlob(
   attachment: AttachmentMessageMeta,
   options: FetchAndDecryptAttachmentBlobOptions = {}
@@ -166,6 +193,10 @@ export async function fetchAndDecryptAttachmentBlob(
     if (localSourceBlob) {
       return localSourceBlob;
     }
+  }
+
+  if (attachment.isPlain) {
+    return fetchPlainAttachmentBlob(attachment);
   }
 
   const signed = await fetchAttachmentCiphertext(attachment.attachmentId);
@@ -211,18 +242,34 @@ export function revokeAttachmentObjectUrl(url: string | null): void {
   URL.revokeObjectURL(url);
 }
 
-export function triggerAttachmentDownload(
+export async function triggerAttachmentDownload(
   blob: Blob,
   attachment: AttachmentMessageMeta
-): void {
-  let url: string | null = null;
+): Promise<void> {
+  const fileName = sanitizeDownloadName(
+    attachment.fileName,
+    `attachment-${attachment.attachmentId}`
+  );
 
+  // On native Android, anchor.click() doesn't trigger a system download.
+  // Use the Web Share API instead so the user gets the OS share sheet
+  // (Save to Downloads, share to another app, etc.)
+  if (isNativePlatform() && navigator.canShare) {
+    try {
+      const file = new File([blob], fileName, { type: blob.type });
+      if (navigator.canShare({ files: [file] })) {
+        await navigator.share({ files: [file], title: fileName });
+        return;
+      }
+    } catch (error) {
+      // User cancelled share or share failed — fall through to anchor approach
+      if (error instanceof Error && error.name === "AbortError") return;
+    }
+  }
+
+  let url: string | null = null;
   try {
     url = createAttachmentObjectUrl(blob);
-    const fileName = sanitizeDownloadName(
-      attachment.fileName,
-      `attachment-${attachment.attachmentId}`
-    );
     const anchor = document.createElement("a");
     anchor.href = url;
     anchor.download = fileName;

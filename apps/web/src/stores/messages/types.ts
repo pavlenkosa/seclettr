@@ -12,6 +12,10 @@ export interface AttachmentMessageMeta {
   kind?: "file" | "voice_note" | "video_note";
   durationMs?: number;
   mediaGroupId?: string;
+  /** True for plain (unencrypted) attachments — skip decrypt, fetch download URL from /plain/attachments/:id */
+  isPlain?: boolean;
+  /** Local blob URL for optimistic sending (plain or E2EE) — use directly if present */
+  localUrl?: string;
 }
 
 export interface CallMessageMeta {

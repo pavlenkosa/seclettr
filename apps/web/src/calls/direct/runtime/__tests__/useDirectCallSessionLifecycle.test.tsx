@@ -9,13 +9,14 @@ import type {
   IncomingCall,
 } from "@/calls/direct/model/direct-call-types";
 import { createEmptyRemoteMediaSlot } from "@/calls/direct/model/call-media-slots";
-import type { UseDirectCallSessionLifecycleOptions } from "@/calls/direct/runtime/direct-call-session-lifecycle-shared";
+import type { UseDirectCallSessionLifecycleOptions } from "@/calls/direct/runtime/session/direct-call-session-lifecycle-shared";
 import { useDirectCallSessionLifecycle } from "@/calls/direct/runtime/useDirectCallSessionLifecycle";
 
 const sessionLifecycleMocks = vi.hoisted(() => ({
   directHangupCall: vi.fn(),
   directRejectCall: vi.fn(),
   stopIncomingRingtone: vi.fn(),
+  stopOutgoingRingtone: vi.fn(),
   useDirectCallFrameModeRecovery: vi.fn(),
 }));
 
@@ -26,13 +27,19 @@ vi.mock("@/lib/api", () => ({
   },
 }));
 
-vi.mock("@/calls/direct/runtime/useDirectCallIncomingRingtone", () => ({
+vi.mock("@/calls/direct/runtime/session/useDirectCallIncomingRingtone", () => ({
   useDirectCallIncomingRingtone: () => ({
     stopIncomingRingtone: sessionLifecycleMocks.stopIncomingRingtone,
   }),
 }));
 
-vi.mock("@/calls/direct/runtime/useDirectCallFrameModeRecovery", () => ({
+vi.mock("@/calls/direct/runtime/session/useDirectCallOutgoingRingtone", () => ({
+  useDirectCallOutgoingRingtone: () => ({
+    stopOutgoingRingtone: sessionLifecycleMocks.stopOutgoingRingtone,
+  }),
+}));
+
+vi.mock("@/calls/direct/runtime/session/useDirectCallFrameModeRecovery", () => ({
   useDirectCallFrameModeRecovery: sessionLifecycleMocks.useDirectCallFrameModeRecovery,
 }));
 
@@ -236,6 +243,7 @@ function createLifecycleContext() {
     frameModeRecoveryTimerRef: { current: frameRecoveryTimer },
     frameModeRecoveryAttemptedCallIdRef: { current: "call-1" },
     incomingRingtoneRef: { current: null },
+    outgoingRingtoneRef: { current: null },
     directCallLifecycleTokenRef: { current: 3 },
     directCallNegotiationRoleRef: { current: "impolite" },
     supportsPeerRenegotiationV1Ref: { current: true },
@@ -335,6 +343,7 @@ describe("useDirectCallSessionLifecycle", () => {
     });
 
     expect(sessionLifecycleMocks.directHangupCall).toHaveBeenCalledWith("call-1");
+    expect(sessionLifecycleMocks.stopOutgoingRingtone).toHaveBeenCalled();
     expect(context.activeState.current).toBeNull();
     expect(context.incomingState.current).toBeNull();
     expect(context.acceptingState.current).toBeNull();

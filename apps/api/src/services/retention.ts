@@ -2,6 +2,7 @@ import { pool } from "../db/pool.js";
 import { config } from "../config.js";
 import { recordRetentionDeleted } from "./observability.js";
 import { purgeDeletedAttachments } from "./attachment-lifecycle.js";
+import { purgeDeletedPlainAttachments } from "./plain-attachment-lifecycle.js";
 import { logger as fallbackLogger } from "../lib/logger.js";
 
 const DELIVERED_MESSAGE_RETENTION_DAYS = config.DELIVERED_MESSAGE_RETENTION_DAYS;
@@ -99,6 +100,21 @@ export async function runRetentionCleanup(
       [String(ORPHANED_ATTACHMENT_RETENTION_DAYS)]
     );
 
+    // Plain attachments orphan sweep: aborted uploads (no plain_messages row) and
+    // attachments referenced only by soft-deleted messages, older than the grace period.
+    const r8p = await pool.query(
+      `UPDATE plain_attachments
+       SET deleted_at = now()
+       WHERE deleted_at IS NULL
+         AND created_at < now() - ($1 || ' days')::interval
+         AND NOT EXISTS (
+           SELECT 1 FROM plain_messages pm
+            WHERE pm.attachment_id = plain_attachments.id
+              AND pm.deleted_at IS NULL
+         )`,
+      [String(ORPHANED_ATTACHMENT_RETENTION_DAYS)]
+    );
+
     recordRetentionDeleted("messages_delivered", r1.rowCount ?? 0);
     recordRetentionDeleted("messages_undelivered", r2.rowCount ?? 0);
     recordRetentionDeleted("group_messages", r3.rowCount ?? 0);
@@ -108,6 +124,12 @@ export async function runRetentionCleanup(
     recordRetentionDeleted("call_sessions", r6.rowCount ?? 0);
     recordRetentionDeleted("otk_reservations_cleared", r7.rowCount ?? 0);
     recordRetentionDeleted("attachments_orphaned", r8.rowCount ?? 0);
+    recordRetentionDeleted("plain_attachments_orphaned", r8p.rowCount ?? 0);
+
+    const r9 = await pool.query(
+      `DELETE FROM transfer_packages WHERE expires_at < now()`
+    );
+    recordRetentionDeleted("transfer_packages_expired", r9.rowCount ?? 0);
 
     const total =
       (r1.rowCount ?? 0) +
@@ -118,7 +140,9 @@ export async function runRetentionCleanup(
       (r6a.rowCount ?? 0) +
       (r6.rowCount ?? 0) +
       (r7.rowCount ?? 0) +
-      (r8.rowCount ?? 0);
+      (r8.rowCount ?? 0) +
+      (r8p.rowCount ?? 0) +
+      (r9.rowCount ?? 0);
     if (total > 0) {
       _log.info(
         `[retention] cleaned up ${total} rows ` +
@@ -126,10 +150,13 @@ export async function runRetentionCleanup(
         `group-msgs=${r3.rowCount ?? 0}, otks=${r4.rowCount ?? 0}, ` +
         `sessions=${r5.rowCount ?? 0}, stale-ringing=${r6a.rowCount ?? 0}, ` +
         `call-sessions=${r6.rowCount ?? 0}, ` +
-        `otk-reservations-cleared=${r7.rowCount ?? 0}, attachments-orphaned=${r8.rowCount ?? 0})`
+        `otk-reservations-cleared=${r7.rowCount ?? 0}, attachments-orphaned=${r8.rowCount ?? 0}, ` +
+        `plain-attachments-orphaned=${r8p.rowCount ?? 0}, ` +
+        `transfer-packages=${r9.rowCount ?? 0})`
       );
     }
     await purgeDeletedAttachments(_log);
+    await purgeDeletedPlainAttachments(_log);
   } catch (err) {
     _log.warn("[retention] cleanup failed", err);
   }

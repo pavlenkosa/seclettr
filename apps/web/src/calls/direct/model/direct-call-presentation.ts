@@ -1,4 +1,21 @@
-import type { CallSecurityMode } from "@/ui-settings";
+/**
+ * direct-call-presentation — pure presentation state derivation for 1:1 calls.
+ *
+ * Owns:
+ *   - DirectCallPresentationState — the complete flat bag of display strings and
+ *     derived booleans consumed by the presentation layer (labels, initials, surface,
+ *     security status, media control aria labels, etc.)
+ *   - buildDirectCallPresentationState — single entry-point that derives all
+ *     presentation values from active call state, incoming call state, UI toggles,
+ *     security mode, and i18n translation function
+ *
+ * Internal helpers (resolveCallPeerLabels, resolveIncomingCallText,
+ * resolveActiveCallSecurityLabels, resolveCallControlLabels) are private to this
+ * module and keep buildDirectCallPresentationState declarative and testable.
+ *
+ * Does not own React state, hooks, or any side effects.
+ * Consumed by useDirectCallPresentationBindings via useDirectCallVisualState.
+ */
 import { resolveDirectCallSurface, type DirectCallSurface, type ActiveCall, type IncomingCall } from "./direct-call-types";
 import {
   callStateLabel,
@@ -15,8 +32,6 @@ interface BuildDirectCallPresentationStateInput {
   incoming: IncomingCall | null;
   isMinimized: boolean;
   isSecurityCardOpen: boolean;
-  localSupportsFrameEncryption: boolean;
-  callSecurityMode: CallSecurityMode;
   t: DirectCallTranslator;
   resolvePeerLabel: (userId: string, fallbackLabel?: string) => string;
 }
@@ -31,8 +46,6 @@ export interface DirectCallPresentationState {
   incomingPromptText: string;
   incomingMinimizedMetaText: string;
   callSecurityStatusLabel: string;
-  callMediaEncryptionModeLabel: string;
-  showTransportModeInfo: boolean;
   callSecurityToggleLabel: string;
   activeCallStateText: string;
   muteToggleAriaLabel: string;
@@ -87,19 +100,10 @@ function resolveActiveCallSecurityLabels(
   active: ActiveCall | null,
   t: DirectCallTranslator
 ) {
-  if (!active) {
-    return {
-      callSecurityStatusLabel: "",
-      callMediaEncryptionModeLabel: "",
-    };
-  }
   return {
-    callSecurityStatusLabel: active.e2eeActive
+    callSecurityStatusLabel: active?.e2eeActive
       ? t("callSecurity.verified")
       : t("callSecurity.pending"),
-    callMediaEncryptionModeLabel: active.mediaEncryptionMode === "frame-v1"
-      ? t("callSecurity.mode.frame")
-      : t("callSecurity.mode.transport"),
   };
 }
 
@@ -131,8 +135,6 @@ export function buildDirectCallPresentationState({
   incoming,
   isMinimized,
   isSecurityCardOpen,
-  localSupportsFrameEncryption,
-  callSecurityMode,
   t,
   resolvePeerLabel,
 }: BuildDirectCallPresentationStateInput): DirectCallPresentationState {
@@ -148,11 +150,6 @@ export function buildDirectCallPresentationState({
     incoming,
   });
   const securityLabels = resolveActiveCallSecurityLabels(active, t);
-  const showTransportModeInfo = Boolean(
-    active?.mediaEncryptionMode === "transport" &&
-    localSupportsFrameEncryption &&
-    callSecurityMode !== "compatibility"
-  );
   const callSecurityToggleLabel = isSecurityCardOpen
     ? t("callSecurity.hideCode")
     : t("callSecurity.showCode");
@@ -167,7 +164,6 @@ export function buildDirectCallPresentationState({
     ...peerLabels,
     ...incomingText,
     ...securityLabels,
-    showTransportModeInfo,
     callSecurityToggleLabel,
     activeCallStateText,
     ...controlLabels,

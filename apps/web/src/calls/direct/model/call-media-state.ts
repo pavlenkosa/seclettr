@@ -1,3 +1,20 @@
+/**
+ * call-media-state — media state types and wire–local bridge utilities.
+ *
+ * Owns:
+ *   - Re-exports of protocol wire types (CallMediaSource, CallMediaState, etc.)
+ *     so the rest of the app imports from one local location instead of the protocol package
+ *   - LastIncomingMediaState / IncomingMediaStateHint — advisory hint types derived
+ *     from incoming peer media-state signals (seq/revision ordered, not commanding)
+ *   - OutgoingCallMediaStateSnapshot — snapshot of what we last sent to the peer
+ *   - Pure functions: shouldApplyIncomingMediaState, toIncomingMediaStateHint,
+ *     toRemoteVisualSlotHintStatus, shouldClearSlotFromHint,
+ *     resolveOutgoingCallMediaState, isSameOutgoingCallMediaState
+ *
+ * Does not own slot lifecycle, transceiver state, or any React hooks. Hint values
+ * produced here are ADVISORY — actual slot lifecycle is owned by
+ * useDirectCallRemoteMediaRuntime.
+ */
 import type {
   CallMediaActivity as WireCallMediaActivity,
   CallMediaSource as WireCallMediaSource,

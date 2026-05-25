@@ -1,7 +1,8 @@
 import { useI18n } from "@/i18n";
 import { useSecuritySettings } from "@/ui-settings";
 import { useVoiceNoteAttachmentRuntime } from "@/chats/runtime/useVoiceNoteAttachmentRuntime";
-import { useUploadProgress } from "@/chats/runtime/useUploadProgress";
+import { useExitingUploadProgress } from "@/chats/runtime/useUploadProgress";
+import { InlineNotice } from "@/components/ui";
 import type { Message } from "@/stores/messages";
 import { AttachmentUploadRing } from "./AttachmentUploadProgress";
 import { MessageStatusIcon } from "./MessageStatusIcon";
@@ -27,7 +28,12 @@ export function VoiceNoteAttachment({
 }: { msg: Message; isOwn: boolean } & MediaPlaybackProps) {
   const { t, locale } = useI18n();
   const { autoDecryptMedia } = useSecuritySettings();
-  const { progress: uploadProgress, cancel: cancelUpload } = useUploadProgress(msg.id);
+  const {
+    progress: uploadProgress,      // raw — null the moment upload finishes; used for autoDecrypt gate
+    displayProgress: uploadDisplayProgress,
+    isExiting: uploadExiting,
+    cancel: cancelUpload,
+  } = useExitingUploadProgress(msg.id);
   const {
     audioRef,
     audioUrl,
@@ -48,7 +54,7 @@ export function VoiceNoteAttachment({
     mediaKey,
     activeMediaKey,
     onActiveMediaChange,
-    autoDecrypt: autoDecryptMedia === "on" && uploadProgress === null,
+    autoDecrypt: (autoDecryptMedia === "on" || !!msg.attachment?.isPlain) && uploadProgress === null,
   });
 
   const totalSeconds = decodedDuration > 0
@@ -66,7 +72,8 @@ export function VoiceNoteAttachment({
     : totalDurationLabel;
   const sizeLabel = formatAttachmentSize(msg.attachment?.size, t);
   const messageTimeLabel = formatTime(msg.timestamp, locale);
-  const error = resolveAttachmentErrorMessage("voice", errorCause, t);
+  const isPlain = !!msg.attachment?.isPlain;
+  const error = resolveAttachmentErrorMessage("voice", errorCause, t, isPlain);
 
   const handlePlaybackRateToggle = () => {
     setPlaybackRate((previous) => {
@@ -136,7 +143,7 @@ export function VoiceNoteAttachment({
     </div>
   ) : (
     <>
-      <VoiceDecryptButton loading={loading} onDecrypt={() => void loadAndMaybePlay(true)} />
+      <VoiceDecryptButton loading={loading} onDecrypt={() => void loadAndMaybePlay(true)} isPlain={isPlain} />
       <div className={styles.voiceFooter}>
         <div className={styles.voiceInfoLeft}>
           <span>{totalDurationLabel}</span>
@@ -153,11 +160,16 @@ export function VoiceNoteAttachment({
 
   return (
     <div className={`${styles.voiceNote} ${isOwn ? styles.voiceOwn : styles.voiceTheirs}`}>
-      {uploadProgress === null ? voicePlayerControl : (
-        <div className={styles.voicePlayer}>
+      {uploadDisplayProgress !== null ? (
+        // Upload state — fades out smoothly instead of disappearing in one frame.
+        // `data-exiting` triggers the CSS opacity transition defined in voiceUploadFade.
+        <div
+          className={`${styles.voicePlayer} ${styles.voiceUploadFade}`}
+          data-exiting={uploadExiting ? "true" : undefined}
+        >
           <div className={styles.voiceUploadControl}>
             <AttachmentUploadRing
-              progress={uploadProgress}
+              progress={uploadDisplayProgress}
               onCancel={cancelUpload}
               ariaLabel={t("message.upload.cancel")}
               compact
@@ -166,7 +178,7 @@ export function VoiceNoteAttachment({
           <div className={styles.voiceBody}>
             <div className={styles.voiceUploadState}>
               <span className={styles.voiceUploadTitle}>{t("message.upload.uploading")}</span>
-              <span className={styles.voiceUploadPercent}>{Math.round(uploadProgress)}%</span>
+              <span className={styles.voiceUploadPercent}>{Math.round(uploadDisplayProgress)}%</span>
             </div>
             <div className={styles.voiceFooter}>
               <div className={styles.voiceInfoLeft}>
@@ -181,9 +193,18 @@ export function VoiceNoteAttachment({
             </div>
           </div>
         </div>
-      )}
+      ) : voicePlayerControl}
 
-      {error ? <div className={styles.voiceError}>{error}</div> : null}
+      {error ? (
+        <InlineNotice
+          tone="error"
+          size="sm"
+          role="alert"
+          className={styles.attachmentErrorNotice}
+        >
+          {error}
+        </InlineNotice>
+      ) : null}
     </div>
   );
 }

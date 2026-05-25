@@ -5,6 +5,7 @@
 import {
   DEVICES_PROTOCOL_VERSION,
   GROUPS_PROTOCOL_VERSION,
+  ROOMS_PROTOCOL_VERSION,
   DirectMissedCallsResponseSchema,
   GroupActiveCallSchema,
   GroupActiveCallsResponseSchema,
@@ -14,6 +15,10 @@ import {
   GroupHistoryResponseSchema,
   GroupMemberDevicesResponseSchema,
   UserDeviceDirectoryResponseSchema,
+  RoomCreateResponseSchema,
+  RoomJoinPreviewResponseSchema,
+  RoomJoinResponseSchema,
+  RoomParticipantsResponseSchema,
   safeParseVersionedWire,
   type DirectMissedCallEntry,
   type GroupActiveCall,
@@ -23,12 +28,16 @@ import {
   type GroupHistoryMessage,
   type GroupMemberPublicDevice,
   type UserDeviceDirectoryEntry,
+  type RoomCreateResponse,
+  type RoomJoinPreviewResponse,
+  type RoomJoinResponse,
+  type RoomParticipantsResponse,
 } from "@seclettr/protocol";
 import { z, type ZodTypeAny } from "zod";
 import { refreshSessionAccessToken } from "./session";
 import { resolveApiBaseUrl } from "./runtime-config";
+import { isNativePlatform, getNativeServerUrl } from "./native-platform";
 
-const BASE_URL = resolveApiBaseUrl();
 export interface GroupCallParticipantDto {
   userId: string;
   username: string;
@@ -71,12 +80,33 @@ function buildRequestHeaders(options: RequestInit = {}): Headers {
   if (accessToken) {
     headers.set("Authorization", `Bearer ${accessToken}`);
   }
+  // Browser strips Origin/Referer for same-origin GET (and we set
+  // referrer-policy=no-referrer globally), so the API can't recover the
+  // browser-facing origin from standard headers when rewriting presigned S3
+  // URLs. We pass it explicitly so the rewritten URL matches the page origin
+  // and the browser trusts the cert / honors CORS.
+  //
+  // On Capacitor, location.origin is always `https://localhost` — use the
+  // stored server URL's origin instead so presigned S3 URLs are rewritten to
+  // the real public server (which Nginx proxies to MinIO), not to localhost.
+  let clientOrigin: string | null = null;
+  if (isNativePlatform()) {
+    const serverUrl = getNativeServerUrl();
+    if (serverUrl) {
+      try { clientOrigin = new URL(serverUrl).origin; } catch { /* ignore malformed */ }
+    }
+  } else if (typeof globalThis.location !== "undefined" && globalThis.location.origin) {
+    clientOrigin = globalThis.location.origin;
+  }
+  if (clientOrigin) {
+    headers.set("X-Client-Origin", clientOrigin);
+  }
   return headers;
 }
 
 function sendBestEffortKeepalive(path: string, options: RequestInit = {}): void {
   const headers = buildRequestHeaders(options);
-  fetch(`${BASE_URL}${path}`, {
+  fetch(`${resolveApiBaseUrl()}${path}`, {
     ...options,
     headers,
     credentials: "include",
@@ -101,15 +131,18 @@ async function request<T>(
 ): Promise<T> {
   const headers = buildRequestHeaders(options);
 
-  const res = await fetch(`${BASE_URL}${path}`, {
+  const res = await fetch(`${resolveApiBaseUrl()}${path}`, {
     ...options,
     headers,
     credentials: "include",
   });
 
-  if (res.status === 401 && retry) {
+  if (res.status === 401 && retry && !path.startsWith("/auth/")) {
     // refreshSessionAccessToken() deduplicates concurrent calls across HTTP, WS,
     // and SFU transports — safe to await without a local wrapper.
+    // Auth endpoints (/auth/login, /auth/register, …) are exempt — their 401
+    // means "invalid credentials", not "session expired", and the response body
+    // carries the real error message which the generic handler below will read.
     const newToken = await refreshSessionAccessToken();
     if (newToken) {
       return request<T>(path, options, false);
@@ -179,6 +212,9 @@ export class ApiError extends Error {
 const MeResponseSchema = z.object({
   userId: z.string().uuid(),
   username: z.string().min(1),
+  displayName: z.string().max(64).nullable().optional(),
+  bio: z.string().max(200).nullable().optional(),
+  avatarKey: z.string().nullable().optional(),
 });
 
 const PushPreferencesSchema = z.object({
@@ -340,10 +376,23 @@ export const api = {
     ).messages;
   },
 
-  getMeUser: async (): Promise<{ userId: string; username: string } | null> => {
+  getMeUser: async (): Promise<{
+    userId: string;
+    username: string;
+    displayName: string | null;
+    bio: string | null;
+    avatarKey: string | null;
+  } | null> => {
     try {
       const raw = await request<unknown>("/users/me", { method: "GET" });
-      return parseLocalPayload(MeResponseSchema, raw);
+      const parsed = parseLocalPayload(MeResponseSchema, raw);
+      return {
+        userId: parsed.userId,
+        username: parsed.username,
+        displayName: parsed.displayName ?? null,
+        bio: parsed.bio ?? null,
+        avatarKey: parsed.avatarKey ?? null,
+      };
     } catch {
       return null;
     }
@@ -456,6 +505,63 @@ export const api = {
     );
   },
 
+  createRoom: async (body: { callType: "audio" | "video"; expiresInMinutes: number }): Promise<RoomCreateResponse> => {
+    const raw = await request<unknown>("/rooms", {
+      method: "POST",
+      body: JSON.stringify(body),
+    });
+    return parseVersionedApiPayload(RoomCreateResponseSchema, raw, ROOMS_PROTOCOL_VERSION);
+  },
+
+  getRoomPreview: async (token: string): Promise<RoomJoinPreviewResponse> => {
+    const raw = await request<unknown>(`/rooms/join/${encodeURIComponent(token)}`);
+    return parseVersionedApiPayload(RoomJoinPreviewResponseSchema, raw, ROOMS_PROTOCOL_VERSION);
+  },
+
+  redeemRoomInvite: async (token: string, body: { guestName: string }): Promise<RoomJoinResponse> => {
+    const raw = await request<unknown>(`/rooms/join/${encodeURIComponent(token)}`, {
+      method: "POST",
+      body: JSON.stringify(body),
+    });
+    return parseVersionedApiPayload(RoomJoinResponseSchema, raw, ROOMS_PROTOCOL_VERSION);
+  },
+
+  getRoomParticipants: async (callId: string, guestToken?: string): Promise<RoomParticipantsResponse> => {
+    const headers: Record<string, string> = {};
+    if (guestToken) {
+      headers["Authorization"] = `Bearer ${guestToken}`;
+    }
+    const raw = await request<unknown>(`/rooms/${encodeURIComponent(callId)}/participants`, { headers });
+    return parseVersionedApiPayload(RoomParticipantsResponseSchema, raw, ROOMS_PROTOCOL_VERSION);
+  },
+
+  joinRoomPresence: async (callId: string, guestToken?: string): Promise<void> => {
+    const headers: Record<string, string> = {};
+    if (guestToken) {
+      headers["Authorization"] = `Bearer ${guestToken}`;
+    }
+    await request<void>(`/rooms/${encodeURIComponent(callId)}/participants`, { method: "POST", headers });
+  },
+
+  leaveRoomPresence: (callId: string, guestToken?: string): void => {
+    const headers: Record<string, string> = {};
+    if (guestToken) {
+      headers["Authorization"] = `Bearer ${guestToken}`;
+    }
+    sendBestEffortKeepalive(`/rooms/${encodeURIComponent(callId)}/participants/me`, { method: "DELETE", headers });
+  },
+
+  closeRoom: async (callId: string): Promise<void> => {
+    await request<void>(`/rooms/${encodeURIComponent(callId)}`, { method: "DELETE" });
+  },
+
+  kickRoomGuest: async (callId: string, guestSessionId: string): Promise<void> => {
+    await request<void>(
+      `/rooms/${encodeURIComponent(callId)}/guests/${encodeURIComponent(guestSessionId)}`,
+      { method: "DELETE" }
+    );
+  },
+
   post: <T>(path: string, body?: unknown, options: RequestInit = {}) =>
     request<T>(path, {
       ...options,
@@ -467,6 +573,13 @@ export const api = {
     request<T>(path, {
       ...options,
       method: "PUT",
+      body: body === undefined ? undefined : JSON.stringify(body),
+    }),
+
+  patch: <T>(path: string, body?: unknown, options: RequestInit = {}) =>
+    request<T>(path, {
+      ...options,
+      method: "PATCH",
       body: body === undefined ? undefined : JSON.stringify(body),
     }),
 

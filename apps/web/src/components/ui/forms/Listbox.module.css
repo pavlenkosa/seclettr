@@ -7,29 +7,27 @@
   display: inline-flex;
   align-items: center;
   gap: 0.5rem;
-  border: 1px solid color-mix(in srgb, var(--panel-border-soft) 92%, transparent);
-  background: color-mix(in srgb, var(--surface-shell) 88%, var(--glass-surface-fill, transparent));
-  -webkit-backdrop-filter: blur(var(--glass-blur-soft, 0px)) saturate(var(--glass-saturate, 1));
-  backdrop-filter: blur(var(--glass-blur-soft, 0px)) saturate(var(--glass-saturate, 1));
+  border: 1px solid var(--border-subtle);
+  background: color-mix(in srgb, var(--surface-shell) 88%, transparent);
   color: var(--text-primary);
   text-align: left;
   cursor: pointer;
   transition:
     border-color 0.14s ease,
     background-color 0.14s ease,
-    box-shadow 0.14s ease;
+    outline-color 0.14s ease;
 }
 
 .trigger:hover:not(:disabled) {
   border-color: color-mix(in srgb, var(--accent) 40%, var(--panel-border-soft));
-  background: color-mix(in srgb, var(--surface-shell) 96%, var(--glass-surface-fill, transparent));
+  background: color-mix(in srgb, var(--surface-shell) 96%, transparent);
 }
 
 .triggerOpen,
 .trigger:focus-visible {
   border-color: var(--accent);
-  box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 22%, transparent);
-  outline: none;
+  outline: 2px solid color-mix(in srgb, var(--accent) 22%, transparent);
+  outline-offset: -2px;
 }
 
 .trigger:disabled {
@@ -97,90 +95,15 @@
 
 .dropdown {
   position: fixed;
-  z-index: 9000;
+  z-index: var(--z-9000);
   overflow-y: auto;
   overscroll-behavior: contain;
   max-height: 260px;
   border-radius: 16px;
   border: 1px solid color-mix(in srgb, var(--panel-border-soft) 88%, transparent);
-  background:
-    linear-gradient(
-      180deg,
-      color-mix(in srgb, var(--surface-float) 96%, var(--glass-surface-fill, transparent)),
-      color-mix(in srgb, var(--surface-shell) 98%, transparent)
-    );
-  -webkit-backdrop-filter: blur(var(--glass-blur-medium, 16px)) saturate(var(--glass-saturate, 1.08));
-  backdrop-filter: blur(var(--glass-blur-medium, 16px)) saturate(var(--glass-saturate, 1.08));
-  box-shadow:
-    inset 0 1px 0 rgb(255 255 255 / 0.06),
-    0 8px 32px rgb(2 8 20 / 0.32),
-    0 2px 8px rgb(2 8 20 / 0.18);
+  background: var(--surface-float);
   padding: 0.28rem;
   outline: none;
-}
-
-.dropdownDown {
-  transform-origin: top center;
-  animation: dropdownInDown 160ms cubic-bezier(0.18, 0.9, 0.2, 1) both;
-}
-
-.dropdownUp {
-  transform-origin: bottom center;
-  animation: dropdownInUp 160ms cubic-bezier(0.18, 0.9, 0.2, 1) both;
-}
-
-.dropdownClosingDown {
-  pointer-events: none;
-  animation: dropdownOutDown 160ms var(--motion-ease-exit, cubic-bezier(0.4, 0, 1, 1)) both;
-}
-
-.dropdownClosingUp {
-  pointer-events: none;
-  animation: dropdownOutUp 160ms var(--motion-ease-exit, cubic-bezier(0.4, 0, 1, 1)) both;
-}
-
-@keyframes dropdownInDown {
-  from {
-    opacity: 0;
-    transform: translateY(-6px) scale(0.97);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-  }
-}
-
-@keyframes dropdownInUp {
-  from {
-    opacity: 0;
-    transform: translateY(6px) scale(0.97);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-  }
-}
-
-@keyframes dropdownOutDown {
-  from {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-  }
-  to {
-    opacity: 0;
-    transform: translateY(-4px) scale(0.985);
-  }
-}
-
-@keyframes dropdownOutUp {
-  from {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-  }
-  to {
-    opacity: 0;
-    transform: translateY(4px) scale(0.985);
-  }
 }
 
 /* ─── Options ─────────────────────────────────────────────────────────────── */
@@ -194,7 +117,7 @@
   border-radius: 11px;
   cursor: pointer;
   user-select: none;
-  transition: background 100ms ease;
+  transition: background var(--motion-duration-fast) ease;
 }
 
 .optionLabel {
@@ -237,16 +160,7 @@
 
 /* Light theme adjustments */
 :global(:root[data-theme="light"]) .dropdown {
-  background:
-    linear-gradient(
-      180deg,
-      color-mix(in srgb, var(--surface-float) 94%, white),
-      color-mix(in srgb, var(--surface-shell-strong) 96%, white)
-    );
-  box-shadow:
-    inset 0 1px 0 rgb(255 255 255 / 0.7),
-    0 8px 32px rgb(2 8 20 / 0.14),
-    0 2px 8px rgb(2 8 20 / 0.08);
+  background: var(--surface-float);
 }
 
 :global(:root[data-theme="light"]) .optionActive {

@@ -1,0 +1,52 @@
+/* ── Reply preview strip above the composer inner ───────────────────────── */
+
+.replyPreview {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.4rem;
+  padding: 0.38rem 0.6rem 0.38rem 0.74rem;
+  border-radius: 14px;
+  border-left: 3px solid var(--accent);
+  background: color-mix(in srgb, var(--accent) 8%, var(--surface-shell));
+  border-top: 1px solid color-mix(in srgb, var(--accent) 18%, transparent);
+  border-right: 1px solid color-mix(in srgb, var(--accent) 18%, transparent);
+  border-bottom: 1px solid color-mix(in srgb, var(--accent) 18%, transparent);
+}
+
+.replyPreviewContent {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+}
+
+.replyPreviewSender {
+  font-size: 0.68rem;
+  font-weight: 700;
+  color: var(--accent);
+  line-height: 1.2;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.replyPreviewText {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  line-height: 1.3;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.replyPreviewClose {
+  flex-shrink: 0;
+  --icon-button-color-base: var(--text-secondary);
+  --icon-button-bg-base: transparent;
+  --icon-button-border-base: transparent;
+  --icon-button-bg-hover-base: color-mix(in srgb, var(--accent) 14%, transparent);
+  --icon-button-border-hover-base: transparent;
+  --icon-button-color-hover-base: var(--text-primary);
+}

@@ -1,13 +1,15 @@
 import { api } from "@/lib/api";
 import {
   canonicalizeGroupHistoryEnvelope,
-  formatUnknownGroupName,
   parseTimestamp,
-  scheduleGroupLabelRefresh,
   toGroupMessageResult,
   toProcessedMessageKey,
+} from "./group-message-mapping";
+import {
+  formatUnknownGroupName,
   GROUP_UNKNOWN_SENDER_LABEL,
-} from "./group-helpers";
+  scheduleGroupLabelRefresh,
+} from "./group-display-helpers";
 import { persistPendingGroupDecryptItem } from "./group-pending-decrypt-queue";
 import {
   createGroupHistoryReplayContext,

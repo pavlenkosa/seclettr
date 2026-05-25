@@ -1,3 +1,19 @@
+/**
+ * group-call-panel-tiles — GroupCallStageTile construction and gallery layout helpers.
+ *
+ * Owns:
+ *   - resolveRemoteTileBadge — maps remote media to a localised badge label
+ *   - createRemoteCallTile — builds a GroupCallStageTile from a GroupCallRemoteMedia entry
+ *   - createLocalCallTiles — builds local camera and/or screen-share tiles from local state
+ *   - buildMemberNameMap — creates a userId → username lookup from the session member list
+ *   - Layout predicates: isCompactGallery, isAudioOnlyGallery, isCrowdedGallery,
+ *     isWaitingSoloAudioGallery, hasPinnedStageTile, shouldShowStageLayout,
+ *     shouldForceCrowdedStageLayout
+ *   - resolvePanelClassNames — maps layout flags to CSS class-name strings
+ *
+ * Does not own stage tile selection (see group-call-stage.ts) or presentation
+ * composition (see useGroupCallPanelPresentation.ts).
+ */
 import type { GroupCallRemoteMedia } from "@/calls/group/runtime/sfu";
 import type {
   GroupCallPanelSession,
@@ -36,22 +52,30 @@ export function createRemoteCallTile(
     audioStream: participant.audioStream,
     fallbackInitials: getMemberInitials(remoteName),
     badge: resolveRemoteTileBadge(participant, t),
+    hasAudio: participant.hasAudio || hasLiveAudioTrack(participant.audioStream),
     hasVideo: participant.hasVideo,
     videoSource: participant.videoSource,
     isLocal: false,
   };
 }
 
+function hasLiveAudioTrack(stream: MediaStream | null): boolean {
+  return Boolean(stream?.getAudioTracks().some((track) => track.readyState === "live"));
+}
+
 export function createLocalCallTiles(
+  isLocalAudioMuted: boolean,
   isLocalScreenSharing: boolean,
   isLocalVideoEnabled: boolean,
   localScreenStream: MediaStream | null,
   localStream: MediaStream | null,
   localTileLabel: string,
+  localIdentityLabel: string,
   localVideoStatusLabel: string,
   t: Translate
 ): GroupCallStageTile[] {
-  const localFallbackInitials = getMemberInitials(localTileLabel.replace(/^@/, ""));
+  const localFallbackInitials = getMemberInitials(localIdentityLabel.replace(/^@/, ""));
+  const localHasAudio = !isLocalAudioMuted && hasLiveAudioTrack(localStream);
   const tiles: GroupCallStageTile[] = [];
 
   if (isLocalVideoEnabled) {
@@ -59,9 +83,10 @@ export function createLocalCallTiles(
       id: "local:camera",
       label: localTileLabel,
       stream: localStream,
-      audioStream: null,
+      audioStream: localStream,
       fallbackInitials: localFallbackInitials,
       badge: t("group.call.videoOn"),
+      hasAudio: localHasAudio,
       hasVideo: true,
       videoSource: "camera",
       isLocal: true,
@@ -73,9 +98,10 @@ export function createLocalCallTiles(
       id: "local:screen",
       label: localTileLabel,
       stream: localScreenStream,
-      audioStream: null,
+      audioStream: !isLocalVideoEnabled ? localStream : null,
       fallbackInitials: localFallbackInitials,
       badge: t("group.call.screenSharing"),
+      hasAudio: !isLocalVideoEnabled && localHasAudio,
       hasVideo: true,
       videoSource: "screen",
       isLocal: true,
@@ -87,9 +113,10 @@ export function createLocalCallTiles(
       id: "local:audio",
       label: localTileLabel,
       stream: null,
-      audioStream: null,
+      audioStream: localStream,
       fallbackInitials: localFallbackInitials,
       badge: localVideoStatusLabel,
+      hasAudio: localHasAudio,
       hasVideo: false,
       videoSource: null,
       isLocal: true,

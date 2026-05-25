@@ -6,13 +6,11 @@
   padding: var(--label-pill-padding, 0 0.55rem);
   border-radius: 999px;
   border: 1px solid var(--label-pill-border, color-mix(in srgb, var(--panel-border-soft) 88%, transparent));
-  background: var(--label-pill-bg, color-mix(in srgb, var(--surface-shell) 88%, var(--glass-surface-fill, transparent)));
+  background: var(--label-pill-bg, color-mix(in srgb, var(--surface-shell) 88%, transparent));
   color: var(--label-pill-color, var(--text-primary));
-  font-weight: 650;
+  font-weight: 600;
   line-height: 1.1;
   white-space: nowrap;
-  -webkit-backdrop-filter: blur(var(--label-pill-blur, var(--glass-blur-soft, 0px))) saturate(var(--glass-saturate, 1));
-  backdrop-filter: blur(var(--label-pill-blur, var(--glass-blur-soft, 0px))) saturate(var(--glass-saturate, 1));
 }
 
 .xs {
@@ -34,7 +32,7 @@
 }
 
 .default {
-  --label-pill-bg: color-mix(in srgb, var(--surface-shell) 88%, var(--glass-surface-fill, transparent));
+  --label-pill-bg: color-mix(in srgb, var(--surface-shell) 88%, transparent);
   --label-pill-border: color-mix(in srgb, var(--panel-border-soft) 88%, transparent);
   --label-pill-color: var(--text-primary);
 }
@@ -42,17 +40,29 @@
 .overlay {
   --label-pill-bg: color-mix(in srgb, var(--panel-header-bg) 74%, transparent);
   --label-pill-border: color-mix(in srgb, var(--panel-border-soft) 88%, transparent);
-  --label-pill-color: rgb(226 232 240 / 0.92);
+  --label-pill-color: color-mix(in srgb, var(--text-primary) 92%, transparent);
+}
+
+.warning {
+  --label-pill-bg: color-mix(in srgb, var(--warning) 14%, var(--surface-shell));
+  --label-pill-border: color-mix(in srgb, var(--warning) 40%, transparent);
+  --label-pill-color: color-mix(in srgb, var(--warning) 72%, var(--text-primary));
+}
+
+:global(:root[data-theme="light"]) .warning {
+  --label-pill-bg: color-mix(in srgb, var(--warning) 14%, white);
+  --label-pill-border: color-mix(in srgb, var(--warning) 52%, transparent);
+  --label-pill-color: color-mix(in srgb, var(--warning) 72%, var(--text-primary));
 }
 
 :global(:root[data-theme="light"]) .default {
-  --label-pill-bg: color-mix(in srgb, var(--surface-shell-strong) 96%, white);
+  --label-pill-bg: var(--surface-lighten);
   --label-pill-border: color-mix(in srgb, var(--panel-border-soft) 90%, transparent);
-  --label-pill-color: color-mix(in srgb, var(--text-primary) 90%, #0f172a);
+  --label-pill-color: color-mix(in srgb, var(--text-primary) 90%, transparent);
 }
 
 :global(:root[data-theme="light"]) .overlay {
   --label-pill-bg: color-mix(in srgb, var(--surface-shell-strong) 92%, white);
   --label-pill-border: color-mix(in srgb, var(--panel-border-soft) 90%, transparent);
-  --label-pill-color: color-mix(in srgb, var(--text-primary) 88%, #0f172a);
+  --label-pill-color: color-mix(in srgb, var(--text-primary) 88%, transparent);
 }

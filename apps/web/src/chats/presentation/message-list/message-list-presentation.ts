@@ -1,3 +1,16 @@
+/**
+ * message-list-presentation — row-level timeline projection for chat messages.
+ *
+ * Owns:
+ *   - MessageListRowPresentation / MessageRowPresentationCache projection shapes
+ *   - Date/timestamp grouping for rendered rows
+ *   - Inline media album grouping into one rendered row
+ *   - Call-event and text-preview row projection
+ *   - Incremental cache rebuild for append/update-friendly timeline rendering
+ *
+ * Does not own virtualization, scroll behavior, row rendering, or message-store
+ * state changes.
+ */
 import type { Message } from "@/stores/messages";
 
 type TranslateFn = (key: string, params?: Record<string, string | number>) => string;
@@ -32,6 +45,14 @@ interface MessageRowBuildState {
   rowBounds: MessageRowBounds[];
   rowIndexByMessageId: Map<string, number>;
   rowIdByMessageId: Map<string, string>;
+}
+
+interface IncrementalReuseBaseState {
+  rows: MessageListRowPresentation[];
+  rowBounds: MessageRowBounds[];
+  rowIndexByMessageId: Map<string, number>;
+  rowIdByMessageId: Map<string, string>;
+  rebuildStartIndex: number;
 }
 
 type BaseMessagePresentation = Pick<
@@ -80,6 +101,20 @@ function areSenderLabelsCompatible(
 
   return Object.keys(previousSenderLabels).every(
     (key) => previousSenderLabels[key] === nextSenderLabels[key]
+  );
+}
+
+function canReusePreviousPresentationState(params: {
+  previousState?: MessageRowPresentationCache | null;
+  senderLabels?: Record<string, string>;
+  locale: string;
+}): boolean {
+  const { previousState, senderLabels, locale } = params;
+
+  return Boolean(
+    previousState
+    && previousState.locale === locale
+    && areSenderLabelsCompatible(previousState.senderLabels, senderLabels)
   );
 }
 
@@ -275,6 +310,15 @@ function appendRowToState(
   });
 }
 
+function createEmptyBuildState(): MessageRowBuildState {
+  return {
+    rows: [],
+    rowBounds: [],
+    rowIndexByMessageId: new Map<string, number>(),
+    rowIdByMessageId: new Map<string, string>(),
+  };
+}
+
 function buildMessageRowPresentationCache(params: {
   messages: Message[];
   senderLabels?: Record<string, string>;
@@ -284,71 +328,108 @@ function buildMessageRowPresentationCache(params: {
 }): MessageRowPresentationCache {
   const { messages, senderLabels, locale, t, previousState } = params;
 
-  if (
-    previousState?.locale === locale
-    && areSenderLabelsCompatible(previousState?.senderLabels, senderLabels)
-  ) {
-    const previousMessages = previousState.sourceMessages;
-    const sharedLength = Math.min(previousMessages.length, messages.length);
-    let firstChangedIndex = 0;
+  if (previousState && canReusePreviousPresentationState({ previousState, senderLabels, locale })) {
+    const incrementalReuseState = resolveIncrementalReuseBaseState({
+      previousState,
+      nextMessages: messages,
+    });
 
-    while (
-      firstChangedIndex < sharedLength
-      && previousMessages[firstChangedIndex] === messages[firstChangedIndex]
-    ) {
-      firstChangedIndex += 1;
-    }
-
-    if (firstChangedIndex === previousMessages.length && firstChangedIndex === messages.length) {
+    if (!incrementalReuseState) {
       return previousState;
     }
 
-    const rebuildAnchorIndex = Math.max(0, firstChangedIndex - 1);
-    const rebuildAnchorMessage = previousMessages[rebuildAnchorIndex] ?? null;
-    const rebuildAnchorRowIndex = rebuildAnchorMessage
-      ? previousState.rowIndexByMessageId.get(rebuildAnchorMessage.id) ?? 0
-      : 0;
-    const rebuildStartIndex = previousState.rowBounds[rebuildAnchorRowIndex]?.startIndex ?? 0;
-    const reusableRowCount = rebuildStartIndex > 0 ? rebuildAnchorRowIndex : 0;
-    const rows = previousState.rows.slice(0, reusableRowCount);
-    const rowBounds = previousState.rowBounds.slice(0, reusableRowCount);
-    const rowIndexByMessageId = new Map<string, number>();
-    const rowIdByMessageId = new Map<string, string>();
-
-    rows.forEach((row, rowIndex) => {
-      row.messageIds.forEach((messageId) => {
-        rowIndexByMessageId.set(messageId, rowIndex);
-        rowIdByMessageId.set(messageId, row.rowId);
-      });
-    });
-
     return appendMessageRows({
-      baseState: {
-        rows,
-        rowBounds,
-        rowIndexByMessageId,
-        rowIdByMessageId,
-      },
+      baseState: incrementalReuseState,
       messages,
       senderLabels,
       locale,
       t,
-      startIndex: rebuildStartIndex,
+      startIndex: incrementalReuseState.rebuildStartIndex,
     });
   }
 
   return appendMessageRows({
-    baseState: {
-      rows: [],
-      rowBounds: [],
-      rowIndexByMessageId: new Map<string, number>(),
-      rowIdByMessageId: new Map<string, string>(),
-    },
+    baseState: createEmptyBuildState(),
     messages,
     senderLabels,
     locale,
     t,
     startIndex: 0,
+  });
+}
+
+function findFirstChangedMessageIndex(params: {
+  previousMessages: Message[];
+  nextMessages: Message[];
+}): number {
+  const { previousMessages, nextMessages } = params;
+  const sharedLength = Math.min(previousMessages.length, nextMessages.length);
+  let firstChangedIndex = 0;
+
+  while (
+    firstChangedIndex < sharedLength
+    && previousMessages[firstChangedIndex] === nextMessages[firstChangedIndex]
+  ) {
+    firstChangedIndex += 1;
+  }
+
+  return firstChangedIndex;
+}
+
+function cloneReusablePrefixState(params: {
+  previousState: MessageRowPresentationCache;
+  reusableRowCount: number;
+  rebuildStartIndex: number;
+}): IncrementalReuseBaseState {
+  const { previousState, reusableRowCount, rebuildStartIndex } = params;
+  const rows = previousState.rows.slice(0, reusableRowCount);
+  const rowBounds = previousState.rowBounds.slice(0, reusableRowCount);
+  const rowIndexByMessageId = new Map<string, number>();
+  const rowIdByMessageId = new Map<string, string>();
+
+  rows.forEach((row, rowIndex) => {
+    row.messageIds.forEach((messageId) => {
+      rowIndexByMessageId.set(messageId, rowIndex);
+      rowIdByMessageId.set(messageId, row.rowId);
+    });
+  });
+
+  return {
+    rows,
+    rowBounds,
+    rowIndexByMessageId,
+    rowIdByMessageId,
+    rebuildStartIndex,
+  };
+}
+
+function resolveIncrementalReuseBaseState(params: {
+  previousState: MessageRowPresentationCache;
+  nextMessages: Message[];
+}): IncrementalReuseBaseState | null {
+  const { previousState, nextMessages } = params;
+  const previousMessages = previousState.sourceMessages;
+  const firstChangedIndex = findFirstChangedMessageIndex({
+    previousMessages,
+    nextMessages,
+  });
+
+  if (firstChangedIndex === previousMessages.length && firstChangedIndex === nextMessages.length) {
+    return null;
+  }
+
+  const rebuildAnchorIndex = Math.max(0, firstChangedIndex - 1);
+  const rebuildAnchorMessage = previousMessages[rebuildAnchorIndex] ?? null;
+  const rebuildAnchorRowIndex = rebuildAnchorMessage
+    ? previousState.rowIndexByMessageId.get(rebuildAnchorMessage.id) ?? 0
+    : 0;
+  const rebuildStartIndex = previousState.rowBounds[rebuildAnchorRowIndex]?.startIndex ?? 0;
+  const reusableRowCount = rebuildStartIndex > 0 ? rebuildAnchorRowIndex : 0;
+
+  return cloneReusablePrefixState({
+    previousState,
+    reusableRowCount,
+    rebuildStartIndex,
   });
 }
 

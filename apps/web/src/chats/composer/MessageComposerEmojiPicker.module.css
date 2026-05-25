@@ -1,0 +1,346 @@
+/* ── Emoji picker toggle shell ───────────────────────────────────────────── */
+
+.emojiShell {
+  position: relative;
+  align-self: center;
+  flex-shrink: 0;
+  min-inline-size: 0;
+}
+
+/* Migrated: shared IconButton wrapper for secondary composer actions. */
+.secondaryBtn {
+  --icon-button-size: 40px;
+  --icon-button-shadow-base: none;
+  --icon-button-shadow-hover-base: none;
+}
+
+.emojiToggleGlyph {
+  font-size: 1rem;
+  line-height: 1;
+}
+
+/* ── Emoji/GIF picker — Telegram-style layout with bottom tab bar ─────────── */
+
+.emojiPicker {
+  position: absolute;
+  right: 0;
+  bottom: calc(100% + 0.5rem);
+  z-index: var(--z-20);
+  width: min(21rem, calc(100vw - 1rem));
+  inline-size: min(21rem, calc(100vw - 1rem));
+  max-inline-size: calc(100vw - 1rem);
+  min-width: 0;
+  min-inline-size: 0;
+  margin: 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  max-block-size: min(28rem, calc(100dvh - 8rem));
+  padding: 0.6rem 0.6rem 0;
+  border-radius: 20px;
+  border: 1px solid color-mix(in srgb, var(--panel-border-soft) 88%, transparent);
+  background: color-mix(in srgb, var(--surface-float) 98%, var(--bg-secondary));
+}
+
+.emojiSearchWrap {
+  flex-shrink: 0;
+  min-inline-size: 0;
+  max-inline-size: 100%;
+  margin-bottom: 0.44rem;
+}
+
+.emojiSearchInput {
+  width: 100%;
+  min-width: 0;
+  min-inline-size: 0;
+  min-height: 2.1rem;
+  padding: 0.38rem 0.72rem;
+  border-radius: 999px;
+  border: 1px solid color-mix(in srgb, var(--panel-border-soft) 82%, transparent);
+  background: color-mix(in srgb, var(--surface-shell-strong) 96%, transparent);
+  color: var(--text-primary);
+  font-size: 0.82rem;
+  line-height: 1.2;
+  transition:
+    background-color var(--motion-duration-fast) var(--motion-ease-standard),
+    border-color var(--motion-duration-fast) var(--motion-ease-standard);
+}
+
+.emojiSearchInput:focus {
+  outline: none;
+  border-color: color-mix(in srgb, var(--accent) 44%, transparent);
+}
+
+.emojiSearchInput::placeholder {
+  color: var(--text-secondary);
+}
+
+/* Scrollable content area */
+.emojiViewport {
+  flex: 1;
+  min-block-size: 0;
+  max-inline-size: 100%;
+  min-inline-size: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding-right: 0.18rem;
+}
+
+/* Subgroup section with sticky header */
+.emojiSection {
+  margin-bottom: 0.28rem;
+}
+
+.emojiSectionHeader {
+  position: sticky;
+  top: 0;
+  z-index: var(--z-2);
+  padding: 0.32rem 0.12rem 0.24rem;
+  background: color-mix(in srgb, var(--surface-float) 98%, var(--bg-secondary));
+  border-bottom: 1px solid color-mix(in srgb, var(--panel-border-soft) 68%, transparent);
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
+/* 8-column emoji grid */
+.emojiGrid {
+  display: grid;
+  max-inline-size: 100%;
+  min-inline-size: 0;
+  grid-template-columns: repeat(8, minmax(0, 1fr));
+  gap: 0.18rem;
+}
+
+.emojiButton {
+  width: 100%;
+  min-width: 0;
+  min-inline-size: 0;
+  aspect-ratio: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 10px;
+  padding: 0.2rem;
+  background: transparent;
+  border: none;
+  font-size: 1.35rem;
+  line-height: 1;
+  transition: background-color var(--motion-duration-fast) var(--motion-ease-standard);
+}
+
+.emojiButton:hover,
+.emojiButton:focus-visible {
+  background: color-mix(in srgb, var(--accent) 12%, var(--surface-shell-strong));
+}
+
+.emojiEmptyState {
+  min-height: 6rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-secondary);
+  font-size: 0.82rem;
+  text-align: center;
+  padding: 0.7rem;
+}
+
+/* ── Bottom tab bar ─────────────────────────────────────────────────────── */
+
+.emojiTabBar {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  gap: 0;
+  padding: 0.22rem 0;
+  border-top: 1px solid color-mix(in srgb, var(--panel-border-soft) 70%, transparent);
+  margin-top: 0.22rem;
+  scrollbar-width: none;
+}
+
+.emojiTabBar::-webkit-scrollbar {
+  display: none;
+}
+
+.emojiTabBtn {
+  flex-shrink: 0;
+  width: 34px;
+  height: 34px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 9px;
+  border: none;
+  background: transparent;
+  font-size: 1.15rem;
+  line-height: 1;
+  color: var(--text-secondary);
+  opacity: 0.7;
+  transition:
+    background-color var(--motion-duration-fast) var(--motion-ease-standard),
+    opacity var(--motion-duration-fast) var(--motion-ease-standard);
+}
+
+.emojiTabBtn:hover {
+  background: color-mix(in srgb, var(--accent) 10%, transparent);
+  opacity: 1;
+}
+
+.emojiTabBtnActive {
+  background: color-mix(in srgb, var(--accent) 14%, transparent);
+  opacity: 1;
+  color: var(--accent);
+}
+
+.emojiTabSpacer {
+  flex: 1;
+}
+
+.gifTabLabel {
+  font-size: 0.62rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  line-height: 1;
+}
+
+.screenReaderOnly {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* ── GIF grid ───────────────────────────────────────────────────────────── */
+
+.gifGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4px;
+  padding-bottom: 0.28rem;
+}
+
+.gifCell {
+  position: relative;
+  border-radius: 10px;
+  overflow: hidden;
+  cursor: pointer;
+  background: color-mix(in srgb, var(--surface-shell-strong) 80%, transparent);
+  border: none;
+  padding: 0;
+  display: block;
+  width: 100%;
+  transition: opacity var(--motion-duration-fast) var(--motion-ease-standard);
+}
+
+.gifCell:hover {
+  opacity: 0.88;
+}
+
+.gifCell:disabled {
+  cursor: wait;
+  opacity: 0.6;
+}
+
+.gifImg {
+  display: block;
+  width: 100%;
+  height: auto;
+  object-fit: cover;
+}
+
+.gifAttribution {
+  padding: 0.28rem 0.12rem 0.18rem;
+  font-size: 0.58rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  opacity: 0.5;
+  text-align: right;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.gifLoadingState {
+  min-height: 6rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.gifSpinner {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: 2px solid color-mix(in srgb, var(--accent) 18%, transparent);
+  border-top-color: var(--accent);
+  animation: gifSpin 700ms linear infinite;
+}
+
+@keyframes gifSpin {
+  to { transform: rotate(360deg); }
+}
+
+/* ── Responsive adjustments ─────────────────────────────────────────────── */
+
+@media (max-width: 760px) {
+  .secondaryBtn {
+    --icon-button-size: 40px;
+  }
+
+  .emojiPicker {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: calc(env(safe-area-inset-bottom, 0px) + var(--composer-height, 72px) + 4px);
+    width: auto;
+    inline-size: auto;
+    max-inline-size: none;
+    max-block-size: min(24rem, calc(100dvh - 8rem));
+    padding: 0.52rem 0.52rem 0;
+    /* Square bottom edge — sits flush against the composer bar with a 4px gap. */
+    border-radius: 18px 18px 0 0;
+  }
+
+  .emojiSearchWrap {
+    margin-bottom: 0.42rem;
+  }
+
+  .emojiSearchInput {
+    min-height: 2.15rem;
+    padding: 0.42rem 0.64rem;
+    font-size: 0.78rem;
+  }
+
+  .emojiViewport {
+    height: min(13.5rem, calc(100vh - 9.5rem));
+    min-height: 8rem;
+  }
+
+  .emojiButton {
+    min-height: 1.95rem;
+    border-radius: 12px;
+    font-size: 1.08rem;
+  }
+
+  .emojiEmptyState {
+    min-height: 2.5rem;
+    border-radius: 14px;
+    font-size: 0.72rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .emojiButton,
+  .emojiPicker {
+    transition: none !important;
+    animation: none !important;
+  }
+}

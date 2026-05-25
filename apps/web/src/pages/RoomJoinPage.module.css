@@ -1,0 +1,130 @@
+.page {
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5rem;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+}
+
+.content {
+  width: min(100%, 360px);
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+}
+
+.title {
+  margin: 0 0 0.25rem;
+  color: var(--text-primary);
+  font-size: 1.25rem;
+  font-weight: 700;
+  line-height: 1.2;
+  text-align: center;
+}
+
+.subtitle {
+  margin: 0 0 1.5rem;
+  color: var(--text-secondary);
+  font-size: 0.875rem;
+  line-height: 1.4;
+  text-align: center;
+}
+
+.label {
+  display: block;
+  margin-bottom: 0.5rem;
+  color: var(--text-secondary);
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.input {
+  display: block;
+  width: 100%;
+  min-height: 42px;
+  margin-bottom: 1rem;
+  padding: 0.62rem 0.875rem;
+  border: 1px solid color-mix(in srgb, var(--panel-border-soft) 86%, transparent);
+  border-radius: 8px;
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  font-size: 1rem;
+  outline: 1px solid transparent;
+  outline-offset: -1px;
+  transition:
+    background-color var(--motion-duration-fast) var(--motion-ease-standard),
+    border-color var(--motion-duration-fast) var(--motion-ease-standard),
+    outline-color var(--motion-duration-fast) var(--motion-ease-standard);
+}
+
+.input:focus {
+  border-color: color-mix(in srgb, var(--accent) 48%, var(--panel-border-soft));
+  outline-color: color-mix(in srgb, var(--accent) 24%, transparent);
+}
+
+.input:disabled {
+  opacity: 0.68;
+}
+
+.joinButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-height: 44px;
+  padding: 0.72rem 1rem;
+  border: 1px solid color-mix(in srgb, var(--accent) 58%, transparent);
+  border-radius: 8px;
+  background: var(--accent);
+  color: #fff;
+  font-size: 1rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition:
+    background-color var(--motion-duration-fast) var(--motion-ease-standard),
+    border-color var(--motion-duration-fast) var(--motion-ease-standard),
+    opacity var(--motion-duration-fast) var(--motion-ease-standard);
+}
+
+.joinButton:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--accent) 88%, black 12%);
+  border-color: color-mix(in srgb, var(--accent) 72%, transparent);
+}
+
+.joinButton:disabled {
+  cursor: not-allowed;
+  opacity: 0.58;
+}
+
+.stateText {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+  line-height: 1.45;
+  text-align: center;
+}
+
+.errorTitle {
+  margin: 0 0 0.75rem;
+  color: var(--text-primary);
+  font-size: 1.25rem;
+  line-height: 1.2;
+  text-align: center;
+}
+
+.errorText {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+  line-height: 1.45;
+  text-align: center;
+}
+
+.callRoot {
+  height: 100dvh;
+  display: flex;
+  flex-direction: column;
+}

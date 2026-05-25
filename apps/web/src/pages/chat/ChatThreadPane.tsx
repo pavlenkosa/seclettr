@@ -7,6 +7,7 @@ import {
   type MessageListJumpToBottomState,
 } from "@/chats/presentation/MessageList";
 import { SeclettrMark } from "@/components/common/SeclettrMark";
+import { IconButton, SurfacePanel } from "@/components/ui";
 import styles from "./ChatThreadPane.module.css";
 
 /**
@@ -17,6 +18,8 @@ export interface ChatThreadPaneProps {
   readonly hasActiveThread: boolean;
   readonly threadKey?: string;
   readonly messages: Message[];
+  /** True while the thread's first-page history is still being fetched. */
+  readonly isLoadingHistory?: boolean;
   readonly senderLabels?: Record<string, string>;
   readonly topChrome?: ReactNode;
   readonly composer?: ReactNode;
@@ -26,14 +29,21 @@ export interface ChatThreadPaneProps {
   readonly isTyping?: boolean;
   readonly onRetry?: (messageId: string) => void;
   readonly onReply?: (messageId: string) => void;
+  readonly onDelete?: (messageId: string) => void;
+  readonly onForward?: (messageId: string) => void;
+  readonly onBulkDelete?: (messageIds: string[]) => void;
+  readonly onBulkForward?: (messageIds: string[]) => void;
   readonly onScrollToMessage?: (messageId: string) => void;
   readonly onDropFiles?: (files: File[]) => Promise<void>;
 }
+
+type BulkSelectionState = { mode: boolean; selectedIds: ReadonlySet<string> };
 
 export function ChatThreadPane({
   hasActiveThread,
   threadKey,
   messages,
+  isLoadingHistory,
   senderLabels,
   topChrome,
   composer,
@@ -43,6 +53,10 @@ export function ChatThreadPane({
   isTyping,
   onRetry,
   onReply,
+  onDelete,
+  onForward,
+  onBulkDelete,
+  onBulkForward,
   onScrollToMessage,
   onDropFiles,
 }: ChatThreadPaneProps) {
@@ -53,6 +67,7 @@ export function ChatThreadPane({
     pendingCount: 0,
   });
   const [isDragOver, setIsDragOver] = useState(false);
+  const [bulkState, setBulkState] = useState<BulkSelectionState>({ mode: false, selectedIds: new Set() });
 
   useEffect(() => {
     setJumpToBottomState({
@@ -64,6 +79,26 @@ export function ChatThreadPane({
   const handleJumpToBottom = useCallback(() => {
     messageListRef.current?.scrollToBottom();
   }, []);
+
+  const handleSelectionChange = useCallback((state: BulkSelectionState) => {
+    setBulkState(state);
+  }, []);
+
+  const handleBulkCancel = useCallback(() => {
+    messageListRef.current?.exitSelection();
+  }, []);
+
+  const handleBulkForward = useCallback(() => {
+    if (bulkState.selectedIds.size === 0) return;
+    onBulkForward?.([...bulkState.selectedIds]);
+    messageListRef.current?.exitSelection();
+  }, [bulkState.selectedIds, onBulkForward]);
+
+  const handleBulkDelete = useCallback(() => {
+    if (bulkState.selectedIds.size === 0) return;
+    onBulkDelete?.([...bulkState.selectedIds]);
+    messageListRef.current?.exitSelection();
+  }, [bulkState.selectedIds, onBulkDelete]);
 
   const jumpBadgeLabel = jumpToBottomState.pendingCount > 99
     ? "99+"
@@ -97,15 +132,17 @@ export function ChatThreadPane({
   if (!hasActiveThread) {
     return (
       <div className={styles.thread} data-testid="chat-thread-pane">
-        <div className={styles.empty}>
+        <SurfacePanel className={styles.empty} padding="lg" radius="md">
           <span className={styles.emptyMark} aria-hidden="true">
             <SeclettrMark decorative />
           </span>
           <p>{t("chat.emptyState")}</p>
-        </div>
+        </SurfacePanel>
       </div>
     );
   }
+
+  const showBulkBar = bulkState.mode && (onBulkDelete || onBulkForward);
 
   return (
     <section
@@ -128,46 +165,96 @@ export function ChatThreadPane({
           </div>
         ) : null}
         {searchBar}
-        <div className={styles.messages}>
-          <MessageList
-            key={threadKey ?? "chat-thread"}
-            ref={messageListRef}
-            messages={messages}
-            senderLabels={senderLabels}
-            onRetry={onRetry}
-            onReply={onReply}
-            onScrollToMessage={onScrollToMessage}
-            highlightMessageId={highlightMessageId}
-            isTyping={isTyping}
-            onJumpToBottomStateChange={setJumpToBottomState}
-          />
-          {jumpToBottomState.visible ? (
-            <button
-              type="button"
-              className={`${styles.jumpToBottom} ${styles.jumpToBottomVisible}`}
-              onClick={handleJumpToBottom}
-              aria-label={jumpAriaLabel}
-              title={jumpAriaLabel}
-            >
-              <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-                <path d="M8 3v9M3.5 8l4.5 4.5L12.5 8" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" />
-              </svg>
-              <span
-                className={`${styles.jumpToBottomBadge} ${jumpToBottomState.pendingCount > 0 ? styles.jumpToBottomBadgeVisible : ""}`}
-                aria-hidden="true"
+        <div className={styles.contentStack}>
+          <div className={styles.messages}>
+            <MessageList
+              key={threadKey ?? "chat-thread"}
+              ref={messageListRef}
+              messages={messages}
+              isLoadingHistory={isLoadingHistory}
+              senderLabels={senderLabels}
+              onRetry={onRetry}
+              onReply={onReply}
+              onDelete={onDelete}
+              onForward={onForward}
+              onSelectionChange={handleSelectionChange}
+              onScrollToMessage={onScrollToMessage}
+              highlightMessageId={highlightMessageId}
+              isTyping={isTyping}
+              onJumpToBottomStateChange={setJumpToBottomState}
+            />
+            {jumpToBottomState.visible ? (
+              <IconButton
+                size={38}
+                className={`${styles.jumpToBottom} ${styles.jumpToBottomVisible}`}
+                onClick={handleJumpToBottom}
+                aria-label={jumpAriaLabel}
+                title={jumpAriaLabel}
               >
-                {jumpBadgeLabel}
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                  <path d="M8 3v9M3.5 8l4.5 4.5L12.5 8" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+                <span
+                  className={`${styles.jumpToBottomBadge} ${jumpToBottomState.pendingCount > 0 ? styles.jumpToBottomBadgeVisible : ""}`}
+                  aria-hidden="true"
+                >
+                  {jumpBadgeLabel}
+                </span>
+              </IconButton>
+            ) : null}
+          </div>
+          {showBulkBar ? (
+            <div
+              className={styles.bulkActionBar}
+              role="toolbar"
+              aria-label={t("message.bulkAction.selected", { count: bulkState.selectedIds.size })}
+            >
+              <span className={styles.bulkActionCount}>
+                {t("message.bulkAction.selected", { count: bulkState.selectedIds.size })}
               </span>
-            </button>
+              {onBulkForward && (
+                <button
+                  type="button"
+                  className={styles.bulkBtn}
+                  disabled={bulkState.selectedIds.size === 0}
+                  onClick={handleBulkForward}
+                >
+                  <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                    <path d="M15 8l-5-5v3C5.5 6 2.5 8 1.5 12.5 3 10 5.5 9 10 9v3l5-4z" fill="currentColor" />
+                  </svg>
+                  {t("message.bulkAction.forward")}
+                </button>
+              )}
+              {onBulkDelete && (
+                <button
+                  type="button"
+                  className={`${styles.bulkBtn} ${styles.bulkBtnDanger}`}
+                  disabled={bulkState.selectedIds.size === 0}
+                  onClick={handleBulkDelete}
+                >
+                  <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                    <path d="M3 4h10M6 4V2.7a.7.7 0 0 1 .7-.7h2.6a.7.7 0 0 1 .7.7V4M5 4l.7 9.3a.7.7 0 0 0 .7.7h3.2a.7.7 0 0 0 .7-.7L11 4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                  </svg>
+                  {t("message.bulkAction.delete")}
+                </button>
+              )}
+              <button
+                type="button"
+                className={`${styles.bulkBtn} ${styles.bulkBtnCancel}`}
+                onClick={handleBulkCancel}
+              >
+                {t("message.bulkAction.cancel")}
+              </button>
+            </div>
+          ) : null}
+          {composer ? (
+            <div className={styles.composerRail}>
+              {composer}
+            </div>
           ) : null}
           {mediaPanel}
         </div>
       </div>
-      {composer ? (
-        <div className={styles.composerRail}>
-          {composer}
-        </div>
-      ) : null}
     </section>
   );
 }

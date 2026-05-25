@@ -1,24 +1,25 @@
-import { useEffect, useState, useCallback, useRef, type CSSProperties, type PointerEvent as ReactPointerEvent, type RefObject, type MutableRefObject } from "react";
+import { useEffect, useLayoutEffect, useState, useCallback, useRef, type CSSProperties, type PointerEvent as ReactPointerEvent, type RefObject, type MutableRefObject } from "react";
 import type { DirectCallMediaEncryptionMode } from "@/calls/direct/model/call-media-encryption-negotiation";
 import type { DirectCallStageSceneState } from "@/calls/direct/presentation/useDirectCallStagePresentation";
 import { DirectCallControls } from "./DirectCallControls";
 import { DirectCallFloatingPreview } from "./DirectCallFloatingPreview";
 import { DirectCallSecurityPanel } from "./DirectCallSecurityPanel";
 import { DirectCallStage } from "./DirectCallStage";
+import { VIDEO_FRAME_RATE, VIDEO_RESOLUTION_DIMENSIONS } from "./direct-call-video-constraints";
 import { AudioOutputSelector } from "@/calls/shared/media/audio-output/AudioOutputSelector";
 import { useCallAudioOutput } from "@/calls/shared/media/audio-output/CallAudioOutputProvider";
-import { useCallAudioActivity } from "@/calls/shared/media/useCallAudioActivity";
 import { useCallInputDevices } from "@/calls/shared/media/input-devices/useCallInputDevices";
 import type { VideoResolution } from "@/calls/shared/presentation/CallDevicePicker";
 import { CallDurationText } from "@/calls/shared/presentation/CallDurationText";
 import {
+  LockIcon,
   MinimizeIcon,
-  PhoneIcon,
   SwitchCameraIcon,
 } from "@/calls/shared/presentation/CallIcons";
-import { HeaderBar, IconButton, IconPill, InfoStack } from "@/components/ui";
+import { HeaderBar, IconButton, InfoStack } from "@/components/ui";
 
 import styles from "@/calls/direct/presentation/DirectCallPanel.module.css";
+import activeStyles from "./DirectCallActiveOverlay.module.css";
 
 interface DirectCallActiveOverlayProps {
   readonly activeOverlayRef: RefObject<HTMLDialogElement>;
@@ -61,10 +62,7 @@ interface DirectCallActiveOverlayProps {
   readonly isSecurityCardOpen: boolean;
   readonly callSecurityToggleLabel: string;
   readonly callSecurityStatusLabel: string;
-  readonly callMediaEncryptionModeLabel: string;
   readonly e2eeActive: boolean;
-  readonly showTransportModeInfo: boolean;
-  readonly transportModeInfoLabel: string;
   readonly mediaEncryptionMode: DirectCallMediaEncryptionMode;
   readonly verificationCode: string | null;
   readonly verificationHash: string | null;
@@ -158,10 +156,7 @@ export function DirectCallActiveOverlay({
   isSecurityCardOpen,
   callSecurityToggleLabel,
   callSecurityStatusLabel,
-  callMediaEncryptionModeLabel,
   e2eeActive,
-  showTransportModeInfo,
-  transportModeInfoLabel,
   mediaEncryptionMode,
   verificationCode,
   verificationHash,
@@ -214,6 +209,24 @@ export function DirectCallActiveOverlay({
   screenSettingsAriaLabel,
 }: DirectCallActiveOverlayProps) {
   const [selectedVideoResolution, setSelectedVideoResolution] = useState<VideoResolution>("720p");
+  const callHeaderRef = useRef<HTMLDivElement>(null);
+  const [securitySheetTop, setSecuritySheetTop] = useState<number | null>(null);
+
+  useLayoutEffect(() => {
+    const el = callHeaderRef.current;
+    if (!el) return;
+    setSecuritySheetTop(Math.round(el.getBoundingClientRect().bottom) + 8);
+  }, []);
+
+  useEffect(() => {
+    const measure = () => {
+      const el = callHeaderRef.current;
+      if (!el) return;
+      setSecuritySheetTop(Math.round(el.getBoundingClientRect().bottom) + 8);
+    };
+    window.addEventListener("resize", measure, { passive: true });
+    return () => window.removeEventListener("resize", measure);
+  }, []);
 
   const {
     micDevices,
@@ -239,27 +252,27 @@ export function DirectCallActiveOverlay({
 
   const handleSelectCamera = useCallback(async (deviceId: string) => {
     if (!localStream || !cameraSenderRef.current) return;
-    const resolution = { "360p": [640, 360], "480p": [854, 480], "720p": [1280, 720], "1080p": [1920, 1080] }[selectedVideoResolution] ?? [1280, 720];
+    const [w, h] = VIDEO_RESOLUTION_DIMENSIONS[selectedVideoResolution] ?? [1280, 720];
     await selectCamera(deviceId, localStream, async (nextTrack) => {
       if (cameraSenderRef.current) {
         await cameraSenderRef.current.replaceTrack(nextTrack);
       }
       await nextTrack.applyConstraints({
-        width: { ideal: resolution[0] },
-        height: { ideal: resolution[1] },
-        frameRate: { ideal: 30, max: 30 },
+        width: { ideal: w },
+        height: { ideal: h },
+        frameRate: VIDEO_FRAME_RATE,
       }).catch(() => {});
     });
   }, [cameraSenderRef, localStream, selectCamera, selectedVideoResolution]);
 
   const handleSelectVideoResolution = useCallback(async (resolution: VideoResolution) => {
-    const constraints = { "360p": [640, 360], "480p": [854, 480], "720p": [1280, 720], "1080p": [1920, 1080] }[resolution] ?? [1280, 720];
+    const [w, h] = VIDEO_RESOLUTION_DIMENSIONS[resolution] ?? [1280, 720];
     const track = cameraSenderRef.current?.track ?? localStream?.getVideoTracks()[0] ?? null;
     if (track) {
       await track.applyConstraints({
-        width: { ideal: constraints[0] },
-        height: { ideal: constraints[1] },
-        frameRate: { ideal: 30, max: 30 },
+        width: { ideal: w },
+        height: { ideal: h },
+        frameRate: VIDEO_FRAME_RATE,
       }).catch(() => {});
     }
     setSelectedVideoResolution(resolution);
@@ -302,8 +315,7 @@ export function DirectCallActiveOverlay({
     }
   }, [remoteAudioRef]);
 
-  // Detect when peer is speaking
-  const peerIsSpeaking = useCallAudioActivity(remoteStream, true);
+  const peerHasAudio = Boolean(remoteStream?.getAudioTracks().some((track) => track.readyState === "live"));
 
   // Only show audio output controls when the browser actually supports it
   const { support: audioOutputSupport, canPromptForDevices: audioCanPrompt } = useCallAudioOutput();
@@ -321,10 +333,6 @@ export function DirectCallActiveOverlay({
           startedAtMs={durationStartedAtMs}
         />
       );
-  // Only show stage type in header when screen share is active — "Camera" is implied and
-  // misleading when the peer's camera is off (avatar showing).
-  const callHeaderMeta = stageScene.stageLayout.stageSource === "screen" ? screenStageLabel : undefined;
-
   return (
     <dialog
       ref={activeOverlayRef}
@@ -338,23 +346,34 @@ export function DirectCallActiveOverlay({
       <video ref={remoteCameraProbeRef} autoPlay playsInline muted className={styles.mediaProbe}><track kind="captions" /></video>
       <video ref={remoteScreenProbeRef} autoPlay playsInline muted className={styles.mediaProbe}><track kind="captions" /></video>
 
+      <div ref={callHeaderRef}>
       <HeaderBar
         className={styles.callHeader}
         stackCenterOnNarrow
-        leading={(
-          <IconPill className={styles.modeChip} icon={<PhoneIcon />} size="sm">
-            {inProgressAriaLabel}
-          </IconPill>
-        )}
         center={(
           <InfoStack
-            className={styles.callHeaderSummary}
+            className={activeStyles.callHeaderSummary}
             align="center"
             title={peerDisplayName}
             titleAccessory={callHeaderDuration}
-            meta={callHeaderMeta}
-            titleClassName={styles.callHeaderTitle}
-            metaClassName={styles.callHeaderMeta}
+            meta={(
+              <button
+                type="button"
+                onClick={onToggleSecurityCard}
+                className={[
+                  activeStyles.callEncryptionBadge,
+                  e2eeActive ? activeStyles.callEncryptionBadgeSecure : activeStyles.callEncryptionBadgePending,
+                  isSecurityCardOpen ? activeStyles.callEncryptionBadgeOpen : "",
+                ].filter(Boolean).join(" ")}
+                aria-pressed={isSecurityCardOpen}
+                aria-label={callSecurityToggleLabel}
+              >
+                <LockIcon />
+                <span>{callSecurityStatusLabel}</span>
+              </button>
+            )}
+            titleClassName={activeStyles.callHeaderTitle}
+            metaClassName={activeStyles.callHeaderMetaRow}
           />
         )}
         trailing={(
@@ -362,13 +381,31 @@ export function DirectCallActiveOverlay({
             onClick={onMinimize}
             className={styles.minimizeBtn}
             size={34}
-            variant="glass"
             aria-label={minimizeAriaLabel}
           >
             <MinimizeIcon />
           </IconButton>
         )}
       />
+      </div>
+
+      {isSecurityCardOpen ? (
+        <div
+          className={activeStyles.callSecuritySheet}
+          style={securitySheetTop !== null ? { top: `${securitySheetTop}px` } : undefined}
+        >
+          <DirectCallSecurityPanel
+            onToggle={onToggleSecurityCard}
+            callSecurityToggleLabel={callSecurityToggleLabel}
+            callSecurityStatusLabel={callSecurityStatusLabel}
+            e2eeActive={e2eeActive}
+            mediaEncryptionMode={mediaEncryptionMode}
+            verificationCode={verificationCode}
+            verificationHash={verificationHash}
+            verificationError={verificationError}
+          />
+        </div>
+      ) : null}
 
       <div
         className={[
@@ -395,31 +432,13 @@ export function DirectCallActiveOverlay({
           screenViewerDialogAriaLabel={screenViewerDialogAriaLabel}
           showCameraOnStageLabel={showCameraOnStageLabel}
           showScreenOnStageLabel={showScreenOnStageLabel}
-          peerIsSpeaking={peerIsSpeaking}
+          peerHasAudio={peerHasAudio}
         />
-
-        <div className={styles.callSecuritySection}>
-          <DirectCallSecurityPanel
-            isOpen={isSecurityCardOpen}
-            onToggle={onToggleSecurityCard}
-            callSecurityToggleLabel={callSecurityToggleLabel}
-            callSecurityStatusLabel={callSecurityStatusLabel}
-            callMediaEncryptionModeLabel={callMediaEncryptionModeLabel}
-            e2eeActive={e2eeActive}
-            showTransportModeInfo={showTransportModeInfo}
-            transportModeInfoLabel={transportModeInfoLabel}
-            mediaEncryptionMode={mediaEncryptionMode}
-            verificationCode={verificationCode}
-            verificationHash={verificationHash}
-            verificationError={verificationError}
-          />
-          {hasAudioOutputControls ? (
-            <div className={styles.audioOutputStrip}>
-              <AudioOutputSelector compact />
-            </div>
-          ) : null}
-        </div>
       </div>
+
+      {hasAudioOutputControls ? (
+        <AudioOutputSelector compact hideLabel className={activeStyles.callAudioOutputBar} />
+      ) : null}
 
       {shouldRenderLocalCameraPreview ? (
         <DirectCallFloatingPreview
@@ -437,6 +456,7 @@ export function DirectCallActiveOverlay({
           onMoveResize={onMoveLocalPreviewResize}
           onStopResize={onStopLocalPreviewResize}
           resizeHandleLabel={resizePreviewLabel}
+          isTransitioning={isSwitchingCamera}
           onSecondaryAction={canSwitchCamera ? onSwitchCamera : undefined}
           secondaryActionLabel={canSwitchCamera ? switchCameraLabel : undefined}
           secondaryActionContent={<SwitchCameraIcon />}
@@ -488,9 +508,9 @@ export function DirectCallActiveOverlay({
         micSettingsAriaLabel={micSettingsAriaLabel}
         cameraSettingsAriaLabel={cameraSettingsAriaLabel}
         screenSettingsAriaLabel={screenSettingsAriaLabel}
-        onSelectMic={handleSelectMic}
-        onSelectCamera={handleSelectCamera}
-        onSelectVideoResolution={handleSelectVideoResolution}
+        onSelectMic={(id) => { void handleSelectMic(id); }}
+        onSelectCamera={(id) => { void handleSelectCamera(id); }}
+        onSelectVideoResolution={(res) => { void handleSelectVideoResolution(res); }}
         onSelectScreenResolution={onSelectScreenResolution}
       />
     </dialog>

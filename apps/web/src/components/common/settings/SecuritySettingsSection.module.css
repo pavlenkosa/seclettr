@@ -1,0 +1,74 @@
+/* ─────────────────────────────────────────────────────────────────────────
+ * SecuritySettingsSection.module.css — PIN and transfer feedback branch.
+ *
+ * Owns:
+ *   - PIN action rows
+ *   - PIN input stack
+ *   - PIN feedback copy states
+ *
+ * Does not own:
+ *   - settings group shell
+ *   - shared settings row layout
+ * ─────────────────────────────────────────────────────────────────────────
+ */
+
+.pinButtonRow {
+  display: flex;
+  gap: 8px;
+}
+
+/* Neutral helper text above PIN input (not a status message) */
+.pinHint {
+  margin: 0;
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  line-height: 1.45;
+}
+
+.pinInputGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: 100%;
+}
+
+.pinInput {
+  width: 100%;
+  min-width: 0;
+}
+
+.pinFeedback {
+  display: flex;
+  align-items: center;
+  gap: 0.42rem;
+  margin: 0;
+  padding: 0.44rem 0.72rem;
+  border-radius: 10px;
+  font-size: 0.8rem;
+  font-weight: 560;
+  line-height: 1.4;
+}
+
+.pinFeedback::before {
+  content: "";
+  flex-shrink: 0;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+  opacity: 0.72;
+}
+
+.pinFeedbackBottom {
+  margin-top: 0.1rem;
+}
+
+.pinFeedbackError {
+  color: var(--danger, #e5534b);
+  background: color-mix(in srgb, var(--danger, #e5534b) 10%, transparent);
+}
+
+.pinFeedbackSuccess {
+  color: var(--success, #3fb950);
+  background: color-mix(in srgb, var(--success, #3fb950) 10%, transparent);
+}

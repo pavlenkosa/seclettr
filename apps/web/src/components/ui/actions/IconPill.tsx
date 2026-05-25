@@ -1,3 +1,13 @@
+/**
+ * IconPill — shared icon-plus-label pill for compact contextual labels such as call mode, media type, and toolbar states.
+ *
+ * Owns:
+ *   - Rendering an icon slot followed by a text label inside a pill-shaped `<span>`.
+ *   - Size presets (`sm`/`md`) for compact and standard pill presentations.
+ *
+ * Does not own runtime state, business logic, or domain-specific wiring.
+ * Use when: the icon meaning is part of the label; prefer LabelPill when the text tag stands on its own without icon semantics.
+ */
 import type { HTMLAttributes, ReactNode } from "react";
 import styles from "./IconPill.module.css";
 
@@ -14,6 +24,7 @@ export interface IconPillProps extends Readonly<HTMLAttributes<HTMLSpanElement>>
 /**
  * Shared icon-plus-label pill for compact contextual labels such as call mode,
  * media type, and floating toolbar states.
+ * Choose it when the icon meaning is part of the label; prefer LabelPill when the text tag stands on its own without icon semantics.
  */
 export function IconPill({
   icon,

@@ -1,0 +1,112 @@
+/*
+ * DirectCallActiveOverlay — active-only direct-call header/meta/security branch.
+ *
+ * Owns:
+ * - active-call header summary typography
+ * - duration pill and security badge states
+ * - active-call security sheet positioning
+ * - active-call audio-output bar placement
+ *
+ * Does not own:
+ * - shared fullscreen overlay shell/header container
+ * - shared center/stage layout
+ * - shared minimized/incoming direct-call chrome
+ */
+
+.callHeaderSummary {
+  min-width: 0;
+  text-align: center;
+}
+
+.callHeaderTitle {
+  color: var(--text-primary);
+  font-size: clamp(1.02rem, 2vw, 1.24rem);
+  font-weight: 780;
+  letter-spacing: -0.02em;
+}
+
+.callHeaderDuration {
+  display: inline-flex;
+  align-items: center;
+  min-height: 28px;
+  padding: 0 0.55rem;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--surface-shell) 92%, transparent);
+  border: 1px solid color-mix(in srgb, var(--panel-border-soft) 86%, transparent);
+  color: var(--text-secondary);
+  font-size: 0.74rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.callSecuritySheet {
+  position: absolute;
+  top: 148px; /* overridden by inline style from measured header height */
+  left: 0;
+  right: 0;
+  width: min(calc(100% - 3rem), 420px);
+  margin-inline: auto;
+  z-index: var(--z-5);
+  animation: callContentIn 200ms cubic-bezier(0.18, 0.9, 0.2, 1) both;
+}
+
+.callAudioOutputBar {
+  align-self: center;
+  animation: callContentIn var(--motion-duration-slow) cubic-bezier(0.18, 0.9, 0.2, 1) 60ms both;
+}
+
+.callEncryptionBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.22rem 0.6rem 0.22rem 0.44rem;
+  border-radius: 999px;
+  border: 1px solid transparent;
+  background: transparent;
+  cursor: pointer;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  line-height: 1;
+  transition: background-color 0.12s ease, opacity 0.12s ease;
+}
+
+.callEncryptionBadge:hover {
+  opacity: 0.82;
+}
+
+.callEncryptionBadgeSecure {
+  color: color-mix(in srgb, var(--status-success, #3ec97c) 90%, #fff);
+  border-color: color-mix(in srgb, var(--status-success, #3ec97c) 28%, transparent);
+  background: color-mix(in srgb, var(--status-success, #3ec97c) 12%, transparent);
+}
+
+.callEncryptionBadgePending {
+  color: color-mix(in srgb, var(--status-warning, #f0a040) 90%, #fff);
+  border-color: color-mix(in srgb, var(--status-warning, #f0a040) 28%, transparent);
+  background: color-mix(in srgb, var(--status-warning, #f0a040) 12%, transparent);
+}
+
+.callEncryptionBadgeOpen {
+  opacity: 0.7;
+}
+
+.callHeaderMetaRow {
+  display: flex;
+  justify-content: center;
+  margin-top: 0.28rem;
+}
+
+@media (max-width: 720px) {
+  .callHeaderTitle {
+    font-size: 1rem;
+  }
+}
+
+/* On mobile, hide the audio-output bar to save vertical space.
+   The native speaker-toggle button in the controls dock handles routing. */
+@media (max-width: 640px) {
+  .callAudioOutputBar {
+    display: none;
+  }
+}

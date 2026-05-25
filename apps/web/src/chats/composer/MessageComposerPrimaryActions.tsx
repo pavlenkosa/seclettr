@@ -1,6 +1,6 @@
 import { memo } from "react";
 import type { MouseEvent } from "react";
-import { IconButton } from "@/components/ui";
+import { IconButton, PillButton } from "@/components/ui";
 
 import { VideoNoteIcon, VoiceNoteIcon } from "./MessageComposerIcons";
 
@@ -13,10 +13,9 @@ export type ComposerPrimaryAction =
 export function resolvePrimaryComposerAction(params: {
   trimmedText: string;
   isFocused: boolean;
-  isGroupComposer: boolean;
   preferredRecordMode: RecordMode;
 }): ComposerPrimaryAction {
-  if (params.isGroupComposer || params.trimmedText.length > 0 || params.isFocused) {
+  if (params.trimmedText.length > 0 || params.isFocused) {
     return { kind: "send" };
   }
 
@@ -25,7 +24,7 @@ export function resolvePrimaryComposerAction(params: {
     mode: params.preferredRecordMode,
   };
 }
-import styles from "../presentation/MessageComposer.module.css";
+import styles from "./MessageComposerPrimaryActions.module.css";
 
 /**
  * Props for the composer primary action cluster.
@@ -91,7 +90,7 @@ export const MessageComposerPrimaryActions = memo(function MessageComposerPrimar
 
   return (
     <div className={styles.primaryDock}>
-      <div className={styles.primaryActions}>
+      <div className={`${styles.primaryActions} ${isRecording ? styles.primaryActionsInRecording : ""}`}>
         {showRecordModeChip ? (
           <div className={styles.recordModeStack}>
             {isRecordHintVisible ? (
@@ -99,27 +98,30 @@ export const MessageComposerPrimaryActions = memo(function MessageComposerPrimar
                 {recordHintText}
               </div>
             ) : null}
-            <button
-              type="button"
+            <PillButton
+              tone="accent"
+              appearance="soft"
+              size="sm"
               onClick={onToggleRecordMode}
               disabled={primaryButtonDisabled}
               className={styles.recordModeChip}
               aria-label={recordModeToggleAriaLabel}
               title={recordModeToggleTitle}
+              leading={
+                currentRecordMode === "voice"
+                  ? <VoiceNoteIcon size={14} />
+                  : <VideoNoteIcon size={14} />
+              }
             >
-              <span className={styles.recordModeChipIcon} aria-hidden="true">
-                {currentRecordMode === "voice" ? <VoiceNoteIcon size={14} /> : <VideoNoteIcon size={14} />}
-              </span>
               <span>{currentRecordModeLabel}</span>
-            </button>
+            </PillButton>
           </div>
         ) : null}
 
         {isRecording ? (
           <IconButton
             onClick={onCancelRecording}
-            className={styles.recordCancelButton}
-            variant="glass"
+            className={`${styles.recordCancelButton} ${styles.recordCancelButtonInRecording}`}
             aria-label={cancelRecordingAriaLabel}
             title={cancelRecordingTitle}
           >
@@ -136,7 +138,7 @@ export const MessageComposerPrimaryActions = memo(function MessageComposerPrimar
           disabled={primaryButtonDisabled}
           className={`${styles.sendBtn} ${
             primaryAction.kind === "record" && !isRecording ? styles.sendBtnRecordMode : ""
-          } ${isRecording ? styles.sendBtnRecording : ""}`}
+          } ${isRecording ? `${styles.sendBtnRecording} ${styles.sendBtnInRecording}` : ""}`}
           aria-label={primaryButtonAriaLabel}
           title={primaryButtonTitle}
         >
@@ -150,4 +152,3 @@ export const MessageComposerPrimaryActions = memo(function MessageComposerPrimar
     </div>
   );
 });
-

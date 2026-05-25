@@ -11,7 +11,7 @@ import {
   SFU_PROTOCOL_VERSION,
   SfuRoomAccessResponseSchema,
 } from "@seclettr/protocol";
-import { requireAuth } from "../../middleware/auth.js";
+import { requireAuth, requireGuestOrAuth } from "../../middleware/auth.js";
 import { query, transaction, type PoolClient } from "../../db/pool.js";
 import { config } from "../../config.js";
 import { consumeFixedWindowRateLimit } from "../../utils/fixed-window-rate-limit.js";
@@ -22,7 +22,7 @@ import {
   createDirectCallLifecycleManager,
 } from "../../services/call-routing-state.js";
 import { getPushPreferences, sendPushToUser } from "../../services/push.js";
-import { buildCallInvitePushPayload, buildGroupCallStartedPushPayload } from "../../services/push-payloads.js";
+import { buildCallInvitePushPayload, buildGroupCallStartedPushPayload, buildMissedCallPushPayload } from "../../services/push-payloads.js";
 import { hasActiveConnectionForUserAcrossCluster } from "../../services/websocket.js";
 import { recordCallEvent, recordPushNotificationFailure } from "../../services/observability.js";
 import {
@@ -55,6 +55,7 @@ type ActiveCallSession = {
   group_id: string | null;
   call_type: "audio" | "video";
   status: "ringing" | "active" | "ended" | "missed" | "rejected";
+  is_room: boolean;
 };
 
 type GroupMemberRole = "owner" | "admin" | "member";
@@ -132,7 +133,7 @@ async function getActiveCallSession(
   callId: string
 ): Promise<ActiveCallSession | null> {
   const calls = await query<ActiveCallSession>(
-    `SELECT id, caller_user_id, callee_user_id, group_id, call_type, status
+    `SELECT id, caller_user_id, callee_user_id, group_id, call_type, status, is_room
      FROM call_sessions
      WHERE id = $1
        AND status IN ('ringing', 'active')`,
@@ -141,7 +142,7 @@ async function getActiveCallSession(
   return calls[0] ?? null;
 }
 
-async function getExistingActiveGroupCall(
+async function _getExistingActiveGroupCall(
   groupId: string
 ): Promise<ActiveCallSession | null> {
   const calls = await query<ActiveCallSession>(
@@ -613,6 +614,43 @@ async function createOrJoinGroupCall(
   };
 }
 
+function notifyCalleeAboutMissedCall(
+  request: FastifyRequest,
+  params: {
+    callerUserId: string;
+    calleeUserId: string;
+    callId: string;
+    callType: CreateCallBody["callType"];
+  }
+): void {
+  const { callerUserId, calleeUserId, callId, callType } = params;
+
+  void (async () => {
+    const callerRows = await query<{ username: string }>(
+      "SELECT username FROM users WHERE id = $1",
+      [callerUserId]
+    );
+    const callerUsername = callerRows[0]?.username ?? null;
+    const pushPreferences = await getPushPreferences(calleeUserId);
+    const payload = buildMissedCallPushPayload({
+      callerUserId,
+      callerUsername,
+      callId,
+      callType,
+      preferences: pushPreferences,
+    });
+    if (!payload) return;
+
+    await sendPushToUser(calleeUserId, payload);
+  })().catch((err) => {
+    request.log.warn(
+      { err, calleeUserId },
+      "push notification failed for missed call"
+    );
+    recordPushNotificationFailure();
+  });
+}
+
 function notifyOfflineDirectCalleeAboutInvite(
   request: FastifyRequest,
   params: {
@@ -812,6 +850,11 @@ async function handleUpdateCallStatusRequest(
     return undefined;
   }
 
+  if (!currentCall.group_id) {
+    void reply.code(400).send({ error: "Use direct call lifecycle endpoints" });
+    return undefined;
+  }
+
   const userId = request.auth.sub;
   if (!(await authorizeCallStatusUpdate(reply, currentCall, userId, body.status))) {
     return undefined;
@@ -961,7 +1004,7 @@ export async function callRoutes(fastify: FastifyInstance): Promise<void> {
           callerUserId: row.caller_user_id,
           callerUsername: row.caller_username,
           callType: row.call_type,
-          endedAt: row.ended_at,
+          endedAt: new Date(row.ended_at).toISOString(),
         })),
       });
     }
@@ -971,16 +1014,31 @@ export async function callRoutes(fastify: FastifyInstance): Promise<void> {
 
   fastify.get<{ Params: { callId: string } }>(
     "/:callId/sfu-access",
-    { preHandler: callPreHandlers },
+    { preHandler: [enforceCallRouteRateLimit, requireGuestOrAuth] },
     async (request, reply) => {
       const { callId } = request.params;
-      const { sub: userId } = request.auth;
+      const { sub: userId, tokenUse, roomId } = request.auth;
 
       const call = await getActiveCallSession(callId);
       if (!call) {
         return reply.code(404).send({ error: "Call not found" });
       }
 
+      // Standalone room: allow guest token or authenticated host.
+      if (call.is_room) {
+        if (tokenUse === "guest") {
+          if (roomId !== callId) {
+            return reply.code(403).send({ error: "Forbidden" });
+          }
+          return SfuRoomAccessResponseSchema.parse({ version: SFU_PROTOCOL_VERSION, ok: true });
+        }
+        if (call.caller_user_id !== userId) {
+          return reply.code(403).send({ error: "Forbidden" });
+        }
+        return SfuRoomAccessResponseSchema.parse({ version: SFU_PROTOCOL_VERSION, ok: true });
+      }
+
+      // Direct call: only caller or callee.
       if (!call.group_id) {
         if (call.caller_user_id !== userId && call.callee_user_id !== userId) {
           return reply.code(403).send({ error: "Forbidden" });
@@ -991,6 +1049,7 @@ export async function callRoutes(fastify: FastifyInstance): Promise<void> {
         });
       }
 
+      // Group call: active membership required.
       if (!(await hasActiveGroupMembership(call.group_id, userId))) {
         return reply.code(403).send({ error: "Forbidden" });
       }
@@ -1233,6 +1292,21 @@ export async function callRoutes(fastify: FastifyInstance): Promise<void> {
           "Direct-call routing session missing during direct-hangup; using DB-backed fallback delivery"
         );
         await notifyDirectCallCounterpartDevices(call, userId, "call.hangup");
+      }
+
+      // When caller gives up on an unanswered call, send the callee a missed-call push.
+      if (
+        termination.ok &&
+        !termination.alreadyTerminal &&
+        termination.resultingStatus === "missed" &&
+        call.callee_user_id
+      ) {
+        notifyCalleeAboutMissedCall(request, {
+          callerUserId: call.caller_user_id,
+          calleeUserId: call.callee_user_id,
+          callId,
+          callType: call.call_type,
+        });
       }
 
       return { ok: true };

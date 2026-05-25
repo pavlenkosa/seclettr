@@ -1,3 +1,22 @@
+/**
+ * CallMediaSurface — generic media tile wrapper for call participant slots.
+ *
+ * Owns:
+ *   - Polymorphic container element (`div` or `article`)
+ *   - Optional interactive role (button semantics, keyboard Enter/Space handling)
+ *   - Optional secondary action button rendered inside the tile
+ *   - Slot regions: media, fallback, overlayTopStart, overlayBottom, children
+ *
+ * CallMediaAvatarFallback — avatar placeholder shown when no video track is present.
+ *
+ * Owns:
+ *   - Avatar with initials and aria-hidden wrapper
+ *   - Speaking pulse ring (data-driven via `isSpeaking` and variant props)
+ *   - Data-attribute surface for CSS speaking/audio state hooks
+ *
+ * Does not own media track binding, speaking detection, call state, or call lifecycle.
+ * Consumed by both direct and group call tile and stage layouts.
+ */
 import type { KeyboardEvent, MouseEvent, ReactNode } from "react";
 import { Avatar } from "@/components/ui";
 
@@ -29,6 +48,7 @@ interface CallMediaAvatarFallbackProps {
   readonly avatarClassName?: string;
   readonly pulseClassName?: string;
   readonly pulseActiveClassName?: string;
+  readonly hasAudio?: boolean;
   readonly isSpeaking?: boolean;
   readonly speakingVariant?: CallMediaSpeakingVariant;
 }
@@ -103,6 +123,7 @@ export function CallMediaAvatarFallback({
   avatarClassName,
   pulseClassName,
   pulseActiveClassName,
+  hasAudio = false,
   isSpeaking = false,
   speakingVariant = "tile",
 }: CallMediaAvatarFallbackProps) {
@@ -110,10 +131,11 @@ export function CallMediaAvatarFallback({
     <div
       className={className}
       aria-hidden="true"
+      data-audio-present={hasAudio ? "true" : "false"}
       data-speaking-variant={speakingVariant}
       data-speaking={isSpeaking ? "true" : "false"}
     >
-      {pulseClassName ? (
+      {isSpeaking && pulseClassName ? (
         <span
           className={[
             pulseClassName,

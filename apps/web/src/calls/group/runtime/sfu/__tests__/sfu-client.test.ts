@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildRemoteMediaSnapshot } from "@/calls/group/runtime/group-call/remote-media";
+import { buildRemoteMediaSnapshot } from "@/calls/group/runtime/media-key/remote-media";
 
 function createFakeStream(label: string): MediaStream {
   return { id: label } as unknown as MediaStream;

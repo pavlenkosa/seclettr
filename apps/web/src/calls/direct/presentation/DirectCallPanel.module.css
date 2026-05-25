@@ -1,10 +1,21 @@
+/*
+ * Ownership map
+ * - Feature-local: incoming/fullscreen/minimized direct-call layout, stage aspect ratios,
+ *   security-card composition, floating preview drag/resize shells, and responsive tuning.
+ * - Migrated: wrappers that only tune shared FloatingDock, IconButton, IconPill,
+ *   HeaderBar, CallControlsDock, and CallControlButton contracts.
+ * - Reusable: lift later. Stage action chips and preview action shells still express
+ *   direct-call-specific chrome and should move only after direct/group/room parity hardens.
+ */
+
+/* ── Motion + notice layer ──────────────────────────────────────────────── */
+
+/* Feature-local: incoming pulse and direct-call entrance timing. */
 @keyframes incomingRingPulse {
   0% {
-    transform: scale(1);
     opacity: 0.6;
   }
   100% {
-    transform: scale(1.58);
     opacity: 0;
   }
 }
@@ -12,44 +23,36 @@
 @keyframes noticeIn {
   from {
     opacity: 0;
-    transform: translateY(-8px);
   }
   to {
     opacity: 1;
-    transform: translateY(0);
   }
 }
 
 @keyframes callSurfaceIn {
   from {
     opacity: 0;
-    transform: scale(0.992);
   }
   to {
     opacity: 1;
-    transform: scale(1);
   }
 }
 
 @keyframes callDockIn {
   from {
     opacity: 0;
-    filter: blur(2px);
   }
   to {
     opacity: 1;
-    filter: blur(0);
   }
 }
 
 @keyframes callContentIn {
   from {
     opacity: 0;
-    transform: translateY(10px);
   }
   to {
     opacity: 1;
-    transform: translateY(0);
   }
 }
 
@@ -61,123 +64,20 @@
   display: flex;
   justify-content: center;
   pointer-events: none;
-  z-index: 320;
+  z-index: var(--z-320);
 }
 
+/* Migrated: InlineNotice owns the surface language; this class only positions it. */
 .notice {
   pointer-events: auto;
   min-width: 220px;
   max-width: min(92vw, 520px);
-  box-shadow: 0 6px 18px rgb(0 0 0 / 0.24);
-  animation: noticeIn 180ms cubic-bezier(0.18, 0.9, 0.2, 1) both;
+  animation: noticeIn var(--motion-duration-base) cubic-bezier(0.18, 0.9, 0.2, 1) both;
 }
 
-.incomingOverlay {
-  justify-content: space-between;
-  background:
-    radial-gradient(920px 520px at 20% -10%, color-mix(in srgb, var(--accent) 22%, transparent), transparent 58%),
-    radial-gradient(880px 520px at 100% 110%, color-mix(in srgb, var(--panel-header-bg) 32%, transparent), transparent 58%),
-    linear-gradient(
-      180deg,
-      color-mix(in srgb, var(--bg-primary) 92%, #091222),
-      color-mix(in srgb, var(--bg-primary) 98%, #091222)
-    );
-}
+/* ── Active fullscreen overlay shell ────────────────────────────────────── */
 
-.incomingCenter {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  width: min(100%, 1040px);
-  flex: 1 1 auto;
-  justify-content: center;
-  gap: 1.25rem;
-}
-
-.incomingAvatarShell {
-  position: relative;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.incomingAvatar {
-  --avatar-size: clamp(108px, 22vw, 156px);
-  --avatar-font-size: clamp(2rem, 4.5vw, 3rem);
-  --avatar-shadow: 0 16px 40px rgb(2 6 23 / 0.38);
-  position: relative;
-  font-weight: 700;
-  letter-spacing: 0.03em;
-}
-
-.incomingRingA,
-.incomingRingB {
-  position: absolute;
-  inset: -8px;
-  border-radius: 999px;
-  border: 2px solid color-mix(in srgb, var(--accent) 44%, transparent);
-  background: color-mix(in srgb, var(--accent) 8%, transparent);
-  animation: incomingRingPulse 2.2s ease-out infinite;
-  pointer-events: none;
-}
-
-.incomingRingB {
-  animation-delay: 0.8s;
-}
-
-.incomingInfo {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 0.28rem;
-  text-align: center;
-}
-
-.incomingName {
-  font-size: clamp(1.2rem, 4vw, 1.65rem);
-  font-weight: 700;
-  color: var(--text-primary);
-  letter-spacing: -0.01em;
-}
-
-.incomingRingLabel {
-  font-size: 0.85rem;
-  color: var(--text-secondary);
-  font-variant-numeric: tabular-nums;
-}
-
-.incomingControlsDock {
-  width: min(100%, 420px);
-}
-
-.minimizedCall {
-  --floating-dock-z-index: 270;
-  --floating-dock-bottom-offset: 10px;
-  /* Default to bottom-right — avoids center-covering the composer */
-  --floating-dock-left: auto;
-  --floating-dock-right: clamp(0.75rem, 2vw, 1.5rem);
-  --floating-dock-translate-x: 0;
-}
-
-.minimizedSummary {
-  --avatar-summary-padding: 0.38rem 0.46rem;
-  --avatar-summary-radius: 12px;
-  --avatar-summary-avatar-size: 34px;
-  --avatar-summary-avatar-font-size: 0.72rem;
-  --avatar-summary-title-size: 0.825rem;
-  --avatar-summary-subtitle-size: 0.69rem;
-}
-
-.minimizedActions {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.34rem;
-}
-
-.minimizedBtn {
-  --icon-button-size: 38px;
-}
-
+/* Feature-local: fullscreen shell, safe-area padding, and scroll behavior. */
 .callOverlay {
   position: fixed;
   inset: 0;
@@ -190,23 +90,20 @@
   outline: 0;
   box-sizing: border-box;
   color: inherit;
-  z-index: 260;
+  z-index: var(--z-260);
   overflow: hidden auto;
   overscroll-behavior-y: contain;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: flex-start;
-  gap: clamp(0.85rem, 1.6vw, 1.2rem);
+  gap: clamp(0.5rem, 1vw, 0.75rem);
   padding:
-    calc(env(safe-area-inset-top, 0px) + 18px)
+    calc(env(safe-area-inset-top, 0px) + 14px)
     clamp(0.9rem, 1.5vw, 1.4rem)
-    calc(env(safe-area-inset-bottom, 0px) + 22px);
-  background:
-    radial-gradient(1300px 760px at 12% -8%, color-mix(in srgb, var(--accent) 22%, transparent), transparent 54%),
-    radial-gradient(980px 620px at 92% 18%, color-mix(in srgb, var(--panel-header-bg) 28%, transparent), transparent 58%),
-    linear-gradient(180deg, color-mix(in srgb, var(--bg-primary) 94%, #07101d), color-mix(in srgb, var(--bg-primary) 98%, #030712));
-  animation: callSurfaceIn 220ms cubic-bezier(0.18, 0.9, 0.2, 1) both;
+    calc(env(safe-area-inset-bottom, 0px) + 14px);
+  background: color-mix(in srgb, var(--bg-primary) 48%, #05080f);
+  animation: callSurfaceIn var(--motion-duration-base) cubic-bezier(0.18, 0.9, 0.2, 1) both;
 }
 
 .remoteAudio {
@@ -229,8 +126,8 @@
   width: min(100%, 1480px);
   margin-inline: auto;
   --header-bar-gap: 0.8rem;
-  z-index: 2;
-  animation: callContentIn 220ms cubic-bezier(0.18, 0.9, 0.2, 1) both;
+  z-index: var(--z-2);
+  animation: callContentIn var(--motion-duration-base) cubic-bezier(0.18, 0.9, 0.2, 1) both;
 }
 
 .minimizeBtn {
@@ -241,9 +138,9 @@
   --icon-button-border-hover: color-mix(in srgb, var(--accent) 34%, var(--icon-btn-border));
   --icon-button-color: var(--text-primary);
   --icon-button-color-hover: var(--text-primary);
-  --icon-button-blur: 8px;
+  --icon-button-blur: 0;
   --icon-button-transform: none;
-  --icon-button-transform-hover: translateY(-1px);
+  --icon-button-transform-hover: none;
 }
 
 .modeChip {
@@ -252,9 +149,12 @@
   --icon-pill-gap: 0.425rem;
 }
 
+/* ── Stage shell + security surfaces ────────────────────────────────────── */
+
+/* Feature-local: stage sizing, source switching, and security composition. */
 .callCenter {
   position: relative;
-  z-index: 2;
+  z-index: var(--z-2);
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -264,7 +164,7 @@
   flex: 1;
   width: min(100%, 820px);
   overflow: visible;
-  animation: callContentIn 260ms cubic-bezier(0.18, 0.9, 0.2, 1) 40ms both;
+  animation: callContentIn var(--motion-duration-slow) cubic-bezier(0.18, 0.9, 0.2, 1) 40ms both;
 }
 
 .callCenterVisual {
@@ -285,22 +185,25 @@
   min-height: 0;
 }
 
+.callSurface:has(.callStageCompact) {
+  flex: 1;
+  min-height: 0;
+}
+
 .callSurfaceScreenFocused {
   align-items: stretch;
 }
 
 .callStage {
+  --direct-call-avatar-size: clamp(84px, 12vw, 124px);
+  --direct-call-avatar-font-size: clamp(1.32rem, 2vw, 1.82rem);
+  --direct-call-audio-ring-size: calc(var(--direct-call-avatar-size) + 22px);
   position: relative;
   width: 100%;
-  border-radius: 28px;
+  border-radius: 18px;
   overflow: hidden;
   border: 1px solid color-mix(in srgb, var(--panel-border-soft) 86%, transparent);
-  background:
-    radial-gradient(780px 420px at 50% 10%, color-mix(in srgb, var(--accent) 10%, transparent), transparent 70%),
-    linear-gradient(180deg, color-mix(in srgb, var(--panel-header-bg) 72%, transparent), color-mix(in srgb, var(--bg-primary) 72%, transparent));
-  box-shadow:
-    0 24px 56px rgb(2 8 20 / 0.32),
-    inset 0 1px 0 rgb(255 255 255 / 0.04);
+  background: color-mix(in srgb, var(--panel-header-bg) 72%, var(--bg-primary));
 }
 
 .callStageCamera {
@@ -317,11 +220,53 @@
 }
 
 .callStageCompact {
-  width: min(100%, 380px);
-  aspect-ratio: 1 / 1;
+  width: min(100%, 420px);
+  aspect-ratio: 4 / 3;
   min-height: unset;
-  max-height: 380px;
+  max-height: 320px;
   margin-inline: auto;
+  background: color-mix(in srgb, var(--surface-shell) 90%, var(--bg-primary));
+}
+
+/* Audio-only mode: avatar fills all available center height — no border box */
+.callStageAudio.callStageCompact {
+  width: 100%;
+  aspect-ratio: unset;
+  max-height: none;
+  flex: 1;
+  margin-inline: 0;
+  border-color: transparent;
+  background: transparent;
+  border-radius: 0;
+  overflow: visible;
+  --direct-call-avatar-size: clamp(110px, 17vw, 165px);
+  --direct-call-avatar-font-size: clamp(1.7rem, 3.2vw, 2.5rem);
+  --direct-call-audio-ring-size: calc(var(--direct-call-avatar-size) + 30px);
+}
+
+.stagePlaceholderName {
+  position: absolute;
+  left: 1rem;
+  right: 1rem;
+  text-align: center;
+  top: calc(50% + var(--direct-call-audio-ring-size) / 2 + 1.1rem);
+  font-size: clamp(1.05rem, 2.2vw, 1.35rem);
+  font-weight: 700;
+  color: rgba(255 255 255 / 0.92);
+  letter-spacing: -0.015em;
+  pointer-events: none;
+}
+
+.stagePlaceholderStatus {
+  position: absolute;
+  left: 1rem;
+  right: 1rem;
+  text-align: center;
+  top: calc(50% + var(--direct-call-audio-ring-size) / 2 + 1.1rem + 1.8rem);
+  font-size: 0.82rem;
+  color: rgba(255 255 255 / 0.52);
+  font-variant-numeric: tabular-nums;
+  pointer-events: none;
 }
 
 .stageVideo {
@@ -334,7 +279,7 @@
 
 .callStageScreen .stageVideo {
   object-fit: contain;
-  background: rgb(7 12 24 / 0.92);
+  background: color-mix(in srgb, var(--bg-primary) 92%, var(--surface-shell-strong));
 }
 
 .stagePlaceholder {
@@ -346,9 +291,11 @@
   justify-content: center;
   gap: 0.8rem;
   padding: 1.2rem;
-  background:
-    radial-gradient(circle at 50% 42%, color-mix(in srgb, var(--accent) 20%, transparent), transparent 46%),
-    linear-gradient(180deg, transparent, color-mix(in srgb, var(--bg-primary) 18%, transparent));
+  background: color-mix(in srgb, var(--surface-shell) 90%, var(--bg-primary));
+}
+
+.callStageAudio .stagePlaceholder {
+  background: transparent;
 }
 
 .stageMeta {
@@ -358,21 +305,21 @@
   bottom: 0;
   --info-stack-gap: 0.12rem;
   padding: 0.8rem 0.92rem 0.78rem;
-  background: linear-gradient(180deg, transparent, color-mix(in srgb, var(--bg-primary) 56%, transparent));
+  background: color-mix(in srgb, var(--bg-primary) 62%, transparent);
 }
 
 .stageVisualBadge {
   position: absolute;
   top: 0.9rem;
   left: 0.9rem;
-  z-index: 2;
+  z-index: var(--z-2);
 }
 
 .stageActionRail {
   position: absolute;
   top: 0.9rem;
   right: 0.9rem;
-  z-index: 2;
+  z-index: var(--z-2);
   display: flex;
   align-items: center;
   gap: 0.45rem;
@@ -380,6 +327,7 @@
   justify-content: flex-end;
 }
 
+/* Reusable: lift later. Stage action shells overlap with compact call-control language. */
 .stageActionBtn {
   min-height: 34px;
   padding: 0 0.7rem;
@@ -389,12 +337,10 @@
   color: var(--text-primary);
   font-size: 0.74rem;
   font-weight: 700;
-  backdrop-filter: blur(10px);
-  transition: transform 0.12s ease, border-color 0.12s ease;
+  transition: background-color 0.12s ease, border-color 0.12s ease;
 }
 
 .stageActionBtn:hover {
-  transform: translateY(-1px);
   border-color: color-mix(in srgb, var(--accent) 28%, var(--panel-border-soft));
 }
 
@@ -407,45 +353,43 @@
   --icon-button-bg-active: color-mix(in srgb, var(--panel-header-bg) 62%, transparent);
   --icon-button-color: var(--text-primary);
   --icon-button-color-hover: var(--text-primary);
-  --icon-button-shadow: 0 10px 24px color-mix(in srgb, var(--bg-primary) 18%, transparent);
-  --icon-button-shadow-hover: 0 12px 26px color-mix(in srgb, var(--bg-primary) 20%, transparent);
-  --icon-button-transform-hover: translateY(-1px);
-  --icon-button-blur: 10px;
+  --icon-button-shadow: none;
+  --icon-button-shadow-hover: none;
+  --icon-button-transform-hover: none;
+  --icon-button-blur: 0;
 }
 
 .audioAvatar {
-  --avatar-size: clamp(96px, 20vw, 138px);
-  --avatar-font-size: clamp(1.75rem, 3.4vw, 2.5rem);
-  --avatar-shadow: 0 8px 22px rgb(2 6 23 / 0.28);
+  --avatar-size: var(--direct-call-avatar-size);
+  --avatar-font-size: var(--direct-call-avatar-font-size);
+  --avatar-shadow: none;
   position: relative;
   font-weight: 700;
-  letter-spacing: 0.03em;
+  letter-spacing: 0.02em;
 }
 
 .stageAudioPulse {
   position: absolute;
-  width: clamp(118px, 28%, 176px);
+  width: var(--direct-call-audio-ring-size);
   aspect-ratio: 1 / 1;
   border-radius: 999px;
-  border: 1px solid color-mix(in srgb, var(--accent) 34%, transparent);
-  background: radial-gradient(circle at center, color-mix(in srgb, var(--accent) 18%, transparent), transparent 70%);
-  opacity: 0.58;
-  transform: scale(1);
-  transition: transform 0.14s ease, opacity 0.14s ease, box-shadow 0.14s ease;
+  /* Functional exception: active-audio ring is a real speaking-state cue, not decorative glow. */
+  border: 2px solid color-mix(in srgb, var(--accent) 58%, transparent);
+  background: transparent;
+  opacity: 1;
+  transition: border-color 0.14s ease, background-color 0.14s ease;
   pointer-events: none;
-  z-index: 0;
+  z-index: var(--z-0);
 }
 
 .stageAudioPulseActive {
-  opacity: 0.95;
-  transform: scale(1.09);
-  box-shadow:
-    0 0 0 7px color-mix(in srgb, var(--accent) 18%, transparent),
-    0 0 0 14px color-mix(in srgb, var(--accent) 10%, transparent);
+  border-color: color-mix(in srgb, var(--accent) 58%, transparent);
+  background: transparent;
 }
 
+/* Feature-local exception: primary stage text must stay high-contrast over live media. */
 .peerName {
-  color: #f8fafc;
+  color: var(--text-primary);
   font-weight: 700;
   font-size: clamp(0.94rem, 1.6vw, 1.12rem);
   letter-spacing: -0.008em;
@@ -454,37 +398,26 @@
 }
 
 .callState {
-  color: rgb(226 232 240 / 0.92);
+  color: var(--text-secondary);
   font-size: 0.78rem;
   font-variant-numeric: tabular-nums;
 }
 
 :global(:root[data-theme="light"]) .callStage {
-  border-color: color-mix(in srgb, var(--panel-border-soft) 92%, transparent);
-  background:
-    radial-gradient(780px 420px at 50% 10%, color-mix(in srgb, var(--accent) 10%, transparent), transparent 70%),
-    linear-gradient(
-      180deg,
-      color-mix(in srgb, var(--panel-header-bg) 72%, white),
-      color-mix(in srgb, var(--bg-primary) 84%, white)
-    );
+  border-color: var(--border-subtle);
+  background: color-mix(in srgb, var(--panel-header-bg) 72%, white);
 }
 
 :global(:root[data-theme="light"]) .stageMeta {
-  background:
-    linear-gradient(
-      180deg,
-      transparent,
-      rgb(15 23 42 / 0.16)
-    );
+  background: color-mix(in srgb, var(--panel-header-bg) 18%, transparent);
 }
 
 :global(:root[data-theme="light"]) .peerName {
-  color: color-mix(in srgb, var(--text-primary) 92%, #0b1320);
+  color: var(--text-primary);
 }
 
 :global(:root[data-theme="light"]) .callState {
-  color: color-mix(in srgb, var(--text-primary) 72%, var(--text-secondary));
+  color: var(--text-primary-muted);
 }
 
 .securityPanel {
@@ -501,19 +434,6 @@
   display: flex;
   flex-direction: column;
   gap: 0.46rem;
-  padding: 0.8rem;
-  border-radius: 28px;
-  border: 1px solid color-mix(in srgb, var(--panel-border-soft) 74%, transparent);
-  background:
-    linear-gradient(
-      180deg,
-      color-mix(in srgb, var(--surface-float) 94%, transparent),
-      color-mix(in srgb, var(--surface-shell) 96%, transparent)
-    );
-  box-shadow:
-    0 24px 54px rgb(2 8 20 / 0.18),
-    inset 0 1px 0 rgb(255 255 255 / 0.03);
-  backdrop-filter: blur(20px);
 }
 
 .securitySummaryRow {
@@ -566,7 +486,7 @@
   --surface-panel-bg-end: color-mix(in srgb, var(--panel-header-bg) 66%, var(--bg-secondary));
   --surface-panel-border: color-mix(in srgb, var(--panel-border-soft) 88%, transparent);
   --surface-panel-shadow: none;
-  animation: callContentIn 260ms cubic-bezier(0.18, 0.9, 0.2, 1) 70ms both;
+  animation: callContentIn var(--motion-duration-slow) cubic-bezier(0.18, 0.9, 0.2, 1) 70ms both;
 }
 
 .callCenterVideo .securityCard {
@@ -591,7 +511,7 @@
   letter-spacing: 0.06em;
   text-transform: uppercase;
   color: var(--text-secondary);
-  font-weight: 650;
+  font-weight: 600;
   padding-left: 0.12rem;
 }
 
@@ -638,6 +558,9 @@
   padding: 0.35rem 0.45rem;
 }
 
+/* ── Floating previews + local preview actions ──────────────────────────── */
+
+/* Feature-local: draggable local previews and companion media windows. */
 .remoteCompanionPreview,
 .localPreview,
 .localScreenPreview {
@@ -646,9 +569,8 @@
   overflow: hidden;
   border: 1px solid color-mix(in srgb, var(--panel-border-soft) 90%, transparent);
   background: color-mix(in srgb, var(--panel-header-bg) 84%, var(--bg-secondary));
-  box-shadow: 0 10px 24px color-mix(in srgb, var(--bg-primary) 38%, transparent);
-  z-index: 3;
-  animation: callContentIn 260ms cubic-bezier(0.18, 0.9, 0.2, 1) 80ms both;
+  z-index: var(--z-3);
+  animation: callContentIn var(--motion-duration-slow) cubic-bezier(0.18, 0.9, 0.2, 1) 80ms both;
 }
 
 .remoteCompanionPreview {
@@ -656,13 +578,13 @@
   right: 0.72rem;
   width: clamp(116px, 18vw, 188px);
   aspect-ratio: 4 / 3;
-  z-index: 4;
+  z-index: var(--z-4);
   cursor: pointer;
   touch-action: manipulation;
 }
 
 .remoteCompanionPreview:focus-visible {
-  outline: 2px solid color-mix(in srgb, var(--accent) 72%, #fff);
+  outline: 2px solid var(--accent);
   outline-offset: 2px;
 }
 
@@ -677,7 +599,7 @@
 
 .remoteCompanionPreviewScreen video {
   object-fit: contain;
-  background: rgb(7 12 24 / 0.92);
+  background: color-mix(in srgb, var(--bg-primary) 92%, var(--surface-shell-strong));
 }
 
 .localPreview {
@@ -743,10 +665,11 @@
   font-size: 0.6875rem;
   color: var(--text-primary);
   text-align: center;
-  background: linear-gradient(180deg, transparent, color-mix(in srgb, var(--bg-primary) 48%, transparent));
-  z-index: 1;
+  background: color-mix(in srgb, var(--bg-primary) 58%, transparent);
+  z-index: var(--z-1);
 }
 
+/* Reusable: lift later. Preview action shells are still direct-call-specific. */
 .localPreviewAction {
   position: absolute;
   top: 0.38rem;
@@ -760,14 +683,11 @@
   border: 1px solid color-mix(in srgb, var(--panel-border-soft) 88%, transparent);
   background: color-mix(in srgb, var(--panel-header-bg) 84%, transparent);
   color: var(--text-primary);
-  backdrop-filter: blur(10px);
-  box-shadow: 0 10px 24px color-mix(in srgb, var(--bg-primary) 18%, transparent);
-  z-index: 2;
-  transition: transform 120ms ease, border-color 120ms ease, opacity 120ms ease;
+  z-index: var(--z-2);
+  transition: background-color var(--motion-duration-fast) ease, border-color var(--motion-duration-fast) ease, opacity var(--motion-duration-fast) ease;
 }
 
 .localPreviewAction:hover:not(:disabled) {
-  transform: translateY(-1px);
   border-color: color-mix(in srgb, var(--accent) 34%, var(--panel-border-soft));
 }
 
@@ -776,7 +696,7 @@
 }
 
 .localPreviewAction:focus-visible {
-  outline: 2px solid color-mix(in srgb, var(--accent) 72%, #fff);
+  outline: 2px solid var(--accent);
   outline-offset: 2px;
 }
 
@@ -793,21 +713,18 @@
   border: 1px solid color-mix(in srgb, var(--panel-border-soft) 88%, transparent);
   background: color-mix(in srgb, var(--panel-header-bg) 84%, transparent);
   color: var(--text-primary);
-  backdrop-filter: blur(10px);
-  box-shadow: 0 10px 24px color-mix(in srgb, var(--bg-primary) 18%, transparent);
-  z-index: 2;
+  z-index: var(--z-2);
   touch-action: none;
   cursor: nwse-resize;
-  transition: transform 120ms ease, border-color 120ms ease;
+  transition: background-color var(--motion-duration-fast) ease, border-color var(--motion-duration-fast) ease;
 }
 
 .localPreviewResizeHandle:hover {
-  transform: translateY(-1px);
   border-color: color-mix(in srgb, var(--accent) 34%, var(--panel-border-soft));
 }
 
 .localPreviewResizeHandle:focus-visible {
-  outline: 2px solid color-mix(in srgb, var(--accent) 72%, #fff);
+  outline: 2px solid var(--accent);
   outline-offset: 2px;
 }
 
@@ -825,8 +742,8 @@
   font-size: 0.6875rem;
   color: var(--text-primary);
   text-align: left;
-  background: linear-gradient(180deg, transparent, color-mix(in srgb, var(--bg-primary) 58%, transparent));
-  z-index: 1;
+  background: color-mix(in srgb, var(--bg-primary) 64%, transparent);
+  z-index: var(--z-1);
 }
 
 .remoteCompanionName {
@@ -834,69 +751,32 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  font-weight: 650;
+  font-weight: 600;
 }
 
 .remoteCompanionBadge {
   align-self: flex-start;
 }
 
-
-.controlsDock {
-  position: sticky;
-  bottom: calc(env(safe-area-inset-bottom, 0px) + 2px);
-  z-index: 7;
-  width: fit-content;
-  max-width: min(100%, 760px);
-  margin-inline: auto;
-  padding: 0.48rem;
-  border-radius: 32px;
-  border: 1px solid color-mix(in srgb, var(--panel-border-soft) 76%, transparent);
-  background:
-    linear-gradient(
-      180deg,
-      color-mix(in srgb, var(--surface-float) 94%, transparent),
-      color-mix(in srgb, var(--surface-shell) 98%, transparent)
-    );
-  box-shadow:
-    0 22px 52px rgb(2 8 20 / 0.28),
-    inset 0 1px 0 rgb(255 255 255 / 0.04);
-  backdrop-filter: blur(20px);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.75rem;
-  animation: callContentIn 260ms cubic-bezier(0.18, 0.9, 0.2, 1) 90ms both;
-}
+/* ── Controls dock + output strip ───────────────────────────────────────── */
 
 .audioOutputStrip {
   position: relative;
-  z-index: 2;
+  z-index: var(--z-2);
   width: 100%;
   padding: 0.35rem;
   border-radius: 22px;
   border: 1px solid color-mix(in srgb, var(--panel-border-soft) 78%, transparent);
   background: color-mix(in srgb, var(--surface-shell) 88%, transparent);
-  box-shadow: 0 16px 36px rgb(2 8 20 / 0.14);
-  backdrop-filter: blur(18px);
-  animation: callContentIn 240ms cubic-bezier(0.18, 0.9, 0.2, 1) 80ms both;
+  animation: callContentIn var(--motion-duration-slow) cubic-bezier(0.18, 0.9, 0.2, 1) 80ms both;
 }
 
-.controlBtn {
-  --call-control-inline-min-width: 96px;
-  --call-control-inline-height: 56px;
-  --call-control-inline-padding: 0 0.85rem;
-  --call-control-inline-radius: 999px;
-  --call-control-inline-blur: 8px;
-}
+/* ── Responsive + reduced motion ────────────────────────────────────────── */
 
+/* Feature-local: viewport-specific stage, preview, and dock compaction. */
 @media (max-width: 760px) {
   .incomingPrompt {
     font-size: 0.6875rem;
-  }
-
-  .incomingControlsDock {
-    width: 100%;
   }
 
   .callOverlay {
@@ -904,34 +784,8 @@
     padding-right: 0.75rem;
   }
 
-  .callCenter {
-    width: 100%;
-    gap: 0.68rem;
-  }
-
   .minimizeBtn {
     --icon-button-size: 32px;
-  }
-
-  .minimizedCall {
-    --floating-dock-screen-gap: 0.75rem;
-    --floating-dock-bottom-offset: 10px;
-    --floating-dock-padding: 0.34rem;
-    --floating-dock-gap: 0.32rem;
-    --floating-dock-radius: 13px;
-  }
-
-  .minimizedSummary {
-    --avatar-summary-padding: 0.32rem 0.38rem;
-    --avatar-summary-radius: 10px;
-    --avatar-summary-avatar-size: 30px;
-    --avatar-summary-avatar-font-size: 0.67rem;
-    --avatar-summary-title-size: 0.78rem;
-    --avatar-summary-subtitle-size: 0.64rem;
-  }
-
-  .minimizedBtn {
-    --icon-button-size: 34px;
   }
 
   .securityCard {
@@ -960,18 +814,8 @@
     font-size: 0.8rem;
   }
 
-  .controlsDock {
-    gap: 0.5rem;
-    width: min(100%, 440px);
-  }
-
   .audioOutputStrip {
     width: 100%;
-  }
-
-  .controlBtn {
-    --call-control-inline-compact-width: 56px;
-    --call-control-inline-compact-padding: 0;
   }
 
   .localPreview {
@@ -1006,7 +850,7 @@
     margin-top: 0.58rem;
     margin-left: auto;
     margin-right: 0;
-    z-index: 2;
+    z-index: var(--z-2);
   }
 
   .callStageCamera {
@@ -1019,8 +863,19 @@
   }
 
   .callStageCompact {
-    width: min(100%, 300px);
-    max-height: 300px;
+    --direct-call-avatar-size: clamp(78px, 20vw, 106px);
+    --direct-call-avatar-font-size: clamp(1.2rem, 5.3vw, 1.62rem);
+    --direct-call-audio-ring-size: calc(var(--direct-call-avatar-size) + 20px);
+    width: min(100%, 320px);
+    max-height: 240px;
+  }
+
+  .callStageAudio.callStageCompact {
+    width: 100%;
+    max-height: none;
+    --direct-call-avatar-size: clamp(94px, 22vw, 140px);
+    --direct-call-avatar-font-size: clamp(1.45rem, 5.5vw, 2.1rem);
+    --direct-call-audio-ring-size: calc(var(--direct-call-avatar-size) + 24px);
   }
 
   .callSecuritySection {
@@ -1056,9 +911,9 @@
   }
 }
 
+/* Feature-local: motion reduction for direct-call-only entrance and preview transitions. */
 @media (prefers-reduced-motion: reduce) {
   .notice,
-  .minimizedCall,
   .callOverlay,
   .callHeader,
   .callCenter,
@@ -1068,58 +923,15 @@
   .localPreview,
   .localScreenPreview,
   .minimizeBtn,
-  .minimizedDragHandle,
-  .minimizedBtn,
-  .controlBtn {
+  .minimizedDragHandle {
     animation: none !important;
     transition: none !important;
   }
 }
 
-.callHeaderSummary {
-  min-width: 0;
-  text-align: center;
-}
-
-.callHeaderTitle {
-  color: var(--text-primary);
-  font-size: clamp(1.02rem, 2vw, 1.24rem);
-  font-weight: 780;
-  letter-spacing: -0.02em;
-}
-
-.callHeaderDuration {
-  display: inline-flex;
-  align-items: center;
-  min-height: 28px;
-  padding: 0 0.55rem;
-  border-radius: 999px;
-  background: color-mix(in srgb, var(--surface-shell) 92%, transparent);
-  border: 1px solid color-mix(in srgb, var(--panel-border-soft) 86%, transparent);
-  color: var(--text-secondary);
-  font-size: 0.74rem;
-  font-weight: 700;
-  font-variant-numeric: tabular-nums;
-}
-
-.callHeaderMeta {
-  color: var(--text-secondary);
-  font-size: 0.77rem;
-  font-weight: 650;
-}
-
-.callSecuritySection {
-  width: 100%;
-  max-width: 640px;
-  display: flex;
-  flex-direction: column;
-  gap: 0.6rem;
-}
-
 .callStageAudio {
   border-color: transparent;
   background: transparent;
-  box-shadow: none;
 }
 
 @media (max-width: 720px) {
@@ -1130,15 +942,83 @@
       calc(env(safe-area-inset-bottom, 0px) + 16px);
   }
 
-  .callHeaderTitle {
-    font-size: 1rem;
-  }
-
-  .callHeaderMeta {
-    font-size: 0.74rem;
-  }
-
   .callStage {
-    border-radius: 24px;
+    border-radius: 18px;
   }
+}
+
+/* Mobile layout: no scroll, stage fills remaining height. Matches useIsMobileViewport 640px. */
+@media (max-width: 640px) {
+  .callOverlay {
+    /* Prevent scroll — the stage shrinks to fit instead of overflowing. */
+    overflow: hidden;
+    gap: 0.48rem;
+    padding:
+      calc(env(safe-area-inset-top, 0px) + 8px)
+      0.72rem
+      calc(env(safe-area-inset-bottom, 0px) + 8px);
+  }
+
+  .callCenter {
+    gap: 0.38rem;
+    /* callCenter already has flex: 1; ensure it really fills the column. */
+    flex: 1 1 0;
+  }
+
+  /* Camera stage: fill callCenter instead of using a fixed dvh height. */
+  .callSurface {
+    flex: 1 1 0;
+    min-height: 0;
+  }
+
+  .callSurface:has(.callStageCompact) {
+    flex: 1 1 0;
+  }
+
+  .callStageCamera {
+    height: 100%;
+    min-height: 0;
+    /* Keep the dvh fallback for very narrow-height orientations */
+    min-height: max(180px, 30dvh);
+  }
+
+  /* Bring local PiP above stacked controls dock (~80px) + dialog bottom padding (8px) + gap.
+     Dock occupies ~88px from bottom → use 96px so PiP is visibly above the dock. */
+  .localPreview {
+    width: 86px;
+    bottom: calc(env(safe-area-inset-bottom, 0px) + 96px);
+  }
+
+  .localScreenPreview {
+    left: max(0.72rem, env(safe-area-inset-left, 0px));
+    width: 120px;
+    bottom: calc(env(safe-area-inset-bottom, 0px) + 96px);
+  }
+
+  .localPreviewRaised,
+  .localScreenPreviewRaised {
+    bottom: calc(env(safe-area-inset-bottom, 0px) + 112px);
+  }
+
+  /* Scale down the PiP action/resize buttons — at 86px wide a 34px button is too dominant. */
+  .localPreviewAction {
+    width: 28px;
+    height: 28px;
+  }
+
+  .localPreviewResizeHandle {
+    width: 24px;
+    height: 24px;
+    right: 0.24rem;
+    bottom: 0.24rem;
+  }
+}
+
+/* Camera-switch fade: old frame fades down while camera changes, new frame fades back up. */
+.localPreview video {
+  transition: opacity 220ms ease;
+}
+
+.localPreviewTransitioning video {
+  opacity: 0.25;
 }

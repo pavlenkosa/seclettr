@@ -1,19 +1,12 @@
 import type { DirectCallMediaEncryptionMode } from "@/calls/direct/model/call-media-encryption-negotiation";
 import { CallSecurityCard } from "./CallSecurityCard";
-import { ShieldIcon } from "@/calls/shared/presentation/CallIcons";
-import { PillButton, SecurityModeBadge, StatusBadge } from "@/components/ui";
-
-import styles from "@/calls/direct/presentation/DirectCallPanel.module.css";
+import styles from "./DirectCallSecurityPanel.module.css";
 
 interface DirectCallSecurityPanelProps {
-  readonly isOpen: boolean;
   readonly onToggle: () => void;
   readonly callSecurityToggleLabel: string;
   readonly callSecurityStatusLabel: string;
-  readonly callMediaEncryptionModeLabel: string;
   readonly e2eeActive: boolean;
-  readonly showTransportModeInfo: boolean;
-  readonly transportModeInfoLabel: string;
   readonly mediaEncryptionMode: DirectCallMediaEncryptionMode;
   readonly verificationCode: string | null;
   readonly verificationHash: string | null;
@@ -21,65 +14,37 @@ interface DirectCallSecurityPanelProps {
 }
 
 export function DirectCallSecurityPanel({
-  isOpen,
   onToggle,
   callSecurityToggleLabel,
   callSecurityStatusLabel,
-  callMediaEncryptionModeLabel,
   e2eeActive,
-  showTransportModeInfo,
-  transportModeInfoLabel,
   mediaEncryptionMode,
   verificationCode,
   verificationHash,
   verificationError,
 }: DirectCallSecurityPanelProps) {
-  const isFrameMode = mediaEncryptionMode === "frame-v1";
-
   return (
-    <div className={styles.securityPanel}>
-      <div className={styles.securityPanelShell}>
-        <div className={styles.securitySummaryRow}>
-          <div className={styles.securityHeaderText}>
-            <div className={styles.securityBadgeGroup}>
-              <StatusBadge
-                tone={e2eeActive ? "success" : "warning"}
-                size="md"
-                icon={<ShieldIcon />}
-                iconSize={12}
-              >
-                {callSecurityStatusLabel}
-              </StatusBadge>
-              <SecurityModeBadge tone={isFrameMode ? "frame" : "transport"}>
-                {callMediaEncryptionModeLabel}
-              </SecurityModeBadge>
-            </div>
-          </div>
-          <PillButton
-            className={styles.securityToggleInlineBtn}
-            tone={isOpen ? "accent" : "neutral"}
-            appearance="soft"
-            size="sm"
-            aria-expanded={isOpen}
-            aria-label={callSecurityToggleLabel}
-            onClick={onToggle}
-          >
-            {callSecurityToggleLabel}
-          </PillButton>
-        </div>
-        {isOpen ? (
-          <div className={styles.securityDetailsSlot}>
-            <CallSecurityCard
-              e2eeActive={e2eeActive}
-              mediaEncryptionMode={mediaEncryptionMode}
-              verificationCode={verificationCode}
-              verificationHash={verificationHash}
-              verificationError={verificationError}
-              transportInfoLabel={showTransportModeInfo ? transportModeInfoLabel : null}
-            />
-          </div>
-        ) : null}
+    <div className={styles.securitySheetCard}>
+      <div className={styles.securitySheetHeader}>
+        <span className={styles.securitySheetTitle}>{callSecurityStatusLabel}</span>
+        <button
+          type="button"
+          className={styles.securitySheetClose}
+          onClick={onToggle}
+          aria-label={callSecurityToggleLabel}
+        >
+          <svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true">
+            <path d="M2 2l8 8M10 2l-8 8" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+          </svg>
+        </button>
       </div>
+      <CallSecurityCard
+        e2eeActive={e2eeActive}
+        mediaEncryptionMode={mediaEncryptionMode}
+        verificationCode={verificationCode}
+        verificationHash={verificationHash}
+        verificationError={verificationError}
+      />
     </div>
   );
 }

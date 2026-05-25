@@ -1,4 +1,4 @@
-import { generateStorageKey, rewrapEncryptedStorage } from "@seclettr/crypto";
+import { ensureSodium, generateStorageKey, rewrapEncryptedStorage } from "@seclettr/crypto";
 
 export const STORAGE_KEY_RAW_ITEM = "seclettr.storageKey.v1";
 export const STORAGE_KEY_RAW_LEGACY_ITEM = "storageKey";
@@ -6,22 +6,24 @@ export const STORAGE_KEY_RAW_LEGACY_ITEM = "storageKey";
 const STORAGE_KEY_META_DB = "seclettr-auth-meta";
 const STORAGE_KEY_META_STORE = "secrets";
 const STORAGE_KEY_META_ITEM = "storage-key-v2";
-const PIN_WRAP_ITERATIONS = 600_000;
-const PIN_WRAP_SALT_BYTES = 16;
-const PIN_WRAP_IV_BYTES = 12;
+const PASSCODE_WRAP_SALT_BYTES = 16;
+const PASSCODE_WRAP_IV_BYTES = 12;
+const PASSCODE_DERIVED_KEY_BYTES = 32;
 
-interface PinWrappedStorageKeyRecord {
-  version: 3;
+// version 3 = PBKDF2 (legacy, no longer written, ignored on read)
+// version 4 = Argon2id
+interface PasscodeWrappedStorageKeyRecord {
+  version: 4;
   protection: "pin";
   salt: number[];
   payload: number[];
 }
 
-interface PinReadyStorageKeyRecord {
-  version: 3;
+interface PasscodeReadyStorageKeyRecord {
+  version: 4;
   protection: "pin-ready";
   unlockedKey: CryptoKey;
-  lockedKey: PinWrappedStorageKeyRecord;
+  lockedKey: PasscodeWrappedStorageKeyRecord;
 }
 
 let volatileStorageKey: CryptoKey | null = null;
@@ -55,7 +57,7 @@ async function loadPersistedStorageKeyRecord(): Promise<unknown> {
 }
 
 async function persistStorageKeyRecord(
-  value: CryptoKey | PinWrappedStorageKeyRecord | PinReadyStorageKeyRecord
+  value: CryptoKey | PasscodeWrappedStorageKeyRecord | PasscodeReadyStorageKeyRecord
 ): Promise<boolean> {
   try {
     const db = await openStorageKeyMetaDb();
@@ -132,24 +134,21 @@ async function exportStorageKeyRaw(storageKey: CryptoKey): Promise<Uint8Array> {
   return new Uint8Array(raw);
 }
 
-async function derivePinWrapKey(pin: string, salt: Uint8Array): Promise<CryptoKey> {
-  const pinBytes = new TextEncoder().encode(pin);
-  const baseKey = await crypto.subtle.importKey(
-    "raw",
-    toExactArrayBuffer(pinBytes),
-    "PBKDF2",
-    false,
-    ["deriveKey"]
+async function derivePasscodeWrapKey(passcode: string, salt: Uint8Array): Promise<CryptoKey> {
+  const sodium = await ensureSodium();
+  const passcodeBytes = new TextEncoder().encode(passcode);
+  const derived = sodium.crypto_pwhash(
+    PASSCODE_DERIVED_KEY_BYTES,
+    passcodeBytes,
+    salt,
+    sodium.crypto_pwhash_OPSLIMIT_INTERACTIVE,
+    sodium.crypto_pwhash_MEMLIMIT_INTERACTIVE,
+    sodium.crypto_pwhash_ALG_ARGON2ID13
   );
-  return crypto.subtle.deriveKey(
-    {
-      name: "PBKDF2",
-      hash: "SHA-256",
-      salt: toExactArrayBuffer(salt),
-      iterations: PIN_WRAP_ITERATIONS,
-    },
-    baseKey,
-    { name: "AES-GCM", length: 256 },
+  return crypto.subtle.importKey(
+    "raw",
+    toExactArrayBuffer(derived),
+    { name: "AES-GCM" },
     false,
     ["encrypt", "decrypt"]
   );
@@ -161,16 +160,16 @@ function toExactArrayBuffer(bytes: Uint8Array): ArrayBuffer {
   return buffer;
 }
 
-async function createPinWrappedStorageKeyRecord(
+async function createPasscodeWrappedStorageKeyRecord(
   storageKey: CryptoKey,
-  pin: string
-): Promise<PinWrappedStorageKeyRecord> {
+  passcode: string
+): Promise<PasscodeWrappedStorageKeyRecord> {
   const raw = await exportStorageKeyRaw(storageKey);
-  const salt = crypto.getRandomValues(new Uint8Array(PIN_WRAP_SALT_BYTES));
-  const iv = crypto.getRandomValues(new Uint8Array(PIN_WRAP_IV_BYTES));
+  const salt = crypto.getRandomValues(new Uint8Array(PASSCODE_WRAP_SALT_BYTES));
+  const iv = crypto.getRandomValues(new Uint8Array(PASSCODE_WRAP_IV_BYTES));
 
   try {
-    const wrapKey = await derivePinWrapKey(pin, salt);
+    const wrapKey = await derivePasscodeWrapKey(passcode, salt);
     const ciphertext = new Uint8Array(await crypto.subtle.encrypt(
       { name: "AES-GCM", iv },
       wrapKey,
@@ -181,7 +180,7 @@ async function createPinWrappedStorageKeyRecord(
     payload.set(ciphertext, iv.length);
 
     return {
-      version: 3,
+      version: 4,
       protection: "pin",
       salt: Array.from(salt),
       payload: Array.from(payload),
@@ -191,17 +190,17 @@ async function createPinWrappedStorageKeyRecord(
   }
 }
 
-async function unwrapPinProtectedStorageKey(
-  record: PinWrappedStorageKeyRecord,
-  pin: string
+async function unwrapPasscodeProtectedStorageKey(
+  record: PasscodeWrappedStorageKeyRecord,
+  passcode: string
 ): Promise<CryptoKey> {
   const salt = new Uint8Array(record.salt);
   const payload = new Uint8Array(record.payload);
-  const iv = payload.slice(0, PIN_WRAP_IV_BYTES);
-  const ciphertext = payload.slice(PIN_WRAP_IV_BYTES);
+  const iv = payload.slice(0, PASSCODE_WRAP_IV_BYTES);
+  const ciphertext = payload.slice(PASSCODE_WRAP_IV_BYTES);
 
   try {
-    const wrapKey = await derivePinWrapKey(pin, salt);
+    const wrapKey = await derivePasscodeWrapKey(passcode, salt);
     const raw = new Uint8Array(await crypto.subtle.decrypt(
       { name: "AES-GCM", iv: toExactArrayBuffer(iv) },
       wrapKey,
@@ -220,28 +219,28 @@ async function unwrapPinProtectedStorageKey(
   }
 }
 
-function isPinWrappedStorageKeyRecord(value: unknown): value is PinWrappedStorageKeyRecord {
+function isPinWrappedStorageKeyRecord(value: unknown): value is PasscodeWrappedStorageKeyRecord {
   if (!value || typeof value !== "object") {
     return false;
   }
 
-  const candidate = value as Partial<PinWrappedStorageKeyRecord>;
+  const candidate = value as Partial<PasscodeWrappedStorageKeyRecord>;
   return (
-    candidate.version === 3 &&
+    candidate.version === 4 &&
     candidate.protection === "pin" &&
     Array.isArray(candidate.salt) &&
     Array.isArray(candidate.payload)
   );
 }
 
-function isPinReadyStorageKeyRecord(value: unknown): value is PinReadyStorageKeyRecord {
+function isPinReadyStorageKeyRecord(value: unknown): value is PasscodeReadyStorageKeyRecord {
   if (!value || typeof value !== "object") {
     return false;
   }
 
-  const candidate = value as Partial<PinReadyStorageKeyRecord>;
+  const candidate = value as Partial<PasscodeReadyStorageKeyRecord>;
   return (
-    candidate.version === 3 &&
+    candidate.version === 4 &&
     candidate.protection === "pin-ready" &&
     isStoredCryptoKey(candidate.unlockedKey) &&
     isPinWrappedStorageKeyRecord(candidate.lockedKey)
@@ -348,7 +347,7 @@ export async function unlockPersistedStorageKey(pin: string): Promise<{
   const lockedRecordFromReady = isPinReadyStorageKeyRecord(persisted) ? persisted.lockedKey : null;
   const lockedRecord = isPinWrappedStorageKeyRecord(persisted) ? persisted : lockedRecordFromReady;
   if (lockedRecord) {
-    const key = await unwrapPinProtectedStorageKey(lockedRecord, pin);
+    const key = await unwrapPasscodeProtectedStorageKey(lockedRecord, pin);
     if (isPinReadyStorageKeyRecord(persisted)) {
       const persistedOk = await persistStorageKeyRecord(lockedRecord);
       if (!persistedOk) {
@@ -367,7 +366,7 @@ export async function protectPersistedStorageKeyWithPin(
   storageKey: CryptoKey,
   pin: string
 ): Promise<void> {
-  const record = await createPinWrappedStorageKeyRecord(storageKey, pin);
+  const record = await createPasscodeWrappedStorageKeyRecord(storageKey, pin);
   const persistedOk = await persistStorageKeyRecord(record);
   if (!persistedOk) {
     throw new Error("storage_key_lock_persist_failed");

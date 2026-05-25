@@ -1,3 +1,23 @@
+/**
+ * direct-call-ui-utils — i18n and display helpers for the 1:1 call UI.
+ *
+ * Owns:
+ *   - DirectCallTranslator — minimal translator function type used throughout the
+ *     call UI without coupling to a specific i18n library
+ *   - formatPeerLabel — truncates UUID-shaped identifiers to a readable short form;
+ *     passes through human-readable strings unchanged
+ *   - getPeerInitials — extracts up to two initials from a display name for the
+ *     avatar fallback (space-split or first two characters)
+ *   - callStateLabel — maps DirectCallRuntimeState + call duration to the localized
+ *     status string shown in the active-call header
+ *   - toMediaErrorMessage / toScreenShareErrorMessage — maps setup errors (timeout
+ *     variants, media permission DOMExceptions, generic errors) to user-facing strings
+ *   - hasRenderableVideoTrack — stream guard used by visual readiness checks
+ *   - clampMinimizedDockPosition / clampFloatingPreviewPosition / clampFloatingPreviewWidth
+ *     — viewport boundary clamps for the draggable minimized dock and floating preview
+ *
+ * Does not own React state, component rendering, or call lifecycle.
+ */
 import type { DirectCallRuntimeState } from "./direct-call-runtime-state";
 import { formatCallDuration } from "@/calls/shared/model/call-duration";
 import { DirectCallSetupTimeoutError } from "./direct-call-setup-timeouts";

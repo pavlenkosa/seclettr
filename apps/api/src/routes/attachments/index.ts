@@ -24,6 +24,7 @@ import { query } from "../../db/pool.js";
 import { config } from "../../config.js";
 import { parseOrReply } from "../../utils/validation.js";
 import { consumeFixedWindowRateLimit } from "../../utils/fixed-window-rate-limit.js";
+import { resolveBrowserOrigin } from "../../utils/request-origin.js";
 import { recordAttachmentEvent } from "../../services/observability.js";
 import { z } from "zod";
 
@@ -83,14 +84,18 @@ function buildInMemoryAttachmentUrl(storageKey: string): string {
  * (protocol + host) while preserving the path and query string so existing
  * presigned signatures remain valid.
  */
-function rewriteS3Url(url: string): string {
-  if (!config.S3_PUBLIC_URL) return url;
+function rewriteS3Url(url: string, requestOrigin?: string): string {
+  const base = config.S3_PUBLIC_URL ?? requestOrigin;
+  if (!base) return url;
   try {
     const parsed = new URL(url);
-    const pub = new URL(config.S3_PUBLIC_URL);
-    parsed.protocol = pub.protocol;
-    parsed.host = pub.host;
-    return parsed.toString();
+    const pub = new URL(base);
+
+    // Build a fresh URL from the browser-facing origin instead of mutating the
+    // presigned endpoint in place. This guarantees that internal MinIO ports
+    // such as :9000 cannot leak into the upload/download URL returned to the
+    // browser, while preserving the bucket path and signed query string.
+    return new URL(`${parsed.pathname}${parsed.search}`, pub.origin).toString();
   } catch {
     return url;
   }
@@ -360,7 +365,7 @@ export async function attachmentRoutes(fastify: FastifyInstance): Promise<void> 
       );
 
       recordAttachmentEvent("uploaded");
-      return { attachmentId, uploadUrl: rewriteS3Url(uploadTarget.url), fields: uploadTarget.fields };
+      return { attachmentId, uploadUrl: rewriteS3Url(uploadTarget.url, resolveBrowserOrigin(request.headers)), fields: uploadTarget.fields };
     }
   );
 
@@ -391,7 +396,7 @@ export async function attachmentRoutes(fastify: FastifyInstance): Promise<void> 
 
       recordAttachmentEvent("downloaded");
       return {
-        downloadUrl: rewriteS3Url(downloadUrl),
+        downloadUrl: rewriteS3Url(downloadUrl, resolveBrowserOrigin(request.headers)),
         encryptedDigest: att.encrypted_digest,
         contentType: att.content_type,
         encryptedSize: Number.parseInt(att.encrypted_size, 10),

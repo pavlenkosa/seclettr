@@ -4,6 +4,12 @@
  * must connect to the same SFU process.
  * For multi-node deployments, replace this in-memory store with a distributed
  * room-state backend (e.g. Redis-backed room registry with SFU placement routing).
+ *
+ * Generic params (single-letter for brevity):
+ *   R — Router (mediasoup.Router)
+ *   T — Transport (mediasoup.WebRtcTransport)
+ *   P — Producer (mediasoup.Producer)
+ *   C — Consumer (mediasoup.Consumer)
  */
 
 export interface Closable {
@@ -18,31 +24,22 @@ export interface PeerIdentity {
   sessionId?: string | null;
 }
 
-export interface PeerRecord<
-  TTransport extends Closable = Closable,
-  TProducer extends Closable = Closable,
-  TConsumer extends Closable = Closable,
-> {
+export interface PeerRecord<T extends Closable = Closable, P extends Closable = Closable, C extends Closable = Closable> {
   peerId: string;
   peerKey: string;
   userId: string;
   deviceId: string | null;
   sessionId: string | null;
   lastSeenAt: number;
-  transports: Map<string, TTransport>;
-  producers: Map<string, TProducer>;
-  consumers: Map<string, TConsumer>;
+  transports: Map<string, T>;
+  producers: Map<string, P>;
+  consumers: Map<string, C>;
 }
 
-export interface RoomRecord<
-  TRouter extends Closable = Closable,
-  TTransport extends Closable = Closable,
-  TProducer extends Closable = Closable,
-  TConsumer extends Closable = Closable,
-> {
+export interface RoomRecord<R extends Closable = Closable, T extends Closable = Closable, P extends Closable = Closable, C extends Closable = Closable> {
   roomId: string;
-  router: TRouter;
-  peers: Map<string, PeerRecord<TTransport, TProducer, TConsumer>>;
+  router: R;
+  peers: Map<string, PeerRecord<T, P, C>>;
   transportOwners: Map<string, string>;
   producerOwners: Map<string, string>;
   consumerOwners: Map<string, string>;
@@ -51,22 +48,14 @@ export interface RoomRecord<
   lastActiveAt: number;
 }
 
-export interface PeerTransportLookup<
-  TTransport extends Closable = Closable,
-  TProducer extends Closable = Closable,
-  TConsumer extends Closable = Closable,
-> {
-  peer: PeerRecord<TTransport, TProducer, TConsumer>;
-  transport: TTransport;
+export interface PeerTransportLookup<T extends Closable = Closable, P extends Closable = Closable, C extends Closable = Closable> {
+  peer: PeerRecord<T, P, C>;
+  transport: T;
 }
 
-export interface PeerConsumerLookup<
-  TTransport extends Closable = Closable,
-  TProducer extends Closable = Closable,
-  TConsumer extends Closable = Closable,
-> {
-  peer: PeerRecord<TTransport, TProducer, TConsumer>;
-  consumer: TConsumer;
+export interface PeerConsumerLookup<T extends Closable = Closable, P extends Closable = Closable, C extends Closable = Closable> {
+  peer: PeerRecord<T, P, C>;
+  consumer: C;
 }
 
 export interface CleanupOptions {
@@ -80,12 +69,9 @@ export interface CleanupResult {
   removedRooms: number;
 }
 
-export function createRoomRecord<
-  TRouter extends Closable,
-  TTransport extends Closable,
-  TProducer extends Closable,
-  TConsumer extends Closable,
->(roomId: string, router: TRouter, now = Date.now()): RoomRecord<TRouter, TTransport, TProducer, TConsumer> {
+export function createRoomRecord<R extends Closable, T extends Closable, P extends Closable, C extends Closable>(
+  roomId: string, router: R, now = Date.now()
+): RoomRecord<R, T, P, C> {
   return {
     roomId,
     router,
@@ -105,17 +91,12 @@ export function buildPeerKey(identity: PeerIdentity): string {
   return `${identity.userId}:${devicePart}:${sessionPart}`;
 }
 
-export function getOrCreatePeer<
-  TRouter extends Closable,
-  TTransport extends Closable,
-  TProducer extends Closable,
-  TConsumer extends Closable,
->(
-  room: RoomRecord<TRouter, TTransport, TProducer, TConsumer>,
+export function getOrCreatePeer<R extends Closable, T extends Closable, P extends Closable, C extends Closable>(
+  room: RoomRecord<R, T, P, C>,
   identity: PeerIdentity,
   createPeerId: () => string,
   now = Date.now()
-): PeerRecord<TTransport, TProducer, TConsumer> {
+): PeerRecord<T, P, C> {
   touchRoom(room, now);
   const peerKey = buildPeerKey(identity);
   const existing = room.peers.get(peerKey);
@@ -124,7 +105,7 @@ export function getOrCreatePeer<
     return existing;
   }
 
-  const peer: PeerRecord<TTransport, TProducer, TConsumer> = {
+  const peer: PeerRecord<T, P, C> = {
     peerId: createPeerId(),
     peerKey,
     userId: identity.userId,
@@ -139,33 +120,23 @@ export function getOrCreatePeer<
   return peer;
 }
 
-export function touchPeer<
-  TTransport extends Closable,
-  TProducer extends Closable,
-  TConsumer extends Closable,
->(peer: PeerRecord<TTransport, TProducer, TConsumer>, now = Date.now()): void {
+export function touchPeer<T extends Closable, P extends Closable, C extends Closable>(
+  peer: PeerRecord<T, P, C>, now = Date.now()
+): void {
   peer.lastSeenAt = now;
 }
 
-export function touchRoom<
-  TRouter extends Closable,
-  TTransport extends Closable,
-  TProducer extends Closable,
-  TConsumer extends Closable,
->(room: RoomRecord<TRouter, TTransport, TProducer, TConsumer>, now = Date.now()): void {
+export function touchRoom<R extends Closable, T extends Closable, P extends Closable, C extends Closable>(
+  room: RoomRecord<R, T, P, C>, now = Date.now()
+): void {
   room.lastActiveAt = now;
 }
 
-export function attachTransport<
-  TRouter extends Closable,
-  TTransport extends Closable,
-  TProducer extends Closable,
-  TConsumer extends Closable,
->(
-  room: RoomRecord<TRouter, TTransport, TProducer, TConsumer>,
-  peer: PeerRecord<TTransport, TProducer, TConsumer>,
+export function attachTransport<R extends Closable, T extends Closable, P extends Closable, C extends Closable>(
+  room: RoomRecord<R, T, P, C>,
+  peer: PeerRecord<T, P, C>,
   transportId: string,
-  transport: TTransport,
+  transport: T,
   now = Date.now()
 ): void {
   peer.transports.set(transportId, transport);
@@ -174,16 +145,11 @@ export function attachTransport<
   touchRoom(room, now);
 }
 
-export function attachProducer<
-  TRouter extends Closable,
-  TTransport extends Closable,
-  TProducer extends Closable,
-  TConsumer extends Closable,
->(
-  room: RoomRecord<TRouter, TTransport, TProducer, TConsumer>,
-  peer: PeerRecord<TTransport, TProducer, TConsumer>,
+export function attachProducer<R extends Closable, T extends Closable, P extends Closable, C extends Closable>(
+  room: RoomRecord<R, T, P, C>,
+  peer: PeerRecord<T, P, C>,
   producerId: string,
-  producer: TProducer,
+  producer: P,
   source: ProducerSource | null = null,
   now = Date.now()
 ): void {
@@ -198,16 +164,11 @@ export function attachProducer<
   touchRoom(room, now);
 }
 
-export function attachConsumer<
-  TRouter extends Closable,
-  TTransport extends Closable,
-  TProducer extends Closable,
-  TConsumer extends Closable,
->(
-  room: RoomRecord<TRouter, TTransport, TProducer, TConsumer>,
-  peer: PeerRecord<TTransport, TProducer, TConsumer>,
+export function attachConsumer<R extends Closable, T extends Closable, P extends Closable, C extends Closable>(
+  room: RoomRecord<R, T, P, C>,
+  peer: PeerRecord<T, P, C>,
   consumerId: string,
-  consumer: TConsumer,
+  consumer: C,
   now = Date.now()
 ): void {
   peer.consumers.set(consumerId, consumer);
@@ -216,15 +177,10 @@ export function attachConsumer<
   touchRoom(room, now);
 }
 
-export function findPeerByTransport<
-  TRouter extends Closable,
-  TTransport extends Closable,
-  TProducer extends Closable,
-  TConsumer extends Closable,
->(
-  room: RoomRecord<TRouter, TTransport, TProducer, TConsumer>,
+export function findPeerByTransport<R extends Closable, T extends Closable, P extends Closable, C extends Closable>(
+  room: RoomRecord<R, T, P, C>,
   transportId: string
-): PeerTransportLookup<TTransport, TProducer, TConsumer> | null {
+): PeerTransportLookup<T, P, C> | null {
   const peerKey = room.transportOwners.get(transportId);
   if (!peerKey) {
     return null;
@@ -238,15 +194,10 @@ export function findPeerByTransport<
   return { peer, transport };
 }
 
-export function findPeerByConsumer<
-  TRouter extends Closable,
-  TTransport extends Closable,
-  TProducer extends Closable,
-  TConsumer extends Closable,
->(
-  room: RoomRecord<TRouter, TTransport, TProducer, TConsumer>,
+export function findPeerByConsumer<R extends Closable, T extends Closable, P extends Closable, C extends Closable>(
+  room: RoomRecord<R, T, P, C>,
   consumerId: string
-): PeerConsumerLookup<TTransport, TProducer, TConsumer> | null {
+): PeerConsumerLookup<T, P, C> | null {
   const peerKey = room.consumerOwners.get(consumerId);
   if (!peerKey) {
     return null;
@@ -260,28 +211,18 @@ export function findPeerByConsumer<
   return { peer, consumer };
 }
 
-export function removeTransport<
-  TRouter extends Closable,
-  TTransport extends Closable,
-  TProducer extends Closable,
-  TConsumer extends Closable,
->(
-  room: RoomRecord<TRouter, TTransport, TProducer, TConsumer>,
-  peer: PeerRecord<TTransport, TProducer, TConsumer>,
+export function removeTransport<R extends Closable, T extends Closable, P extends Closable, C extends Closable>(
+  room: RoomRecord<R, T, P, C>,
+  peer: PeerRecord<T, P, C>,
   transportId: string
 ): void {
   peer.transports.delete(transportId);
   room.transportOwners.delete(transportId);
 }
 
-export function removeProducer<
-  TRouter extends Closable,
-  TTransport extends Closable,
-  TProducer extends Closable,
-  TConsumer extends Closable,
->(
-  room: RoomRecord<TRouter, TTransport, TProducer, TConsumer>,
-  peer: PeerRecord<TTransport, TProducer, TConsumer>,
+export function removeProducer<R extends Closable, T extends Closable, P extends Closable, C extends Closable>(
+  room: RoomRecord<R, T, P, C>,
+  peer: PeerRecord<T, P, C>,
   producerId: string
 ): void {
   peer.producers.delete(producerId);
@@ -289,27 +230,17 @@ export function removeProducer<
   room.producerSources.delete(producerId);
 }
 
-export function removeConsumer<
-  TRouter extends Closable,
-  TTransport extends Closable,
-  TProducer extends Closable,
-  TConsumer extends Closable,
->(
-  room: RoomRecord<TRouter, TTransport, TProducer, TConsumer>,
-  peer: PeerRecord<TTransport, TProducer, TConsumer>,
+export function removeConsumer<R extends Closable, T extends Closable, P extends Closable, C extends Closable>(
+  room: RoomRecord<R, T, P, C>,
+  peer: PeerRecord<T, P, C>,
   consumerId: string
 ): void {
   peer.consumers.delete(consumerId);
   room.consumerOwners.delete(consumerId);
 }
 
-export function closePeer<
-  TRouter extends Closable,
-  TTransport extends Closable,
-  TProducer extends Closable,
-  TConsumer extends Closable,
->(
-  room: RoomRecord<TRouter, TTransport, TProducer, TConsumer>,
+export function closePeer<R extends Closable, T extends Closable, P extends Closable, C extends Closable>(
+  room: RoomRecord<R, T, P, C>,
   peerKey: string,
   now = Date.now()
 ): boolean {
@@ -340,13 +271,8 @@ export function closePeer<
   return true;
 }
 
-export function cleanupStaleRooms<
-  TRouter extends Closable,
-  TTransport extends Closable,
-  TProducer extends Closable,
-  TConsumer extends Closable,
->(
-  rooms: Map<string, RoomRecord<TRouter, TTransport, TProducer, TConsumer>>,
+export function cleanupStaleRooms<R extends Closable, T extends Closable, P extends Closable, C extends Closable>(
+  rooms: Map<string, RoomRecord<R, T, P, C>>,
   options: CleanupOptions
 ): CleanupResult {
   const now = options.now ?? Date.now();
@@ -375,6 +301,5 @@ export function cleanupStaleRooms<
 function safeClose(target: Closable): void {
   try {
     target.close();
-  } catch {
-  }
+  } catch { /* ignore close errors */ }
 }

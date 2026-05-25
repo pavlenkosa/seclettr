@@ -1,9 +1,11 @@
 import {
   forwardRef,
+  useCallback,
   useEffect,
   useImperativeHandle,
   useMemo,
   useRef,
+  useState,
 } from "react";
 import { measureElement, useVirtualizer } from "@tanstack/react-virtual";
 import { useI18n } from "@/i18n";
@@ -25,14 +27,24 @@ interface Props {
   readonly senderLabels?: Record<string, string>;
   readonly onRetry?: (messageId: string) => void;
   readonly onReply?: (messageId: string) => void;
+  readonly onDelete?: (messageId: string) => void;
+  readonly onForward?: (messageId: string) => void;
   readonly onScrollToMessage?: (messageId: string) => void;
   readonly highlightMessageId?: string;
   readonly isTyping?: boolean;
   readonly onJumpToBottomStateChange?: (state: MessageListJumpToBottomState) => void;
+  /** When true, renders a placeholder skeleton instead of the empty state
+   *  while the thread's first-page history is being fetched. */
+  readonly isLoadingHistory?: boolean;
+  /** Called whenever the selection mode or selected IDs change.
+   *  The parent (e.g. ChatThreadPane) owns the bulk action bar UI. */
+  readonly onSelectionChange?: (state: { mode: boolean; selectedIds: ReadonlySet<string> }) => void;
 }
 
 export interface MessageListHandle {
   scrollToBottom: () => void;
+  /** Exit selection mode and clear all selected IDs. */
+  exitSelection: () => void;
 }
 
 export interface MessageListJumpToBottomState {
@@ -59,13 +71,51 @@ export const MessageList = forwardRef<MessageListHandle, Props>(function Message
   senderLabels,
   onRetry,
   onReply,
+  onDelete,
+  onForward,
   onScrollToMessage,
   highlightMessageId,
   isTyping,
   onJumpToBottomStateChange,
+  isLoadingHistory,
+  onSelectionChange,
 }, ref) {
   const { t, locale } = useI18n();
   const containerRef = useRef<HTMLDivElement>(null);
+
+  // ── Bulk selection state ─────────────────────────────────────────────────
+  const [selectionMode, setSelectionMode] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<ReadonlySet<string>>(new Set());
+
+  const handleEnterSelectionMode = useCallback((messageId: string) => {
+    setSelectionMode(true);
+    setSelectedIds(new Set([messageId]));
+  }, []);
+
+  const handleToggleSelect = useCallback((messageId: string) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(messageId)) {
+        next.delete(messageId);
+      } else {
+        next.add(messageId);
+      }
+      return next;
+    });
+  }, []);
+
+  const handleExitSelection = useCallback(() => {
+    setSelectionMode(false);
+    setSelectedIds(new Set());
+  }, []);
+
+  // Notify parent whenever selection state changes.
+  const onSelectionChangeRef = useRef(onSelectionChange);
+  onSelectionChangeRef.current = onSelectionChange;
+  useEffect(() => {
+    onSelectionChangeRef.current?.({ mode: selectionMode, selectedIds });
+  }, [selectionMode, selectedIds]);
+
   const bottomRef = useRef<HTMLDivElement>(null);
   const rowPresentationCacheRef = useRef<MessageRowPresentationCache | null>(null);
   const shouldVirtualize = messages.length > VIRTUALIZE_THRESHOLD;
@@ -118,9 +168,46 @@ export const MessageList = forwardRef<MessageListHandle, Props>(function Message
 
   useImperativeHandle(ref, () => ({
     scrollToBottom: timelineState.scrollToBottom,
-  }), [timelineState.scrollToBottom]);
+    exitSelection: handleExitSelection,
+  }), [timelineState.scrollToBottom, handleExitSelection]);
 
   if (messages.length === 0) {
+    if (isLoadingHistory) {
+      // Hand-crafted skeleton with alternating own/peer bubbles of varying
+      // widths so the thread doesn't pop from "Welcome / start a conversation"
+      // straight to a populated list when history finally arrives.
+      return (
+        <div
+          ref={timelineState.containerRef}
+          className={styles.container}
+          data-testid="chat-message-list-skeleton"
+          aria-busy="true"
+          aria-label={t("message.messagesLoadingAria")}
+        >
+          <div className={styles.skeletonStack} aria-hidden="true">
+            {[
+              { own: false, width: 62 },
+              { own: true, width: 48 },
+              { own: false, width: 78 },
+              { own: false, width: 36 },
+              { own: true, width: 56 },
+              { own: true, width: 70 },
+              { own: false, width: 42 },
+            ].map((item, idx) => (
+              <div
+                key={idx}
+                className={`${styles.skeletonRow} ${item.own ? styles.skeletonRowOwn : styles.skeletonRowPeer}`}
+              >
+                <div
+                  className={styles.skeletonBubble}
+                  style={{ width: `${item.width}%` }}
+                />
+              </div>
+            ))}
+          </div>
+        </div>
+      );
+    }
     return (
       <div
         ref={timelineState.containerRef}
@@ -158,6 +245,7 @@ export const MessageList = forwardRef<MessageListHandle, Props>(function Message
           {virtualizer.getVirtualItems().map((virtualRow) => {
             const presentation = rowPresentations[virtualRow.index];
             if (!presentation) return null;
+            const leadId = presentation.messageIds[0];
 
             return (
               <div
@@ -189,9 +277,15 @@ export const MessageList = forwardRef<MessageListHandle, Props>(function Message
                   onActiveMediaChange={timelineState.handleActiveMediaChange}
                   onRetry={onRetry}
                   onReply={onReply}
+                  onDelete={onDelete}
+                  onForward={onForward}
                   onScrollToMessage={onScrollToMessage}
                   isHighlighted={presentation.rowId === highlightedRowId}
                   enterDelayMs={Math.min(virtualRow.index, 8) * 22}
+                  selectionMode={selectionMode}
+                  isSelected={leadId !== undefined && selectedIds.has(leadId)}
+                  onToggleSelect={handleToggleSelect}
+                  onEnterSelectionMode={handleEnterSelectionMode}
                 />
               </div>
             );
@@ -201,6 +295,7 @@ export const MessageList = forwardRef<MessageListHandle, Props>(function Message
         <>
           <div className={styles.spacer} />
           {rowPresentations.map((presentation, index) => {
+            const leadId = presentation.messageIds[0];
             return (
               <div
                 key={presentation.rowId}
@@ -222,9 +317,15 @@ export const MessageList = forwardRef<MessageListHandle, Props>(function Message
                   onActiveMediaChange={timelineState.handleActiveMediaChange}
                   onRetry={onRetry}
                   onReply={onReply}
+                  onDelete={onDelete}
+                  onForward={onForward}
                   onScrollToMessage={onScrollToMessage}
                   isHighlighted={presentation.rowId === highlightedRowId}
                   enterDelayMs={Math.min(index, 8) * 22}
+                  selectionMode={selectionMode}
+                  isSelected={leadId !== undefined && selectedIds.has(leadId)}
+                  onToggleSelect={handleToggleSelect}
+                  onEnterSelectionMode={handleEnterSelectionMode}
                 />
               </div>
             );
@@ -233,7 +334,7 @@ export const MessageList = forwardRef<MessageListHandle, Props>(function Message
         </>
       )}
 
-      {isTyping && (
+      {isTyping && !selectionMode && (
         <div className={styles.typingBubble} aria-live="polite" aria-label="typing">
           <span className={styles.typingDot} />
           <span className={styles.typingDot} />

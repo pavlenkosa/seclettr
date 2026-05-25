@@ -1,7 +1,7 @@
 import type { RefObject } from "react";
 import { createPortal } from "react-dom";
 import { useI18n } from "@/i18n";
-import styles from "../presentation/MessageComposer.module.css";
+import styles from "./MessageComposerRecording.module.css";
 
 /**
  * Props for the full-screen video recording overlay shown while capturing a video note.

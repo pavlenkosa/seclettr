@@ -1,3 +1,14 @@
+/**
+ * InfoStack — shared eyebrow-title-meta vertical text stack for call surfaces, notices, and compact UI summaries.
+ *
+ * Owns:
+ *   - Rendering optional eyebrow, title row with inline accessory, and meta row with inline accessory.
+ *   - Horizontal alignment recipe (`start` / `center`) applied to the full stack.
+ *   - Consistent spacing and slot composition without any domain-specific content.
+ *
+ * Does not own runtime state, business logic, or domain-specific wiring.
+ * Use when: only text hierarchy is needed; prefer CallIdentityBlock when the pattern includes call identity framing.
+ */
 import type { HTMLAttributes, ReactNode } from "react";
 import styles from "./InfoStack.module.css";
 
@@ -26,6 +37,7 @@ export interface InfoStackProps extends Readonly<Omit<HTMLAttributes<HTMLDivElem
 /**
  * Shared eyebrow-title-meta stack used by call surfaces, notices, and other
  * compact UI summaries that need consistent spacing and accessory alignment.
+ * Choose it for text hierarchy only; prefer CallIdentityBlock when the pattern includes call identity framing, and pair it with Avatar separately when a leading identity mark is needed.
  */
 export function InfoStack({
   eyebrow,

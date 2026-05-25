@@ -1,0 +1,131 @@
+.indicator {
+  --security-status-color: var(--text-secondary);
+  --security-status-bg: color-mix(in srgb, var(--surface-shell) 88%, transparent);
+  --security-status-border: var(--border-subtle);
+  --security-status-hover-bg: color-mix(in srgb, var(--accent) 10%, transparent);
+  --security-status-hover-border: color-mix(in srgb, var(--accent) 24%, transparent);
+
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.3rem;
+  min-width: 0;
+  max-width: min(100%, 8.2rem);
+  min-height: 24px;
+  padding: 0 0.48rem;
+  border: 1px solid var(--security-status-border);
+  border-radius: 999px;
+  background: var(--security-status-bg);
+  color: var(--security-status-color);
+  font: inherit;
+  font-size: 0.67rem;
+  font-weight: 700;
+  line-height: 1.1;
+  white-space: nowrap;
+  transition:
+    background-color var(--motion-duration-fast) var(--motion-ease-standard),
+    border-color var(--motion-duration-fast) var(--motion-ease-standard),
+    color var(--motion-duration-fast) var(--motion-ease-standard);
+}
+
+.button {
+  appearance: none;
+  margin: 0;
+  cursor: pointer;
+}
+
+.button:hover {
+  background: var(--security-status-hover-bg);
+  border-color: var(--security-status-hover-border);
+}
+
+.button:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--accent) 46%, transparent);
+  outline-offset: 2px;
+}
+
+.icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+}
+
+.icon svg {
+  display: block;
+  width: 0.86rem;
+  height: 0.86rem;
+}
+
+.label {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.verified {
+  --security-status-color: color-mix(in srgb, var(--success) 82%, var(--text-primary));
+  --security-status-bg: color-mix(in srgb, var(--success) 10%, transparent);
+  --security-status-border: color-mix(in srgb, var(--success) 24%, transparent);
+  --security-status-hover-bg: color-mix(in srgb, var(--success) 14%, transparent);
+  --security-status-hover-border: color-mix(in srgb, var(--success) 34%, transparent);
+}
+
+.unverified {
+  --security-status-color: color-mix(in srgb, var(--warning) 86%, var(--text-primary));
+  --security-status-bg: color-mix(in srgb, var(--warning) 11%, transparent);
+  --security-status-border: color-mix(in srgb, var(--warning) 26%, transparent);
+  --security-status-hover-bg: color-mix(in srgb, var(--warning) 15%, transparent);
+  --security-status-hover-border: color-mix(in srgb, var(--warning) 36%, transparent);
+}
+
+.attention {
+  --security-status-color: color-mix(in srgb, var(--danger) 86%, var(--text-primary));
+  --security-status-bg: color-mix(in srgb, var(--danger) 11%, transparent);
+  --security-status-border: color-mix(in srgb, var(--danger) 28%, transparent);
+  --security-status-hover-bg: color-mix(in srgb, var(--danger) 15%, transparent);
+  --security-status-hover-border: color-mix(in srgb, var(--danger) 38%, transparent);
+}
+
+:global(:root[data-theme="light"]) .verified {
+  --security-status-color: color-mix(in srgb, var(--success) 90%, #14532d);
+  --security-status-bg: color-mix(in srgb, var(--success) 16%, white);
+  --security-status-border: color-mix(in srgb, var(--success) 32%, transparent);
+}
+
+:global(:root[data-theme="light"]) .unverified {
+  --security-status-color: color-mix(in srgb, var(--warning) 92%, #78350f);
+  --security-status-bg: color-mix(in srgb, var(--warning) 16%, white);
+  --security-status-border: color-mix(in srgb, var(--warning) 32%, transparent);
+}
+
+:global(:root[data-theme="light"]) .attention {
+  --security-status-color: color-mix(in srgb, var(--danger) 92%, #7f1d1d);
+  --security-status-bg: color-mix(in srgb, var(--danger) 16%, white);
+  --security-status-border: color-mix(in srgb, var(--danger) 34%, transparent);
+}
+
+@media (max-width: 640px) {
+  .indicator {
+    max-width: 6.8rem;
+    min-height: 22px;
+    padding: 0 0.42rem;
+    gap: 0.26rem;
+    font-size: 0.64rem;
+  }
+
+  .icon svg {
+    width: 0.8rem;
+    height: 0.8rem;
+  }
+}
+
+@media (max-width: 380px) {
+  .verified {
+    padding: 0 0.36rem;
+  }
+
+  .verified .label {
+    display: none;
+  }
+}

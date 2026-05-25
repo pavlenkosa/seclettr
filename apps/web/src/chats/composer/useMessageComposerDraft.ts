@@ -20,6 +20,7 @@ import { useChatComposerMediaActions } from "../runtime/useChatComposerMediaActi
 import { useChatComposerMessageActions } from "../runtime/useChatComposerMessageActions";
 import { useChatComposerTypingSignal } from "../runtime/useChatComposerTypingSignal";
 import type { RecordMode } from "./MessageComposerPrimaryActions";
+import { useMessageComposerTextInput } from "./useMessageComposerTextInput";
 import { logger } from "@/lib/logger.js";
 
 export type ComposerErrorKey =
@@ -34,9 +35,13 @@ interface UseMessageComposerDraftOptions {
   onFocusChange?: (focused: boolean) => void;
   replyTo?: MessageReplyMeta;
   onClearReply?: () => void;
+  onSendText?: (text: string, replyTo?: MessageReplyMeta) => Promise<void>;
+  onSendFile?: (file: File, mediaGroupId?: string, caption?: string) => Promise<void>;
+  onSendVoiceBlob?: (blob: Blob, durationMs: number) => Promise<void>;
+  onSendVideoBlob?: (blob: Blob, durationMs: number) => Promise<void>;
 }
 
-interface UseMessageComposerDraftResult {
+export interface UseMessageComposerDraftResult {
   isGroupComposer: boolean;
   text: string;
   trimmedText: string;
@@ -79,60 +84,103 @@ export function useMessageComposerDraft({
   onFocusChange,
   replyTo,
   onClearReply,
+  onSendText: onSendTextOverride,
+  onSendFile: onSendFileOverride,
+  onSendVoiceBlob: onSendVoiceBlobOverride,
+  onSendVideoBlob: onSendVideoBlobOverride,
 }: UseMessageComposerDraftOptions): UseMessageComposerDraftResult {
   const isGroupComposer = typeof groupId === "string" && groupId.length > 0;
   const [text, setText] = useState("");
   const [sending, setSending] = useState(false);
   const [composerErrorKey, setComposerErrorKey] = useState<ComposerErrorKey | null>(null);
-  const [isTextFocused, setIsTextFocused] = useState(false);
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
   const attachmentInputRef = useRef<HTMLInputElement>(null);
-  const textSelectionRef = useRef({ start: 0, end: 0 });
   const trimmedText = text.trim();
 
   const { handleTypingState, stopTyping, cleanupTypingSignal } = useChatComposerTypingSignal({
-    recipientUserId,
+    recipientUserId: onSendTextOverride ? undefined : recipientUserId,
     groupId,
+    chatKind: onSendTextOverride ? undefined : "e2ee",
   });
-  const { sendTextMessage, sendFileAttachment: sendFileAttachmentAction } =
+  const { sendTextMessage: sendTextMessageStore, sendFileAttachment: sendFileAttachmentStore } =
     useChatComposerMessageActions({
-      recipientUserId,
-      groupId,
+      recipientUserId: onSendTextOverride ? undefined : recipientUserId,
+      groupId: onSendTextOverride ? undefined : groupId,
     });
-  const { sendVoiceBlob: sendVoiceBlobAction, sendVideoBlob: sendVideoBlobAction } =
+  const { sendVoiceBlob: sendVoiceBlobStore, sendVideoBlob: sendVideoBlobStore } =
     useChatComposerMediaActions({
-      recipientUserId,
-      groupId,
+      recipientUserId: onSendVoiceBlobOverride ? undefined : recipientUserId,
+      groupId: onSendVoiceBlobOverride ? undefined : groupId,
     });
 
-  const resizeTextAreaToContent = useCallback(() => {
-    if (!textareaRef.current) return;
-    textareaRef.current.style.height = "auto";
-    textareaRef.current.style.height = `${Math.min(textareaRef.current.scrollHeight, 160)}px`;
-  }, []);
+  const sendTextMessage = useCallback(
+    async (t: string, replyTo?: MessageReplyMeta) => {
+      if (onSendTextOverride) {
+        await onSendTextOverride(t, replyTo);
+      } else {
+        await sendTextMessageStore(t, replyTo);
+      }
+    },
+    [onSendTextOverride, sendTextMessageStore]
+  );
 
-  const resetTextAreaHeight = useCallback(() => {
-    if (!textareaRef.current) return;
-    textareaRef.current.style.height = "auto";
-  }, []);
+  const sendFileAttachmentAction = useCallback(
+    async (file: File, mediaGroupId?: string, caption?: string) => {
+      if (onSendFileOverride) {
+        await onSendFileOverride(file, mediaGroupId, caption);
+      } else {
+        await sendFileAttachmentStore(file, mediaGroupId, caption);
+      }
+    },
+    [onSendFileOverride, sendFileAttachmentStore]
+  );
 
-  const refocusTextarea = useCallback(() => {
-    setTimeout(() => {
-      textareaRef.current?.focus();
-    }, 0);
-  }, []);
+  const sendVoiceBlobAction = useCallback(
+    async (blob: Blob, durationMs: number) => {
+      if (onSendVoiceBlobOverride) {
+        await onSendVoiceBlobOverride(blob, durationMs);
+      } else {
+        await sendVoiceBlobStore(blob, durationMs);
+      }
+    },
+    [onSendVoiceBlobOverride, sendVoiceBlobStore]
+  );
 
-  const syncTextareaSelection = useCallback(() => {
-    if (!textareaRef.current) return;
-    textSelectionRef.current = {
-      start: textareaRef.current.selectionStart,
-      end: textareaRef.current.selectionEnd,
-    };
-  }, []);
+  const sendVideoBlobAction = useCallback(
+    async (blob: Blob, durationMs: number) => {
+      if (onSendVideoBlobOverride) {
+        await onSendVideoBlobOverride(blob, durationMs);
+      } else {
+        await sendVideoBlobStore(blob, durationMs);
+      }
+    },
+    [onSendVideoBlobOverride, sendVideoBlobStore]
+  );
 
   const clearComposerError = useCallback(() => {
     setComposerErrorKey(null);
   }, []);
+
+  const {
+    handleInput,
+    handleTextBlur,
+    handleTextFocus,
+    insertTextAtSelection,
+    isTextFocused,
+    refocusTextarea,
+    resetTextAreaHeight,
+    resizeTextAreaToContent,
+    syncTextareaSelection,
+    textareaRef,
+    textSelectionRef,
+  } = useMessageComposerTextInput({
+    clearComposerError,
+    handleTypingState,
+    onFocusChange,
+    sending,
+    setText,
+    stopTyping,
+    text,
+  });
 
   const restoreTextAfterFailedSend = useCallback((failedText: string) => {
     setText((current) => {
@@ -282,45 +330,6 @@ export function useMessageComposerDraft({
     await handleDroppedFiles(files);
   }, [handleDroppedFiles]);
 
-  const insertTextAtSelection = useCallback((value: string) => {
-    if (sending) return;
-
-    const currentValue = textareaRef.current?.value ?? text;
-    const start = Math.min(textSelectionRef.current.start, currentValue.length);
-    const end = Math.min(textSelectionRef.current.end, currentValue.length);
-    const nextValue = `${currentValue.slice(0, start)}${value}${currentValue.slice(end)}`;
-    const nextCaretPosition = start + value.length;
-
-    setText(nextValue);
-    handleTypingState(nextValue);
-    clearComposerError();
-    textSelectionRef.current = {
-      start: nextCaretPosition,
-      end: nextCaretPosition,
-    };
-
-    setTimeout(() => {
-      resizeTextAreaToContent();
-      const textarea = textareaRef.current;
-      if (!textarea) return;
-      textarea.focus();
-      textarea.setSelectionRange(nextCaretPosition, nextCaretPosition);
-    }, 0);
-  }, [clearComposerError, handleTypingState, resizeTextAreaToContent, sending, text]);
-
-  const handleInput = useCallback((event: FormEvent<HTMLTextAreaElement>) => {
-    const nextValue = event.currentTarget.value;
-    setText(nextValue);
-    handleTypingState(nextValue);
-    clearComposerError();
-    textSelectionRef.current = {
-      start: event.currentTarget.selectionStart,
-      end: event.currentTarget.selectionEnd,
-    };
-    event.currentTarget.style.height = "auto";
-    event.currentTarget.style.height = `${Math.min(event.currentTarget.scrollHeight, 160)}px`;
-  }, [clearComposerError, handleTypingState]);
-
   const handleKeyDown = useCallback((event: KeyboardEvent<HTMLTextAreaElement>) => {
     if (event.nativeEvent.isComposing) return;
     if (event.key === "Enter" && !event.shiftKey) {
@@ -328,19 +337,6 @@ export function useMessageComposerDraft({
       void handleSend();
     }
   }, [handleSend]);
-
-  const handleTextFocus = useCallback(() => {
-    setIsTextFocused(true);
-    onFocusChange?.(true);
-    clearComposerError();
-    syncTextareaSelection();
-  }, [clearComposerError, onFocusChange, syncTextareaSelection]);
-
-  const handleTextBlur = useCallback(() => {
-    setIsTextFocused(false);
-    onFocusChange?.(false);
-    stopTyping();
-  }, [onFocusChange, stopTyping]);
 
   useEffect(() => {
     return () => {

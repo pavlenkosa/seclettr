@@ -54,6 +54,8 @@ type UserMetadataAccessBasis =
   | "direct_relationship"
   | "shared_group"
   | "prior_direct_message"
+  | "prior_plain_direct_message"
+  | "shared_plain_group"
   | "active_direct_call"
   | "contact_grant"
   | "none";
@@ -426,15 +428,25 @@ export async function userRoutes(fastify: FastifyInstance): Promise<void> {
     { preHandler: requireAuth },
     async (request) => {
       const { sub: userId } = request.auth;
-      const rows = await query<{ id: string; username: string }>(
-        "SELECT id, username FROM users WHERE id = $1",
+      const rows = await query<{
+        id: string;
+        username: string;
+        display_name: string | null;
+        bio: string | null;
+        avatar_key: string | null;
+      }>(
+        "SELECT id, username, display_name, bio, avatar_key FROM users WHERE id = $1",
         [userId]
       );
       if (rows.length === 0) throw new Error("User not found");
+      const user = rows[0]!;
       return {
         version: DEVICES_PROTOCOL_VERSION,
-        userId: rows[0]!.id,
-        username: rows[0]!.username,
+        userId: user.id,
+        username: user.username,
+        displayName: user.display_name,
+        bio: user.bio,
+        avatarKey: user.avatar_key,
       };
     }
   );

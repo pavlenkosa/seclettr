@@ -1,3 +1,19 @@
+/**
+ * useGroupCallPanelDock — draggable minimized dock state and gesture handlers.
+ *
+ * Owns:
+ *   - minimizedDockPosition — current (x, y) position of the minimized call bubble
+ *   - isDraggingMinimizedDock — true while a pointer drag is in progress
+ *   - minimizedDockRef — ref to the <dialog> element used as the dock
+ *   - dockInlineStyle — CSS inline style with transform for the current position
+ *   - resetMinimizedDock — resets position to null (dock returns to default position)
+ *   - startMinimizedDockDrag — pointer-down handler that begins a drag sequence
+ *   - Pointer move/up handlers wired to the document during drag
+ *   - clampGroupCallMinimizedDockPosition integration for viewport boundary enforcement
+ *
+ * Does not own the minimized state toggle (see useGroupCallPanelUiState) or the
+ * actual dock rendering (see GroupCallDock component).
+ */
 import {
   useCallback,
   useEffect,
@@ -8,7 +24,7 @@ import {
   type MutableRefObject,
   type PointerEvent as ReactPointerEvent,
 } from "react";
-import { clampGroupCallMinimizedDockPosition } from "@/calls/group/runtime/runtime-utils";
+import { clampGroupCallMinimizedDockPosition } from "@/calls/group/model/clamp-dock-position";
 import type { MinimizedDockPosition } from "@/calls/group/model/group-call-types";
 
 interface DragState {

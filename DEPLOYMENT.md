@@ -167,6 +167,8 @@ The current installer will:
 - copy `.env` and TLS certificates from the current release
 - create a backup
 - load new Docker images
+- force `.env` to use the image tag bundled with the new release
+- verify that all required images are available locally after loading
 - run database migrations
 - restart containers without deleting Docker volumes
 
@@ -201,6 +203,4 @@ MinIO data remain in place.
 - Use strong secrets in `.env`.
 - Use TLS in production.
 - Keep Docker host and OS patched.
-- Read legal notices:
-  - `LEGAL_NOTICE.md`
-  - `LEGAL_NOTICE.ru.md`
+- Read legal notices: `LEGAL_NOTICE.md`

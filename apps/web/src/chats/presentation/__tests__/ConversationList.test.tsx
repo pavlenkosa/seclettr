@@ -81,7 +81,8 @@ describe("ConversationList ARIA semantics", () => {
   it("renders each conversation item as a li > button", () => {
     render();
     const items = container.querySelectorAll('li > button');
-    expect(items.length).toBe(2);
+    // Saved Messages entry + alice + bob
+    expect(items.length).toBe(3);
   });
 
   it("sets no aria-current when no conversation is active", () => {
@@ -93,14 +94,15 @@ describe("ConversationList ARIA semantics", () => {
   });
 
   it("sets aria-current=true only on the active conversation", () => {
-    // List is sorted by lastMessageAt desc — bob (2000) sorts first, alice (1000) second
+    // List is sorted by lastMessageAt desc — Saved Messages first, then bob (2000), alice (1000)
     render("direct:user-alice");
     const buttons = container.querySelectorAll('li > button');
-    expect(buttons.length).toBe(2);
-    // bob sorts first (lastMessageAt 2000), alice sorts second
-    const [firstButton, secondButton] = buttons;
-    expect(firstButton?.getAttribute("aria-current")).toBeNull();
-    expect(secondButton?.getAttribute("aria-current")).toBe("true");
+    expect(buttons.length).toBe(3);
+    // saved sorts first, bob sorts second (lastMessageAt 2000), alice sorts third
+    const [savedButton, bobButton, aliceButton] = buttons;
+    expect(savedButton?.getAttribute("aria-current")).toBeNull();
+    expect(bobButton?.getAttribute("aria-current")).toBeNull();
+    expect(aliceButton?.getAttribute("aria-current")).toBe("true");
   });
 
   it("shows empty state when no conversations", () => {
@@ -115,7 +117,9 @@ describe("ConversationList ARIA semantics", () => {
         </I18nProvider>
       );
     });
-    expect(container.querySelector('ul[data-testid="chat-thread-list"]')).toBeNull();
+    // The list is rendered but contains an empty-state li
+    expect(container.querySelector('ul[data-testid="chat-thread-list"]')).not.toBeNull();
+    expect(container.querySelector('li.empty, li[class*="empty"]')).not.toBeNull();
   });
 
   it("renders the provided loading placeholder count instead of a hardcoded three rows", () => {

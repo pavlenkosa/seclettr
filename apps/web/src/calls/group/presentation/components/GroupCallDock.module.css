@@ -1,0 +1,72 @@
+/*
+ * GroupCallDock — minimized group-call floating dock chrome.
+ *
+ * Owns:
+ * - minimized group-call dock placement variables
+ * - summary/action spacing for dock chrome
+ * - narrow-viewport minimized dock compaction
+ * - reduced-motion rules for dock-only transitions
+ *
+ * Does not own fullscreen panel layout, bottom controls dock, details drawer,
+ * media grid, or stage presentation.
+ */
+
+.dock {
+  --floating-dock-z-index: var(--z-250);
+  --floating-dock-bottom-offset: 10px;
+  /* Default to bottom-right — avoids center-covering the composer */
+  --floating-dock-left: auto;
+  --floating-dock-right: clamp(0.75rem, 2vw, 1.5rem);
+  /* Functional exception: dock placement variable, not hover/decorative movement. */
+  --floating-dock-translate-x: 0;
+}
+
+.dockSummary {
+  --avatar-summary-padding: 0.38rem 0.46rem;
+  --avatar-summary-radius: 12px;
+  --avatar-summary-avatar-size: 34px;
+  --avatar-summary-avatar-font-size: 0.72rem;
+  --avatar-summary-title-size: 0.825rem;
+  --avatar-summary-subtitle-size: 0.69rem;
+}
+
+.dockActions {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.dockBtn {
+  --icon-button-size: 38px;
+}
+
+@media (max-width: 720px) {
+  .dock {
+    --floating-dock-screen-gap: 0.8rem;
+    --floating-dock-bottom-offset: 10px;
+    --floating-dock-padding: 0.34rem;
+    --floating-dock-gap: 0.32rem;
+    --floating-dock-radius: 13px;
+  }
+
+  .dockSummary {
+    --avatar-summary-padding: 0.32rem 0.38rem;
+    --avatar-summary-radius: 10px;
+    --avatar-summary-avatar-size: 30px;
+    --avatar-summary-avatar-font-size: 0.67rem;
+    --avatar-summary-title-size: 0.78rem;
+    --avatar-summary-subtitle-size: 0.64rem;
+  }
+
+  .dockBtn {
+    --icon-button-size: 34px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dock,
+  .dockBtn {
+    animation: none !important;
+    transition: none !important;
+  }
+}

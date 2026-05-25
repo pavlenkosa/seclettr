@@ -1,8 +1,19 @@
+/**
+ * IconButton — shared circular icon-only button for toolbars, headers, and floating controls.
+ *
+ * Owns:
+ *   - Rendering a square/circular `<button>` with configurable size via CSS variable.
+ *   - Tone variants (`default`/`danger`/`success`) and surface variants (`default`/`ghost`).
+ *   - Active state styling for toggled toolbar controls.
+ *
+ * Does not own runtime state, business logic, or domain-specific wiring.
+ * Use when: the action is communicated by icon plus accessible label alone; prefer PillButton when visible text carries the action meaning.
+ */
 import { forwardRef, type ButtonHTMLAttributes, type CSSProperties } from "react";
 import styles from "./IconButton.module.css";
 
 type IconButtonTone = "default" | "danger" | "success";
-type IconButtonVariant = "default" | "glass" | "ghost";
+type IconButtonVariant = "default" | "ghost";
 
 export interface IconButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   /** Square button size in pixels or any supported CSS unit. */
@@ -11,13 +22,14 @@ export interface IconButtonProps extends ButtonHTMLAttributes<HTMLButtonElement>
   readonly active?: boolean;
   /** Visual tone used for destructive or success-oriented icon actions. */
   readonly tone?: IconButtonTone;
-  /** Surface recipe used for neutral solid, glassy, or ghost circular buttons. */
+  /** Surface recipe used for neutral solid or ghost circular buttons. */
   readonly variant?: IconButtonVariant;
 }
 
 /**
  * Shared circular icon-only button for toolbars, headers, and floating controls.
  * Visual variants are controlled through CSS variables plus the tone and active props.
+ * Choose it when the action is communicated by icon plus accessible label alone; prefer PillButton when visible text carries the action meaning.
  */
 export const IconButton = forwardRef<HTMLButtonElement, IconButtonProps>(function IconButton(
   {
@@ -49,7 +61,6 @@ export const IconButton = forwardRef<HTMLButtonElement, IconButtonProps>(functio
       type={type}
       className={[
         styles.button,
-        variant === "glass" ? styles.glass : "",
         variant === "ghost" ? styles.ghost : "",
         active ? styles.active : "",
         tone === "danger" ? styles.danger : "",

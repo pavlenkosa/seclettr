@@ -6,7 +6,10 @@
   align-items: center;
   justify-content: center;
   gap: var(--call-control-gap, 0.42rem);
-  transition: border-color 0.12s ease, background-color 0.12s ease, color 0.12s ease;
+  transition:
+    border-color var(--motion-duration-fast) var(--motion-ease-standard),
+    background-color var(--motion-duration-fast) var(--motion-ease-standard),
+    color var(--motion-duration-fast) var(--motion-ease-standard);
 }
 
 
@@ -21,13 +24,11 @@
   padding: var(--call-control-inline-padding, 0 0.85rem);
   border-radius: var(--call-control-inline-radius, 999px);
   background: color-mix(in srgb, var(--panel-header-bg) 80%, var(--bg-secondary));
-  -webkit-backdrop-filter: blur(var(--call-control-inline-blur, 0px));
-  backdrop-filter: blur(var(--call-control-inline-blur, 0px));
 }
 
 .inline:hover:not(:disabled) {
-  background: color-mix(in srgb, var(--panel-header-bg) 60%, var(--icon-btn-hover-bg));
-  border-color: color-mix(in srgb, var(--accent) 36%, var(--panel-border-soft));
+  background: color-mix(in srgb, var(--accent) 8%, var(--panel-header-bg));
+  border-color: color-mix(in srgb, var(--accent) 34%, var(--panel-border-soft));
 }
 
 .stacked {
@@ -40,6 +41,7 @@
 }
 
 .stacked:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--accent) 7%, var(--surface-shell));
   border-color: color-mix(in srgb, var(--accent) 28%, var(--panel-border-soft));
 }
 
@@ -93,24 +95,24 @@
 }
 
 .inline.danger {
-  background: linear-gradient(145deg, #d42626, #b91c1c);
+  background: var(--danger);
   border-color: rgb(252 165 165 / 0.4);
   color: #fff;
 }
 
 .inline.danger:hover:not(:disabled) {
-  background: linear-gradient(145deg, #dc2626, #b91c1c);
+  background: color-mix(in srgb, var(--danger) 96%, var(--surface-shell));
   border-color: rgb(252 165 165 / 0.55);
 }
 
 .stacked.danger {
-  background: color-mix(in srgb, var(--danger, #d14343) 10%, var(--surface-shell));
-  border-color: color-mix(in srgb, var(--danger, #d14343) 28%, transparent);
-  color: var(--danger, #d14343);
+  background: color-mix(in srgb, var(--danger) 10%, var(--surface-shell));
+  border-color: color-mix(in srgb, var(--danger) 28%, transparent);
+  color: var(--danger);
 }
 
 .stacked.danger .icon {
-  background: linear-gradient(180deg, #dc2626, #b91c1c);
+  background: var(--danger);
   color: #fff;
 }
 

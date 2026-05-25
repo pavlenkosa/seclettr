@@ -1,3 +1,17 @@
+/**
+ * CallDevicePicker — inline device/resolution picker attached to a call control button.
+ *
+ * Owns:
+ *   - Chevron toggle button rendered next to the wrapped child control
+ *   - Floating menu with mic, camera, and video-resolution sections
+ *   - Outside-click and Escape dismissal
+ *   - Mobile scrim backdrop for touch dismissal
+ *   - VideoResolution constant list and type export
+ *
+ * Does not own the underlying media device enumeration, active device switching logic,
+ * or call state. Those are supplied as props by the caller.
+ * Consumed by both direct and group call control docks.
+ */
 import {
   useCallback,
   useEffect,
@@ -6,6 +20,8 @@ import {
   type ReactNode,
 } from "react";
 import type { InputDeviceOption } from "@/calls/shared/media/input-devices/useCallInputDevices";
+import { IconButton, IconClose, SurfacePanel } from "@/components/ui";
+import motionStyles from "@/components/ui/motion/Motion.module.css";
 import styles from "./CallDevicePicker.module.css";
 
 export type VideoResolution = "360p" | "480p" | "720p" | "1080p";
@@ -193,33 +209,58 @@ export function CallDevicePicker({
       >
         <ChevronDownIcon />
       </button>
-      {isOpen && (
-        <div className={styles.menu} role="menu">
-          {hasMics && onSelectMic && (
-            <DeviceSection
-              label={micSectionLabel}
-              devices={micDevices}
-              selectedId={selectedMicId}
-              onSelect={(id) => { onSelectMic(id); close(); }}
-            />
-          )}
-          {hasCameras && onSelectCamera && (
-            <DeviceSection
-              label={cameraSectionLabel}
-              devices={cameraDevices}
-              selectedId={selectedCameraId}
-              onSelect={(id) => { onSelectCamera(id); close(); }}
-            />
-          )}
-          {hasResolution && onSelectResolution && (
-            <ResolutionSection
-              resolutionLabel={resolutionSectionLabel}
-              selectedResolution={selectedResolution}
-              onSelectResolution={(res) => { onSelectResolution(res); close(); }}
-            />
-          )}
-        </div>
-      )}
+      {isOpen ? (
+        <>
+          <button
+            type="button"
+            className={styles.mobileScrim}
+            aria-label={chevronAriaLabel}
+            onClick={close}
+          />
+          <SurfacePanel
+            tone="strong"
+            padding="none"
+            radius="md"
+            className={`${styles.menu} ${motionStyles.popoverIn}`}
+            role="menu"
+          >
+            <div className={styles.menuHeader}>
+              <span className={styles.menuTitle}>{chevronAriaLabel}</span>
+              <IconButton
+              className={styles.menuCloseBtn}
+              onClick={close}
+              aria-label={chevronAriaLabel}
+              size={34}
+            >
+              <IconClose size={14} strokeWidth={1.8} />
+            </IconButton>
+            </div>
+            {hasMics && onSelectMic && (
+              <DeviceSection
+                label={micSectionLabel}
+                devices={micDevices}
+                selectedId={selectedMicId}
+                onSelect={(id) => { onSelectMic(id); close(); }}
+              />
+            )}
+            {hasCameras && onSelectCamera && (
+              <DeviceSection
+                label={cameraSectionLabel}
+                devices={cameraDevices}
+                selectedId={selectedCameraId}
+                onSelect={(id) => { onSelectCamera(id); close(); }}
+              />
+            )}
+            {hasResolution && onSelectResolution && (
+              <ResolutionSection
+                resolutionLabel={resolutionSectionLabel}
+                selectedResolution={selectedResolution}
+                onSelectResolution={(res) => { onSelectResolution(res); close(); }}
+              />
+            )}
+          </SurfacePanel>
+        </>
+      ) : null}
     </div>
   );
 }

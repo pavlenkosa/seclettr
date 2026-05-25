@@ -26,11 +26,12 @@ import {
 import {
   clearLegacyLockSnapshotStorage,
   clearPin,
-} from "@/lib/app-lock-pin";
+} from "@/lib/app-lock-password";
 import { refreshSessionAccessToken } from "@/lib/session";
 import { previewRefreshSession } from "@/lib/session-preview";
 import { requestPersistentStorage, checkStorageQuota } from "@/lib/storage-health";
 import { logger } from "@/lib/logger.js";
+import { AUTH_ERROR_CODES } from "@/lib/auth-error-codes";
 import type { RestoreSessionResult } from "./auth-types";
 
 const SESSION_KEY_PREFIX = "session:";
@@ -105,6 +106,9 @@ export async function resolveRestoredSession(
             userId: sessionPreview.userId,
             deviceId: sessionPreview.deviceId,
             username: sessionPreview.username,
+            displayName: null,
+            bio: null,
+            avatarKey: null,
           },
         };
       }
@@ -123,7 +127,7 @@ export async function resolveRestoredSession(
     return {
       outcome: "recovery_required",
       reason: "missing_local_keys",
-      error: "Local E2EE keys are missing for this device. Sign in again to re-provision keys.",
+      errorCode: AUTH_ERROR_CODES.localKeysMissing,
     };
   }
 
@@ -153,7 +157,7 @@ export async function resolveRestoredSession(
     return {
       outcome: "recovery_required",
       reason: "unexpected_restore_failure",
-      error: "Session identity changed during restore. Sign in again to verify this device.",
+      errorCode: AUTH_ERROR_CODES.restoreUnexpected,
     };
   }
 
@@ -180,6 +184,9 @@ export async function resolveRestoredSession(
       userId: sessionIdentity.userId,
       deviceId: sessionIdentity.deviceId,
       username: me?.username ?? sessionPreview.username,
+      displayName: me?.displayName ?? null,
+      bio: me?.bio ?? null,
+      avatarKey: me?.avatarKey ?? null,
       accessToken,
       identityDhKeyPair: normalized.identityDhKeyPair,
       storageKey,

@@ -24,13 +24,16 @@ export function formatAttachmentSize(
 export function resolveAttachmentErrorMessage(
   kind: "voice" | "video" | "file",
   errorCause: ChatAttachmentErrorCause | null,
-  t: (key: string, params?: Record<string, string | number>) => string
+  t: (key: string, params?: Record<string, string | number>) => string,
+  isPlain: boolean = false
 ): string | null {
   if (!errorCause) return null;
   if (errorCause === "digestMismatch") return t(`message.${kind}.errorDigestMismatch`);
   if (errorCause === "storagePending") return t(`message.${kind}.errorPending`);
   if (kind === "voice" && errorCause === "playFailed") return t("message.voice.errorPlayFailed");
-  return t(`message.${kind}.errorDecryptFailed`);
+  // Plain attachments are never encrypted — surface a fetch-style error instead
+  // of the misleading "decryption failed" copy.
+  return t(`message.${kind}.${isPlain ? "errorLoadFailed" : "errorDecryptFailed"}`);
 }
 
 /**

@@ -1,3 +1,13 @@
+/**
+ * SecurityModeBadge — shared media-security mode badge for call security panels and encryption diagnostics.
+ *
+ * Owns:
+ *   - Rendering a compact `<span>` badge with `frame` or `transport` tone-driven styling.
+ *   - Providing a consistent label shape for call/media encryption mode indicators.
+ *
+ * Does not own runtime state, business logic, or domain-specific wiring.
+ * Use when: displaying call or media encryption modes; prefer StatusBadge for broader product state that is not specifically about transport or frame protection.
+ */
 import type { HTMLAttributes, ReactNode } from "react";
 import styles from "./SecurityModeBadge.module.css";
 
@@ -12,6 +22,7 @@ export interface SecurityModeBadgeProps extends Readonly<HTMLAttributes<HTMLSpan
 /**
  * Shared media-security mode badge used by call security panels and related
  * diagnostics where the encryption mode needs a consistent compact label.
+ * Choose it for call/media security modes only; prefer StatusBadge for broader product state that is not specifically about transport or frame protection.
  */
 export function SecurityModeBadge({
   tone,

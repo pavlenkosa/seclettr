@@ -1,3 +1,5 @@
+import { isNativePlatform, getNativeServerUrl } from "./native-platform";
+
 interface SeclettrRuntimeConfig {
   apiUrl?: string;
   sfuUrl?: string;
@@ -31,7 +33,7 @@ function readRuntimeConfig(): SeclettrRuntimeConfig {
     return {};
   }
 
-  const config = globalThis.__SECLETTR_RUNTIME_CONFIG__;
+  const config = window.__SECLETTR_RUNTIME_CONFIG__;
   if (!config || typeof config !== "object") {
     return {};
   }
@@ -40,11 +42,19 @@ function readRuntimeConfig(): SeclettrRuntimeConfig {
 }
 
 export function resolveApiBaseUrl(): string {
+  if (isNativePlatform()) {
+    const serverUrl = getNativeServerUrl();
+    if (serverUrl) return serverUrl + "/api";
+  }
   const runtime = readRuntimeConfig();
   return normalizeUrl(runtime.apiUrl, normalizeUrl(import.meta.env["VITE_API_URL"], "/api"));
 }
 
 export function resolveSfuBaseUrl(): string {
+  if (isNativePlatform()) {
+    const serverUrl = getNativeServerUrl();
+    if (serverUrl) return serverUrl + "/sfu";
+  }
   const runtime = readRuntimeConfig();
   return normalizeUrl(runtime.sfuUrl, normalizeUrl(import.meta.env["VITE_SFU_URL"], "/sfu"));
 }

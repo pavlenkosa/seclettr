@@ -1,0 +1,65 @@
+@keyframes motionFadeIn {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes motionFadeOut {
+  from {
+    opacity: 1;
+  }
+
+  to {
+    opacity: 0;
+  }
+}
+
+.fadeIn,
+.surfaceIn,
+.popoverIn,
+.panelIn {
+  animation: motionFadeIn var(--motion-enter-duration, var(--motion-duration-base)) var(--motion-ease-standard) both;
+}
+
+.fadeOut,
+.surfaceOut,
+.popoverOut,
+.panelOut {
+  pointer-events: none;
+  animation: motionFadeOut var(--motion-exit-duration, var(--motion-duration-fast)) var(--motion-ease-exit) both;
+}
+
+.surfaceIn,
+.surfaceOut {
+  --motion-enter-duration: var(--motion-duration-base);
+  --motion-exit-duration: var(--motion-duration-base);
+}
+
+.popoverIn,
+.popoverOut {
+  --motion-enter-duration: var(--motion-duration-fast);
+  --motion-exit-duration: var(--motion-duration-fast);
+}
+
+.panelIn,
+.panelOut {
+  --motion-enter-duration: var(--motion-duration-base);
+  --motion-exit-duration: var(--motion-duration-fast);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fadeIn,
+  .fadeOut,
+  .surfaceIn,
+  .surfaceOut,
+  .popoverIn,
+  .popoverOut,
+  .panelIn,
+  .panelOut {
+    animation: none !important;
+  }
+}

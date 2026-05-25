@@ -3,15 +3,17 @@ import { useI18n } from "@/i18n";
 import { useAnimatedClose, useModalSurfaceA11y } from "@/lib/hooks";
 import { USER_SEARCH_MIN_QUERY_LENGTH, type UserSearchResult } from "@/lib/user-search";
 import { useUserSearch } from "@/chats/runtime/useUserSearch";
-import { Avatar, EntityRow, FieldSection, InputField, ModalShell, PillButton, SurfacePanel } from "@/components/ui";
+import { Avatar, EntityRow, FieldSection, InlineNotice, InputField, ModalShell, PillButton, SurfacePanel } from "@/components/ui";
 
 import styles from "./NewGroupModal.module.css";
 
 type UserResult = UserSearchResult;
 
+export type NewGroupKind = "e2ee" | "plain";
+
 interface Props {
   readonly onClose: () => void;
-  readonly onCreate: (payload: { name: string; memberUserIds: string[] }) => Promise<void> | void;
+  readonly onCreate: (payload: { name: string; memberUserIds: string[]; kind: NewGroupKind }) => Promise<void> | void;
 }
 
 export function NewGroupModal({ onClose, onCreate }: Props) {
@@ -19,6 +21,7 @@ export function NewGroupModal({ onClose, onCreate }: Props) {
   const { isClosing, requestClose } = useAnimatedClose(onClose);
   const [name, setName] = useState("");
   const [selected, setSelected] = useState<UserResult[]>([]);
+  const [kind, setKind] = useState<NewGroupKind>("e2ee");
   const [creating, setCreating] = useState(false);
   const [createError, setCreateError] = useState<string | null>(null);
   const createFormId = useId();
@@ -55,6 +58,7 @@ export function NewGroupModal({ onClose, onCreate }: Props) {
       await onCreate({
         name: trimmedName,
         memberUserIds: selected.map((user) => user.userId),
+        kind,
       });
     } catch {
       setCreateError(t("group.create.error.failed"));
@@ -82,21 +86,24 @@ export function NewGroupModal({ onClose, onCreate }: Props) {
       bodyClassName={styles.body}
       style={{
         "--modal-width": "520px",
-        "--modal-z-index": 130,
+        "--modal-z-index": "var(--z-200)",
       } as CSSProperties}
       footer={(
         <div className={styles.footer}>
           <PillButton type="button" className={styles.cancelBtn} tone="neutral" size="md" onClick={requestClose} disabled={creating}>
             {t("group.create.cancel")}
           </PillButton>
-          <button
+          <PillButton
             type="submit"
             form={createFormId}
+            tone="accent"
+            appearance="strong"
+            size="md"
             className={styles.createBtn}
             disabled={creating || name.trim().length === 0 || selected.length === 0}
           >
             {creating ? t("group.create.creating") : t("group.create.submit")}
-          </button>
+          </PillButton>
         </div>
       )}
     >
@@ -132,6 +139,33 @@ export function NewGroupModal({ onClose, onCreate }: Props) {
             aria-label={t("group.create.nameLabel")}
             autoFocus
           />
+        </FieldSection>
+
+        <FieldSection label={t("group.create.kindLabel")} className={styles.fieldSection}>
+          <div className={styles.kindToggle} role="radiogroup" aria-label={t("group.create.kindLabel")}>
+            <button
+              type="button"
+              role="radio"
+              aria-checked={kind === "e2ee"}
+              className={`${styles.kindOption} ${kind === "e2ee" ? styles.kindOptionActive : ""}`}
+              onClick={() => setKind("e2ee")}
+              disabled={creating}
+            >
+              <span className={styles.kindOptionTitle}>{t("group.create.kind.e2ee.title")}</span>
+              <span className={styles.kindOptionSub}>{t("group.create.kind.e2ee.sub")}</span>
+            </button>
+            <button
+              type="button"
+              role="radio"
+              aria-checked={kind === "plain"}
+              className={`${styles.kindOption} ${kind === "plain" ? styles.kindOptionActive : ""}`}
+              onClick={() => setKind("plain")}
+              disabled={creating}
+            >
+              <span className={styles.kindOptionTitle}>{t("group.create.kind.plain.title")}</span>
+              <span className={styles.kindOptionSub}>{t("group.create.kind.plain.sub")}</span>
+            </button>
+          </div>
         </FieldSection>
 
         <FieldSection label={t("group.create.membersLabel")} className={styles.fieldSection}>
@@ -172,7 +206,7 @@ export function NewGroupModal({ onClose, onCreate }: Props) {
           </div>
         ) : null}
 
-        <SurfacePanel as="ul" className={styles.results} role="listbox" padding="none" radius="lg" glass="medium">
+        <SurfacePanel as="ul" className={styles.results} role="listbox" padding="none" radius="lg">
           {loading && <li className={styles.hint}>{t("group.create.searching")}</li>}
           {!loading && !searchError && inputValue.trim().length >= USER_SEARCH_MIN_QUERY_LENGTH && results.length === 0 && (
             <li className={styles.hint}>{t("group.create.noUsersFound")}</li>
@@ -191,9 +225,9 @@ export function NewGroupModal({ onClose, onCreate }: Props) {
         </SurfacePanel>
 
         {displayError ? (
-          <div className={styles.error} role="alert">
+          <InlineNotice tone="error" size="sm" className={styles.errorNotice} role="alert">
             {displayError}
-          </div>
+          </InlineNotice>
         ) : null}
       </form>
     </ModalShell>

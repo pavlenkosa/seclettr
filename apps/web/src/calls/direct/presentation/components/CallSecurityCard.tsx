@@ -4,13 +4,31 @@ import type { DirectCallMediaEncryptionMode } from "@/calls/direct/model/call-me
 
 import styles from "./CallSecurityCard.module.css";
 
+const VERIFY_EMOJI = [
+  "🐶","🐱","🐭","🐹","🐰","🦊","🐻","🐼",
+  "🐨","🐯","🦁","🐮","🐷","🐸","🐵","🐔",
+  "🐧","🐦","🦆","🦅","🦉","🦇","🐺","🐗",
+  "🐴","🦄","🐝","🦋","🐌","🐞","🐢","🐍",
+  "🌲","🌵","🌴","🌊","🌋","🌺","🌸","🌻",
+  "🔥","💧","⚡","❄️","🌈","☀️","🌙","⭐",
+  "🍎","🍋","🍇","🍓","🍑","🥝","🍄","🎄",
+  "🚀","✈️","🚂","⛵","🏠","🏰","🎸","🎯",
+];
+
+function deriveEmoji(groups: string[]): string[] {
+  if (groups.length < 2) return [];
+  return [0, 1, 2, 3].map((i) => {
+    const n = Math.abs(parseInt(groups[i % groups.length] ?? "0", 10));
+    return VERIFY_EMOJI[n % VERIFY_EMOJI.length] ?? "🔒";
+  });
+}
+
 interface CallSecurityCardProps {
   readonly e2eeActive: boolean;
   readonly mediaEncryptionMode: DirectCallMediaEncryptionMode;
   readonly verificationCode: string | null;
   readonly verificationHash: string | null;
   readonly verificationError: string | null;
-  readonly transportInfoLabel?: string | null;
 }
 
 export function CallSecurityCard({
@@ -19,42 +37,26 @@ export function CallSecurityCard({
   verificationCode,
   verificationHash,
   verificationError,
-  transportInfoLabel = null,
 }: CallSecurityCardProps) {
   const { t } = useI18n();
   const [showDetails, setShowDetails] = useState(false);
 
   const codeGroups = verificationCode?.split(/\s+/).filter(Boolean) ?? [];
+  const emoji = deriveEmoji(codeGroups);
+  const hasEmoji = emoji.length === 4;
   const isFrameMode = mediaEncryptionMode === "frame-v1";
-  const hasCode = codeGroups.length > 0;
-
-  const statusTone = e2eeActive ? "verified" : "pending";
 
   return (
-    <div
-      className={[styles.card, styles[`card--${statusTone}`]].join(" ")}
-      role="status"
-      aria-live="polite"
-    >
-      {transportInfoLabel ? (
-        <div className={styles.modeNotice}>
-          <span className={styles.modeNoticeLabel}>
-            {isFrameMode ? t("callSecurity.mode.frame") : t("callSecurity.mode.transport")}
-          </span>
-          <span className={styles.modeNoticeText}>{transportInfoLabel}</span>
-        </div>
-      ) : null}
-
-      {hasCode ? (
-        <div className={styles.codeSection}>
-          <span className={styles.codeLabel}>{t("callSecurity.codeLabel")}</span>
-          <div className={styles.codeGrid}>
-            {codeGroups.map((group, i) => (
-              <span key={`${group}-${i}`} className={styles.codeCell}>{group}</span>
+    <div className={styles.card} role="status" aria-live="polite">
+      {hasEmoji ? (
+        <>
+          <div className={styles.emojiRow} aria-label={t("callSecurity.codeLabel")}>
+            {emoji.map((em, i) => (
+              <span key={i} className={styles.emojiCell} aria-hidden="true">{em}</span>
             ))}
           </div>
-          <span className={styles.codeHint}>{t("callSecurity.hintAction")}</span>
-        </div>
+          <p className={styles.hint}>{t("callSecurity.hintAction")}</p>
+        </>
       ) : (
         <div className={styles.waitingRow}>
           <span className={styles.waitingDot} aria-hidden="true" />
@@ -79,22 +81,28 @@ export function CallSecurityCard({
         </svg>
       </button>
 
-      {showDetails && (
+      {showDetails ? (
         <div className={styles.details}>
           <div className={styles.detailRow}>
-            <span className={styles.detailKey}>{t("callSecurity.modeLabel", { mode: "" }).replace(": ", "")}</span>
+            <span className={styles.detailKey}>{isFrameMode ? t("callSecurity.mode.frame") : t("callSecurity.mode.transport")}</span>
             <span className={`${styles.detailVal} ${isFrameMode ? styles.detailValAccent : ""}`}>
-              {isFrameMode ? t("callSecurity.mode.frame") : t("callSecurity.mode.transport")}
+              E2EE
             </span>
           </div>
-          {verificationHash && (
+          {codeGroups.length > 0 ? (
+            <div className={styles.detailRow}>
+              <span className={styles.detailKey}>{t("callSecurity.codeLabel")}</span>
+              <span className={styles.detailValMono}>{codeGroups.join(" ")}</span>
+            </div>
+          ) : null}
+          {verificationHash ? (
             <div className={styles.detailRow}>
               <span className={styles.detailKey}>Session</span>
               <span className={styles.detailValMono}>{verificationHash.slice(0, 12)}</span>
             </div>
-          )}
+          ) : null}
         </div>
-      )}
+      ) : null}
     </div>
   );
 }

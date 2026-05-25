@@ -19,8 +19,8 @@ import { resolveSfuBaseUrl } from "@/lib/runtime-config";
 import type {
   LocalGroupCallMediaKey,
   ReceivedGroupCallMediaKey,
-} from "@/calls/group/runtime/group-call/media-key";
-import { logGroupCallWarn } from "@/calls/group/runtime/group-call/logger";
+} from "@/calls/group/runtime/media-key/media-key";
+import { logGroupCallWarn } from "@/calls/group/runtime/media-key/logger";
 import { createSfuHttpClient } from "./http-client";
 import { createSfuConsumerRuntime } from "./consumer-runtime";
 import { createSfuProducerRuntime } from "./producer-runtime";
@@ -28,7 +28,7 @@ import {
   getUnexpectedSfuRtpParameterKeys,
   normalizeSfuRtpParameters,
 } from "./rtp-parameters";
-import type { GroupCallRemoteMedia } from "@/calls/group/runtime/group-call/remote-media";
+import type { GroupCallRemoteMedia } from "@/calls/group/runtime/media-key/remote-media";
 import type { GroupCallMediaEncryptionMode } from "./types";
 import type { SfuProducerSource } from "@seclettr/protocol";
 
@@ -36,7 +36,7 @@ type CallType = "audio" | "video";
 
 const SFU_BASE_URL = resolveSfuBaseUrl();
 
-export type { GroupCallRemoteMedia } from "@/calls/group/runtime/group-call/remote-media";
+export type { GroupCallRemoteMedia } from "@/calls/group/runtime/media-key/remote-media";
 export type { GroupCallMediaEncryptionMode } from "./types";
 
 export interface GroupSfuClientOptions {
@@ -50,6 +50,10 @@ export interface GroupSfuClientOptions {
   onRemoteMediaUpdate?: (participants: GroupCallRemoteMedia[]) => void;
   /** Called when the send transport enters a terminal failure state. */
   onTransportFailed?: () => void;
+  /** Override SFU base URL (used for guest/room calls where SFU URL comes from the join response). */
+  sfuBaseUrl?: string;
+  /** Static bearer token for SFU auth (used for guests who have no auth store session). */
+  staticToken?: string;
 }
 
 export interface GroupSfuClient {
@@ -64,11 +68,15 @@ export interface GroupSfuClient {
   close: () => void;
 }
 
-const sfuHttpClient = createSfuHttpClient({
+const defaultSfuHttpClient = createSfuHttpClient({
   sfuBaseUrl: SFU_BASE_URL,
 });
 
 export async function startGroupSfuClient(options: GroupSfuClientOptions): Promise<GroupSfuClient> {
+  const sfuHttpClient = (options.sfuBaseUrl || options.staticToken)
+    ? createSfuHttpClient({ sfuBaseUrl: options.sfuBaseUrl ?? SFU_BASE_URL, staticToken: options.staticToken })
+    : defaultSfuHttpClient;
+
   const device = new MediasoupDevice();
   const routerRtpCapabilities = await sfuHttpClient.getRouterRtpCapabilities(options.roomId);
   await device.load({ routerRtpCapabilities });

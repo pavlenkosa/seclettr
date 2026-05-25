@@ -144,7 +144,8 @@ export async function forwardTypingSignal(
   fastify: FastifyInstance,
   sender: TypingSignalSender,
   targetUserId: string,
-  signalType: "typing.start" | "typing.stop"
+  signalType: "typing.start" | "typing.stop",
+  chatKind?: "plain" | "e2ee"
 ): Promise<void> {
   if (targetUserId === sender.userId) return;
 
@@ -170,6 +171,7 @@ export async function forwardTypingSignal(
           recipientDeviceId: device.id,
           senderUserId: sender.userId,
           senderDeviceId: sender.deviceId,
+          ...(chatKind ? { chatKind } : {}),
         }))
     );
   } catch (err) {

@@ -1,8 +1,8 @@
 import { forwardRef, useImperativeHandle } from "react";
 import { CallAudioOutputProvider } from "@/calls/shared/media/audio-output/CallAudioOutputProvider";
 import { DirectCallSurfaceRenderer } from "@/calls/direct/presentation/components/DirectCallSurfaceRenderer";
-import { useDirectCallSurfaceFocusTrap } from "@/calls/direct/runtime/useDirectCallSurfaceFocusTrap";
-import { useDirectCallController } from "@/calls/direct/runtime/useDirectCallController";
+import { useDirectCallSurfaceFocusTrap } from "@/calls/direct/runtime/presentation";
+import { useDirectCallController } from "@/calls/direct/runtime";
 import type { DirectCallPanelHandle } from "@/calls/direct/model/direct-call-types";
 
 export const DirectCallPanel = forwardRef<DirectCallPanelHandle>(function DirectCallPanel(_, ref) {

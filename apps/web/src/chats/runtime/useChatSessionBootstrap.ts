@@ -4,6 +4,7 @@ import { useI18n } from "@/i18n";
 import { logger } from "@/lib/logger.js";
 import { useMessagesStore } from "@/stores/messages";
 import { useGroupsStore } from "@/stores/groups";
+import { usePlainFoldersStore, usePlainGroupsStore, usePlainMessagesStore, usePlainPinsStore } from "@/stores/plain";
 
 interface UseChatSessionBootstrapOptions {
   onNotice: (message: string) => void;
@@ -31,6 +32,17 @@ export function useChatSessionBootstrap({ onNotice }: UseChatSessionBootstrapOpt
     loadGroups: state.loadGroups,
   })));
 
+  const { loadPlainGroups } = usePlainGroupsStore(useShallow((state) => ({
+    loadPlainGroups: state.loadGroups,
+  })));
+
+  const { loadPlainConversationList } = usePlainMessagesStore(useShallow((state) => ({
+    loadPlainConversationList: state.loadConversationList,
+  })));
+
+  const loadPlainPins = usePlainPinsStore((state) => state.loadPins);
+  const loadPlainFolders = usePlainFoldersStore((state) => state.loadFolders);
+
   useEffect(() => {
     loadHistory().catch((err) => {
       logger.warn("[ChatPage] loadHistory failed", err);
@@ -40,9 +52,25 @@ export function useChatSessionBootstrap({ onNotice }: UseChatSessionBootstrapOpt
       logger.warn("[ChatPage] loadGroups failed", err);
       onNotice(t("chat.error.loadGroupsFailed"));
     });
+    loadPlainGroups().catch((err) => {
+      logger.warn("[ChatPage] loadPlainGroups failed", err);
+    });
+    loadPlainConversationList().catch((err) => {
+      logger.warn("[ChatPage] loadPlainConversationList failed", err);
+    });
+    loadPlainPins().catch((err) => {
+      logger.warn("[ChatPage] loadPlainPins failed", err);
+    });
+    loadPlainFolders().catch((err) => {
+      logger.warn("[ChatPage] loadPlainFolders failed", err);
+    });
   }, [
     loadGroups,
     loadHistory,
+    loadPlainGroups,
+    loadPlainConversationList,
+    loadPlainPins,
+    loadPlainFolders,
     onNotice,
     t,
   ]);

@@ -23,7 +23,7 @@ export function useMobileCreateMenu({
   closeWhen,
 }: UseMobileCreateMenuOptions): UseMobileCreateMenuResult {
   const [isOpen, setIsOpen] = useState(false);
-  const menuRef = useRef<HTMLDivElement>(null) as React.RefObject<HTMLDivElement>;
+  const menuRef = useRef<HTMLDivElement>(null);
   const menuId = useId();
 
   useEffect(() => {

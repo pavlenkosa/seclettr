@@ -1,8 +1,17 @@
+/**
+ * SurfacePanel — shared flat panel surface for cards, sheets, and preview regions.
+ *
+ * Owns:
+ *   - Rendering a polymorphic wrapper element with tone (`default`/`strong`/`accent`), padding, and radius presets.
+ *   - Centralizing border, tint, spacing, and radius decisions so chat, calls, and settings stay on the same visual system.
+ *
+ * Does not own runtime state, business logic, or domain-specific wiring.
+ * Use when: a reusable flat panel is needed inside pages, dialogs, or previews; do not use as a modal frame, dock shell, or row interaction primitive.
+ */
 import type { CSSProperties, ElementType, HTMLAttributes, ReactNode } from "react";
 import styles from "./SurfacePanel.module.css";
 
 type SurfacePanelTone = "default" | "strong" | "accent";
-type SurfacePanelGlass = "none" | "soft" | "medium" | "strong";
 type SurfacePanelPadding = "none" | "sm" | "md" | "lg";
 type SurfacePanelRadius = "md" | "lg" | "xl" | "pill";
 
@@ -11,8 +20,6 @@ export interface SurfacePanelProps extends Readonly<HTMLAttributes<HTMLElement>>
   readonly as?: ElementType;
   /** Surface tint recipe for neutral, stronger, or accent-tinted panels. */
   readonly tone?: SurfacePanelTone;
-  /** Blur preset bound to global glass settings. */
-  readonly glass?: SurfacePanelGlass;
   /** Internal spacing preset for common panel layouts. */
   readonly padding?: SurfacePanelPadding;
   /** Radius preset used by sheets, cards, and pills. */
@@ -26,14 +33,13 @@ function toVariantKey(value: string): string {
 }
 
 /**
- * Shared panel surface for glass/elevated UI blocks. It centralizes border,
- * blur, tint, and radius decisions so chat, calls, and settings
- * stay on the same visual system and respect the global glass toggle.
+ * Shared flat panel surface. It centralizes border, tint, spacing, and radius
+ * decisions so chat, calls, and settings stay on the same visual system.
+ * Choose it for reusable flat panel surfaces inside pages, dialogs, and previews; do not use it as a modal frame, dock shell, or row interaction primitive.
  */
 export function SurfacePanel({
   as: Component = "div",
   tone = "default",
-  glass = "medium",
   padding = "md",
   radius = "lg",
   className = "",
@@ -46,7 +52,6 @@ export function SurfacePanel({
       className={[
         styles.root,
         styles[tone],
-        styles[`glass${toVariantKey(glass)}`],
         styles[`padding${toVariantKey(padding)}`],
         styles[`radius${toVariantKey(radius)}`],
         className,

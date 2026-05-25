@@ -1,21 +1,19 @@
+/* ── List shell / empty state ───────────────────────────────────────────── */
+
 .list {
   list-style: none;
   flex: 1;
   display: flex;
   flex-direction: column;
-  gap: 0.34rem;
+  gap: 0.04rem;
   overflow-y: auto;
   overflow-x: clip;
-  padding: 0.48rem 0.48rem 0.72rem;
-  border: 1px solid color-mix(in srgb, var(--panel-border-soft) 92%, transparent);
-  border-radius: 28px;
-  background:
-    linear-gradient(180deg, color-mix(in srgb, var(--surface-float) 90%, transparent), color-mix(in srgb, var(--surface-shell) 90%, transparent));
-  -webkit-backdrop-filter: blur(var(--glass-blur-medium, 0px)) saturate(var(--glass-saturate, 1));
-  backdrop-filter: blur(var(--glass-blur-medium, 0px)) saturate(var(--glass-saturate, 1));
-  box-shadow: var(--elevated-shadow-sm);
-  animation: conversationListIn var(--motion-duration-slow) var(--motion-ease-emphasized) both;
+  padding: 0.08rem 0 0.46rem;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
 }
+
 
 .empty {
   display: flex;
@@ -23,19 +21,14 @@
   align-items: center;
   gap: 0.52rem;
   padding: 2rem 1.25rem;
-  margin: 0 0.1rem;
+  margin: 0;
   text-align: center;
   color: var(--text-muted);
   font-size: 0.875rem;
   line-height: 1.6;
-  border: 1px solid color-mix(in srgb, var(--panel-border-soft) 92%, transparent);
-  border-radius: 28px;
-  background:
-    linear-gradient(180deg, color-mix(in srgb, var(--surface-float) 90%, transparent), color-mix(in srgb, var(--surface-shell) 90%, transparent));
-  -webkit-backdrop-filter: blur(var(--glass-blur-medium, 0px)) saturate(var(--glass-saturate, 1));
-  backdrop-filter: blur(var(--glass-blur-medium, 0px)) saturate(var(--glass-saturate, 1));
-  box-shadow: var(--elevated-shadow-sm);
-  animation: conversationListIn var(--motion-duration-slow) var(--motion-ease-emphasized) both;
+  border: 0;
+  border-radius: 14px;
+  background: transparent;
 }
 
 .emptyMark {
@@ -54,58 +47,49 @@
   display: block;
 }
 
+/* ── Conversation rows ──────────────────────────────────────────────────── */
+
 .item {
   position: relative;
   display: flex;
   align-items: center;
   gap: 0.82rem;
   width: 100%;
-  min-height: 70px;
-  padding: 0.82rem 0.86rem;
-  background:
-    linear-gradient(180deg, color-mix(in srgb, var(--surface-float) 70%, transparent), color-mix(in srgb, var(--surface-shell) 74%, transparent));
-  border-radius: 18px;
-  border: 1px solid color-mix(in srgb, var(--panel-border-soft) 88%, transparent);
-  box-shadow:
-    inset 0 1px 0 rgb(255 255 255 / 0.04),
-    0 8px 18px rgb(2 8 20 / 0.06);
+  min-height: 68px;
+  padding: 0.76rem 0.78rem;
+  background: transparent;
+  border-radius: 8px;
+  border: 1px solid transparent;
   text-align: left;
   transition:
     background-color var(--motion-duration-fast) var(--motion-ease-standard),
-    transform var(--motion-duration-fast) var(--motion-ease-standard),
-    border-color var(--motion-duration-fast) var(--motion-ease-standard),
-    box-shadow var(--motion-duration-fast) var(--motion-ease-standard);
-  animation: conversationItemIn var(--motion-duration-base) var(--motion-ease-emphasized) both;
-  animation-delay: var(--conversation-enter-delay, 0ms);
+    border-color var(--motion-duration-fast) var(--motion-ease-standard);
 }
 
 .item:hover {
-  background:
-    linear-gradient(180deg, color-mix(in srgb, var(--list-item-hover-bg) 66%, transparent), color-mix(in srgb, var(--surface-shell) 78%, transparent));
-  border-color: color-mix(in srgb, var(--accent) 20%, var(--panel-border-soft));
-  box-shadow:
-    inset 0 0 0 1px color-mix(in srgb, var(--accent) 8%, transparent),
-    inset 0 1px 0 rgb(255 255 255 / 0.03);
+  background: color-mix(in srgb, var(--list-item-hover-bg) 86%, transparent);
+  border-color: transparent;
 }
 
 .active {
   background: var(--list-item-active-bg) !important;
-  box-shadow:
-    inset 0 0 0 1px var(--list-item-active-ring),
-    0 10px 20px color-mix(in srgb, var(--accent) 12%, transparent);
-  border-color: var(--list-item-active-ring);
+  border-color: transparent;
 }
 
 .active::before {
-  content: "";
-  position: absolute;
-  left: 8px;
-  top: 50%;
-  transform: translateY(-50%);
-  width: 3px;
-  height: 30px;
-  border-radius: 99px;
-  background: var(--accent);
+  content: none;
+}
+
+.item:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--accent) 48%, transparent);
+  outline-offset: -2px;
+  border-color: color-mix(in srgb, var(--accent) 28%, transparent);
+  background: color-mix(in srgb, var(--list-item-hover-bg) 92%, transparent);
+}
+
+.active:focus-visible {
+  background: var(--list-item-active-bg) !important;
+  border-color: color-mix(in srgb, var(--accent) 34%, transparent);
 }
 
 .itemUnread .name {
@@ -138,8 +122,11 @@
 }
 
 .name {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.28rem;
   font-size: 0.96rem;
-  font-weight: 650;
+  font-weight: 600;
   line-height: 1.2;
   color: var(--text-primary);
   flex: 1;
@@ -147,6 +134,136 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.encryptedBadge {
+  display: inline-block;
+  flex-shrink: 0;
+  color: var(--accent);
+  opacity: 0.7;
+  vertical-align: middle;
+  margin-top: -1px;
+}
+
+.pinBadge {
+  display: inline-block;
+  flex-shrink: 0;
+  color: var(--accent);
+  opacity: 0.7;
+  vertical-align: middle;
+  margin-top: -1px;
+}
+
+/* Long-press to open the pin menu must not also select text or pop up the
+   iOS share sheet. Applied to the wrap so the inner button still receives
+   pointer events but the OS gestures stay quiet. */
+.itemWrap {
+  position: relative;
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+  touch-action: manipulation;
+}
+
+/* ── Row action menu ────────────────────────────────────────────────────── */
+
+.contextMenu {
+  position: absolute;
+  top: 100%;
+  right: 0.7rem;
+  z-index: var(--z-30);
+  min-width: 9rem;
+  margin-top: -0.4rem;
+  padding: 0.3rem;
+  border-radius: 12px;
+  border: 1px solid color-mix(in srgb, var(--panel-border) 88%, transparent);
+  background: var(--surface-shell-strong);
+  box-shadow: 0 4px 16px rgb(0 0 0 / 0.18);
+}
+
+/* Flips the menu above the row when it would overflow the bottom of the viewport. */
+.contextMenuFlipped {
+  top: auto;
+  bottom: 100%;
+  margin-top: 0;
+  margin-bottom: -0.4rem;
+}
+
+.contextMenuItem {
+  width: 100%;
+  display: block;
+  padding: 0.46rem 0.62rem;
+  border: none;
+  background: transparent;
+  border-radius: 8px;
+  text-align: left;
+  font-size: 0.84rem;
+  color: var(--text-primary);
+  cursor: pointer;
+  transition: background-color var(--motion-duration-fast) var(--motion-ease-standard);
+}
+
+.contextMenuItem:hover,
+.contextMenuItem:focus-visible {
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+  outline: none;
+}
+
+.contextMenuItemDanger {
+  color: var(--danger);
+}
+
+.contextMenuItemDanger:hover,
+.contextMenuItemDanger:focus-visible {
+  background: color-mix(in srgb, var(--danger) 12%, transparent);
+}
+
+.contextMenuItemTrigger {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.contextMenuChevron {
+  flex-shrink: 0;
+  color: var(--text-secondary);
+  transition: transform var(--motion-duration-fast) var(--motion-ease-standard);
+}
+
+.contextMenuChevronOpen {
+  transform: rotate(90deg);
+}
+
+.contextMenuSubmenu {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows var(--motion-duration-fast) var(--motion-ease-standard);
+}
+
+.contextMenuSubmenuOpen {
+  grid-template-rows: 1fr;
+}
+
+.contextMenuSubmenuInner {
+  overflow: hidden;
+}
+
+.contextMenuSubItem {
+  padding-left: 1.1rem;
+  font-size: 0.81rem;
+  color: var(--text-secondary);
+}
+
+.contextMenuSubItem:hover,
+.contextMenuSubItem:focus-visible {
+  color: var(--text-primary);
+}
+
+.contextMenuSeparator {
+  height: 1px;
+  margin: 0.25rem 0.62rem;
+  background: color-mix(in srgb, var(--panel-border) 60%, transparent);
 }
 
 .time {
@@ -168,11 +285,18 @@
   min-width: 0;
 }
 
-.previewOwn {
+.youBadge {
   display: inline-flex;
   align-items: center;
-  gap: 0.2rem;
-  line-height: 1;
+  flex-shrink: 0;
+  padding: 0.05rem 0.3rem;
+  border-radius: 999px;
+  font-size: 0.68rem;
+  font-weight: 600;
+  line-height: 1.4;
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 14%, transparent);
+  margin-inline-end: 0.25rem;
 }
 
 .previewStatus {
@@ -198,10 +322,10 @@
 }
 
 .badge {
-  background: linear-gradient(145deg, var(--accent), var(--accent-hover));
+  background: var(--accent);
   color: #fff;
   font-size: 0.68rem;
-  font-weight: 750;
+  font-weight: 700;
   min-width: 22px;
   height: 22px;
   border-radius: 999px;
@@ -213,35 +337,29 @@
 }
 
 .itemUnread .badge {
-  animation: conversationUnreadPulse 2s ease-in-out infinite;
+  animation: none;
 }
 
-:global(:root[data-theme="light"]) .list,
-:global(:root[data-theme="light"]) .empty,
+/* ── Theme adjustments ──────────────────────────────────────────────────── */
+
 :global(:root[data-theme="light"]) .item {
-  border-color: color-mix(in srgb, var(--panel-border-soft) 92%, transparent);
-}
-
-:global(:root[data-theme="light"]) .list,
-:global(:root[data-theme="light"]) .empty {
-  background:
-    linear-gradient(
-      180deg,
-      color-mix(in srgb, var(--surface-float) 84%, white),
-      color-mix(in srgb, var(--surface-shell-strong) 88%, white)
-    );
+  border-color: transparent;
 }
 
 :global(:root[data-theme="light"]) .item {
-  background:
-    linear-gradient(
-      180deg,
-      color-mix(in srgb, var(--surface-float) 76%, white),
-      color-mix(in srgb, var(--surface-shell-strong) 82%, white)
-    );
-  box-shadow:
-    inset 0 1px 0 rgb(255 255 255 / 0.72),
-    0 8px 18px rgb(71 85 105 / 0.08);
+  background: transparent;
+}
+
+:global(:root[data-theme="light"]) .item:hover {
+  background: color-mix(in srgb, var(--list-item-hover-bg) 78%, white);
+}
+
+:global(:root[data-theme="light"]) .item:focus-visible {
+  background: color-mix(in srgb, var(--list-item-hover-bg) 82%, white);
+}
+
+:global(:root[data-theme="light"]) .active {
+  background: var(--list-item-active-bg) !important;
 }
 
 /* ── Skeleton loading ───────────────────────────────────────────────────── */
@@ -252,8 +370,8 @@
   gap: 0.82rem;
   min-height: 70px;
   padding: 0.82rem 0.86rem;
-  border-radius: 18px;
-  border: 1px solid color-mix(in srgb, var(--panel-border-soft) 60%, transparent);
+  border-radius: 8px;
+  border: 1px solid transparent;
 }
 
 .skeletonAvatar {
@@ -310,42 +428,5 @@
   .skeletonLine {
     animation: none !important;
     opacity: 0.7;
-  }
-}
-
-@keyframes conversationListIn {
-  0% {
-    opacity: 0;
-    transform: translateY(8px);
-  }
-
-  100% {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-@keyframes conversationItemIn {
-  0% {
-    opacity: 0;
-    transform: translateY(6px) scale(0.99);
-  }
-
-  100% {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-  }
-}
-
-@keyframes conversationUnreadPulse {
-  0%,
-  100% {
-    transform: scale(1);
-    box-shadow: 0 0 0 0 color-mix(in srgb, var(--accent) 26%, transparent);
-  }
-
-  50% {
-    transform: scale(1.04);
-    box-shadow: 0 0 0 6px color-mix(in srgb, var(--accent) 0%, transparent);
   }
 }

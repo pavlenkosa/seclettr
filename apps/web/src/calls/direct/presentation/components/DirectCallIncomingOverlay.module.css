@@ -1,0 +1,111 @@
+/*
+ * DirectCallIncomingOverlay — incoming fullscreen direct-call arrangement and
+ * ringing emphasis.
+ *
+ * Owns:
+ * - incoming-only overlay spacing
+ * - avatar/ringing shell and incoming identity stack
+ * - incoming controls dock width/padding
+ *
+ * Does not own shared direct-call fullscreen shell, header chrome, shared
+ * control button sizing, or active-call center layout.
+ */
+
+.incomingOverlay {
+  justify-content: space-between;
+  background: color-mix(in srgb, var(--bg-primary) 96%, var(--surface-shell-strong));
+}
+
+.incomingCenter {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: min(100%, 1040px);
+  flex: 1 1 auto;
+  justify-content: center;
+  gap: 1.25rem;
+}
+
+.incomingAvatarShell {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.incomingAvatar {
+  --avatar-size: clamp(108px, 22vw, 156px);
+  --avatar-font-size: clamp(2rem, 4.5vw, 3rem);
+  --avatar-shadow: none;
+  position: relative;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+}
+
+.incomingRingA,
+.incomingRingB {
+  position: absolute;
+  inset: -8px;
+  border-radius: 999px;
+  border: 2px solid color-mix(in srgb, var(--accent) 44%, transparent);
+  background: color-mix(in srgb, var(--accent) 8%, transparent);
+  animation: incomingRingPulse 2.2s ease-out infinite;
+  pointer-events: none;
+}
+
+.incomingRingB {
+  animation-delay: 0.8s;
+}
+
+.incomingInfo {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.28rem;
+  text-align: center;
+}
+
+.incomingName {
+  font-size: clamp(1.2rem, 4vw, 1.65rem);
+  font-weight: 700;
+  color: var(--text-primary);
+  letter-spacing: -0.01em;
+}
+
+.incomingRingLabel {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  font-variant-numeric: tabular-nums;
+}
+
+.incomingControlsDock {
+  width: min(100%, 420px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  padding-bottom: clamp(2rem, 7vh, 4rem);
+}
+
+@keyframes incomingRingPulse {
+  0% {
+    transform: scale(1);
+    opacity: 0.92;
+  }
+
+  100% {
+    transform: scale(1.18);
+    opacity: 0;
+  }
+}
+
+@media (max-width: 720px) {
+  .incomingControlsDock {
+    width: 100%;
+  }
+
+  .incomingCenter {
+    width: 100%;
+    gap: 0.68rem;
+  }
+}

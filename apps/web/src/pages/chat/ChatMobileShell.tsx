@@ -1,5 +1,7 @@
 import type { ReactNode } from "react";
 import { useAnimatedPresence } from "@/lib/hooks";
+import { MOTION_DURATION_MS } from "@/lib/motion";
+import motionStyles from "@/components/ui/motion/Motion.module.css";
 import styles from "./ChatMobileShell.module.css";
 
 /**
@@ -8,24 +10,32 @@ import styles from "./ChatMobileShell.module.css";
  */
 export interface ChatMobileShellProps {
   readonly isConversationVisible: boolean;
+  readonly isSettingsVisible: boolean;
   readonly sidebar: ReactNode;
   readonly thread: ReactNode;
   readonly sidebarDock: ReactNode;
+  readonly settings: ReactNode;
 }
 
 export function ChatMobileShell({
   isConversationVisible,
+  isSettingsVisible,
   sidebar,
   thread,
   sidebarDock,
+  settings,
 }: ChatMobileShellProps) {
   const sidebarPresence = useAnimatedPresence({
-    isOpen: !isConversationVisible,
-    durationMs: 220,
+    isOpen: !isConversationVisible && !isSettingsVisible,
+    durationMs: MOTION_DURATION_MS.base,
   });
   const threadPresence = useAnimatedPresence({
-    isOpen: isConversationVisible,
-    durationMs: 220,
+    isOpen: isConversationVisible && !isSettingsVisible,
+    durationMs: MOTION_DURATION_MS.base,
+  });
+  const settingsPresence = useAnimatedPresence({
+    isOpen: isSettingsVisible,
+    durationMs: MOTION_DURATION_MS.base,
   });
 
   return (
@@ -34,7 +44,7 @@ export function ChatMobileShell({
         <div
           className={[
             styles.sidebarView,
-            sidebarPresence.isClosing ? styles.surfaceClosing : "",
+            sidebarPresence.isClosing ? motionStyles.panelOut : motionStyles.panelIn,
           ].filter(Boolean).join(" ")}
         >
           {sidebar}
@@ -45,7 +55,7 @@ export function ChatMobileShell({
         <div
           className={[
             styles.threadView,
-            threadPresence.isClosing ? styles.surfaceClosing : "",
+            threadPresence.isClosing ? motionStyles.panelOut : motionStyles.panelIn,
           ].filter(Boolean).join(" ")}
         >
           <div className={styles.threadBody}>
@@ -54,8 +64,19 @@ export function ChatMobileShell({
         </div>
       ) : null}
 
+      {settingsPresence.isMounted ? (
+        <div
+          className={[
+            styles.settingsView,
+            settingsPresence.isClosing ? motionStyles.panelOut : motionStyles.panelIn,
+          ].filter(Boolean).join(" ")}
+        >
+          {settings}
+        </div>
+      ) : null}
+
       {sidebarPresence.isMounted ? (
-        <div className={sidebarPresence.isClosing ? styles.surfaceClosing : ""}>
+        <div className={sidebarPresence.isClosing ? motionStyles.fadeOut : motionStyles.fadeIn}>
           {sidebarDock}
         </div>
       ) : null}

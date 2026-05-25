@@ -4,7 +4,8 @@ import { AvatarSummaryButton, FloatingDock, IconButton } from "@/components/ui";
 import { useRegisterCallAudioOutputTarget } from "@/calls/shared/media/audio-output/CallAudioOutputProvider";
 import { CallDurationText } from "@/calls/shared/presentation/CallDurationText";
 import { ExpandIcon, HangupIcon, MuteIcon } from "@/calls/shared/presentation/CallIcons";
-import styles from "@/calls/direct/presentation/DirectCallPanel.module.css";
+import styles from "./DirectCallMinimizedDock.module.css";
+import panelStyles from "@/calls/direct/presentation/DirectCallPanel.module.css";
 
 interface DirectCallActiveMinimizedProps {
   readonly minimizedDockRef: RefObject<HTMLDialogElement>;
@@ -65,12 +66,12 @@ export function DirectCallActiveMinimized({
   return (
     <FloatingDock
       ref={minimizedDockRef}
-      className={styles.minimizedCall}
+      className={styles.dock}
       style={style}
       tabIndex={-1}
       dialogAriaLabel={minimizedDialogAriaLabel}
       dragAriaLabel={dragAriaLabel}
-      auxiliary={<audio ref={remoteAudioRef} autoPlay className={styles.remoteAudio}><track kind="captions" /></audio>}
+      auxiliary={<audio ref={remoteAudioRef} autoPlay className={panelStyles.remoteAudio}><track kind="captions" /></audio>}
       isDragging={isDraggingMinimizedDock}
       onDragStart={onStartDrag}
       onDragMove={onMoveDrag}
@@ -79,7 +80,7 @@ export function DirectCallActiveMinimized({
         <AvatarSummaryButton
           ref={activeMinimizedSummaryRef}
           onClick={onOpenDetails}
-          className={styles.minimizedSummary}
+          className={styles.dockSummary}
           avatarLabel={peerDisplayName}
           avatarInitials={peerInitials}
           primaryText={peerDisplayName}
@@ -88,12 +89,11 @@ export function DirectCallActiveMinimized({
         />
       )}
       actions={(
-        <div className={styles.minimizedActions}>
+        <div className={styles.dockActions}>
           <IconButton
             onClick={onToggleMute}
-            className={styles.minimizedBtn}
+            className={styles.dockBtn}
             size={38}
-            variant="glass"
             active={muted}
             aria-label={muteAriaLabel}
             aria-pressed={muted}
@@ -102,16 +102,15 @@ export function DirectCallActiveMinimized({
           </IconButton>
           <IconButton
             onClick={onOpenDetails}
-            className={styles.minimizedBtn}
+            className={styles.dockBtn}
             size={38}
-            variant="glass"
             aria-label={expandAriaLabel}
           >
             <ExpandIcon />
           </IconButton>
           <IconButton
             onClick={onHangup}
-            className={styles.minimizedBtn}
+            className={styles.dockBtn}
             size={38}
             tone="danger"
             aria-label={endAriaLabel}

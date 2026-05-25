@@ -1,3 +1,13 @@
+/**
+ * InlineNotice — shared compact notice surface for inline hints, transport warnings, and lightweight overlay messages.
+ *
+ * Owns:
+ *   - Rendering a tinted `<div>` with tone (`info`/`warning`/`error`) and size (`sm`/`md`) presets.
+ *   - Keeping the flat surface aligned with the broader UI system without absorbing domain logic.
+ *
+ * Does not own runtime state, business logic, or domain-specific wiring.
+ * Use when: in-flow feedback is needed near the owning UI element; do not use as a page banner or replacement for modal/destructive confirmation flows.
+ */
 import type { HTMLAttributes, ReactNode } from "react";
 import styles from "./InlineNotice.module.css";
 
@@ -14,7 +24,8 @@ export interface InlineNoticeProps extends Readonly<HTMLAttributes<HTMLDivElemen
 
 /**
  * Shared compact notice surface for inline hints, transport warnings, and
- * lightweight overlay messages that should stay on the same glass system.
+ * lightweight overlay messages that should stay on the same flat system.
+ * Choose it for in-flow feedback near the owning UI; do not use it as a page banner or as a replacement for modal/destructive confirmation flows.
  */
 export function InlineNotice({
   tone = "info",

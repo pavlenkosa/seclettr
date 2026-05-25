@@ -1,5 +1,19 @@
-import type { LocalGroupCallMediaKey } from "@/calls/group/runtime/group-call/media-key";
-import type { GroupCallRuntimeMediaEncryptionMode } from "@/calls/group/runtime/group-call/media-encryption-negotiation";
+/**
+ * group-call-panel-labels — localised label resolver functions for the group call panel.
+ *
+ * Owns:
+ *   - resolveStatusLabel — maps lifecycle state + call status + error to a status bar label
+ *   - resolveHeroStatusLabel — selects the hero banner label based on access and lifecycle state
+ *   - resolveHeroStatusTone — maps lifecycle state to a StatusBadgeTone for the hero badge
+ *   - resolveLocalVideoStatusLabel — label describing local video / screen-share state transitions
+ *   - resolveMediaKeyModeLabel — label for the current media encryption mode
+ *   - resolveMediaKeyStatusLabel — detailed label describing E2EE key exchange progress
+ *
+ * Does not own tile construction, layout logic, or any state. All functions are pure
+ * label resolvers that accept runtime state and return translated strings.
+ */
+import type { LocalGroupCallMediaKey } from "@/calls/group/runtime/media-key/media-key";
+import type { GroupCallRuntimeMediaEncryptionMode } from "@/calls/group/runtime/media-key/media-encryption-negotiation";
 import { type StatusBadgeTone } from "@/components/ui";
 import {
   isGroupCallConnectedLifecycleState,

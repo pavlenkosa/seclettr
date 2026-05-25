@@ -42,7 +42,7 @@ export function NewChatModal({ onClose, onSelect }: Props) {
         "--modal-width": "480px",
         "--modal-max-height": "82dvh",
         "--modal-max-height-mobile": "84dvh",
-        "--modal-z-index": 100,
+        "--modal-z-index": "var(--z-100)",
       } as CSSProperties}
     >
       <div className={styles.searchWrap}>
@@ -67,7 +67,7 @@ export function NewChatModal({ onClose, onSelect }: Props) {
         />
       </div>
 
-      <SurfacePanel as="ul" className={styles.results} role="listbox" padding="none" radius="lg" glass="medium">
+      <SurfacePanel as="ul" className={styles.results} role="listbox" padding="none" radius="lg">
         {loading && <li className={styles.hint}>{t("newChat.searching")}</li>}
         {!loading && error && (
           <li className={styles.hint} role="alert">{error}</li>

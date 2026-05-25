@@ -1,0 +1,294 @@
+.root {
+  position: fixed;
+  bottom: 16px;
+  right: 16px;
+  z-index: var(--z-9999);
+  font-family: var(--font-mono);
+  font-size: 12px;
+}
+
+.panel {
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 16px;
+  margin-bottom: 8px;
+  min-width: 280px;
+  max-height: 80vh;
+  overflow-y: auto;
+}
+
+.panelWide {
+  min-width: 640px;
+}
+
+.panelTitle {
+  font-weight: bold;
+  margin-bottom: 12px;
+  color: var(--text-muted);
+  letter-spacing: 1px;
+  font-size: 10px;
+  text-transform: uppercase;
+}
+
+.infoBlock {
+  margin-bottom: 12px;
+  line-height: 1.8;
+}
+
+.infoLabel {
+  color: var(--text-muted);
+}
+
+.statusOk {
+  color: var(--success);
+}
+
+.statusErr {
+  color: var(--danger);
+}
+
+.section {
+  margin-bottom: 12px;
+}
+
+.sectionLabel {
+  color: var(--text-muted);
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin-bottom: 6px;
+}
+
+.row {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  margin-bottom: 6px;
+}
+
+.numberInput {
+  width: 52px;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 4px 6px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  text-align: center;
+}
+
+.numberInputLabel {
+  color: var(--text-secondary);
+  font-size: 11px;
+}
+
+.btnGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.btnRow {
+  display: flex;
+  gap: 6px;
+}
+
+/* Base button */
+.btn {
+  padding: 6px 12px;
+  border: none;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: #fff;
+  text-align: left;
+}
+
+.btn:disabled {
+  cursor: wait;
+  opacity: 0.6;
+}
+
+.btnFlex {
+  flex: 1;
+  font-size: 11px;
+  padding: 6px 8px;
+}
+
+.btnFull {
+  width: 100%;
+  font-size: 11px;
+}
+
+/* Semantic variants — use accent/danger/success from theme where possible,
+   fall back to fixed hues for non-semantic dev actions */
+.btnPrimary {
+  background: var(--accent);
+}
+
+.btnPrimary:hover {
+  background: var(--accent-hover);
+}
+
+.btnDanger {
+  background: var(--danger);
+}
+
+.btnDanger:disabled {
+  background: var(--bg-tertiary);
+  color: var(--text-secondary);
+}
+
+.btnSuccess {
+  background: var(--success);
+}
+
+.btnMuted {
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+}
+
+.btnMuted:hover {
+  background: var(--border);
+}
+
+/* Non-semantic dev actions: fixed hues that stay readable on both themes */
+.btnViolet {
+  background: #7c3aed;
+}
+
+.btnTeal {
+  background: #0f766e;
+}
+
+.btnSlate {
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+}
+
+/* Toggle button for storage inspector */
+.btnToggle {
+  width: 100%;
+  font-size: 11px;
+  padding: 6px 8px;
+  text-align: left;
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  font-family: var(--font-mono);
+}
+
+.btnToggleActive {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+
+/* FAB toggle button */
+.fab {
+  width: 36px;
+  height: 36px;
+  border-radius: var(--radius-md);
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  border: 1px solid var(--border);
+  cursor: pointer;
+  font-size: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-left: auto;
+}
+
+.fabActive {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+
+.storageWrap {
+  margin-top: 8px;
+}
+
+/* ── Mock call UI preview ─────────────────────────────────────────────────── */
+
+/* GroupCallNotice preview — inline in panel */
+.callNoticePreview {
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  border: 1px solid var(--border);
+  margin-top: 6px;
+  font-family: var(--font-sans, system-ui, sans-serif);
+}
+
+/* Floating call alert banners — position: fixed, same look as ChatPage */
+.mockAlertOverlay {
+  position: fixed;
+  top: 0.6rem;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: var(--z-390);
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  width: max-content;
+  max-width: min(440px, calc(100vw - 2rem));
+  font-family: var(--font-sans, system-ui, sans-serif);
+}
+
+.mockAlertBanner {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.36rem 0.46rem 0.36rem 1rem;
+  background: var(--surface-shell-strong, var(--bg-secondary));
+  border: 1px solid color-mix(in srgb, var(--panel-border-soft, var(--border)) 80%, transparent);
+  border-radius: 999px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.28), 0 1px 4px rgba(0, 0, 0, 0.1);
+  color: var(--text-primary);
+  font-size: 0.8rem;
+  font-weight: 500;
+}
+
+.mockAlertBannerMissed {
+  border-color: color-mix(in srgb, var(--danger, #ef4444) 40%, transparent);
+}
+
+.mockAlertText {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  line-height: 1.25;
+}
+
+.mockAlertBtn {
+  padding: 0.24rem 0.7rem;
+  border: none;
+  border-radius: 999px;
+  background: var(--accent);
+  color: #fff;
+  font-size: 0.74rem;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.mockAlertDismiss {
+  padding: 0.24rem 0.7rem;
+  border: 1px solid color-mix(in srgb, var(--panel-border-soft, var(--border)) 80%, transparent);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: 0.74rem;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+}

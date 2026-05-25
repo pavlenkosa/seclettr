@@ -1,3 +1,15 @@
+/**
+ * ModalShell — shared modal or sheet frame with overlay, header, close button, and body/footer slots.
+ *
+ * Owns:
+ *   - Rendering a backdrop overlay with fade animation and click-to-dismiss behavior.
+ *   - Composing the dialog surface with header (title, headerStart, headerExtra, close button), body, and optional footer.
+ *   - Keyboard Escape dismissal and `aria-modal` / role ARIA contract.
+ *   - Closing animation flag (`isClosing`) for delayed unmount without losing focus state.
+ *
+ * Does not own runtime state, business logic, or domain-specific wiring.
+ * Use when: framing standard overlays that can stack within the app modal system; do not use for fullscreen call surfaces with media-first or dock semantics.
+ */
 import {
   forwardRef,
   type CSSProperties,
@@ -6,6 +18,9 @@ import {
   type ReactNode,
   type Ref,
 } from "react";
+import { createPortal } from "react-dom";
+import { IconClose } from "../icons";
+import motionStyles from "@/components/ui/motion/Motion.module.css";
 import styles from "./ModalShell.module.css";
 
 export interface ModalShellProps {
@@ -74,16 +89,16 @@ function ModalShellInner(
     onClose();
   };
 
-  return (
+  return createPortal(
     <div
-      className={`${styles.overlay} ${isClosing ? styles.overlayClosing : ""} ${overlayClassName}`.trim()}
+      className={`${styles.overlay} ${isClosing ? motionStyles.fadeOut : motionStyles.fadeIn} ${overlayClassName}`.trim()}
       onClick={handleOverlayClick}
       onKeyDown={handleOverlayKeyDown}
       aria-hidden={isClosing ? "true" : undefined}
     >
       <section
         ref={ref}
-        className={`${styles.surface} ${isClosing ? styles.surfaceClosing : ""} ${surfaceClassName}`.trim()}
+        className={`${styles.surface} ${isClosing ? motionStyles.surfaceOut : motionStyles.surfaceIn} ${surfaceClassName}`.trim()}
         role={role}
         aria-modal="true"
         aria-label={ariaLabel}
@@ -104,14 +119,7 @@ function ModalShellInner(
               className={`${styles.closeButton} ${closeButtonClassName}`.trim()}
               aria-label={closeAriaLabel}
             >
-              <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-                <path
-                  d="M3 3l10 10M13 3L3 13"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                />
-              </svg>
+              <IconClose strokeWidth={2} />
             </button>
           </div>
         </header>
@@ -119,12 +127,16 @@ function ModalShellInner(
         <div className={`${styles.body} ${bodyClassName}`.trim()}>{children}</div>
         {footer ? <div className={`${styles.footer} ${footerClassName}`.trim()}>{footer}</div> : null}
       </section>
-    </div>
+    </div>,
+    document.body
   );
 }
 
 /**
- * Shared modal frame with overlay, header, close button, and body/footer slots.
- * It owns the generic dialog shell only and should not absorb domain-specific logic.
+ * Shared modal or sheet frame with overlay, header, close button, and body/footer slots.
+ * It owns the generic dialog a11y/close contract only and should not absorb domain-specific logic.
+ * Choose it for standard framed overlays that can stack with the rest of the app modal system.
+ * Do not treat it as a replacement for `CallPanelShell`; fullscreen call surfaces with media-first,
+ * minimize/dock, or runtime-adjacent call semantics should stay on the call-specific shell.
  */
 export const ModalShell = forwardRef<HTMLElement, ModalShellProps>(ModalShellInner);

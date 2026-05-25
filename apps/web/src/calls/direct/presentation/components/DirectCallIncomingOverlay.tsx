@@ -1,9 +1,11 @@
 import type { RefObject } from "react";
 import { CallControlButton } from "@/calls/shared/presentation/CallControlButton";
 import { CameraIcon, HangupIcon, MinimizeIcon, PhoneIcon } from "@/calls/shared/presentation/CallIcons";
-import { Avatar, HeaderBar, IconButton, IconPill } from "@/components/ui";
+import { Avatar, HeaderBar, IconButton, IconPill, InfoStack } from "@/components/ui";
 
-import styles from "@/calls/direct/presentation/DirectCallPanel.module.css";
+import panelStyles from "@/calls/direct/presentation/DirectCallPanel.module.css";
+import controlsStyles from "./DirectCallControls.module.css";
+import styles from "./DirectCallIncomingOverlay.module.css";
 
 interface DirectCallIncomingOverlayProps {
   readonly incomingOverlayRef: RefObject<HTMLDivElement>;
@@ -45,18 +47,18 @@ export function DirectCallIncomingOverlay({
   return (
     <div
       ref={incomingOverlayRef}
-      className={`${styles.callOverlay} ${styles.incomingOverlay}`}
+      className={`${panelStyles.callOverlay} ${styles.incomingOverlay}`}
       role="alertdialog"
       aria-modal="true"
       aria-label={incomingDialogAriaLabel}
       tabIndex={-1}
     >
       <HeaderBar
-        className={styles.callHeader}
+        className={panelStyles.callHeader}
         stackCenterOnNarrow
         leading={(
           <IconPill
-            className={styles.modeChip}
+            className={panelStyles.modeChip}
             icon={isVideoCall ? <CameraIcon /> : <PhoneIcon />}
             size="sm"
           >
@@ -66,9 +68,8 @@ export function DirectCallIncomingOverlay({
         trailing={(
           <IconButton
             onClick={onMinimize}
-            className={styles.minimizeBtn}
+            className={panelStyles.minimizeBtn}
             size={34}
-            variant="glass"
             aria-label={minimizeAriaLabel}
           >
             <MinimizeIcon />
@@ -76,7 +77,7 @@ export function DirectCallIncomingOverlay({
         )}
       />
 
-      <div className={`${styles.callCenter} ${styles.incomingCenter}`}>
+      <div className={`${panelStyles.callCenter} ${styles.incomingCenter}`}>
         <div className={styles.incomingAvatarShell}>
           <div className={styles.incomingRingA} aria-hidden="true" />
           <div className={styles.incomingRingB} aria-hidden="true" />
@@ -87,16 +88,20 @@ export function DirectCallIncomingOverlay({
             ariaHidden
           />
         </div>
-        <div className={styles.incomingInfo}>
-          <span className={styles.incomingName}>{incomingPeerDisplayName}</span>
-          <span className={styles.incomingRingLabel}>{ringingLabel}</span>
-        </div>
+        <InfoStack
+          className={styles.incomingInfo}
+          align="center"
+          title={incomingPeerDisplayName}
+          meta={ringingLabel}
+          titleClassName={styles.incomingName}
+          metaClassName={styles.incomingRingLabel}
+        />
       </div>
 
-      <div className={`${styles.controlsDock} ${styles.incomingControlsDock}`}>
+      <div className={`${controlsStyles.controlsDock} ${styles.incomingControlsDock}`}>
         <CallControlButton
           onClick={onReject}
-          className={styles.controlBtn}
+          className={controlsStyles.controlBtn}
           tone="danger"
           icon={<HangupIcon />}
           label={rejectAriaLabel}
@@ -107,7 +112,7 @@ export function DirectCallIncomingOverlay({
         <CallControlButton
           ref={incomingAcceptButtonRef}
           onClick={() => onAccept()}
-          className={styles.controlBtn}
+          className={controlsStyles.controlBtn}
           tone="success"
           icon={isVideoCall ? <CameraIcon /> : <PhoneIcon />}
           label={acceptAriaLabel}

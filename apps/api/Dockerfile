@@ -9,7 +9,6 @@ COPY package.json pnpm-workspace.yaml pnpm-lock.yaml ./
 COPY apps/api/package.json ./apps/api/
 COPY packages/crypto/package.json ./packages/crypto/
 COPY packages/protocol/package.json ./packages/protocol/
-COPY packages/utils/package.json ./packages/utils/
 RUN pnpm install --frozen-lockfile --filter @seclettr/crypto... --filter @seclettr/protocol... --filter @seclettr/api...
 
 # Build

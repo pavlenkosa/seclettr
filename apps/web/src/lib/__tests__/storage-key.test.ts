@@ -1,5 +1,35 @@
 import { webcrypto } from "node:crypto";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+
+vi.mock("@seclettr/crypto", () => ({
+  ensureSodium: async () => ({
+    crypto_pwhash: (
+      outlen: number,
+      password: Uint8Array,
+      salt: Uint8Array,
+    ) => {
+      const combined = new Uint8Array(password.length + salt.length);
+      combined.set(password, 0);
+      combined.set(salt, password.length);
+      const out = new Uint8Array(outlen);
+      for (let i = 0; i < combined.length; i++) {
+        const idx = i % outlen;
+        out[idx] = (out[idx] ?? 0) ^ (combined[i] ?? 0);
+      }
+      return out;
+    },
+    crypto_pwhash_OPSLIMIT_INTERACTIVE: 2,
+    crypto_pwhash_MEMLIMIT_INTERACTIVE: 65536,
+    crypto_pwhash_ALG_ARGON2ID13: 2,
+  }),
+  generateStorageKey: async () => {
+    const raw = new Uint8Array(32);
+    webcrypto.getRandomValues(raw);
+    return { raw };
+  },
+  rewrapEncryptedStorage: async () => undefined,
+}));
+
 import {
   STORAGE_KEY_RAW_ITEM,
   STORAGE_KEY_RAW_LEGACY_ITEM,

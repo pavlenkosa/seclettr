@@ -1,5 +1,5 @@
 import type { CSSProperties } from "react";
-import styles from "../MessageList.module.css";
+import styles from "./MessageListAttachments.module.css";
 
 interface AttachmentUploadRingProps {
   readonly progress: number;
@@ -10,6 +10,7 @@ interface AttachmentUploadRingProps {
 
 interface InlineAttachmentUploadOverlayProps extends AttachmentUploadRingProps {
   readonly progressLabel?: string;
+  readonly exiting?: boolean;
 }
 
 export function AttachmentUploadRing({
@@ -68,10 +69,12 @@ export function InlineAttachmentUploadOverlay({
   ariaLabel,
   progressLabel,
   compact = false,
+  exiting = false,
 }: InlineAttachmentUploadOverlayProps) {
   return (
     <div
       className={styles.inlineMediaUploadOverlay}
+      data-exiting={exiting ? "true" : undefined}
       role="none"
       onClick={(event) => event.stopPropagation()}
       onKeyDown={(event) => event.stopPropagation()}

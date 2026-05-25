@@ -23,7 +23,7 @@
 .title {
   color: var(--text-primary);
   font-size: 0.76rem;
-  font-weight: 760;
+  font-weight: 700;
   letter-spacing: 0.02em;
 }
 
@@ -76,7 +76,7 @@
 .readonlyValue {
   min-width: 0;
   font-size: 0.82rem;
-  font-weight: 650;
+  font-weight: 600;
   line-height: 1.3;
 }
 
@@ -93,4 +93,16 @@
 
 .notice {
   border-radius: 12px;
+}
+
+.srOnly {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
 }

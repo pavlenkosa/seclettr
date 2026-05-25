@@ -9,6 +9,7 @@ import { GroupCallStageViewerDialog } from "./GroupCallStageViewerDialog";
 import styles from "@/calls/group/presentation/GroupCallPanel.module.css";
 
 interface GroupCallMediaSectionProps {
+  readonly isReconnecting: boolean;
   readonly stageShellRef: React.RefObject<HTMLDivElement>;
   readonly shouldUseStageLayout: boolean;
   readonly stageTile: GroupCallStageTile | null;
@@ -38,6 +39,7 @@ interface GroupCallMediaSectionProps {
 }
 
 export function GroupCallMediaSection({
+  isReconnecting,
   stageShellRef,
   shouldUseStageLayout,
   stageTile,
@@ -90,7 +92,11 @@ export function GroupCallMediaSection({
           ) : null}
         </div>
       ) : null}
-      {isWaitingForRemoteMedia && !isWaitingSoloAudioLayout ? (
+      {isReconnecting ? (
+        <InlineNotice className={styles.mediaNotice} tone="warning" size="md">
+          {t("group.call.reconnecting")}
+        </InlineNotice>
+      ) : isWaitingForRemoteMedia && !isWaitingSoloAudioLayout ? (
         <InlineNotice className={styles.mediaNotice} tone="info" size="md">
           {t("group.call.noRemoteMedia")}
         </InlineNotice>
@@ -127,6 +133,8 @@ export function GroupCallMediaSection({
               label={tile.label}
               stream={tile.stream}
               audioStream={tile.audioStream}
+              activityStream={tile.activityStream}
+              hasAudio={tile.hasAudio}
               fallbackInitials={tile.fallbackInitials}
               badge={tile.badge}
               muted={tile.isLocal}

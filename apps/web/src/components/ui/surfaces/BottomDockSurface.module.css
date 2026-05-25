@@ -1,35 +1,25 @@
 .root {
-  --bottom-dock-side-inset: 0.7rem;
-  --bottom-dock-bottom-offset: 0.62rem;
-  --bottom-dock-z-index: 25;
-  --bottom-dock-inline-width-offset: 0.1rem;
-  position: absolute;
+  --bottom-dock-side-inset: 0;
+  --bottom-dock-bottom-offset: 0;
+  --bottom-dock-z-index: var(--z-20);
+  --bottom-dock-inline-width-offset: 0;
+  position: fixed;
   left: var(--bottom-dock-side-inset);
   right: var(--bottom-dock-side-inset);
   bottom: calc(var(--bottom-dock-bottom-offset) + var(--safe-bottom));
   z-index: var(--bottom-dock-z-index);
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
-  align-items: end;
-  gap: 0.44rem;
-  padding: 0.44rem 0.52rem 0.48rem;
-  border: 1px solid color-mix(in srgb, var(--panel-border-soft) 90%, transparent);
-  border-radius: 28px;
-  background:
-    linear-gradient(
-      180deg,
-      color-mix(in srgb, var(--surface-float) 90%, transparent),
-      color-mix(in srgb, var(--surface-shell-strong) 90%, transparent)
-    );
-  -webkit-backdrop-filter: blur(var(--glass-blur-medium, 18px)) saturate(var(--glass-saturate, 1.08));
-  backdrop-filter: blur(var(--glass-blur-medium, 18px)) saturate(var(--glass-saturate, 1.08));
-  box-shadow: var(--elevated-shadow-sm);
-  will-change: transform, opacity;
-  transform: translate3d(0, 0, 0);
+  grid-template-columns: repeat(var(--bottom-dock-columns, 3), minmax(0, 1fr));
+  align-items: center;
+  gap: 0.56rem;
+  padding: 0.52rem max(0.72rem, env(safe-area-inset-left, 0px)) 0.56rem max(0.72rem, env(safe-area-inset-right, 0px));
+  border: 0;
+  border-top: 1px solid color-mix(in srgb, var(--panel-border-soft) 82%, transparent);
+  border-radius: 0;
+  background: color-mix(in srgb, var(--bg-secondary) 96%, var(--bg-primary));
   transition:
-    transform var(--motion-duration-slow) var(--motion-ease-emphasized),
+    background-color var(--motion-duration-fast) var(--motion-ease-standard),
     opacity var(--motion-duration-base) var(--motion-ease-standard);
-  animation: bottomDockSurfaceIn var(--motion-duration-slow) var(--motion-ease-emphasized) both;
 }
 
 .inline {
@@ -42,49 +32,19 @@
   z-index: var(--bottom-dock-inline-z-index, var(--bottom-dock-z-index));
 }
 
-.rootClosing {
-  pointer-events: none;
-  animation: bottomDockSurfaceOut var(--motion-duration-base) var(--motion-ease-exit) both;
-}
-
 :global(:root[data-theme="light"]) .root {
-  border-color: color-mix(in srgb, var(--panel-border-soft) 92%, transparent);
+  border-color: var(--border-subtle);
 }
 
 @media (max-width: 760px) {
   .root {
-    --bottom-dock-side-inset: 0.7rem;
-    --bottom-dock-bottom-offset: 0.62rem;
+    --bottom-dock-side-inset: 0;
+    --bottom-dock-bottom-offset: 0;
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
   .root {
     transition: none !important;
-    animation: none !important;
-  }
-}
-
-@keyframes bottomDockSurfaceIn {
-  0% {
-    opacity: 0;
-    transform: translateY(12px) scale(0.98);
-  }
-
-  100% {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-  }
-}
-
-@keyframes bottomDockSurfaceOut {
-  0% {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-  }
-
-  100% {
-    opacity: 0;
-    transform: translateY(10px) scale(0.985);
   }
 }

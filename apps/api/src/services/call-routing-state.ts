@@ -14,6 +14,7 @@ type DirectCallOfferFeatures = Extract<
   WsClientMessage,
   { type: "call.offer" }
 >["features"];
+type DirectCallOfferChatKind = "plain" | "e2ee" | undefined;
 type DirectCallType = Extract<
   WsClientMessage,
   { type: "call.offer" }
@@ -51,6 +52,7 @@ interface DirectCallAuthorityTransition<T> {
 
 export interface PendingDirectCallOffer {
   callType: DirectCallType;
+  chatKind?: DirectCallOfferChatKind;
   sdp: string;
   auth?: DirectCallOfferAuth;
   mediaEncryption?: DirectCallOfferMediaEncryption;
@@ -132,6 +134,7 @@ function buildReplayableOffer(
     targetUserId: session.calleeUserId,
     sdp: session.offer.sdp,
     callType: session.offer.callType,
+    ...(session.offer.chatKind ? { chatKind: session.offer.chatKind } : {}),
     ...(session.offer.mediaEncryption
       ? { mediaEncryption: session.offer.mediaEncryption }
       : {}),
@@ -265,7 +268,7 @@ type RejectCallTransitionResult =
 type HangupCallAlreadyTerminalResult = {
   ok: true;
   alreadyTerminal: true;
-  resultingStatus: "ended";
+  resultingStatus: "ended" | "missed";
   terminatedByRole: "caller" | "callee";
   notifiedDeviceIds: string[];
 };
@@ -273,7 +276,7 @@ type HangupCallAlreadyTerminalResult = {
 type HangupCallCommittedResult = {
   ok: true;
   alreadyTerminal: false;
-  resultingStatus: "ended";
+  resultingStatus: "ended" | "missed";
   terminatedByRole: "caller" | "callee";
   notifiedDeviceIds: string[];
 };
@@ -289,7 +292,7 @@ type HangupCallTransitionResult =
   | {
       ok: true;
       alreadyTerminal: false;
-      resultingStatus: "ended";
+      resultingStatus: "ended" | "missed";
       terminatedByRole: "caller" | "callee";
       targetDeviceIds: string[];
     };
@@ -1211,12 +1214,18 @@ export function createDirectCallLifecycleManager(
                 ? await resolveCalleeTargetDeviceIds(record, session)
                 : await resolveCallerTargetDeviceIds(record, session);
 
+            // Caller giving up on a ringing unanswered call → callee missed it.
+            const nextStatus: "ended" | "missed" =
+              terminatedByRole === "caller" && record.status === "ringing"
+                ? "missed"
+                : "ended";
+
             return {
-              mutation: { type: "status" as const, status: "ended" as const },
+              mutation: { type: "status" as const, status: nextStatus },
               result: {
                 ok: true as const,
                 alreadyTerminal: false,
-                resultingStatus: "ended" as const,
+                resultingStatus: nextStatus,
                 terminatedByRole,
                 targetDeviceIds,
               },
@@ -1242,7 +1251,7 @@ export function createDirectCallLifecycleManager(
       return {
         ok: true as const,
         alreadyTerminal: false,
-        resultingStatus: "ended" as const,
+        resultingStatus: transitionResult.resultingStatus,
         terminatedByRole: transitionResult.terminatedByRole,
         notifiedDeviceIds,
       };

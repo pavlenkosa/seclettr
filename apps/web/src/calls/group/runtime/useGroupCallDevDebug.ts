@@ -1,5 +1,20 @@
+/**
+ * useGroupCallDevDebug — dev-only global debug utilities for the group call runtime.
+ *
+ * Owns:
+ *   - window.__scGetCallDebugSnapshot() — returns a full async snapshot of call state
+ *   - window.__scDumpCallDebug() — logs the snapshot to the browser console
+ *   - window.__scSetCallDebugEnabled(enabled) — toggles call-media debug logging
+ *   - window.__scIsCallDebugEnabled() — returns current debug logging state
+ *   - Lifecycle-aware snapshot including session, encryption, participants, local/remote
+ *     media track details, and the SFU client debug snapshot
+ *   - Auto-cleanup of window helpers on unmount
+ *
+ * In production builds (import.meta.env.DEV === false) this hook is replaced with
+ * a no-op function and none of the above is registered.
+ */
 import { useCallback, useEffect, useRef, type MutableRefObject } from "react";
-import type { GroupCallRuntimeMediaEncryptionMode } from "@/calls/group/runtime/group-call/media-encryption-negotiation";
+import type { GroupCallRuntimeMediaEncryptionMode } from "@/calls/group/runtime/media-key/media-encryption-negotiation";
 import type { GroupCallRemoteMedia, GroupSfuClient } from "@/calls/group/runtime/sfu";
 import {
   readCallMediaDebugEnabled,
@@ -13,13 +28,6 @@ import {
   resolveGroupCallLifecycleState,
 } from "@/calls/group/model/group-call-lifecycle";
 import { logger } from "@/lib/logger.js";
-
-type CallDebugWindow = Window & {
-  __scGetCallDebugSnapshot?: () => Promise<Record<string, unknown> | null>;
-  __scDumpCallDebug?: () => Promise<void>;
-  __scSetCallDebugEnabled?: (enabled: boolean) => void;
-  __scIsCallDebugEnabled?: () => boolean;
-};
 
 export interface UseGroupCallDevDebugOptions {
   session: GroupCallPanelSession | null;
@@ -152,9 +160,8 @@ function useGroupCallDevDebugImpl(options: UseGroupCallDevDebugOptions): void {
   }, []);
 
   useEffect(() => {
-    const callDebugWindow = globalThis as unknown as CallDebugWindow;
-    callDebugWindow.__scGetCallDebugSnapshot = buildGroupCallDebugSnapshot;
-    callDebugWindow.__scDumpCallDebug = async () => {
+    window.__scGetCallDebugSnapshot = buildGroupCallDebugSnapshot;
+    window.__scDumpCallDebug = async () => {
       const snapshot = await buildGroupCallDebugSnapshot();
       if (!snapshot) {
         logger.warn("[CALL][debug] group-call snapshot unavailable");
@@ -164,18 +171,18 @@ function useGroupCallDevDebugImpl(options: UseGroupCallDevDebugOptions): void {
       logger.debug("[CALL][debug] group-call snapshot", snapshot);
       console.groupEnd();
     };
-    callDebugWindow.__scSetCallDebugEnabled = (enabled: boolean) => {
+    window.__scSetCallDebugEnabled = (enabled: boolean) => {
       callMediaDebugEnabledRef.current = enabled;
       writeCallMediaDebugEnabled(enabled);
       logger.info(`[CALL][debug] media logging ${enabled ? "enabled" : "disabled"}`);
     };
-    callDebugWindow.__scIsCallDebugEnabled = () => callMediaDebugEnabledRef.current;
+    window.__scIsCallDebugEnabled = () => callMediaDebugEnabledRef.current;
 
     return () => {
-      delete callDebugWindow.__scGetCallDebugSnapshot;
-      delete callDebugWindow.__scDumpCallDebug;
-      delete callDebugWindow.__scSetCallDebugEnabled;
-      delete callDebugWindow.__scIsCallDebugEnabled;
+      delete window.__scGetCallDebugSnapshot;
+      delete window.__scDumpCallDebug;
+      delete window.__scSetCallDebugEnabled;
+      delete window.__scIsCallDebugEnabled;
     };
   }, [buildGroupCallDebugSnapshot]);
 }

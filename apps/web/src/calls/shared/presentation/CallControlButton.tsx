@@ -1,3 +1,16 @@
+/**
+ * CallControlButton — shared icon-and-label button for call control toolbars.
+ *
+ * Owns:
+ *   - Icon + label layout (inline vs. stacked)
+ *   - Visual tone variants (default, danger, success)
+ *   - Active/toggled state styling
+ *   - Responsive label collapse and compact narrow-screen treatment
+ *   - CSS className forwarding for caller layout control
+ *
+ * Does not own call state, toggle logic, or any call lifecycle.
+ * Consumed by both direct and group call control docks.
+ */
 import { forwardRef, type ButtonHTMLAttributes, type ReactNode } from "react";
 import styles from "./CallControlButton.module.css";
 

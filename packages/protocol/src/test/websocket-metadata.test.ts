@@ -30,12 +30,14 @@ describe("WebSocket metadata contracts", () => {
     const typingStart = wsClient({
       type: "typing.start",
       targetUserId: crypto.randomUUID(),
+      chatKind: "e2ee",
     });
     expect(typingStart.success).toBe(true);
 
     const typingStop = wsClient({
       type: "typing.stop",
       targetUserId: crypto.randomUUID(),
+      chatKind: "e2ee",
     });
     expect(typingStop.success).toBe(true);
 
@@ -56,6 +58,7 @@ describe("WebSocket metadata contracts", () => {
       targetUserId: crypto.randomUUID(),
       sdp: "v=0\r\ns=-",
       callType: "audio",
+      chatKind: "plain",
       features: {
         renegotiationV1: true,
       },
@@ -217,6 +220,7 @@ describe("WebSocket metadata contracts", () => {
       type: "typing.start",
       senderUserId: crypto.randomUUID(),
       senderDeviceId: crypto.randomUUID(),
+      chatKind: "e2ee",
     });
     expect(typingStart.success).toBe(true);
 
@@ -224,6 +228,7 @@ describe("WebSocket metadata contracts", () => {
       type: "typing.stop",
       senderUserId: crypto.randomUUID(),
       senderDeviceId: crypto.randomUUID(),
+      chatKind: "e2ee",
     });
     expect(typingStop.success).toBe(true);
 
@@ -254,6 +259,7 @@ describe("WebSocket metadata contracts", () => {
       targetUserId: crypto.randomUUID(),
       sdp: "v=0\r\ns=-",
       callType: "video",
+      chatKind: "plain",
       features: {
         renegotiationV1: true,
       },

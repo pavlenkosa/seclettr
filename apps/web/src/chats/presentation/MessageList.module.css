@@ -1,3 +1,11 @@
+/* Ownership map
+   Feature-local: virtualized timeline spacing, plain/encrypted bubble boundary, media-group layouts,
+   voice/video note chrome, upload/decrypt overlays, reply-preview composition, inline-media metadata.
+   Migrated: wrappers around shared SurfacePanel, InlineNotice, MessageDeliveryStatusIcon, SecurityModeBadge.
+   Reusable: lift later. Bubble/media overlay language is still tightly coupled to message composition
+   and should be tagged here, not promoted into shared primitives in this corrective slice. */
+
+/* ── Timeline shell + empty states ────────────────────────────────────────── */
 .container {
   position: relative;
   isolation: isolate;
@@ -12,7 +20,6 @@
   border: none;
   border-radius: 0;
   background: transparent;
-  box-shadow: none;
 }
 
 .spacer {
@@ -49,6 +56,63 @@
   display: block;
 }
 
+/* ── Loading skeletons ────────────────────────────────────────────────────── */
+/* Flattened from gradient shimmer to token pulse so the style guard stays truthful
+   while the loading state remains visually distinct and low-jitter. */
+/* Loading skeleton — shown while a thread's first-page history is being
+   fetched. Mirrors the bubble layout (alternating sides, varied widths)
+   so the transition to real content doesn't visually jolt. */
+.skeletonStack {
+  display: flex;
+  flex-direction: column;
+  gap: 0.42rem;
+  padding: 0.74rem 0.72rem 1.2rem;
+  width: 100%;
+  max-width: 100%;
+}
+
+.skeletonRow {
+  display: flex;
+  width: 100%;
+}
+
+.skeletonRowOwn {
+  justify-content: flex-end;
+}
+
+.skeletonRowPeer {
+  justify-content: flex-start;
+}
+
+.skeletonBubble {
+  --message-skeleton-base: color-mix(in srgb, var(--surface-shell-strong) 88%, transparent);
+  --message-skeleton-peak: color-mix(in srgb, var(--surface-shell-strong) 76%, var(--accent));
+  height: 38px;
+  border-radius: 18px;
+  background: var(--message-skeleton-base);
+  animation: messageSkeletonPulse 1.6s ease-in-out infinite;
+  max-width: 78%;
+}
+
+.skeletonRowOwn .skeletonBubble {
+  --message-skeleton-base: color-mix(in srgb, var(--message-out-ui-soft) 80%, transparent);
+  --message-skeleton-peak: color-mix(in srgb, var(--message-out-ui-soft) 64%, var(--accent));
+}
+
+@keyframes messageSkeletonPulse {
+  0%,
+  100% { background-color: var(--message-skeleton-base); }
+  50%  { background-color: var(--message-skeleton-peak); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .skeletonBubble {
+    animation: none;
+    background: var(--message-skeleton-base);
+  }
+}
+
+/* ── Date separators, timestamps, typing, and call-event rows ────────────── */
 .dateSeparator {
   display: flex;
   align-items: center;
@@ -81,9 +145,6 @@
   background: var(--timestamp-bg);
   border: 1px solid var(--timestamp-border);
   border-radius: var(--radius-full);
-  backdrop-filter: blur(6px);
-  animation: messageTimestampIn var(--motion-duration-base) var(--motion-ease-emphasized) both;
-  animation-delay: var(--message-enter-delay, 0ms);
 }
 
 /* ── Typing indicator ─────────────────────────────────────────────────────── */
@@ -113,13 +174,13 @@
 .typingDot:nth-child(3) { animation-delay: 0.36s; }
 
 @keyframes typingBubbleIn {
-  from { opacity: 0; transform: translateY(4px) scale(0.94); }
-  to   { opacity: 1; transform: translateY(0) scale(1); }
+  from { opacity: 0; }
+  to   { opacity: 1; }
 }
 
 @keyframes typingBounce {
-  0%, 60%, 100% { transform: translateY(0); opacity: 0.5; }
-  30%           { transform: translateY(-5px); opacity: 1; }
+  0%, 60%, 100% { opacity: 0.5; }
+  30%           { opacity: 1; }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -132,19 +193,17 @@
   justify-content: center;
   margin: 0.22rem 0 0.16rem;
   padding: 0 0.62rem;
-  animation: messageEntryIn var(--motion-duration-base) var(--motion-ease-emphasized) both;
-  animation-delay: var(--message-enter-delay, 0ms);
 }
 
 .callEventCard {
+  --surface-panel-border: color-mix(in srgb, var(--panel-border-soft) 84%, transparent);
+  --surface-panel-bg-start: color-mix(in srgb, var(--surface-shell) 78%, transparent);
+  --surface-panel-bg-end: color-mix(in srgb, var(--surface-shell) 78%, transparent);
   width: min(100%, min(460px, 82vw));
   min-width: min(220px, 54vw);
   max-width: min(460px, 82vw);
   padding: 0.56rem 0.86rem;
   border-radius: 16px;
-  border: 1px solid color-mix(in srgb, var(--panel-border-soft) 84%, transparent);
-  background: color-mix(in srgb, var(--surface-shell) 78%, transparent);
-  box-shadow: var(--elevated-shadow-sm);
   display: flex;
   flex-direction: column;
   gap: 0.2rem;
@@ -170,12 +229,54 @@
   line-height: 1.25;
 }
 
+/* ── Selection mode (bulk) ───────────────────────────────────────────────── */
+.messageRowSelectable {
+  cursor: pointer;
+  border-radius: 8px;
+  user-select: none;
+  transition: background var(--motion-duration-fast, 140ms) ease;
+}
+
+.messageRowSelectable:hover {
+  background: color-mix(in srgb, var(--accent) 6%, transparent);
+}
+
+.messageRowSelected {
+  background: color-mix(in srgb, var(--accent) 11%, transparent);
+}
+
+.messageRowSelected:hover {
+  background: color-mix(in srgb, var(--accent) 15%, transparent);
+}
+
+.selectionCircle {
+  flex-shrink: 0;
+  align-self: center;
+  width: 20px;
+  height: 20px;
+  margin-right: 0.44rem;
+  border-radius: 50%;
+  border: 2px solid color-mix(in srgb, var(--panel-border) 90%, transparent);
+  background: transparent;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  transition:
+    background var(--motion-duration-fast, 140ms) ease,
+    border-color var(--motion-duration-fast, 140ms) ease;
+}
+
+.selectionCircleChecked {
+  background: var(--accent);
+  border-color: var(--accent);
+}
+
+/* ── Bubble base, text, reply preview, and delivery meta ─────────────────── */
 .messageRow {
   display: flex;
   margin: 0.14rem 0;
   padding: 0 0.62rem;
-  animation: messageEntryIn var(--motion-duration-base) var(--motion-ease-emphasized) both;
-  animation-delay: var(--message-enter-delay, 0ms);
 }
 
 .own {
@@ -192,18 +293,15 @@
   padding: 0.64rem 0.84rem 0.48rem;
   border-radius: 22px;
   word-break: break-word;
-  box-shadow: var(--bubble-shadow);
+  outline: 2px solid transparent;
+  outline-offset: 2px;
   transition:
-    transform var(--motion-duration-fast) var(--motion-ease-standard),
-    box-shadow var(--motion-duration-fast) var(--motion-ease-standard),
+    background-color var(--motion-duration-fast) var(--motion-ease-standard),
     border-color var(--motion-duration-fast) var(--motion-ease-standard);
 }
 
 .bubble:hover {
-  transform: translateY(-1px);
-  box-shadow:
-    var(--bubble-shadow),
-    0 10px 20px rgb(2 8 20 / 0.08);
+  border-color: color-mix(in srgb, var(--message-ui-accent) 34%, transparent);
 }
 
 .voiceBubble {
@@ -216,12 +314,12 @@
 }
 
 @keyframes bubbleHighlight {
-  0%   { box-shadow: 0 0 0 0px color-mix(in srgb, var(--accent) 0%, transparent); }
-  10%  { box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 75%, transparent); }
-  22%  { box-shadow: 0 0 0 1px color-mix(in srgb, var(--accent) 20%, transparent); }
-  36%  { box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 60%, transparent); }
-  60%  { box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 25%, transparent); }
-  100% { box-shadow: var(--bubble-shadow); }
+  0%,
+  100% { outline-color: transparent; }
+  12%,
+  36% { outline-color: color-mix(in srgb, var(--accent) 58%, transparent); }
+  22%,
+  60% { outline-color: color-mix(in srgb, var(--accent) 28%, transparent); }
 }
 
 .bubbleOwn {
@@ -245,14 +343,6 @@
   white-space: pre-wrap;
 }
 
-.attachmentCaption {
-  margin-top: 0.44rem;
-  font-size: 0.925rem;
-  line-height: 1.42;
-  white-space: pre-wrap;
-  overflow-wrap: anywhere;
-}
-
 .senderLabel {
   font-size: 0.68rem;
   font-weight: 700;
@@ -266,16 +356,18 @@
   flex-direction: column;
   gap: 0.12rem;
   margin-bottom: 0.42rem;
-  padding: 0.36rem 0.62rem 0.36rem 0.52rem;
+  min-width: 0;
+  padding: 0.4rem 0.62rem 0.42rem 0.58rem;
   border-radius: 10px;
-  border-left: 3px solid;
+  border: 0;
+  border-left: 3px solid transparent;
   cursor: default;
   overflow: hidden;
 }
 
 button.quotedBubble {
-  border: 0;
-  background: none;
+  border-left-width: 3px;
+  border-left-style: solid;
   color: inherit;
   text-align: left;
   font: inherit;
@@ -283,37 +375,44 @@ button.quotedBubble {
 
 .quotedBubbleClickable {
   cursor: pointer;
-  transition: opacity 120ms ease;
+  transition: opacity var(--motion-duration-fast) ease;
 }
 
 .quotedBubbleClickable:hover {
-  opacity: 0.8;
+  opacity: 0.92;
 }
 
 .quotedBubbleOwn {
-  border-left-color: color-mix(in srgb, var(--message-out-ui) 70%, transparent);
-  background: color-mix(in srgb, var(--message-out-bg) 60%, transparent);
+  border-left-color: color-mix(in srgb, var(--message-out-ui) 82%, transparent);
+  background: rgb(255 255 255 / 0.14);
 }
 
 .quotedBubbleTheirs {
-  border-left-color: color-mix(in srgb, var(--message-ui-accent) 70%, transparent);
-  background: color-mix(in srgb, var(--message-in-bg) 60%, transparent);
+  border-left-color: color-mix(in srgb, var(--message-ui-accent) 74%, transparent);
+  background: color-mix(in srgb, var(--message-ui-accent) 10%, transparent);
 }
 
 .quotedSender {
   font-size: 0.68rem;
   font-weight: 700;
-  color: var(--message-ui-accent);
   line-height: 1.2;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
+.quotedBubbleOwn .quotedSender {
+  color: var(--message-out-ui);
+}
+
+.quotedBubbleTheirs .quotedSender {
+  color: var(--message-ui-accent);
+}
+
 .quotedText {
   font-size: 0.82rem;
   line-height: 1.36;
-  opacity: 0.82;
+  opacity: 0.9;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -406,6 +505,7 @@ button.quotedBubble {
   outline: 2px solid var(--focus-ring, currentColor);
 }
 
+/* ── Voice-note and decrypt states ────────────────────────────────────────── */
 .voiceNote {
   display: flex;
   flex-direction: column;
@@ -427,8 +527,7 @@ button.quotedBubble {
   border: 1px solid var(--voice-decrypt-border);
   border-radius: 16px;
   padding: 0.46rem 0.82rem 0.46rem 0.48rem;
-  box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.04);
-  transition: border-color 0.15s, background-color 0.15s, transform 0.15s, box-shadow 0.15s;
+  transition: border-color 0.15s, background-color 0.15s;
   -webkit-tap-highlight-color: transparent;
   overflow: visible;
 }
@@ -436,8 +535,6 @@ button.quotedBubble {
 .voiceDecryptBtn:hover:not(:disabled) {
   background: var(--voice-decrypt-hover-bg);
   border-color: var(--voice-decrypt-border);
-  box-shadow: inset 0 0 0 1px rgb(186 230 253 / 0.18);
-  transform: translateY(-1px);
 }
 
 .voiceDecryptBtn:disabled {
@@ -456,8 +553,6 @@ button.quotedBubble {
   flex-shrink: 0;
   background: color-mix(in srgb, var(--voice-decrypt-bg) 88%, transparent);
   border: 1px solid color-mix(in srgb, var(--voice-decrypt-border) 88%, transparent);
-  -webkit-backdrop-filter: blur(10px);
-  backdrop-filter: blur(10px);
 }
 
 .voiceDecryptGhostWave {
@@ -468,7 +563,6 @@ button.quotedBubble {
   width: 60px;
   height: 16px;
   opacity: 0.46;
-  filter: none;
   animation: messageGhostWave 1.8s ease-in-out infinite;
 }
 
@@ -493,8 +587,8 @@ button.quotedBubble {
 
 .voiceDecryptIcon {
   position: absolute;
-  inset: auto auto 50% 50%;
-  transform: translate(-50%, 50%);
+  inset: 0;
+  margin: auto;
   width: 26px;
   height: 26px;
   border-radius: 999px;
@@ -503,19 +597,18 @@ button.quotedBubble {
   justify-content: center;
   background: color-mix(in srgb, var(--surface-shell-strong) 82%, transparent);
   border: 1px solid color-mix(in srgb, var(--voice-decrypt-border) 92%, transparent);
-  color: var(--voice-decrypt-icon, #edf6ff);
-  -webkit-backdrop-filter: blur(12px);
-  backdrop-filter: blur(12px);
+  color: var(--voice-decrypt-icon, var(--text-primary));
   flex-shrink: 0;
 }
 
 :global(:root[data-theme="light"]) .timestamp {
-  color: color-mix(in srgb, var(--text-primary) 72%, var(--text-secondary));
+  color: var(--text-primary-muted);
 }
 
 :global(:root[data-theme="light"]) .callEventCard {
-  border-color: color-mix(in srgb, var(--panel-border-soft) 92%, transparent);
-  background: color-mix(in srgb, var(--surface-shell-strong) 88%, white);
+  --surface-panel-border: var(--border-subtle);
+  --surface-panel-bg-start: color-mix(in srgb, var(--surface-shell-strong) 88%, white);
+  --surface-panel-bg-end: color-mix(in srgb, var(--surface-shell-strong) 88%, white);
 }
 
 :global(:root[data-theme="light"]) .voiceDecryptBtn {
@@ -564,17 +657,8 @@ button.quotedBubble {
   width: min(132px, 100%);
   height: 9px;
   border-radius: 999px;
-  background:
-    linear-gradient(
-      90deg,
-      rgb(148 163 184 / 0.18),
-      rgb(226 232 240 / 0.42),
-      rgb(148 163 184 / 0.18)
-    );
-  filter: blur(2px);
+  background: color-mix(in srgb, var(--message-ui-accent) 18%, var(--surface-shell-strong));
   opacity: 0.76;
-  background-size: 180% 100%;
-  animation: messageShimmer 2.1s linear infinite;
 }
 
 .voicePlayer {
@@ -595,11 +679,9 @@ button.quotedBubble {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 1px 4px rgb(2 6 23 / 0.18);
   transition:
     background-color var(--motion-duration-fast) var(--motion-ease-standard),
-    transform var(--motion-duration-fast) var(--motion-ease-standard),
-    box-shadow var(--motion-duration-fast) var(--motion-ease-standard);
+    border-color var(--motion-duration-fast) var(--motion-ease-standard);
 }
 
 .voicePlayIcon,
@@ -611,11 +693,10 @@ button.quotedBubble {
 
 .voicePlayBtn:hover {
   background: var(--voice-play-hover-bg);
-  transform: translateY(-1px) scale(1.01);
 }
 
 .voicePlayBtn:active {
-  transform: translateY(0) scale(0.96);
+  background: color-mix(in srgb, var(--voice-play-hover-bg) 88%, black 12%);
 }
 
 .voiceBody {
@@ -686,14 +767,12 @@ button.quotedBubble {
   appearance: none;
   background: transparent;
   border: 0;
-  box-shadow: none;
   height: 16px;
 }
 
 .voiceScrubber::-moz-range-track {
   background: transparent;
   border: 0;
-  box-shadow: none;
   height: 16px;
 }
 
@@ -767,12 +846,11 @@ button.quotedBubble {
   line-height: 1;
   transition:
     background-color var(--motion-duration-fast) var(--motion-ease-standard),
-    transform var(--motion-duration-fast) var(--motion-ease-standard);
+    border-color var(--motion-duration-fast) var(--motion-ease-standard);
 }
 
 .voiceSpeedBtn:hover {
   background: color-mix(in srgb, var(--message-ui-accent) 24%, transparent);
-  transform: translateY(-1px);
 }
 
 .voiceDot {
@@ -810,7 +888,6 @@ button.quotedBubble {
   background: var(--message-out-ui-soft);
   border-color: var(--message-out-ui-soft);
   color: var(--message-out-ui);
-  box-shadow: none;
 }
 
 .voiceOwn .voicePlayBtn:hover {
@@ -876,13 +953,7 @@ button.quotedBubble {
 }
 
 .voiceOwn .voiceDecryptPlaceholder {
-  background:
-    linear-gradient(
-      90deg,
-      rgb(255 255 255 / 0.14),
-      rgb(255 255 255 / 0.32),
-      rgb(255 255 255 / 0.14)
-    );
+  background: rgb(255 255 255 / 0.24);
 }
 
 :global(:root[data-theme="light"]) .voiceOwn .voiceDecryptBtn {
@@ -918,10 +989,9 @@ button.quotedBubble {
   border-color: color-mix(in srgb, var(--message-ui-accent) 34%, transparent);
 }
 
-.voiceError {
-  font-size: 0.7rem;
-  color: var(--danger-contrast);
-  opacity: 0.85;
+.attachmentErrorNotice {
+  margin-top: 0.18rem;
+  align-self: stretch;
 }
 
 .voiceAudio {
@@ -946,23 +1016,19 @@ button.quotedBubble {
   border: 1px solid color-mix(in srgb, var(--message-ui-accent) 42%, transparent);
   background: color-mix(in srgb, var(--message-ui-accent) 14%, var(--bg-secondary));
   padding: 0;
-  box-shadow: var(--bubble-shadow);
   transition:
-    transform var(--motion-duration-fast) var(--motion-ease-standard),
-    box-shadow var(--motion-duration-fast) var(--motion-ease-standard),
+    background-color var(--motion-duration-fast) var(--motion-ease-standard),
     border-color var(--motion-duration-fast) var(--motion-ease-standard);
 }
 
 .videoCircleButton:hover {
-  transform: translateY(-1px);
-  box-shadow:
-    var(--bubble-shadow),
-    0 12px 24px rgb(2 6 23 / 0.14);
+  border-color: color-mix(in srgb, var(--message-ui-accent) 58%, transparent);
+  background: color-mix(in srgb, var(--message-ui-accent) 18%, var(--bg-secondary));
 }
 
 .videoCircle {
   position: relative;
-  z-index: 1;
+  z-index: var(--z-1);
   width: 100%;
   height: 100%;
   object-fit: cover;
@@ -980,14 +1046,13 @@ button.quotedBubble {
   -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 3px), #000 calc(100% - 2px));
   mask: radial-gradient(farthest-side, transparent calc(100% - 3px), #000 calc(100% - 2px));
   pointer-events: none;
-  z-index: 3;
+  z-index: var(--z-3);
 }
 
 .videoPlayOverlay {
   position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
+  inset: 0;
+  margin: auto;
   width: 48px;
   height: 48px;
   border-radius: 50%;
@@ -997,22 +1062,23 @@ button.quotedBubble {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  z-index: 4;
-  animation: messagePlayOverlayIn var(--motion-duration-base) var(--motion-ease-emphasized) both;
+  z-index: var(--z-4);
 }
 
 .videoPlayOverlay :global(svg) {
   width: 20px;
   height: 20px;
   display: block;
-  transform: translateX(1.5px);
+  margin-left: 2px;
 }
 
 .videoTimeOverlay {
   position: absolute;
-  left: 50%;
+  left: 0;
+  right: 0;
   bottom: 8px;
-  transform: translateX(-50%);
+  width: fit-content;
+  margin-inline: auto;
   padding: 0.12rem 0.48rem;
   border-radius: 999px;
   background: rgb(2 6 23 / 0.58);
@@ -1020,7 +1086,7 @@ button.quotedBubble {
   font-size: 0.66rem;
   line-height: 1.1;
   font-variant-numeric: tabular-nums;
-  z-index: 4;
+  z-index: var(--z-4);
 }
 
 .videoMeta {
@@ -1118,41 +1184,28 @@ button.quotedBubble {
   align-items: center;
   justify-content: center;
   border: 1px solid color-mix(in srgb, var(--message-ui-accent) 30%, transparent);
-  background:
-    radial-gradient(circle at 34% 30%, rgb(255 255 255 / 0.1), transparent 34%),
-    color-mix(in srgb, var(--voice-decrypt-bg) 92%, var(--bg-secondary));
-  -webkit-backdrop-filter: blur(12px);
-  backdrop-filter: blur(12px);
+  background: color-mix(in srgb, var(--voice-decrypt-bg) 92%, var(--bg-secondary));
 }
 
 .bubbleOwn .videoDecryptCircle {
   border-color: rgb(255 255 255 / 0.14);
-  background:
-    radial-gradient(circle at 34% 30%, rgb(255 255 255 / 0.12), transparent 34%),
-    rgb(255 255 255 / 0.08);
+  background: rgb(255 255 255 / 0.08);
 }
 
 .videoDecryptBlur {
   position: absolute;
   inset: 18%;
   border-radius: 50%;
-  background:
-    linear-gradient(
-      145deg,
-      color-mix(in srgb, var(--message-ui-accent) 48%, white 8%),
-      rgb(148 163 184 / 0.16)
-    );
-  filter: blur(18px);
-  opacity: 0.8;
+  display: none;
 }
 
 .bubbleOwn .videoDecryptBlur {
-  background: linear-gradient(145deg, rgb(255 255 255 / 0.34), rgb(255 255 255 / 0.08));
+  display: none;
 }
 
 .videoDecryptLock {
   position: relative;
-  z-index: 1;
+  z-index: var(--z-1);
   width: 40px;
   height: 40px;
   border-radius: 50%;
@@ -1162,8 +1215,6 @@ button.quotedBubble {
   background: rgb(9 23 38 / 0.48);
   border: 1px solid color-mix(in srgb, var(--voice-decrypt-border) 90%, transparent);
   color: #eff7ff;
-  -webkit-backdrop-filter: blur(16px);
-  backdrop-filter: blur(16px);
 }
 
 .bubbleOwn .videoDecryptLock {
@@ -1183,257 +1234,6 @@ button.quotedBubble {
   font-weight: 700;
   text-align: center;
   max-width: min(150px, 100%);
-}
-
-.fileAttachment {
-  display: flex;
-  flex-direction: column;
-  gap: 0.36rem;
-  min-width: min(280px, 72vw);
-}
-
-.fileTitle {
-  font-size: 0.82rem;
-  font-weight: 600;
-  line-height: 1.2;
-  word-break: break-word;
-}
-
-.fileMeta {
-  display: inline-flex;
-  flex-wrap: wrap;
-  gap: 0.42rem;
-  font-size: 0.68rem;
-  opacity: 0.88;
-}
-
-.fileDecryptBtn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 34px;
-  border-radius: 12px;
-  border: 1px solid var(--voice-decrypt-border);
-  background: var(--voice-decrypt-bg);
-  color: var(--voice-decrypt-text);
-  font-size: 0.72rem;
-  font-weight: 600;
-  padding: 0.3rem 0.64rem;
-  transition:
-    background-color var(--motion-duration-fast) var(--motion-ease-standard),
-    border-color var(--motion-duration-fast) var(--motion-ease-standard),
-    transform var(--motion-duration-fast) var(--motion-ease-standard);
-}
-
-.fileDecryptBtn:hover:not(:disabled) {
-  background: var(--voice-decrypt-hover-bg);
-  border-color: var(--voice-decrypt-border);
-  transform: translateY(-1px);
-}
-
-.bubbleOwn .fileDecryptBtn {
-  background: rgb(255 255 255 / 0.08);
-  border-color: var(--message-out-ui-soft);
-  color: var(--message-out-ui);
-}
-
-.bubbleOwn .fileDecryptBtn:hover:not(:disabled) {
-  background: rgb(255 255 255 / 0.14);
-  border-color: var(--message-out-ui-strong);
-}
-
-.fileDecryptBtn:disabled {
-  opacity: 0.72;
-}
-
-/* ── Upload progress bar ── */
-.uploadProgress {
-  display: flex;
-  flex-direction: column;
-  gap: 0.32rem;
-}
-
-.uploadProgressRow {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.5rem;
-  font-size: 0.68rem;
-  opacity: 0.88;
-}
-
-.uploadProgressBar {
-  height: 3px;
-  border-radius: 2px;
-  background: rgb(255 255 255 / 0.18);
-  overflow: hidden;
-}
-
-.uploadProgressFill {
-  height: 100%;
-  border-radius: 2px;
-  background: currentColor;
-  opacity: 0.7;
-  transition: width 120ms ease;
-}
-
-.bubbleOwn .uploadProgressFill {
-  background: var(--message-out-ui);
-  opacity: 0.9;
-}
-
-.uploadCancelBtn {
-  background: none;
-  border: none;
-  padding: 0;
-  font-size: 0.68rem;
-  font-weight: 600;
-  cursor: pointer;
-  color: inherit;
-  opacity: 0.75;
-  white-space: nowrap;
-}
-
-.uploadCancelBtn:hover {
-  opacity: 1;
-}
-
-/* Inline media upload overlay */
-.inlineMediaUploadOverlay {
-  position: absolute;
-  inset: 0;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  background: rgb(0 0 0 / 0.5);
-  gap: 0.5rem;
-  padding: 0.75rem;
-}
-
-.uploadRing {
-  --upload-ring-progress: 0;
-  --upload-ring-size: 56px;
-  --upload-ring-circumference: 125.66;
-  --upload-ring-offset: 125.66;
-  position: relative;
-  width: var(--upload-ring-size);
-  height: var(--upload-ring-size);
-  border-radius: 50%;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  background: rgb(255 255 255 / 0.08);
-  box-shadow:
-    inset 0 0 0 1px rgb(255 255 255 / 0.08),
-    0 8px 18px rgb(2 6 23 / 0.24);
-}
-
-.uploadRingSvg {
-  position: absolute;
-  inset: 3px;
-  width: calc(var(--upload-ring-size) - 6px);
-  height: calc(var(--upload-ring-size) - 6px);
-  transform: rotate(-90deg);
-  pointer-events: none;
-}
-
-.uploadRingTrack {
-  fill: none;
-  stroke: rgb(255 255 255 / 0.2);
-  stroke-width: 3;
-}
-
-.uploadRingProgress {
-  fill: none;
-  stroke: #fff;
-  stroke-width: 3;
-  stroke-linecap: round;
-  stroke-dasharray: var(--upload-ring-circumference);
-  stroke-dashoffset: var(--upload-ring-offset);
-  transition: stroke-dashoffset 150ms linear;
-  filter: drop-shadow(0 1px 2px rgb(0 0 0 / 0.25));
-}
-
-.uploadRingProgressAnimated {
-  transform-origin: 24px 24px;
-  animation: uploadRingProgressSpin 1.35s linear infinite;
-}
-
-.uploadRing::before {
-  content: "";
-  position: absolute;
-  inset: 3px;
-  border-radius: 50%;
-  background: rgb(2 6 23 / 0.66);
-  -webkit-backdrop-filter: blur(10px);
-  backdrop-filter: blur(10px);
-}
-
-.uploadRingCompact {
-  --upload-ring-size: 48px;
-}
-
-.uploadRingCancel {
-  position: relative;
-  z-index: 1;
-  width: calc(var(--upload-ring-size) - 18px);
-  height: calc(var(--upload-ring-size) - 18px);
-  border: 1px solid rgb(255 255 255 / 0.18);
-  border-radius: 50%;
-  padding: 0;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  background: rgb(255 255 255 / 0.08);
-  color: #fff;
-  cursor: pointer;
-  transition:
-    transform var(--motion-duration-fast) var(--motion-ease-standard),
-    background-color var(--motion-duration-fast) var(--motion-ease-standard),
-    border-color var(--motion-duration-fast) var(--motion-ease-standard);
-}
-
-.uploadRingCancel:hover {
-  transform: scale(1.04);
-  background: rgb(255 255 255 / 0.14);
-  border-color: rgb(255 255 255 / 0.28);
-}
-
-.uploadRingCancel:focus-visible {
-  outline: 2px solid rgb(255 255 255 / 0.8);
-  outline-offset: 2px;
-}
-
-.uploadRingStop {
-  width: 11px;
-  height: 11px;
-  border-radius: 3px;
-  background: currentColor;
-}
-
-.uploadRingLabel {
-  font-size: 0.67rem;
-  font-weight: 700;
-  line-height: 1;
-  color: #fff;
-  text-shadow: 0 1px 4px rgb(2 6 23 / 0.4);
-}
-
-@keyframes uploadRingProgressSpin {
-  from {
-    transform: rotate(0deg);
-  }
-
-  to {
-    transform: rotate(360deg);
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .uploadRingProgressAnimated {
-    animation: none;
-  }
 }
 
 .voiceUploadControl {
@@ -1471,44 +1271,85 @@ button.quotedBubble {
 .videoUploadPlaceholder {
   position: absolute;
   inset: 0;
-  background:
-    radial-gradient(circle at 30% 28%, rgb(255 255 255 / 0.12), transparent 30%),
-    color-mix(in srgb, var(--message-ui-accent) 12%, var(--bg-secondary));
+  background: color-mix(in srgb, var(--message-ui-accent) 12%, var(--bg-secondary));
 }
 
 .videoUploadOverlay {
   position: absolute;
   inset: 0;
-  z-index: 2;
+  z-index: var(--z-2);
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   gap: 0.5rem;
   background: rgb(2 6 23 / 0.22);
+  transition: opacity var(--motion-duration-base) var(--motion-ease-standard);
 }
 
-/* ──────────────────────────────────────────────
-   Media-only bubble: image fills edge-to-edge
-   ────────────────────────────────────────────── */
-
-.mediaBubble {
-  padding: 0;
-  overflow: hidden;
+.videoUploadOverlay[data-exiting="true"] {
+  opacity: 0;
+  pointer-events: none;
 }
 
-.mediaBubble .inlineMediaBtn {
-  border-radius: 0;
+/* ── Video circle idle/decrypt/loading states ────────────────────────────── */
+/* Replaces the pill-shaped videoDecryptBtn with an in-circle glyph so the
+   circle shape stays stable across upload → loading → player transitions. */
+
+.videoCircleGlyph {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
-.mediaBubble .inlineMediaMeta {
-  border-radius: 0;
+.videoCircleGlyphBadge {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: rgb(9 23 38 / 0.52);
+  border: 1px solid color-mix(in srgb, var(--voice-decrypt-border) 80%, transparent);
+  color: #eff7ff;
 }
 
-.mediaBubble .attachmentCaption {
-  margin-top: 0;
-  padding: 0.48rem 0.64rem 0.56rem;
-  max-width: min(320px, 80vw);
+.voiceOwn .videoCircleGlyphBadge {
+  background: rgb(4 17 33 / 0.28);
+  border-color: rgb(255 255 255 / 0.18);
+  color: #fff;
+}
+
+.videoCircleGlyphBadge :global(svg) {
+  width: 20px;
+  height: 20px;
+  display: block;
+}
+
+.videoCircleSpinner {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  border: 2.5px solid rgb(255 255 255 / 0.22);
+  border-top-color: rgb(255 255 255 / 0.78);
+  animation: videoCircleSpin 0.75s linear infinite;
+  display: block;
+}
+
+@keyframes videoCircleSpin {
+  to { transform: rotate(360deg); }
+}
+
+/* Voice upload → player fade */
+.voiceUploadFade {
+  transition: opacity var(--motion-duration-base) var(--motion-ease-standard);
+}
+
+.voiceUploadFade[data-exiting="true"] {
+  opacity: 0;
+  pointer-events: none;
 }
 
 .messageAnchor {
@@ -1519,374 +1360,7 @@ button.quotedBubble {
   pointer-events: none;
 }
 
-/* ──────────────────────────────────────────────
-   Media group (album) grid
-   ────────────────────────────────────────────── */
-
-.mediaGroup {
-  display: grid;
-  gap: 2px;
-  width: min(320px, 80vw);
-  max-width: 100%;
-  grid-auto-flow: dense;
-}
-
-.mediaGroup[data-layout="single"] {
-  grid-template-columns: 1fr;
-}
-
-.mediaGroup[data-layout="pair"] {
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-}
-
-.mediaGroup[data-layout="triple"] {
-  grid-template-columns: minmax(0, 1.08fr) minmax(0, 0.92fr);
-  align-content: start;
-}
-
-.mediaGroup[data-layout="quad"] {
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  grid-template-rows: repeat(2, minmax(0, 1fr));
-  aspect-ratio: 1 / 1;
-}
-
-.mediaGroup[data-layout="quint"] {
-  grid-template-columns: repeat(6, minmax(0, 1fr));
-  align-content: start;
-}
-
-.mediaGroup[data-layout="grid"] {
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-}
-
-.mediaGroup[data-layout="triple"] > :first-child .mediaGroupCell {
-  grid-column: 1;
-  grid-row: span 2;
-  aspect-ratio: 4 / 5;
-}
-
-.mediaGroup[data-layout="triple"] > :nth-child(2) .mediaGroupCell {
-  grid-column: 2;
-  aspect-ratio: 1 / 1;
-}
-
-.mediaGroup[data-layout="triple"] > :nth-child(3) .mediaGroupCell {
-  grid-column: 2;
-  aspect-ratio: 1 / 1;
-}
-
-.mediaGroup[data-layout="quint"] > :first-child .mediaGroupCell {
-  grid-column: 1 / 4;
-  aspect-ratio: 4 / 3;
-}
-
-.mediaGroup[data-layout="quint"] > :nth-child(2) .mediaGroupCell {
-  grid-column: 4 / 7;
-  aspect-ratio: 4 / 3;
-}
-
-.mediaGroup[data-layout="quint"] > :nth-child(3) .mediaGroupCell {
-  grid-column: 1 / 3;
-  aspect-ratio: 1 / 1;
-}
-
-.mediaGroup[data-layout="quint"] > :nth-child(4) .mediaGroupCell {
-  grid-column: 3 / 5;
-  aspect-ratio: 1 / 1;
-}
-
-.mediaGroup[data-layout="quint"] > :nth-child(5) .mediaGroupCell {
-  grid-column: 5 / 7;
-  aspect-ratio: 1 / 1;
-}
-
-.mediaGroup[data-layout="pair"] > * > .mediaGroupCell,
-.mediaGroup[data-layout="grid"] > * > .mediaGroupCell,
-.mediaGroup[data-layout="single"] > * > .mediaGroupCell {
-  aspect-ratio: 1;
-}
-
-.mediaGroup[data-layout="triple"] > * > .mediaGroupCell,
-.mediaGroup[data-layout="quad"] > * > .mediaGroupCell,
-.mediaGroup[data-layout="quint"] > * > .mediaGroupCell {
-  min-height: 0;
-}
-
-.mediaGroup[data-layout="single"] > * > .mediaGroupCell {
-  aspect-ratio: 16 / 10;
-}
-
-.mediaGroupCell {
-  position: relative;
-  width: 100%;
-  height: 100%;
-  overflow: hidden;
-  background: var(--surface-shell-strong);
-  cursor: zoom-in;
-}
-
-.mediaGroupThumb {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  display: block;
-  pointer-events: none;
-  transition: filter var(--motion-duration-fast) var(--motion-ease-standard);
-}
-
-.mediaGroupCell:hover .mediaGroupThumb {
-  filter: brightness(1.06);
-}
-
-.mediaGroupPlaceholder {
-  width: 100%;
-  height: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: radial-gradient(
-    circle at 50% 40%,
-    color-mix(in srgb, var(--accent) 10%, transparent),
-    transparent 70%
-  );
-}
-
-.mediaGroupSpinner {
-  width: 22px;
-  height: 22px;
-  border: 2px solid rgb(255 255 255 / 0.25);
-  border-top-color: rgb(255 255 255 / 0.75);
-  border-radius: 50%;
-  animation: mediaGroupSpin 0.7s linear infinite;
-}
-
-@keyframes mediaGroupSpin {
-  to { transform: rotate(360deg); }
-}
-
-.mediaGroupPlayOverlay {
-  position: absolute;
-  inset: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  pointer-events: none;
-}
-
-.mediaGroupPlayOverlay svg {
-  width: 32px;
-  height: 32px;
-  filter: drop-shadow(0 1px 3px rgb(0 0 0 / 0.6));
-}
-
-/* Timestamp + status on the last cell */
-.mediaGroupMeta {
-  position: absolute;
-  bottom: 0;
-  right: 0;
-  padding: 3px 7px 4px;
-  background: rgb(0 0 0 / 0.45);
-  backdrop-filter: blur(6px);
-  -webkit-backdrop-filter: blur(6px);
-  color: #fff;
-  font-size: 0.68rem;
-  font-weight: 600;
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  line-height: 1;
-  pointer-events: none;
-}
-
-/* Count badge for hidden items (6th+ image) — acts as expand button */
-.mediaGroupMore {
-  position: absolute;
-  inset: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: rgb(0 0 0 / 0.55);
-  color: #fff;
-  font-size: 1.4rem;
-  font-weight: 700;
-  border: none;
-  padding: 0;
-  cursor: pointer;
-  transition: background var(--motion-duration-fast) var(--motion-ease-standard);
-}
-
-.mediaGroupMore:hover {
-  background: rgb(0 0 0 / 0.65);
-}
-
-/* ──────────────────────────────────────────────
-   Inline image / video thumbnail attachment
-   ────────────────────────────────────────────── */
-
-.inlineMedia {
-  display: flex;
-  flex-direction: column;
-  gap: 0;
-}
-
-.inlineMediaFrame {
-  position: relative;
-  width: fit-content;
-}
-
-.inlineMediaBtn {
-  position: relative;
-  display: block;
-  /* Width constraint — height is determined by the media's natural aspect ratio. */
-  max-width: min(260px, 72vw);
-  width: fit-content;
-  border-radius: 14px;
-  overflow: hidden;
-  flex-shrink: 0;
-  cursor: zoom-in;
-  transition:
-    transform var(--motion-duration-fast) var(--motion-ease-standard),
-    filter var(--motion-duration-fast) var(--motion-ease-standard);
-}
-
-/* Telegram-style: timestamp + status overlaid on bottom-right corner of media */
-.inlineMediaMeta {
-  position: absolute;
-  bottom: 0;
-  right: 0;
-  padding: 3px 7px 4px;
-  background: rgb(0 0 0 / 0.45);
-  backdrop-filter: blur(6px);
-  -webkit-backdrop-filter: blur(6px);
-  border-radius: 0 0 14px 0;
-  color: #fff;
-  font-size: 0.68rem;
-  font-weight: 600;
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  line-height: 1;
-  pointer-events: none;
-}
-
-.inlineMediaBtn:hover:not(:disabled) {
-  transform: scale(1.01);
-  filter: brightness(1.04);
-}
-
-.inlineMediaBtn:active:not(:disabled) {
-  transform: scale(0.98);
-}
-
-.inlineMediaBtn:disabled {
-  cursor: default;
-}
-
-.inlineMediaThumb {
-  /* Respect the image's natural aspect ratio; cap width/height so very tall
-     or very wide images don't overflow the chat column. */
-  display: block;
-  max-width: min(260px, 72vw);
-  max-height: 360px;
-  width: auto;
-  height: auto;
-  object-fit: contain;
-}
-
-/* Placeholder shown before decryption — fixed size so the bubble has
-   a reasonable footprint before we know the media dimensions. */
-.inlineMediaPlaceholder {
-  width: min(260px, 72vw);
-  height: 160px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 0.56rem;
-  background:
-    radial-gradient(circle at 50% 40%, color-mix(in srgb, var(--accent) 10%, transparent), transparent 70%),
-    color-mix(in srgb, var(--surface-shell-strong) 90%, transparent);
-}
-
-.inlineMediaLock {
-  width: 36px;
-  height: 36px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  color: var(--text-secondary);
-  opacity: 0.72;
-}
-
-.inlineMediaLock svg {
-  width: 100%;
-  height: 100%;
-  display: block;
-}
-
-.inlineMediaTypeLabel {
-  display: inline-flex;
-  align-items: center;
-  color: var(--text-muted);
-}
-
-/* Spinner */
-.inlineMediaSpinner {
-  width: 28px;
-  height: 28px;
-  border-radius: 50%;
-  border: 2.5px solid color-mix(in srgb, var(--accent) 28%, transparent);
-  border-top-color: var(--accent);
-  animation: inlineMediaSpin 0.7s linear infinite;
-  display: block;
-}
-
-@keyframes inlineMediaSpin {
-  to { transform: rotate(360deg); }
-}
-
-/* Play overlay on video thumbnails */
-.inlineMediaPlayOverlay {
-  position: absolute;
-  inset: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  pointer-events: none;
-}
-
-.inlineMediaPlayOverlay svg {
-  width: 48px;
-  height: 48px;
-  color: #fff;
-  filter: drop-shadow(0 2px 8px rgb(0 0 0 / 0.4));
-}
-
-/* Outgoing bubble variants — placeholder background tinted to match outgoing bubble */
-.voiceOwn .inlineMediaPlaceholder {
-  background:
-    radial-gradient(circle at 50% 40%, color-mix(in srgb, var(--accent) 10%, transparent), transparent 70%),
-    color-mix(in srgb, var(--message-out-ui-soft) 60%, var(--surface-shell-strong));
-}
-
-/* Meta row reused from videoNote */
-
-@media (max-width: 760px) {
-  .inlineMediaBtn {
-    max-width: min(220px, 72vw);
-  }
-
-  .inlineMediaThumb {
-    max-width: min(220px, 72vw);
-    max-height: 300px;
-  }
-
-  .inlineMediaPlaceholder {
-    width: min(220px, 72vw);
-  }
-}
-
-/* ─────────────────────────────────────────── */
+/* ── Mobile density tuning ───────────────────────────────────────────────── */
 
 @media (max-width: 760px) {
   .container {
@@ -1960,10 +1434,6 @@ button.quotedBubble {
     height: 8px;
   }
 
-  .fileAttachment {
-    min-width: min(230px, 82vw);
-  }
-
   .videoCircle {
     width: 100%;
   }
@@ -1999,50 +1469,15 @@ button.quotedBubble {
   .statusSending,
   .voiceDecryptGhostWave,
   .voiceDecryptPlaceholder,
-  .videoPlayOverlay,
   .bubble,
   .videoCircleButton {
     animation: none !important;
   }
 
-  .bubble:hover,
-  .voicePlayBtn:hover,
-  .voiceSpeedBtn:hover,
-  .videoCircleButton:hover,
-  .fileDecryptBtn:hover:not(:disabled) {
-    transform: none !important;
-  }
-
   .voiceDecryptBtn,
   .voicePlayBtn,
-  .voiceSpeedBtn,
-  .fileDecryptBtn {
+  .voiceSpeedBtn {
     transition: none !important;
-    transform: none !important;
-  }
-}
-
-@keyframes messageEntryIn {
-  0% {
-    opacity: 0;
-    transform: translateY(8px) scale(0.99);
-  }
-
-  100% {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-  }
-}
-
-@keyframes messageTimestampIn {
-  0% {
-    opacity: 0;
-    transform: translateY(4px) scale(0.98);
-  }
-
-  100% {
-    opacity: 1;
-    transform: translateY(0) scale(1);
   }
 }
 
@@ -2061,33 +1496,9 @@ button.quotedBubble {
   0%,
   100% {
     opacity: 0.46;
-    transform: translateY(0);
   }
 
   50% {
     opacity: 0.7;
-    transform: translateY(-1px);
-  }
-}
-
-@keyframes messageShimmer {
-  0% {
-    background-position: 0 50%;
-  }
-
-  100% {
-    background-position: 180% 50%;
-  }
-}
-
-@keyframes messagePlayOverlayIn {
-  0% {
-    opacity: 0;
-    transform: translate(-50%, -50%) scale(0.88);
-  }
-
-  100% {
-    opacity: 1;
-    transform: translate(-50%, -50%) scale(1);
   }
 }

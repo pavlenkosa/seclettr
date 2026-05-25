@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { EncryptedMessageSchema, MessageTypeSchema } from "./messages.js";
+import { PlainMessageSchema } from "./plain.js";
 import {
   type StripVersion,
   type VersionedWireParseResult,
@@ -39,6 +40,8 @@ const CallSignalAuthSchema = versionedWireObject(1, {
 const wsEnvelope = <TShape extends z.ZodRawShape>(shape: TShape) =>
   versionedWireObject(WS_PROTOCOL_VERSION, shape);
 
+const DirectChatKindSchema = z.enum(["e2ee", "plain"]);
+
 export const WsClientMessageSchema = z.discriminatedUnion("type", [
   wsEnvelope({
     type: z.literal("ping"),
@@ -55,10 +58,12 @@ export const WsClientMessageSchema = z.discriminatedUnion("type", [
   wsEnvelope({
     type: z.literal("typing.start"),
     targetUserId: z.string().uuid(),
+    chatKind: DirectChatKindSchema.optional(),
   }),
   wsEnvelope({
     type: z.literal("typing.stop"),
     targetUserId: z.string().uuid(),
+    chatKind: DirectChatKindSchema.optional(),
   }),
   wsEnvelope({
     type: z.literal("call.offer"),
@@ -66,6 +71,7 @@ export const WsClientMessageSchema = z.discriminatedUnion("type", [
     targetUserId: z.string().uuid(),
     sdp: z.string(),
     callType: z.enum(["audio", "video"]),
+    chatKind: DirectChatKindSchema.optional(),
     mediaEncryption: CallMediaEncryptionOfferSchema.optional(),
     features: DirectCallFeaturesSchema.optional(),
     auth: CallSignalAuthSchema.optional(),
@@ -197,6 +203,33 @@ export const WsServerMessageSchema = z.discriminatedUnion("type", [
     aeadVersion: z.number().int().min(0).max(1).optional(),
   }),
   wsEnvelope({
+    type: z.literal("plain_message.new"),
+    message: PlainMessageSchema,
+  }),
+  wsEnvelope({
+    type: z.literal("plain_message.edited"),
+    messageId: z.string().uuid(),
+    content: z.string(),
+    editedAt: z.string().datetime(),
+    /** Conversation key: recipientUserId (DM) or groupId (group) */
+    threadKey: z.string().uuid(),
+    threadKind: z.enum(["dm", "group"]),
+  }),
+  wsEnvelope({
+    type: z.literal("plain_message.deleted"),
+    messageId: z.string().uuid(),
+    threadKey: z.string().uuid(),
+    threadKind: z.enum(["dm", "group"]),
+  }),
+  wsEnvelope({
+    type: z.literal("plain_message.read"),
+    messageIds: z.array(z.string().uuid()),
+    readerUserId: z.string().uuid(),
+    threadKey: z.string().uuid(),
+    threadKind: z.enum(["dm", "group"]),
+    readAt: z.string().datetime(),
+  }),
+  wsEnvelope({
     type: z.literal("call.incoming"),
     callId: z.string().uuid(),
     callerUserId: z.string().uuid(),
@@ -222,6 +255,7 @@ export const WsServerMessageSchema = z.discriminatedUnion("type", [
     targetUserId: z.string().uuid().optional(),
     sdp: z.string(),
     callType: z.enum(["audio", "video"]),
+    chatKind: DirectChatKindSchema.optional(),
     mediaEncryption: CallMediaEncryptionOfferSchema.optional(),
     features: DirectCallFeaturesSchema.optional(),
     auth: CallSignalAuthSchema.optional(),
@@ -401,11 +435,13 @@ export const WsServerMessageSchema = z.discriminatedUnion("type", [
     type: z.literal("typing.start"),
     senderUserId: z.string().uuid(),
     senderDeviceId: z.string().uuid(),
+    chatKind: DirectChatKindSchema.optional(),
   }),
   wsEnvelope({
     type: z.literal("typing.stop"),
     senderUserId: z.string().uuid(),
     senderDeviceId: z.string().uuid(),
+    chatKind: DirectChatKindSchema.optional(),
   }),
   wsEnvelope({
     type: z.literal("presence.update"),

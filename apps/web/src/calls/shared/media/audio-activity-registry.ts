@@ -1,9 +1,22 @@
 /**
- * Shared audio activity registry for detecting voice activity from MediaStream audio tracks.
- * Uses WebAudio API's AnalyserNode to compute RMS (Root Mean Square) amplitude.
+ * audio-activity-registry — singleton voice-activity detector for all call types.
+ *
+ * Owns:
+ *   - AudioActivityRegistry class: manages a shared AudioContext and a single
+ *     requestAnimationFrame loop that polls AnalyserNode samples for all registered streams
+ *   - Hysteresis thresholds: AUDIO_ACTIVITY_START_THRESHOLD (0.022 RMS) and
+ *     AUDIO_ACTIVITY_STOP_THRESHOLD (0.012 RMS) to prevent rapid on/off toggling
+ *   - subscribe(stream, listener) — ref-counted registration; AudioContext is created
+ *     lazily and closed when the last subscriber unregisters
+ *   - audioActivityRegistry — the module-level singleton instance
+ *   - computeAudioRms, isAudioActivityActive, isTrackAvailableForActivity — internal helpers
+ *
+ * Does not own per-hook React integration (see useCallAudioActivity / useGroupCallAudioActivity).
+ * All consumers share the same AudioContext and animation loop for efficiency.
  */
 
-const AUDIO_ACTIVITY_THRESHOLD = 0.045;
+const AUDIO_ACTIVITY_START_THRESHOLD = 0.022;
+const AUDIO_ACTIVITY_STOP_THRESHOLD = 0.012;
 
 function computeAudioRms(samples: ArrayLike<number>): number {
   if (samples.length === 0) {
@@ -19,8 +32,12 @@ function computeAudioRms(samples: ArrayLike<number>): number {
   return Math.sqrt(sum / samples.length);
 }
 
-function isAudioActivityActive(rms: number): boolean {
-  return rms > AUDIO_ACTIVITY_THRESHOLD;
+function isAudioActivityActive(rms: number, currentIsActive: boolean): boolean {
+  return rms > (currentIsActive ? AUDIO_ACTIVITY_STOP_THRESHOLD : AUDIO_ACTIVITY_START_THRESHOLD);
+}
+
+function isTrackAvailableForActivity(track: MediaStreamTrack | null | undefined): boolean {
+  return Boolean(track && track.readyState === "live" && track.enabled && !track.muted);
 }
 
 function getAudioActivityTrackKey(stream: MediaStream | null): string | null {
@@ -33,6 +50,7 @@ type AudioActivityListener = (isActive: boolean) => void;
 
 interface AudioActivityEntry {
   key: string;
+  stream: MediaStream;
   source: MediaStreamAudioSourceNode;
   analyser: AnalyserNode;
   samples: Uint8Array<ArrayBuffer>;
@@ -56,6 +74,7 @@ class AudioActivityRegistry {
     }
 
     if (this.audioContext && this.audioContext.state !== "closed") {
+      this.resumeAudioContext();
       return this.audioContext;
     }
 
@@ -65,8 +84,17 @@ class AudioActivityRegistry {
     }
 
     this.audioContext = new AudioContextCtor();
-    this.audioContext.resume().catch(() => null);
+    this.resumeAudioContext();
     return this.audioContext;
+  }
+
+  private resumeAudioContext(): void {
+    const currentAudioContext = this.audioContext;
+    if (!currentAudioContext || currentAudioContext.state !== "suspended") {
+      return;
+    }
+
+    currentAudioContext.resume().catch(() => null);
   }
 
   private stopLoopIfIdle(): void {
@@ -94,11 +122,19 @@ class AudioActivityRegistry {
     const tick = () => {
       this.frameId = null;
 
+      this.resumeAudioContext();
+
       for (const entry of this.entries.values()) {
-        entry.analyser.getByteTimeDomainData(entry.samples);
-        const nextIsActive = isAudioActivityActive(
-          computeAudioRms(entry.samples)
-        );
+        const track = entry.stream.getAudioTracks()[0] ?? null;
+        const nextIsActive = isTrackAvailableForActivity(track)
+          ? (() => {
+              entry.analyser.getByteTimeDomainData(entry.samples);
+              return isAudioActivityActive(
+                computeAudioRms(entry.samples),
+                entry.isActive
+              );
+            })()
+          : false;
         if (entry.isActive === nextIsActive) {
           continue;
         }
@@ -147,6 +183,7 @@ class AudioActivityRegistry {
 
       entry = {
         key,
+        stream,
         source,
         analyser,
         samples: new Uint8Array(new ArrayBuffer(analyser.fftSize)),

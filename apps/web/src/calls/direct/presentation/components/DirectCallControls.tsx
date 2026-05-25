@@ -1,11 +1,20 @@
-import type { RefObject } from "react";
+import { useState, type RefObject } from "react";
 import { CallControlButton } from "@/calls/shared/presentation/CallControlButton";
+import { CallControlsDock } from "@/calls/shared/presentation/CallControlsDock";
 import { CallDevicePicker, type VideoResolution } from "@/calls/shared/presentation/CallDevicePicker";
 import type { InputDeviceOption } from "@/calls/shared/media/input-devices/useCallInputDevices";
-import { CameraIcon, HangupIcon, MuteIcon, ScreenShareIcon } from "@/calls/shared/presentation/CallIcons";
-import styles from "@/calls/direct/presentation/DirectCallPanel.module.css";
+import { CameraIcon, HangupIcon, MuteIcon, PhoneIcon, ScreenShareIcon, SpeakerIcon } from "@/calls/shared/presentation/CallIcons";
+import { AudioOutputSelector } from "@/calls/shared/media/audio-output/AudioOutputSelector";
+import { useOptionalCallAudioOutput } from "@/calls/shared/media/audio-output/CallAudioOutputProvider";
+import { useNativeSpeakerToggle } from "@/calls/shared/media/audio-output/useNativeSpeakerToggle";
+import { useIsMobileViewport } from "@/lib/hooks/use-is-mobile-viewport";
+
+import styles from "./DirectCallControls.module.css";
 
 interface DirectCallControlsProps {
+  readonly speakerAriaLabel?: string;
+  readonly speakerLabel?: string;
+  readonly earphoneLabel?: string;
   readonly muted: boolean;
   readonly videoOff: boolean;
   readonly screenSharing: boolean;
@@ -46,6 +55,9 @@ const canScreenShare =
   typeof navigator.mediaDevices?.getDisplayMedia === "function";
 
 export function DirectCallControls({
+  speakerAriaLabel = "Speaker",
+  speakerLabel = "Speaker",
+  earphoneLabel = "Earphone",
   muted,
   videoOff,
   screenSharing,
@@ -80,8 +92,151 @@ export function DirectCallControls({
   onSelectVideoResolution,
   onSelectScreenResolution,
 }: DirectCallControlsProps) {
+  const { supported: speakerSupported, speakerOn, toggle: toggleSpeaker } = useNativeSpeakerToggle();
+  const audioOutput = useOptionalCallAudioOutput();
+  // On narrow viewports (mobile phones) use stacked icon+label buttons without the
+  // device-picker chevron — the result looks like a proper mobile bottom toolbar.
+  const isMobile = useIsMobileViewport();
+  // Bottom-sheet state for web audio output selection on mobile.
+  const [outputSheetOpen, setOutputSheetOpen] = useState(false);
+
+  // Web-audio output button is shown on mobile when native speaker toggle is unavailable
+  // but the browser supports output selection (or can prompt for it).
+  const showWebOutputButton = !speakerSupported && (
+    audioOutput?.support === "full" || audioOutput?.canPromptForDevices === true
+  );
+
+  if (isMobile) {
+    const mobileClass = `${styles.controlBtn} ${styles.mobileControlBtn}`;
+    return (
+      <CallControlsDock className={styles.controlsDock}>
+        <CallControlButton
+          onClick={onToggleMute}
+          layout="stacked"
+          className={mobileClass}
+          active={muted}
+          icon={<MuteIcon muted={muted} />}
+          label={muteLabel}
+          aria-label={muteAriaLabel}
+          aria-pressed={muted}
+        />
+        <CallControlButton
+          onClick={() => { void onToggleVideo(); }}
+          layout="stacked"
+          className={mobileClass}
+          active={videoOff}
+          icon={<CameraIcon />}
+          label={cameraLabel}
+          aria-label={cameraAriaLabel}
+          aria-pressed={videoOff}
+        />
+        {speakerSupported ? (
+          /* Capacitor native: select earpiece or loudspeaker via a sheet */
+          <div className={styles.audioOutputWrapper}>
+            <CallControlButton
+              onClick={() => { setOutputSheetOpen((prev) => !prev); }}
+              layout="stacked"
+              className={mobileClass}
+              active={outputSheetOpen || !speakerOn}
+              icon={<SpeakerIcon speakerOn={speakerOn} />}
+              label={speakerLabel}
+              aria-label={speakerAriaLabel}
+              aria-expanded={outputSheetOpen}
+            />
+            {outputSheetOpen ? (
+              <>
+                <div
+                  className={styles.audioOutputScrim}
+                  onClick={() => { setOutputSheetOpen(false); }}
+                  aria-hidden="true"
+                />
+                <div
+                  className={styles.audioOutputSheet}
+                  role="dialog"
+                  aria-label={speakerAriaLabel}
+                >
+                  <button
+                    type="button"
+                    className={[
+                      styles.audioSheetOption,
+                      !speakerOn ? styles.audioSheetOptionActive : "",
+                    ].filter(Boolean).join(" ")}
+                    onClick={() => {
+                      if (speakerOn) toggleSpeaker();
+                      setOutputSheetOpen(false);
+                    }}
+                  >
+                    <PhoneIcon />
+                    <span>{earphoneLabel}</span>
+                    {!speakerOn ? <span className={styles.audioSheetCheck} aria-hidden="true">✓</span> : null}
+                  </button>
+                  <button
+                    type="button"
+                    className={[
+                      styles.audioSheetOption,
+                      speakerOn ? styles.audioSheetOptionActive : "",
+                    ].filter(Boolean).join(" ")}
+                    onClick={() => {
+                      if (!speakerOn) toggleSpeaker();
+                      setOutputSheetOpen(false);
+                    }}
+                  >
+                    <SpeakerIcon speakerOn />
+                    <span>{speakerLabel}</span>
+                    {speakerOn ? <span className={styles.audioSheetCheck} aria-hidden="true">✓</span> : null}
+                  </button>
+                </div>
+              </>
+            ) : null}
+          </div>
+        ) : showWebOutputButton ? (
+          /* Web mobile: open a bottom-sheet with the AudioOutputSelector */
+          <div className={styles.audioOutputWrapper}>
+            <CallControlButton
+              onClick={() => { setOutputSheetOpen((prev) => !prev); }}
+              layout="stacked"
+              className={mobileClass}
+              active={outputSheetOpen}
+              icon={<SpeakerIcon speakerOn />}
+              label={speakerLabel}
+              aria-label={speakerAriaLabel}
+              aria-expanded={outputSheetOpen}
+            />
+            {outputSheetOpen ? (
+              <>
+                {/* Transparent scrim — tap outside sheet to dismiss */}
+                <div
+                  className={styles.audioOutputScrim}
+                  onClick={() => { setOutputSheetOpen(false); }}
+                  aria-hidden="true"
+                />
+                <div
+                  className={styles.audioOutputSheet}
+                  role="dialog"
+                  aria-label={speakerAriaLabel}
+                >
+                  <AudioOutputSelector compact hideLabel />
+                </div>
+              </>
+            ) : null}
+          </div>
+        ) : null}
+        <CallControlButton
+          ref={hangupButtonRef}
+          onClick={onHangup}
+          layout="stacked"
+          className={mobileClass}
+          tone="danger"
+          icon={<HangupIcon />}
+          label={endLabel}
+          aria-label={endAriaLabel}
+        />
+      </CallControlsDock>
+    );
+  }
+
   return (
-    <div className={styles.controlsDock}>
+    <CallControlsDock className={styles.controlsDock}>
       <CallDevicePicker
         micDevices={micDevices}
         selectedMicId={selectedMicId}
@@ -116,7 +271,7 @@ export function DirectCallControls({
         active={videoOff}
       >
         <CallControlButton
-          onClick={() => onToggleVideo()}
+          onClick={() => { void onToggleVideo(); }}
           className={styles.controlBtn}
           active={videoOff}
           icon={<CameraIcon />}
@@ -138,7 +293,7 @@ export function DirectCallControls({
           active={screenSharing}
         >
           <CallControlButton
-            onClick={() => onToggleScreenShare()}
+            onClick={() => { void onToggleScreenShare(); }}
             className={styles.controlBtn}
             active={screenSharing}
             icon={<ScreenShareIcon />}
@@ -149,6 +304,20 @@ export function DirectCallControls({
             aria-pressed={screenSharing}
           />
         </CallDevicePicker>
+      ) : null}
+
+      {speakerSupported ? (
+        <CallControlButton
+          onClick={toggleSpeaker}
+          className={styles.controlBtn}
+          active={!speakerOn}
+          icon={<SpeakerIcon speakerOn={speakerOn} />}
+          label={speakerLabel}
+          collapseLabelOnNarrow
+          compactOnNarrow
+          aria-label={speakerAriaLabel}
+          aria-pressed={speakerOn}
+        />
       ) : null}
 
       <CallControlButton
@@ -162,6 +331,6 @@ export function DirectCallControls({
         compactOnNarrow
         aria-label={endAriaLabel}
       />
-    </div>
+    </CallControlsDock>
   );
 }

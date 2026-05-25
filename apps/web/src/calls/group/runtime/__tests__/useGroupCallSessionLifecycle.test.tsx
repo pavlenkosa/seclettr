@@ -11,12 +11,12 @@ import type {
 } from "@/calls/group/runtime/sfu";
 import type { GroupCallStatusAction } from "@/calls/group/model/group-call-types";
 import type { KeyPair } from "@seclettr/crypto";
-import type { MediaKeyRotationState } from "@/calls/group/runtime/group-call-session-types";
+import type { MediaKeyRotationState } from "@/calls/group/runtime/session/session-types";
 import type {
   LocalGroupCallMediaKey,
   ReceivedGroupCallMediaKey,
-} from "@/calls/group/runtime/group-call/media-key";
-import type { GroupCallMediaKeyDeliveryTracker } from "@/calls/group/runtime/group-call/media-key-delivery";
+} from "@/calls/group/runtime/media-key/media-key";
+import type { GroupCallMediaKeyDeliveryTracker } from "@/calls/group/runtime/media-key/media-key-delivery";
 
 const TEST_SESSION = {
   groupId: "group-1",

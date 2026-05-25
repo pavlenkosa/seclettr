@@ -1,4 +1,5 @@
 import type { KeyPair } from "@seclettr/crypto";
+import type { AuthErrorCode } from "@/lib/auth-error-codes";
 
 export type AuthLifecycleState =
   | "signed_out"
@@ -17,6 +18,9 @@ export interface AuthReadySnapshot {
   userId: string;
   deviceId: string;
   username: string | null;
+  displayName: string | null;
+  bio: string | null;
+  avatarKey: string | null;
   accessToken: string;
   identityDhKeyPair: KeyPair;
   storageKey: CryptoKey;
@@ -28,6 +32,9 @@ export interface AuthLockedSnapshot {
   userId: string;
   deviceId: string;
   username: string | null;
+  displayName: string | null;
+  bio: string | null;
+  avatarKey: string | null;
 }
 
 export type RestoreSessionResult =
@@ -37,13 +44,16 @@ export type RestoreSessionResult =
   | {
       outcome: "recovery_required";
       reason: AuthRecoveryReason;
-      error: string;
+      errorCode: AuthErrorCode;
     };
 
 export type SignedOutStateFields =
   | "userId"
   | "deviceId"
   | "username"
+  | "displayName"
+  | "bio"
+  | "avatarKey"
   | "accessToken"
   | "identityDhKeyPair"
   | "storageKey"
@@ -58,6 +68,9 @@ export interface AuthState {
   userId: string | null;
   deviceId: string | null;
   username: string | null;
+  displayName: string | null;
+  bio: string | null;
+  avatarKey: string | null;
   accessToken: string | null;
   identityDhKeyPair: KeyPair | null;
   storageKey: CryptoKey | null;
@@ -67,7 +80,7 @@ export interface AuthState {
   authLifecycle: AuthLifecycleState;
   authRecoveryReason: AuthRecoveryReason | null;
   authOperation: AuthOperationState;
-  error: string | null;
+  error: string | AuthErrorCode | null;
 
   /** True when a PIN passcode is required to unlock. */
   pinEnabled: boolean;
@@ -97,4 +110,6 @@ export interface AuthState {
   /** Destructively forget this browser's local device state and encrypted key material. */
   resetLocalDeviceData: () => Promise<void>;
   clearError: () => void;
+  /** Locally update profile fields after a successful PATCH /profile or avatar change. */
+  applyProfileUpdate: (patch: { displayName?: string | null; bio?: string | null; avatarKey?: string | null }) => void;
 }

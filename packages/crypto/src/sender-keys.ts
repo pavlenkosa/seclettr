@@ -138,12 +138,15 @@ export async function senderKeyDecrypt(
   if (cachedMk) {
     const newSkipped = new Map(state.MKSKIPPED);
     newSkipped.delete(skipKey);
-    const plaintext = await aeadDecrypt(cachedMk, message.ciphertext, ad);
-    cachedMk.fill(0);
-    return {
-      plaintext,
-      newState: { ...state, MKSKIPPED: newSkipped },
-    };
+    try {
+      const plaintext = await aeadDecrypt(cachedMk, message.ciphertext, ad);
+      return {
+        plaintext,
+        newState: { ...state, MKSKIPPED: newSkipped },
+      };
+    } finally {
+      cachedMk.fill(0);
+    }
   }
 
   const gap = message.messageId - state.chainId;
@@ -175,8 +178,12 @@ export async function senderKeyDecrypt(
 
   if (!mk) throw new Error("Message ID mismatch");
 
-  const plaintext = await aeadDecrypt(mk, message.ciphertext, ad);
-  mk.fill(0);
+  let plaintext;
+  try {
+    plaintext = await aeadDecrypt(mk, message.ciphertext, ad);
+  } finally {
+    mk.fill(0);
+  }
 
   return {
     plaintext,

@@ -1,0 +1,14 @@
+.statValue {
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.confirmRow {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.refreshButton {
+  align-self: flex-start;
+}

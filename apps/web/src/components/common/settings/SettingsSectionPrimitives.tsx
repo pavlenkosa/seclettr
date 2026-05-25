@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 import { FieldSection, SurfacePanel } from "@/components/ui";
-import styles from "../SettingsModal.module.css";
+import styles from "../SettingsSections.module.css";
 
 interface SettingsRowProps {
   readonly label: ReactNode;
@@ -59,10 +59,12 @@ export function SettingsGroup({
 }: SettingsGroupProps) {
   return (
     <SurfacePanel
-      className={styles.groupPanel}
+      className={[
+        styles.groupPanel,
+        tone === "accent" ? styles.groupPanelAccent : "",
+      ].filter(Boolean).join(" ")}
       padding="md"
       radius="xl"
-      glass="medium"
       tone={tone}
     >
       <div className={styles.groupHeader}>
@@ -98,6 +100,32 @@ export function SparklesIcon() {
       <path d="m12 3 1.55 4.45L18 9l-4.45 1.55L12 15l-1.55-4.45L6 9l4.45-1.55L12 3Z" stroke="currentColor" strokeWidth="1.7" strokeLinejoin="round" />
       <path d="m18.5 15 .72 2.08 2.08.72-2.08.72-.72 2.08-.72-2.08-2.08-.72 2.08-.72.72-2.08Z" fill="currentColor" />
       <path d="m5.5 14 .53 1.47L7.5 16l-1.47.53L5.5 18l-.53-1.47L3.5 16l1.47-.53L5.5 14Z" fill="currentColor" />
+    </svg>
+  );
+}
+
+export function PersonIcon() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <circle cx="12" cy="8" r="3.5" stroke="currentColor" strokeWidth="1.7" />
+      <path
+        d="M4.5 20c0-3.87 3.36-7 7.5-7s7.5 3.13 7.5 7"
+        stroke="currentColor"
+        strokeWidth="1.7"
+        strokeLinecap="round"
+      />
+    </svg>
+  );
+}
+
+export function StorageIcon() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <rect x="3" y="3" width="18" height="5" rx="1.5" stroke="currentColor" strokeWidth="1.7" />
+      <rect x="3" y="12" width="18" height="5" rx="1.5" stroke="currentColor" strokeWidth="1.7" />
+      <rect x="3" y="19.5" width="18" height="2" rx="1" stroke="currentColor" strokeWidth="1.7" />
+      <circle cx="6.5" cy="5.5" r="1" fill="currentColor" />
+      <circle cx="6.5" cy="14.5" r="1" fill="currentColor" />
     </svg>
   );
 }

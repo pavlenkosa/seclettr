@@ -1,3 +1,14 @@
+/**
+ * useGroupCallStageFullscreen — Fullscreen API integration for the group call stage shell.
+ *
+ * Owns:
+ *   - isStageFullscreen — true when the stage shell element is the active fullscreen element
+ *   - handleToggleStageFullscreen — requests or exits fullscreen on stageShellRef.current
+ *   - fullscreenchange event listener that keeps isStageFullscreen in sync
+ *
+ * Does not own the stage shell DOM element — it receives a RefObject<HTMLDivElement>
+ * from the caller (GroupCallPanel).
+ */
 import { useCallback, useEffect, useState, type RefObject } from "react";
 
 interface UseGroupCallStageFullscreenOptions {

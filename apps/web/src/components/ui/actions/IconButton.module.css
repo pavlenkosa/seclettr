@@ -11,11 +11,7 @@
   justify-content: center;
   line-height: 0;
   flex-shrink: 0;
-  box-shadow: var(--icon-button-shadow, var(--icon-button-shadow-base, none));
-  transform: var(--icon-button-transform, none);
-  -webkit-backdrop-filter: blur(var(--icon-button-blur, var(--icon-button-blur-base, var(--glass-blur-soft, 0px)))) saturate(var(--icon-button-saturate, var(--glass-saturate, 1)));
-  backdrop-filter: blur(var(--icon-button-blur, var(--icon-button-blur-base, var(--glass-blur-soft, 0px)))) saturate(var(--icon-button-saturate, var(--glass-saturate, 1)));
-  transition: background-color 0.12s ease, border-color 0.12s ease, color 0.12s ease, transform 0.12s ease, box-shadow 0.12s ease;
+  transition: background-color 0.12s ease, border-color 0.12s ease, color 0.12s ease, opacity 0.12s ease;
 }
 
 .button :global(svg) {
@@ -26,59 +22,25 @@
   background: var(--icon-button-bg-hover, var(--icon-button-bg-hover-base, var(--icon-btn-hover-bg)));
   border-color: var(--icon-button-border-hover, var(--icon-button-border-hover-base, color-mix(in srgb, var(--accent) 28%, var(--icon-btn-border))));
   color: var(--icon-button-color-hover, var(--icon-button-color-hover-base, var(--icon-btn-hover-color)));
-  box-shadow: var(--icon-button-shadow-hover, var(--icon-button-shadow-hover-base, var(--icon-button-shadow, var(--icon-button-shadow-base, none))));
-  transform: var(--icon-button-transform-hover, translateY(-1px));
 }
 
 .button:active:not(:disabled) {
   background: var(--icon-button-bg-active, var(--icon-button-bg-hover, var(--icon-button-bg-hover-base, var(--icon-button-bg, var(--icon-button-bg-base)))));
   border-color: var(--icon-button-border-active, var(--icon-button-border-hover, var(--icon-button-border-hover-base, var(--icon-button-border, var(--icon-button-border-base)))));
-  box-shadow: var(--icon-button-shadow-active, var(--icon-button-shadow-hover, var(--icon-button-shadow-hover-base, var(--icon-button-shadow, var(--icon-button-shadow-base, none)))));
-  transform: var(--icon-button-transform-active, translateY(0));
 }
 
 .button:disabled {
   cursor: not-allowed;
   opacity: 0.58;
-  transform: var(--icon-button-transform, none);
-}
-
-.glass {
-  --icon-button-bg-base:
-    linear-gradient(
-      180deg,
-      color-mix(in srgb, var(--surface-float) 82%, var(--glass-surface-fill, transparent)),
-      color-mix(in srgb, var(--surface-shell-strong) 76%, var(--glass-surface-fill, transparent))
-    );
-  --icon-button-border-base: color-mix(in srgb, var(--panel-border-soft) 84%, transparent);
-  --icon-button-color-base: var(--text-primary);
-  --icon-button-blur-base: var(--glass-blur-medium, 0px);
-  --icon-button-shadow-base:
-    inset 0 1px 0 rgb(255 255 255 / 0.16),
-    0 8px 18px rgb(15 23 42 / 0.08);
-  --icon-button-bg-hover-base:
-    linear-gradient(
-      180deg,
-      color-mix(in srgb, var(--surface-float) 92%, var(--glass-surface-fill, transparent)),
-      color-mix(in srgb, var(--surface-shell-strong) 84%, var(--glass-surface-fill, transparent))
-    );
-  --icon-button-border-hover-base: color-mix(in srgb, var(--accent) 28%, var(--panel-border-soft));
-  --icon-button-color-hover-base: var(--text-primary);
-  --icon-button-shadow-hover-base:
-    inset 0 1px 0 rgb(255 255 255 / 0.2),
-    0 10px 22px rgb(15 23 42 / 0.11);
 }
 
 .ghost {
   --icon-button-bg-base: transparent;
   --icon-button-border-base: color-mix(in srgb, var(--panel-border-soft) 28%, transparent);
   --icon-button-color-base: color-mix(in srgb, var(--text-primary) 82%, var(--text-secondary) 18%);
-  --icon-button-blur-base: 0px;
-  --icon-button-shadow-base: none;
   --icon-button-bg-hover-base: color-mix(in srgb, var(--accent) 10%, transparent);
   --icon-button-border-hover-base: color-mix(in srgb, var(--accent) 22%, transparent);
   --icon-button-color-hover-base: var(--text-primary);
-  --icon-button-shadow-hover-base: none;
 }
 
 .active {
@@ -86,37 +48,6 @@
   --icon-button-bg-hover: color-mix(in srgb, var(--accent) 28%, var(--icon-button-bg-hover-base, var(--icon-btn-hover-bg)));
   --icon-button-border: color-mix(in srgb, var(--accent) 48%, var(--icon-button-border-base, var(--icon-btn-border)));
   --icon-button-border-hover: color-mix(in srgb, var(--accent) 56%, var(--icon-button-border-hover-base, var(--icon-btn-border)));
-  --icon-button-shadow: var(--icon-button-shadow-active-base, var(--icon-button-shadow-base, none));
-}
-
-.glass.active {
-  --icon-button-bg-active: color-mix(in srgb, var(--accent) 32%, var(--icon-button-bg-hover-base));
-  --icon-button-border-active: color-mix(in srgb, var(--accent) 62%, var(--icon-button-border-hover-base));
-  --icon-button-shadow-active-base:
-    inset 0 1px 0 rgb(255 255 255 / 0.22),
-    0 12px 24px color-mix(in srgb, var(--accent) 18%, rgb(15 23 42 / 0.1));
-}
-
-:global(:root[data-theme="light"]) .glass {
-  --icon-button-border-base: color-mix(in srgb, var(--panel-border-soft) 92%, transparent);
-  --icon-button-bg-base:
-    linear-gradient(
-      180deg,
-      color-mix(in srgb, var(--surface-float) 82%, white),
-      color-mix(in srgb, var(--surface-shell-strong) 88%, white)
-    );
-  --icon-button-shadow-base:
-    inset 0 1px 0 rgb(255 255 255 / 0.78),
-    0 8px 18px rgb(71 85 105 / 0.1);
-  --icon-button-bg-hover-base:
-    linear-gradient(
-      180deg,
-      color-mix(in srgb, var(--surface-float) 88%, white),
-      color-mix(in srgb, var(--surface-shell-strong) 92%, white)
-    );
-  --icon-button-shadow-hover-base:
-    inset 0 1px 0 rgb(255 255 255 / 0.82),
-    0 10px 22px rgb(71 85 105 / 0.12);
 }
 
 .ghost.active {
@@ -127,21 +58,23 @@
 }
 
 .danger {
-  --icon-button-bg: linear-gradient(145deg, #ef4444, #b91c1c);
-  --icon-button-bg-hover: linear-gradient(145deg, #f05252, #dc2626);
-  --icon-button-border: rgb(252 165 165 / 0.45);
-  --icon-button-border-hover: rgb(252 165 165 / 0.58);
-  --icon-button-color: #fff;
-  --icon-button-color-hover: #fff;
+  --icon-button-bg: var(--danger);
+  --icon-button-bg-hover: color-mix(in srgb, var(--danger) 88%, var(--bg-secondary));
+  --icon-button-bg-active: color-mix(in srgb, var(--danger) 82%, var(--bg-secondary));
+  --icon-button-border: color-mix(in srgb, var(--danger) 30%, transparent);
+  --icon-button-border-hover: color-mix(in srgb, var(--danger) 42%, transparent);
+  --icon-button-color: white;
+  --icon-button-color-hover: white;
 }
 
 .success {
-  --icon-button-bg: color-mix(in srgb, #16a34a 82%, var(--bg-secondary));
-  --icon-button-bg-hover: color-mix(in srgb, #16a34a 88%, var(--bg-secondary));
-  --icon-button-border: rgb(134 239 172 / 0.4);
-  --icon-button-border-hover: rgb(134 239 172 / 0.5);
-  --icon-button-color: #f0fdf4;
-  --icon-button-color-hover: #f0fdf4;
+  --icon-button-bg: var(--success);
+  --icon-button-bg-hover: color-mix(in srgb, var(--success) 88%, var(--bg-secondary));
+  --icon-button-bg-active: color-mix(in srgb, var(--success) 82%, var(--bg-secondary));
+  --icon-button-border: color-mix(in srgb, var(--success) 20%, transparent);
+  --icon-button-border-hover: color-mix(in srgb, var(--success) 28%, transparent);
+  --icon-button-color: white;
+  --icon-button-color-hover: white;
 }
 
 @media (prefers-reduced-motion: reduce) {

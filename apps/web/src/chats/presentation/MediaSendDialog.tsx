@@ -1,7 +1,9 @@
 import { useCallback, useEffect, useRef, type KeyboardEvent, type MouseEvent } from "react";
 import { createPortal } from "react-dom";
 import { useI18n } from "@/i18n";
-import { PillButton } from "@/components/ui";
+import { IconButton, PillButton } from "@/components/ui";
+import motionStyles from "@/components/ui/motion/Motion.module.css";
+import { useNativeBackAction } from "@/lib/hooks";
 import { formatBytes } from "../composer/compressImage";
 import type { PendingFile, SendQuality, UseMediaSendDialogResult } from "../composer/useMediaSendDialog";
 import styles from "./MediaSendDialog.module.css";
@@ -69,14 +71,15 @@ function FileThumbnail({
     return (
       <div className={styles.thumb}>
         <img src={pf.previewUrl} alt={pf.file.name} className={styles.thumbImg} draggable={false} />
-        <button
-          type="button"
+        <IconButton
+          size={22}
+          variant="ghost"
           className={styles.thumbRemove}
           onClick={onRemove}
           aria-label={removeLabel}
         >
           <CloseIcon />
-        </button>
+        </IconButton>
       </div>
     );
   }
@@ -94,14 +97,15 @@ function FileThumbnail({
         <span className={styles.thumbVideoOverlay}>
           <VideoIcon />
         </span>
-        <button
-          type="button"
+        <IconButton
+          size={22}
+          variant="ghost"
           className={styles.thumbRemove}
           onClick={onRemove}
           aria-label={removeLabel}
         >
           <CloseIcon />
-        </button>
+        </IconButton>
       </div>
     );
   }
@@ -127,14 +131,15 @@ function FileRow({
       </span>
       <span className={styles.fileRowName}>{pf.file.name}</span>
       <span className={styles.fileRowSize}>{formatBytes(pf.size)}</span>
-      <button
-        type="button"
+      <IconButton
+        size={22}
+        variant="ghost"
         className={styles.fileRowRemove}
         onClick={onRemove}
         aria-label={removeLabel}
       >
         <CloseIcon />
-      </button>
+      </IconButton>
     </div>
   );
 }
@@ -176,7 +181,7 @@ function QualityOption({
 
 // ─── Dialog ───────────────────────────────────────────────────────────────────
 
-interface MediaSendDialogProps
+export interface MediaSendDialogProps
   extends Pick<
     UseMediaSendDialogResult,
     | "pendingFiles"
@@ -270,9 +275,11 @@ export function MediaSendDialog({
     ? t("mediaSend.title.one")
     : t("mediaSend.title.many", { count: fileCount });
 
+  useNativeBackAction(closeDialog, !isExiting);
+
   return createPortal(
     <div
-      className={`${styles.overlay} ${isExiting ? styles.overlayOut : ""}`}
+      className={`${styles.overlay} ${isExiting ? motionStyles.fadeOut : motionStyles.fadeIn}`}
       onClick={onOverlayClick}
       role="presentation"
     >
@@ -281,21 +288,22 @@ export function MediaSendDialog({
         open
         aria-modal="true"
         aria-label={title}
-        className={`${styles.surface} ${isExiting ? styles.surfaceOut : ""}`}
+        className={`${styles.surface} ${isExiting ? motionStyles.surfaceOut : motionStyles.surfaceIn}`}
         onCancel={(e) => { e.preventDefault(); closeDialog(); }}
         tabIndex={-1}
       >
         {/* Header */}
         <div className={styles.header}>
           <span className={styles.headerTitle}>{title}</span>
-          <button
-            type="button"
+          <IconButton
+            size={28}
+            variant="ghost"
             className={styles.headerClose}
             onClick={closeDialog}
             aria-label={t("mediaSend.close")}
           >
             <CloseIcon />
-          </button>
+          </IconButton>
         </div>
 
         {/* Media grid */}

@@ -1,3 +1,19 @@
+/**
+ * call-visual-transceivers — dedicated video transceiver management for 1:1 calls.
+ *
+ * Owns:
+ *   - reconcileDedicatedVideoTransceivers — re-identifies the camera and screen
+ *     transceivers from the current peer-connection transceiver list without
+ *     creating new ones; used after renegotiation to re-anchor existing bindings
+ *   - ensureDedicatedVideoTransceivers — same as reconcile but also creates missing
+ *     transceivers (recvonly by default) when needed; called during initial setup
+ *
+ * Both functions sort video transceivers by MID (numeric first, then lexicographic)
+ * to produce a deterministic camera = lowest MID, screen = next MID assignment that
+ * is stable across renegotiations and independent of insertion order.
+ *
+ * Does not own transceiver direction, sender track attachment, or any React hooks.
+ */
 function isVideoTransceiver(transceiver: RTCRtpTransceiver): boolean {
   return (
     transceiver.receiver.track.kind === "video" ||

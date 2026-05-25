@@ -1,4 +1,5 @@
 import { useState, type RefObject } from "react";
+import { useI18n } from "@/i18n";
 import { CallControlButton } from "@/calls/shared/presentation/CallControlButton";
 import { CallControlsDock } from "@/calls/shared/presentation/CallControlsDock";
 import { CallDevicePicker, type VideoResolution } from "@/calls/shared/presentation/CallDevicePicker";
@@ -55,9 +56,9 @@ const canScreenShare =
   typeof navigator.mediaDevices?.getDisplayMedia === "function";
 
 export function DirectCallControls({
-  speakerAriaLabel = "Speaker",
-  speakerLabel = "Speaker",
-  earphoneLabel = "Earphone",
+  speakerAriaLabel,
+  speakerLabel,
+  earphoneLabel,
   muted,
   videoOff,
   screenSharing,
@@ -92,6 +93,7 @@ export function DirectCallControls({
   onSelectVideoResolution,
   onSelectScreenResolution,
 }: DirectCallControlsProps) {
+  const { t } = useI18n();
   const { supported: speakerSupported, speakerOn, toggle: toggleSpeaker } = useNativeSpeakerToggle();
   const audioOutput = useOptionalCallAudioOutput();
   // On narrow viewports (mobile phones) use stacked icon+label buttons without the
@@ -99,6 +101,10 @@ export function DirectCallControls({
   const isMobile = useIsMobileViewport();
   // Bottom-sheet state for web audio output selection on mobile.
   const [outputSheetOpen, setOutputSheetOpen] = useState(false);
+
+  const resolvedSpeakerLabel = speakerLabel ?? t("call.speaker");
+  const resolvedSpeakerAriaLabel = speakerAriaLabel ?? t("call.speakerAria");
+  const resolvedEarphoneLabel = earphoneLabel ?? t("call.earpiece");
 
   // Web-audio output button is shown on mobile when native speaker toggle is unavailable
   // but the browser supports output selection (or can prompt for it).
@@ -137,10 +143,10 @@ export function DirectCallControls({
               onClick={() => { setOutputSheetOpen((prev) => !prev); }}
               layout="stacked"
               className={mobileClass}
-              active={outputSheetOpen || !speakerOn}
+              active={speakerOn || outputSheetOpen}
               icon={<SpeakerIcon speakerOn={speakerOn} />}
-              label={speakerLabel}
-              aria-label={speakerAriaLabel}
+              label={resolvedSpeakerLabel}
+              aria-label={resolvedSpeakerAriaLabel}
               aria-expanded={outputSheetOpen}
             />
             {outputSheetOpen ? (
@@ -153,7 +159,7 @@ export function DirectCallControls({
                 <div
                   className={styles.audioOutputSheet}
                   role="dialog"
-                  aria-label={speakerAriaLabel}
+                  aria-label={resolvedSpeakerAriaLabel}
                 >
                   <button
                     type="button"
@@ -167,7 +173,7 @@ export function DirectCallControls({
                     }}
                   >
                     <PhoneIcon />
-                    <span>{earphoneLabel}</span>
+                    <span>{resolvedEarphoneLabel}</span>
                     {!speakerOn ? <span className={styles.audioSheetCheck} aria-hidden="true">✓</span> : null}
                   </button>
                   <button
@@ -182,7 +188,7 @@ export function DirectCallControls({
                     }}
                   >
                     <SpeakerIcon speakerOn />
-                    <span>{speakerLabel}</span>
+                    <span>{resolvedSpeakerLabel}</span>
                     {speakerOn ? <span className={styles.audioSheetCheck} aria-hidden="true">✓</span> : null}
                   </button>
                 </div>
@@ -198,8 +204,8 @@ export function DirectCallControls({
               className={mobileClass}
               active={outputSheetOpen}
               icon={<SpeakerIcon speakerOn />}
-              label={speakerLabel}
-              aria-label={speakerAriaLabel}
+              label={resolvedSpeakerLabel}
+              aria-label={resolvedSpeakerAriaLabel}
               aria-expanded={outputSheetOpen}
             />
             {outputSheetOpen ? (
@@ -213,7 +219,7 @@ export function DirectCallControls({
                 <div
                   className={styles.audioOutputSheet}
                   role="dialog"
-                  aria-label={speakerAriaLabel}
+                  aria-label={resolvedSpeakerAriaLabel}
                 >
                   <AudioOutputSelector compact hideLabel />
                 </div>
@@ -310,12 +316,12 @@ export function DirectCallControls({
         <CallControlButton
           onClick={toggleSpeaker}
           className={styles.controlBtn}
-          active={!speakerOn}
+          active={speakerOn}
           icon={<SpeakerIcon speakerOn={speakerOn} />}
-          label={speakerLabel}
+          label={resolvedSpeakerLabel}
           collapseLabelOnNarrow
           compactOnNarrow
-          aria-label={speakerAriaLabel}
+          aria-label={resolvedSpeakerAriaLabel}
           aria-pressed={speakerOn}
         />
       ) : null}

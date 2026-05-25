@@ -55,8 +55,7 @@ export function useChatWorkspacePresenceEffects(
     )
   );
 
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-useEffect(() => {
+  useEffect(() => {
     if (!activeConversationUserId) return;
     void fetchUserPresence(activeConversationUserId);
     void markConversationRead(activeConversationUserId);
@@ -67,42 +66,30 @@ useEffect(() => {
   }, [activeConversationUserId, fetchUserPresence, markConversationRead]);
 
   const plainPeerUserId = activePlainConversation?.userId ?? null;
+  const plainHistoryLoaded = activePlainConversation?.historyLoaded ?? false;
+  const plainUnreadCount = activePlainConversation?.unreadCount ?? 0;
+  const plainPeerUsername = activePlainConversation?.username ?? "";
+
   const plainActivePresence = useMessagesStore(
     useCallback(
       (state) => (plainPeerUserId ? state.presenceByUser[plainPeerUserId] : undefined),
       [plainPeerUserId]
     )
   );
-  // Plain chats have no server-side typing signal infrastructure — always false.
   const plainActiveTyping = false;
 
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-useEffect(() => {
-    if (!activePlainConversation || activePlainConversation.historyLoaded) return;
-    void loadPlainHistory(
-      activePlainConversation.userId,
-      activePlainConversation.username
-    );
-  }, [
-    activePlainConversation?.historyLoaded,
-    activePlainConversation?.userId,
-    activePlainConversation?.username,
-    loadPlainHistory,
-  ]);
+  useEffect(() => {
+    if (!plainPeerUserId || plainHistoryLoaded) return;
+    void loadPlainHistory(plainPeerUserId, plainPeerUsername);
+  }, [plainPeerUserId, plainHistoryLoaded, plainPeerUsername, loadPlainHistory]);
 
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-useEffect(() => {
-    if (!activePlainConversation?.historyLoaded) return;
-    if (activePlainConversation.unreadCount === 0) return;
-    usePlainMessagesStore.getState().markRead(activePlainConversation.userId);
-  }, [
-    activePlainConversation?.historyLoaded,
-    activePlainConversation?.unreadCount,
-    activePlainConversation?.userId,
-  ]);
+  useEffect(() => {
+    if (!plainPeerUserId || !plainHistoryLoaded) return;
+    if (plainUnreadCount === 0) return;
+    usePlainMessagesStore.getState().markRead(plainPeerUserId);
+  }, [plainPeerUserId, plainHistoryLoaded, plainUnreadCount]);
 
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-useEffect(() => {
+  useEffect(() => {
     if (!plainPeerUserId) return;
     void fetchUserPresence(plainPeerUserId);
     const refreshTimer = setInterval(() => {

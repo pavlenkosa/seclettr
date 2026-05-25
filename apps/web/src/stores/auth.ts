@@ -182,7 +182,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     } catch (err) {
       const msg =
         err instanceof Error ? err.message : AUTH_ERROR_CODES.loginFailed;
-      console.error("[auth] login failed:", err);
+      logger.error("[auth] login failed:", err);
       set({ error: msg });
       throw err;
     }

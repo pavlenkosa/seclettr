@@ -1,4 +1,4 @@
-import { useMemo, useRef } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import type { Message } from "@/stores/messages";
 import type { GroupChatMessage } from "@/stores/groups";
 import type {
@@ -130,13 +130,17 @@ export function useChatWorkspaceProjection(
 
   const activeGroupProjection = useMemo(() => {
     if (!activeGroup) return null;
-    const nextProjection = buildGroupMessageProjection(
+    return buildGroupMessageProjection(
       activeGroup.messages,
       groupMessageProjectionCacheRef.current
     );
-    groupMessageProjectionCacheRef.current = nextProjection;
-    return nextProjection;
   }, [activeGroup]);
+
+  useEffect(() => {
+    if (activeGroupProjection) {
+      groupMessageProjectionCacheRef.current = activeGroupProjection;
+    }
+  }, [activeGroupProjection]);
 
   const plainActiveMessages = useMemo<PlainMessage[]>(() => {
     if (activePlainConversation) return activePlainConversation.messages;

@@ -39,6 +39,12 @@ export { IconNewGroup } from "./icons/IconNewGroup";
 export { IconPlus } from "./icons/IconPlus";
 export { IconSearch } from "./icons/IconSearch";
 export { IconSettings } from "./icons/IconSettings";
+export { IconLock } from "./icons/IconLock";
+export { IconLogout } from "./icons/IconLogout";
+export { IconEye } from "./icons/IconEye";
+export { IconEyeOff } from "./icons/IconEyeOff";
+export { IconEncrypted } from "./icons/IconEncrypted";
+export { IconPinned } from "./icons/IconPinned";
 
 export { BottomDockSurface } from "./surfaces/BottomDockSurface";
 export { EntityRow } from "./surfaces/EntityRow";

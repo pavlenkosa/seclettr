@@ -1,68 +1,24 @@
-.overlay {
-  position: fixed;
-  inset: 0;
-  z-index: 500;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 1rem;
-  background: rgb(0 0 0 / 0.44);
-  backdrop-filter: blur(4px);
-  -webkit-backdrop-filter: blur(4px);
-  animation: overlayIn 160ms var(--motion-ease-standard) both;
-}
-
-@keyframes overlayIn {
-  from { opacity: 0; }
-  to   { opacity: 1; }
-}
-
-.panel {
-  position: relative;
+.sheetSurface {
   width: min(360px, 92vw);
+  border-radius: 20px;
   background: var(--surface-shell-strong);
   border: 1px solid color-mix(in srgb, var(--panel-border) 80%, transparent);
-  border-radius: 20px;
-  box-shadow: 0 20px 60px rgb(0 0 0 / 0.3);
-  animation: panelIn 180ms var(--motion-ease-standard) both;
-  overflow: hidden;
 }
 
-@keyframes panelIn {
-  from { opacity: 0; transform: translateY(10px) scale(0.97); }
-  to   { opacity: 1; transform: none; }
-}
-
-.closeBtn {
-  position: absolute;
-  top: 0.75rem;
-  right: 0.75rem;
-  width: 32px;
-  height: 32px;
-  border-radius: 50%;
-  border: none;
-  background: color-mix(in srgb, var(--text-secondary) 12%, transparent);
-  color: var(--text-secondary);
-  cursor: pointer;
+.sheetBody {
+  padding: 0;
   display: flex;
+  flex-direction: column;
   align-items: center;
-  justify-content: center;
-  z-index: 1;
-  transition: background-color var(--motion-duration-fast) var(--motion-ease-standard);
 }
-
-.closeBtn:hover {
-  background: color-mix(in srgb, var(--text-secondary) 22%, transparent);
-}
-
-/* ── Content ─────────────────────────────────────────────────────────────── */
 
 .content {
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 0.75rem;
-  padding: 2rem 1.5rem 2rem;
+  padding: 0.5rem 1.5rem 2rem;
+  width: 100%;
 }
 
 .avatarSection {
@@ -115,8 +71,6 @@
   text-align: center;
 }
 
-/* ── Loading skeleton ────────────────────────────────────────────────────── */
-
 .loadingState {
   display: flex;
   flex-direction: column;
@@ -154,8 +108,6 @@
   50% { opacity: 1; }
 }
 
-/* ── Error ───────────────────────────────────────────────────────────────── */
-
 .errorState {
   padding: 2rem 1.5rem;
   text-align: center;
@@ -168,20 +120,7 @@
   line-height: 1.5;
 }
 
-/* ── Light theme ─────────────────────────────────────────────────────────── */
-
-:global(:root[data-theme="light"]) .panel {
-  box-shadow: 0 12px 40px rgb(0 0 0 / 0.18);
-}
-
-/* ── Reduced motion ──────────────────────────────────────────────────────── */
-
 @media (prefers-reduced-motion: reduce) {
-  .overlay,
-  .panel {
-    animation: none !important;
-  }
-
   .avatarSkeleton,
   .textSkeleton,
   .textSkeletonShort {

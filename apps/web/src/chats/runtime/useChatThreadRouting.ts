@@ -166,75 +166,62 @@ export function useChatThreadRouting(options: UseChatThreadRoutingOptions) {
     setMobileShowConversation,
   ]);
 
+  // Route: group thread
   useEffect(() => {
-    if (routeGroupId) {
-      activateGroupRoute({
-        ...activeThreadState,
-        routeGroupId,
-        loadGroupMessages,
-        getGroupsState,
-      });
-      if (activePlainConversationId !== null) setActivePlainConversation(null);
-      if (activePlainGroupId !== null) setActivePlainGroup(null);
-      return;
-    }
-
-    if (routeConversationId && conversations[routeConversationId]) {
-      activateDirectRoute({ ...activeThreadState, routeConversationId });
-      if (activePlainConversationId !== null) setActivePlainConversation(null);
-      if (activePlainGroupId !== null) setActivePlainGroup(null);
-      return;
-    }
-
-    if (routePlainGroupId) {
-      if (activeConversationId !== null) setActiveConversation(null);
-      if (activeGroupId !== null) setActiveGroup(null);
-      if (activePlainConversationId !== null) setActivePlainConversation(null);
-      if (activePlainGroupId !== routePlainGroupId) setActivePlainGroup(routePlainGroupId);
-      setMobileShowConversation(true);
-      loadPlainGroupMessages(routePlainGroupId).catch(() => {});
-      return;
-    }
-
-    if (routePlainConversationId && plainConversations[routePlainConversationId]) {
-      if (activeConversationId !== null) setActiveConversation(null);
-      if (activeGroupId !== null) setActiveGroup(null);
-      if (activePlainGroupId !== null) setActivePlainGroup(null);
-      if (activePlainConversationId !== routePlainConversationId) {
-        setActivePlainConversation(routePlainConversationId);
-      }
-      if (savedThreadActive) setSavedThreadActive(false);
-      setMobileShowConversation(true);
-      return;
-    }
-
-    if (routeSaved) {
-      clearActiveThreadState(activeThreadState);
-      if (activePlainConversationId !== null) setActivePlainConversation(null);
-      if (activePlainGroupId !== null) setActivePlainGroup(null);
-      if (!savedThreadActive) setSavedThreadActive(true);
-      setMobileShowConversation(true);
-      return;
-    }
-
-    clearActiveThreadState(activeThreadState);
+    if (!routeGroupId) return;
+    activateGroupRoute({
+      ...activeThreadState,
+      routeGroupId,
+      loadGroupMessages,
+      getGroupsState,
+    });
     if (activePlainConversationId !== null) setActivePlainConversation(null);
     if (activePlainGroupId !== null) setActivePlainGroup(null);
-    if (savedThreadActive) setSavedThreadActive(false);
   }, [
-    routeConversationId,
     routeGroupId,
-    routePlainConversationId,
-    routePlainGroupId,
-    routeSaved,
-    conversations,
-    plainConversations,
     activeThreadState,
     loadGroupMessages,
     getGroupsState,
-    loadPlainGroupMessages,
-    savedThreadActive,
-    setSavedThreadActive,
+    activePlainConversationId,
+    activePlainGroupId,
+    setActivePlainConversation,
+    setActivePlainGroup,
+  ]);
+
+  // Route: direct conversation
+  useEffect(() => {
+    if (routeGroupId) return;
+    if (!routeConversationId || !conversations[routeConversationId]) return;
+    activateDirectRoute({ ...activeThreadState, routeConversationId });
+    if (activePlainConversationId !== null) setActivePlainConversation(null);
+    if (activePlainGroupId !== null) setActivePlainGroup(null);
+  }, [
+    routeGroupId,
+    routeConversationId,
+    conversations,
+    activeThreadState,
+    activePlainConversationId,
+    activePlainGroupId,
+    setActivePlainConversation,
+    setActivePlainGroup,
+  ]);
+
+  // Route: plain group
+  useEffect(() => {
+    if (routeGroupId) return;
+    if (routeConversationId && conversations[routeConversationId]) return;
+    if (!routePlainGroupId) return;
+    if (activeConversationId !== null) setActiveConversation(null);
+    if (activeGroupId !== null) setActiveGroup(null);
+    if (activePlainConversationId !== null) setActivePlainConversation(null);
+    if (activePlainGroupId !== routePlainGroupId) setActivePlainGroup(routePlainGroupId);
+    setMobileShowConversation(true);
+    loadPlainGroupMessages(routePlainGroupId).catch(() => {});
+  }, [
+    routeGroupId,
+    routeConversationId,
+    conversations,
+    routePlainGroupId,
     activeConversationId,
     activeGroupId,
     activePlainConversationId,
@@ -244,6 +231,99 @@ export function useChatThreadRouting(options: UseChatThreadRoutingOptions) {
     setActivePlainConversation,
     setActivePlainGroup,
     setMobileShowConversation,
+    loadPlainGroupMessages,
+  ]);
+
+  // Route: plain conversation
+  useEffect(() => {
+    if (routeGroupId) return;
+    if (routeConversationId && conversations[routeConversationId]) return;
+    if (routePlainGroupId) return;
+    if (!routePlainConversationId || !plainConversations[routePlainConversationId]) return;
+    if (activeConversationId !== null) setActiveConversation(null);
+    if (activeGroupId !== null) setActiveGroup(null);
+    if (activePlainGroupId !== null) setActivePlainGroup(null);
+    if (activePlainConversationId !== routePlainConversationId) {
+      setActivePlainConversation(routePlainConversationId);
+    }
+    if (savedThreadActive) setSavedThreadActive(false);
+    setMobileShowConversation(true);
+  }, [
+    routeGroupId,
+    routeConversationId,
+    conversations,
+    routePlainGroupId,
+    routePlainConversationId,
+    plainConversations,
+    activeConversationId,
+    activeGroupId,
+    activePlainGroupId,
+    activePlainConversationId,
+    savedThreadActive,
+    setActiveConversation,
+    setActiveGroup,
+    setActivePlainGroup,
+    setActivePlainConversation,
+    setSavedThreadActive,
+    setMobileShowConversation,
+  ]);
+
+  // Route: saved messages
+  useEffect(() => {
+    if (routeGroupId) return;
+    if (routeConversationId && conversations[routeConversationId]) return;
+    if (routePlainGroupId) return;
+    if (routePlainConversationId && plainConversations[routePlainConversationId]) return;
+    if (!routeSaved) return;
+    clearActiveThreadState(activeThreadState);
+    if (activePlainConversationId !== null) setActivePlainConversation(null);
+    if (activePlainGroupId !== null) setActivePlainGroup(null);
+    if (!savedThreadActive) setSavedThreadActive(true);
+    setMobileShowConversation(true);
+  }, [
+    routeGroupId,
+    routeConversationId,
+    conversations,
+    routePlainGroupId,
+    routePlainConversationId,
+    plainConversations,
+    routeSaved,
+    activeThreadState,
+    activePlainConversationId,
+    activePlainGroupId,
+    savedThreadActive,
+    setSavedThreadActive,
+    setActivePlainConversation,
+    setActivePlainGroup,
+    setMobileShowConversation,
+  ]);
+
+  // Route: clear (no match)
+  useEffect(() => {
+    if (routeGroupId) return;
+    if (routeConversationId && conversations[routeConversationId]) return;
+    if (routePlainGroupId) return;
+    if (routePlainConversationId && plainConversations[routePlainConversationId]) return;
+    if (routeSaved) return;
+    clearActiveThreadState(activeThreadState);
+    if (activePlainConversationId !== null) setActivePlainConversation(null);
+    if (activePlainGroupId !== null) setActivePlainGroup(null);
+    if (savedThreadActive) setSavedThreadActive(false);
+  }, [
+    routeGroupId,
+    routeConversationId,
+    conversations,
+    routePlainGroupId,
+    routePlainConversationId,
+    plainConversations,
+    routeSaved,
+    activeThreadState,
+    activePlainConversationId,
+    activePlainGroupId,
+    savedThreadActive,
+    setSavedThreadActive,
+    setActivePlainConversation,
+    setActivePlainGroup,
   ]);
 
   const updateConversationRoute = useCallback(

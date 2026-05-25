@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useI18n } from "@/i18n";
+import { IconLock } from "@/components/ui/icons";
 import { getBiometricEnabled } from "@/lib/app-lock-password";
 import { checkBiometricAvailability, retrievePinBiometric } from "@/lib/native-biometric";
 import styles from "./LockScreen.module.css";
@@ -14,10 +15,7 @@ interface Props {
 
 const LockIcon = (
   <div className={styles.lockIcon} aria-hidden="true">
-    <svg width="28" height="28" viewBox="0 0 24 24" fill="none">
-      <rect x="5" y="11" width="14" height="10" rx="2" stroke="currentColor" strokeWidth="1.6" />
-      <path d="M8 11V7a4 4 0 0 1 8 0v4" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
-    </svg>
+    <IconLock size={28} />
   </div>
 );
 

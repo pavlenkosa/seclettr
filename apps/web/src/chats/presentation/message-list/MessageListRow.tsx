@@ -1,34 +1,20 @@
-/**
- * MessageListRow — renders one projected chat timeline row.
- *
- * Owns:
- *   - Row-level rendering branches for text, file, inline media, albums,
- *     voice notes, video notes, and call events
- *   - Quoted-reply rendering and reply-jump affordance
- *   - Row-local context-menu capabilities (copy / reply / forward / delete)
- *   - Own-vs-peer bubble/meta presentation
- *
- * Does not own virtualization, row projection building, message-store updates,
- * or attachment/media runtime behavior.
- */
-import { memo, useCallback, type CSSProperties, type ReactNode } from "react";
-import { SurfacePanel } from "@/components/ui";
+import { memo, useCallback, type CSSProperties } from "react";
 import { MessageContextMenu, type MessageContextMenuAction } from "../MessageContextMenu";
+import type { MessageListRowPresentation } from "./message-list-presentation";
 import {
-  FileAttachment,
-  InlineMediaAttachment,
-  MessageStatusIcon,
-  VideoNoteAttachment,
-  VoiceNoteAttachment,
+  CallEventRow,
+  DateSeparator,
+  MessageBubble,
+  MessageRowFrame,
+  MessageBodyKind,
+  MessageListRowMessage,
+} from "./MessageListRowComponents";
+import {
   isFileAttachment,
   isInlineMedia,
   isVideoNote,
   isVoiceNote,
 } from "./MessageListAttachments";
-import { MediaGroupAttachment } from "./MediaGroupAttachment";
-import type { MessageListRowPresentation } from "./message-list-presentation";
-import styles from "../MessageList.module.css";
-import attachmentStyles from "./MessageListAttachments.module.css";
 
 interface Props {
   readonly presentation: MessageListRowPresentation;
@@ -36,82 +22,31 @@ interface Props {
   readonly onActiveMediaChange: (next: string | null) => void;
   readonly onRetry?: (messageId: string) => void;
   readonly onReply?: (messageId: string) => void;
-  /** Optional delete handler. When provided, the row exposes a Delete entry
-   *  in its context menu (own messages only). */
   readonly onDelete?: (messageId: string) => void;
-  /** Optional forward handler. When provided, exposes Forward in context menu. */
   readonly onForward?: (messageId: string) => void;
   readonly onScrollToMessage?: (messageId: string) => void;
   readonly isHighlighted: boolean;
   readonly enterDelayMs: number;
   readonly t: (key: string, params?: Record<string, string | number>) => string;
-  /** When true, tapping the row toggles its selection instead of showing a menu. */
   readonly selectionMode?: boolean;
-  /** Whether this row is currently selected (only relevant when selectionMode=true). */
   readonly isSelected?: boolean;
-  /** Called when the row is tapped in selection mode. */
   readonly onToggleSelect?: (messageId: string) => void;
-  /** Called when the user chooses "Select" from the context menu. */
   readonly onEnterSelectionMode?: (messageId: string) => void;
 }
 
-type MessageListRowMessage = MessageListRowPresentation["message"];
-type MessageBodyKind = "voice" | "video" | "mediaGroup" | "media" | "file" | "text";
-type DateSeparatorProps = Readonly<{ presentation: MessageListRowPresentation }>;
-type CallEventRowProps = Readonly<{ presentation: MessageListRowPresentation }>;
-type SenderLabelProps = Readonly<{
-  presentation: MessageListRowPresentation;
-  message: MessageListRowMessage;
-}>;
-type QuotedReplyProps = Readonly<{
-  message: MessageListRowMessage;
-  onScrollToMessage?: (messageId: string) => void;
-  t: Props["t"];
-}>;
-type MessageBodyProps = Readonly<{
-  kind: MessageBodyKind;
-  presentation: MessageListRowPresentation;
-  activeMediaKey: string | null;
-  onActiveMediaChange: (next: string | null) => void;
-}>;
-type AttachmentCaptionProps = Readonly<{
-  kind: MessageBodyKind;
-  presentation: MessageListRowPresentation;
-}>;
-type MessageMetaProps = Readonly<{
-  message: MessageListRowMessage;
-  presentation: MessageListRowPresentation;
-  onRetry?: (messageId: string) => void;
-  t: Props["t"];
-}>;
-type MessageBubbleProps = Readonly<{
-  presentation: MessageListRowPresentation;
-  kind: MessageBodyKind;
-  activeMediaKey: string | null;
-  onActiveMediaChange: (next: string | null) => void;
-  onRetry?: (messageId: string) => void;
-  onScrollToMessage?: (messageId: string) => void;
-  isHighlighted: boolean;
-  t: Props["t"];
-}>;
-type MessageRowFrameProps = Readonly<{
-  presentation: MessageListRowPresentation;
-  children: ReactNode;
-  selectionMode?: boolean;
-  isSelected?: boolean;
-  onToggleSelect?: () => void;
-}>;
-type MessageRowCapabilities = Readonly<{
+interface MessageRowCapabilities {
   canCopy: boolean;
   canDelete: boolean;
   canForward: boolean;
-}>;
-type MessageRowViewModel = Readonly<{
+}
+
+interface MessageRowViewModel {
   kind: MessageBodyKind;
   capabilities: MessageRowCapabilities;
   copyText?: string;
-}>;
-type MessageRowContentProps = Readonly<{
+}
+
+interface MessageRowContentProps {
   presentation: MessageListRowPresentation;
   viewModel: MessageRowViewModel;
   activeMediaKey: string | null;
@@ -127,7 +62,7 @@ type MessageRowContentProps = Readonly<{
   isSelected?: boolean;
   onToggleSelect?: (messageId: string) => void;
   onEnterSelectionMode?: (messageId: string) => void;
-}>;
+}
 
 function getMessageBodyKind(
   message: MessageListRowMessage,
@@ -139,10 +74,6 @@ function getMessageBodyKind(
   if (isInlineMedia(message)) return "media";
   if (isFileAttachment(message)) return "file";
   return "text";
-}
-
-function usesInlineAttachmentMeta(kind: MessageBodyKind): boolean {
-  return kind === "voice" || kind === "video" || kind === "media" || kind === "mediaGroup";
 }
 
 function canCopyMessage(message: MessageListRowMessage, kind: MessageBodyKind): boolean {
@@ -160,8 +91,6 @@ function resolveMessageRowCapabilities(
 ): MessageRowCapabilities {
   return {
     canCopy: canCopyMessage(message, kind),
-    // Delete is offered when the row owns a delete handler AND the message is
-    // own (sender). The store / API enforces the actual permission server-side.
     canDelete: Boolean(handlers.onDelete) && message.isOwn,
     canForward: Boolean(handlers.onForward) && canForwardMessage(message, kind),
   };
@@ -172,16 +101,6 @@ function resolveMessageContextCopyText(
   capabilities: MessageRowCapabilities
 ): string | undefined {
   return capabilities.canCopy ? (message.content ?? undefined) : undefined;
-}
-
-function buildBubbleClassName(message: MessageListRowMessage, kind: MessageBodyKind, isHighlighted: boolean): string {
-  return [
-    styles.bubble,
-    message.isOwn ? styles.bubbleOwn : styles.bubbleTheirs,
-    kind === "voice" ? styles.voiceBubble : "",
-    kind === "media" || kind === "mediaGroup" ? attachmentStyles.mediaBubble : "",
-    isHighlighted ? styles.bubbleHighlighted : "",
-  ].join(" ");
 }
 
 function resolveMessageRowViewModel(
@@ -197,290 +116,6 @@ function resolveMessageRowViewModel(
     capabilities,
     copyText: resolveMessageContextCopyText(message, capabilities),
   };
-}
-
-function resolveAttachmentCaption({
-  kind,
-  presentation,
-}: AttachmentCaptionProps): string | null {
-  if (kind === "text" || kind === "voice" || kind === "video") {
-    return null;
-  }
-
-  const caption =
-    kind === "mediaGroup"
-      ? presentation.mediaGroupMessages?.find(
-          (entry) => entry.attachment?.caption?.trim()
-        )?.attachment?.caption
-      : presentation.message.attachment?.caption;
-
-  return caption?.trim() || null;
-}
-
-function DateSeparator({ presentation }: DateSeparatorProps) {
-  if (!presentation.showDateSeparator) {
-    return null;
-  }
-
-  return (
-    <div className={styles.dateSeparator} aria-hidden="true">
-      <span className={styles.dateSeparatorLabel}>{presentation.dateSeparatorLabel}</span>
-    </div>
-  );
-}
-
-function CallEventRow({ presentation }: CallEventRowProps) {
-  if (!presentation.callEvent) {
-    return null;
-  }
-
-  return (
-    <div className={styles.callEventRow}>
-      <SurfacePanel className={styles.callEventCard} padding="none" radius="lg">
-        <div className={styles.callEventTitle}>{presentation.callEvent.title}</div>
-        <div className={styles.callEventMeta}>
-          <span>{presentation.callEvent.meta}</span>
-          <span>{presentation.timeLabel}</span>
-        </div>
-      </SurfacePanel>
-    </div>
-  );
-}
-
-function SenderLabel({ presentation, message }: SenderLabelProps) {
-  return !message.isOwn && presentation.senderLabel
-    ? <div className={styles.senderLabel}>{presentation.senderLabel}</div>
-    : null;
-}
-
-function resolveQuotedReplyText(content: string, t: Props["t"]): string {
-  if (content === "[voice note]") return t("conversation.voiceNotePreview");
-  if (content === "[video note]") return t("conversation.videoNotePreview");
-  if (content === "[attachment]") return t("conversation.attachmentPreview");
-  if (content === "[invalid attachment]") return t("conversation.invalidAttachmentPreview");
-  if (content === "[encrypted message]" || content === "[encrypted group message]") {
-    return t("conversation.encryptedMessagePreview");
-  }
-
-  return content;
-}
-
-function QuotedReply({
-  message,
-  onScrollToMessage,
-  t,
-}: QuotedReplyProps) {
-  const reply = message.replyTo;
-  const replyId = reply?.id;
-  const canScrollToReply = Boolean(onScrollToMessage && replyId);
-
-  if (!reply) {
-    return null;
-  }
-
-  const quotedClassName = `${styles.quotedBubble} ${message.isOwn ? styles.quotedBubbleOwn : styles.quotedBubbleTheirs} ${canScrollToReply ? styles.quotedBubbleClickable : ""}`;
-  const quotedText = resolveQuotedReplyText(reply.content, t);
-
-  if (canScrollToReply && replyId) {
-    return (
-      <button
-        type="button"
-        className={quotedClassName}
-        aria-label={t("message.context.scrollToReply")}
-        onClick={() => onScrollToMessage?.(replyId)}
-      >
-        {reply.senderName ? (
-          <span className={styles.quotedSender}>{reply.senderName}</span>
-        ) : null}
-        <span className={styles.quotedText}>{quotedText}</span>
-      </button>
-    );
-  }
-
-  return (
-    <div className={quotedClassName}>
-      {reply.senderName ? (
-        <span className={styles.quotedSender}>{reply.senderName}</span>
-      ) : null}
-      <span className={styles.quotedText}>{quotedText}</span>
-    </div>
-  );
-}
-
-function MessageBody({
-  kind,
-  presentation,
-  activeMediaKey,
-  onActiveMediaChange,
-}: MessageBodyProps) {
-  const { message } = presentation;
-
-  if (kind === "voice") {
-    return (
-      <VoiceNoteAttachment
-        msg={message}
-        isOwn={message.isOwn}
-        mediaKey={`voice:${message.id}`}
-        activeMediaKey={activeMediaKey}
-        onActiveMediaChange={onActiveMediaChange}
-      />
-    );
-  }
-
-  if (kind === "video") {
-    return (
-      <VideoNoteAttachment
-        msg={message}
-        isOwn={message.isOwn}
-        mediaKey={`video:${message.id}`}
-        activeMediaKey={activeMediaKey}
-        onActiveMediaChange={onActiveMediaChange}
-      />
-    );
-  }
-
-  if (kind === "mediaGroup") {
-    return (
-      <MediaGroupAttachment
-        messages={presentation.mediaGroupMessages ?? []}
-        isOwn={message.isOwn}
-        timeLabel={presentation.timeLabel}
-      />
-    );
-  }
-
-  if (kind === "media") {
-    return <InlineMediaAttachment msg={message} isOwn={message.isOwn} />;
-  }
-
-  return kind === "file"
-    ? <FileAttachment msg={message} />
-    : <span className={styles.text}>{presentation.textPreview}</span>;
-}
-
-function AttachmentCaption({
-  kind,
-  presentation,
-}: AttachmentCaptionProps) {
-  const caption = resolveAttachmentCaption({ kind, presentation });
-  return caption ? (
-    <div className={attachmentStyles.attachmentCaption}>{caption}</div>
-  ) : null;
-}
-
-function MessageMeta({
-  message,
-  presentation,
-  onRetry,
-  t,
-}: MessageMetaProps) {
-  if (!message.isOwn) {
-    return <span className={styles.time}>{presentation.timeLabel}</span>;
-  }
-
-  if (message.status === "error" && onRetry) {
-    return (
-      <>
-        <span className={styles.time}>{presentation.timeLabel}</span>
-        <button
-          type="button"
-          className={styles.retryBtn}
-          onClick={() => onRetry(message.id)}
-          title={t("conversation.retrySend")}
-          aria-label={t("conversation.retrySend")}
-        >
-          <MessageStatusIcon status={message.status} />
-        </button>
-      </>
-    );
-  }
-
-  return (
-    <>
-      <span className={styles.time}>{presentation.timeLabel}</span>
-      <MessageStatusIcon status={message.status} />
-    </>
-  );
-}
-
-function MessageBubble({
-  presentation,
-  kind,
-  activeMediaKey,
-  onActiveMediaChange,
-  onRetry,
-  onScrollToMessage,
-  isHighlighted,
-  t,
-}: MessageBubbleProps) {
-  const { message } = presentation;
-  const showMeta = !usesInlineAttachmentMeta(kind);
-  const bubbleClassName = buildBubbleClassName(message, kind, isHighlighted);
-
-  return (
-    <div className={bubbleClassName}>
-      <SenderLabel presentation={presentation} message={message} />
-      <QuotedReply message={message} onScrollToMessage={onScrollToMessage} t={t} />
-      <MessageBody
-        kind={kind}
-        presentation={presentation}
-        activeMediaKey={activeMediaKey}
-        onActiveMediaChange={onActiveMediaChange}
-      />
-      <AttachmentCaption kind={kind} presentation={presentation} />
-      {showMeta ? (
-        <div className={styles.meta}>
-          <MessageMeta message={message} presentation={presentation} onRetry={onRetry} t={t} />
-        </div>
-      ) : null}
-    </div>
-  );
-}
-
-function MessageRowFrame({
-  presentation,
-  children,
-  selectionMode,
-  isSelected,
-  onToggleSelect,
-}: MessageRowFrameProps) {
-  const rowClass = [
-    styles.messageRow,
-    presentation.message.isOwn ? styles.own : styles.theirs,
-    selectionMode ? styles.messageRowSelectable : "",
-    selectionMode && isSelected ? styles.messageRowSelected : "",
-  ].join(" ");
-
-  return (
-    // eslint-disable-next-line jsx-a11y/no-static-element-interactions -- role, tabIndex, and onKeyDown are all set conditionally when selectionMode is true
-    <div
-      className={rowClass}
-      onClick={selectionMode ? onToggleSelect : undefined}
-      role={selectionMode ? "checkbox" : undefined}
-      aria-checked={selectionMode ? isSelected : undefined}
-      tabIndex={selectionMode ? 0 : undefined}
-      onKeyDown={selectionMode ? (e) => {
-        if (e.key === " " || e.key === "Enter") {
-          e.preventDefault();
-          onToggleSelect?.();
-        }
-      } : undefined}
-    >
-      {selectionMode ? (
-        <span
-          className={`${styles.selectionCircle} ${isSelected ? styles.selectionCircleChecked : ""}`}
-          aria-hidden="true"
-        >
-          {isSelected && (
-            <svg width="11" height="11" viewBox="0 0 11 11" fill="none" aria-hidden="true">
-              <path d="M1.5 5.5l3 3 5-5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
-            </svg>
-          )}
-        </span>
-      ) : null}
-      {children}
-    </div>
-  );
 }
 
 function MessageRowContent({

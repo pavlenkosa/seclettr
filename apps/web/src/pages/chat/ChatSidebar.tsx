@@ -6,7 +6,7 @@ import type { SavedMessage } from "@/stores/saved";
 import { useI18n } from "@/i18n";
 import { ConversationList } from "@/chats/presentation/ConversationList";
 import { SeclettrMark } from "@/components/common/SeclettrMark";
-import { IconButton, IconNewGroup, IconPlus, IconSearch, IconSettings, InputField } from "@/components/ui";
+import { IconButton, IconLock, IconLogout, IconNewGroup, IconPlus, IconSearch, IconSettings, InputField } from "@/components/ui";
 
 import styles from "./ChatSidebar.module.css";
 
@@ -88,11 +88,8 @@ export function ChatSidebar({
   }, [plainGroups, searchQuery]);
 
   const loadingPlaceholderCount = useMemo(
-    () => Math.max(
-      filteredConversations.length + filteredGroups.length
-        + filteredPlainConversations.length + filteredPlainGroups.length,
-      5
-    ),
+    () => filteredConversations.length + filteredGroups.length
+      + filteredPlainConversations.length + filteredPlainGroups.length,
     [filteredConversations.length, filteredGroups.length, filteredPlainConversations.length, filteredPlainGroups.length]
   );
 
@@ -151,10 +148,7 @@ export function ChatSidebar({
               title={t("chat.lock")}
               aria-label={t("chat.lock")}
             >
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-                <rect x="5" y="11" width="14" height="10" rx="2" stroke="currentColor" strokeWidth="1.6" />
-                <path d="M8 11V7a4 4 0 0 1 8 0v4" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
-              </svg>
+              <IconLock />
             </IconButton>
           ) : null}
 
@@ -165,15 +159,7 @@ export function ChatSidebar({
             title={t("chat.signOut")}
             aria-label={t("chat.signOut")}
           >
-            <svg width="16" height="16" viewBox="0 0 18 18" fill="none">
-              <path
-                d="M6.75 15.75H3.75A1.5 1.5 0 0 1 2.25 14.25V3.75A1.5 1.5 0 0 1 3.75 2.25h3M12 12.75l3.75-3.75L12 5.25M15.75 9H7.5"
-                stroke="currentColor"
-                strokeWidth="1.5"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-            </svg>
+            <IconLogout />
           </IconButton>
         </div>
       </div>

@@ -36,7 +36,8 @@
     "sonar:scan:coverage": "pnpm test:coverage && bash ./scripts/sonar-scan.sh"
   },
   "simple-git-hooks": {
-    "pre-commit": "node scripts/generate-third-party-notices.mjs && git add THIRD_PARTY_NOTICES.md"
+    "pre-commit": "node scripts/generate-third-party-notices.mjs && git add THIRD_PARTY_NOTICES.md",
+    "pre-push": "bash scripts/pre-push-check.sh"
   },
   "devDependencies": {
     "@playwright/test": "^1.40.0",

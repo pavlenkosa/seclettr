@@ -301,6 +301,5 @@ export function cleanupStaleRooms<R extends Closable, T extends Closable, P exte
 function safeClose(target: Closable): void {
   try {
     target.close();
-  } catch {
-  }
+  } catch { /* ignore close errors */ }
 }

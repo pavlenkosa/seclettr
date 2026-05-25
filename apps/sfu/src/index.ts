@@ -25,7 +25,6 @@ import {
   touchPeer,
   touchRoom,
   type PeerIdentity,
-  type PeerRecord,
   type RoomRecord,
 } from "./room-state.js";
 import {
@@ -125,7 +124,6 @@ const mediaCodecs: RouterRtpCodecCapability[] = [
   },
 ];
 
-type Peer = PeerRecord<WebRtcTransport, Producer, Consumer>;
 type Room = RoomRecord<Router, WebRtcTransport, Producer, Consumer>;
 
 const workers: Worker[] = [];
@@ -160,9 +158,9 @@ async function requireSfuRateLimit(
   reply: FastifyReply
 ): Promise<void> {
   const decision = requestRateLimiter.check(buildRateLimitKey(request));
-  reply.header("X-RateLimit-Remaining", String(decision.remaining));
+  void reply.header("X-RateLimit-Remaining", String(decision.remaining));
   if (!decision.allowed) {
-    reply.header(
+    void reply.header(
       "Retry-After",
       String(Math.max(Math.ceil(decision.retryAfterMs / 1000), 1))
     );
@@ -215,12 +213,12 @@ function buildRateLimitKey(request: FastifyRequest): string {
 }
 
 function getAuthorizationHeader(request: FastifyRequest): string | null {
-  const authHeader = request.headers.authorization;
+  const authHeader: unknown = request.headers.authorization;
   if (typeof authHeader === "string" && authHeader.trim().length > 0) {
     return authHeader;
   }
   if (Array.isArray(authHeader)) {
-    const first = authHeader.find((value) => value.trim().length > 0);
+    const first = (authHeader as string[]).find((v) => v.trim().length > 0);
     return first ?? null;
   }
   return null;
@@ -287,7 +285,7 @@ async function ensureRoomAccess(
       if (typeof body.error === "string" && body.error.trim().length > 0) {
         errorMessage = body.error;
       }
-    } catch {}
+    } catch { /* ignore parse errors */ }
     await reply.code(response.status).send({ error: errorMessage });
     return false;
   }
@@ -764,7 +762,7 @@ async function main() {
   );
 
   // GET /health/live — process liveness (no worker check, cheap)
-  fastify.get("/health/live", async () => ({ status: "ok" }));
+  fastify.get("/health/live", () => ({ status: "ok" }));
 
   // GET /health/ready — readiness: requires at least one live mediasoup worker
   fastify.get("/health/ready", async (_request, reply) => {
@@ -803,14 +801,22 @@ async function main() {
     );
   }
 
-  process.on("SIGTERM", async () => {
-    if (cleanupTimer) {
-      clearInterval(cleanupTimer);
-      cleanupTimer = null;
-    }
-    await fastify.close();
-    for (const w of workers) w.close();
-    process.exit(0);
+  process.on("SIGTERM", () => {
+    void (async () => {
+      if (cleanupTimer) {
+        clearInterval(cleanupTimer);
+        cleanupTimer = null;
+      }
+
+      const forceExitTimer = setTimeout(() => {
+        console.error("SFU graceful shutdown timed out — forcing exit");
+        process.exit(1);
+      }, 10_000).unref();
+
+      await fastify.close();
+      for (const w of workers) w.close();
+      clearTimeout(forceExitTimer);
+    })();
   });
 }
 

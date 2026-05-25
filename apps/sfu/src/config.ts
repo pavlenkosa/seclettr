@@ -44,14 +44,6 @@ if (!process.env["JWT_SECRET"]) {
   loadFallbackEnvFile();
 }
 
-function requireEnv(key: string): string {
-  const val = process.env[key];
-  if (!val) {
-    console.error(`[sfu/config] Required environment variable ${key} is not set`);
-    process.exit(1);
-  }
-  return val;
-}
 
 function parseIntEnv(key: string, defaultValue: number): number {
   const raw = process.env[key];

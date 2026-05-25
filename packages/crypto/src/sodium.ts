@@ -1,3 +1,4 @@
+// eslint-disable-next-line @typescript-eslint/consistent-type-imports
 type SodiumModuleNamespace = typeof import("libsodium-wrappers-sumo");
 type SodiumModule = SodiumModuleNamespace extends { default: infer T }
   ? T

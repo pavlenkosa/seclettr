@@ -350,6 +350,16 @@ export function DirectCallActiveOverlay({
       <HeaderBar
         className={styles.callHeader}
         stackCenterOnNarrow
+        leading={(
+          <IconButton
+            onClick={onMinimize}
+            className={styles.minimizeBtn}
+            size={34}
+            aria-label={minimizeAriaLabel}
+          >
+            <MinimizeIcon />
+          </IconButton>
+        )}
         center={(
           <InfoStack
             className={activeStyles.callHeaderSummary}
@@ -375,16 +385,6 @@ export function DirectCallActiveOverlay({
             titleClassName={activeStyles.callHeaderTitle}
             metaClassName={activeStyles.callHeaderMetaRow}
           />
-        )}
-        trailing={(
-          <IconButton
-            onClick={onMinimize}
-            className={styles.minimizeBtn}
-            size={34}
-            aria-label={minimizeAriaLabel}
-          >
-            <MinimizeIcon />
-          </IconButton>
         )}
       />
       </div>

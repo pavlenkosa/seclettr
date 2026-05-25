@@ -74,24 +74,31 @@ export function createGroupsOutboundRuntime({
     get,
     shared,
     pendingGroupOutboundEnvelopes,
-    ensureGroupSenderKeys: (...args) => senderKeyRuntime.ensureGroupSenderKeys(...args),
+    ensureGroupSenderKeys: (groupId, members) =>
+      senderKeyRuntime.ensureGroupSenderKeys(groupId, members),
     deliverQueuedGroupOutboundItem,
-    markQueuedMessageSent: (...args) => queueRuntime.markQueuedMessageSent(...args),
+    markQueuedMessageSent: (item, sentMessage) =>
+      queueRuntime.markQueuedMessageSent(item, sentMessage),
   });
   attachmentRuntimeRef.current = createGroupsOutboundAttachmentRuntime({
     set,
     get,
     shared,
     pendingGroupOutboundEnvelopes,
-    ensureGroupSenderKeys: (...args) => senderKeyRuntime.ensureGroupSenderKeys(...args),
+    ensureGroupSenderKeys: (groupId, members) =>
+      senderKeyRuntime.ensureGroupSenderKeys(groupId, members),
     deliverQueuedGroupOutboundItem,
-    markQueuedMessageSent: (...args) => queueRuntime.markQueuedMessageSent(...args),
+    markQueuedMessageSent: (item, sentMessage) =>
+      queueRuntime.markQueuedMessageSent(item, sentMessage),
   });
 
   return {
-    resumePendingGroupOutboundMessages: (...args) => queueRuntime.resumePendingGroupOutboundMessages(...args),
-    sendGroupText: (...args) => textRuntime.sendGroupText(...args),
-    retryGroupMessage: (...args) => queueRuntime.retryGroupMessage(...args),
+    resumePendingGroupOutboundMessages: () =>
+      queueRuntime.resumePendingGroupOutboundMessages(),
+    sendGroupText: (groupId: string, text: string, reply?: { id: string; snippet: string }) =>
+      textRuntime.sendGroupText(groupId, text, reply),
+    retryGroupMessage: (groupId: string, messageId: string) =>
+      queueRuntime.retryGroupMessage(groupId, messageId),
 
     sendGroupFileAttachment: async (
       groupId: string,

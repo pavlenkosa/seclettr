@@ -1,3 +1,6 @@
+/**
+ * IconLogout — inline SVG logout/sign-out glyph rendered as a presentational icon.
+ */
 interface Props {
   readonly size?: number;
   readonly strokeWidth?: number;

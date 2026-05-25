@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { useI18n } from "@/i18n";
 import { Avatar } from "@/components/ui/identity/Avatar";
 import { ModalShell } from "@/components/ui/surfaces/ModalShell";

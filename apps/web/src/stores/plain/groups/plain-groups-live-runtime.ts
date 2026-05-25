@@ -1,12 +1,14 @@
 import type { StoreApi } from "zustand";
 import { wsClient } from "@/lib/websocket";
 import { showNativeGroupNotification } from "@/lib/native-notifications";
+import { logger } from "@/lib/logger";
 import type { PlainGroupsState } from "./plain-groups-store";
 import {
   mergeGroupMessage,
   wireToPlainGroupMessage,
   type WirePlainGroupMessage,
 } from "./plain-groups-wire";
+import { cacheAppendMessages, type ConvKey } from "../messages/plain-message-cache-db";
 
 /**
  * Live WebSocket runtime for plain group messages.
@@ -54,6 +56,14 @@ export function createPlainGroupsLiveRuntime(
           messageType: wire.messageType ?? "text",
         });
       }
+
+      void cacheAppendMessages(
+        `group:${groupId}` as ConvKey,
+        [msg],
+        resolvedGroupName || groupId
+      ).catch(() => {
+        logger.warn("[PlainGroups] failed to cache incoming message");
+      });
       return;
     }
 

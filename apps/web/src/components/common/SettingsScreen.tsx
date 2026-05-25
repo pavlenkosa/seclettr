@@ -29,6 +29,7 @@ import {
   PersonIcon,
   ShieldIcon,
   SparklesIcon,
+  StorageIcon,
 } from "./settings/SettingsSectionPrimitives";
 import { SettingsAccountSummary } from "./settings/SettingsAccountSummary";
 import { SettingsMobileDetailFrame } from "./settings/SettingsMobileDetailFrame";
@@ -50,7 +51,7 @@ interface SettingsScreenProps {
   readonly onClose: () => void;
 }
 
-type SettingsSectionId = "profile" | "notifications" | "appearance" | "security";
+type SettingsSectionId = "profile" | "notifications" | "appearance" | "security" | "cache";
 
 const loadProfileSettingsSection = () =>
   import("./settings/ProfileSettingsSection").then(({ ProfileSettingsSection: Section }) => ({
@@ -74,10 +75,16 @@ const loadSecuritySettingsSection = () =>
     default: Section,
   }));
 
+const loadCacheSettingsSection = () =>
+  import("./settings/CacheSettingsSection").then(({ CacheSettingsSection: Section }) => ({
+    default: Section,
+  }));
+
 const ProfileSettingsSection = lazy(loadProfileSettingsSection);
 const AppearanceSettingsSection = lazy(loadAppearanceSettingsSection);
 const NotificationsSettingsSectionContainer = lazy(loadNotificationsSettingsSectionContainer);
 const SecuritySettingsSection = lazy(loadSecuritySettingsSection);
+const CacheSettingsSection = lazy(loadCacheSettingsSection);
 
 export function SettingsScreen({
   username,
@@ -112,6 +119,7 @@ export function SettingsScreen({
     void loadAppearanceSettingsSection();
     void loadNotificationsSettingsSectionContainer();
     void loadSecuritySettingsSection();
+    void loadCacheSettingsSection();
   }, []);
 
   const notificationsSummary = resolvePushStatusLabel(pushSettings.pushStatus, t);
@@ -149,6 +157,13 @@ export function SettingsScreen({
         t(`settings.autoDecryptMedia.${autoDecryptMedia}`),
       ].join(" · "),
       icon: <ShieldIcon />,
+    },
+    {
+      id: "cache",
+      title: t("settings.sections.cache"),
+      description: t("settings.sections.cache.description"),
+      summary: "",
+      icon: <StorageIcon />,
     },
   ] satisfies SettingsSectionEntry[], [
     accentColor,
@@ -214,6 +229,10 @@ export function SettingsScreen({
           setCallSecurityMode={setCallSecurityMode}
           setAutoDecryptMedia={setAutoDecryptMedia}
         />
+      ) : null}
+
+      {activeSection === "cache" ? (
+        <CacheSettingsSection />
       ) : null}
     </Suspense>
   );

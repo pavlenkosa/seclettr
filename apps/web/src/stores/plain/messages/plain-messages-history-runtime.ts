@@ -5,6 +5,12 @@ import type { PlainMessage, PlainMessageType } from "../types";
 import type { PlainMessagesState } from "./plain-messages-store";
 import { loadConversationsCache, saveConversationsCache } from "./plain-messages-cache";
 import { wireToPlainMessage, type WireHistoryResponse } from "./plain-messages-wire";
+import {
+  cacheLoadConversation,
+  cacheSaveConversation,
+  cacheAppendMessages,
+  type ConvKey,
+} from "./plain-message-cache-db";
 
 /**
  * History/bootstrap runtime for the plain DM store.
@@ -137,9 +143,36 @@ export function createPlainMessagesHistoryRuntime(
   }
 
   async function loadHistory(userId: string, username: string): Promise<void> {
-    const key = conversationKeyFor(userId);
+    const key = conversationKeyFor(userId) as ConvKey;
     const existing = get().conversations[key];
     if (existing?.historyLoaded) return;
+
+    // Load from cache immediately — UI renders before API responds
+    let hasCached = false;
+    const cachedMessages = await cacheLoadConversation(key);
+    if (cachedMessages.length > 0) {
+      hasCached = true;
+      set((state) => {
+        const prev = state.conversations[key];
+        return {
+          conversations: {
+            ...state.conversations,
+            [key]: {
+              userId,
+              username: prev?.username ?? username,
+              displayName: prev?.displayName ?? null,
+              avatarKey: prev?.avatarKey ?? null,
+              messages: cachedMessages,
+              lastMessageAt: cachedMessages.at(-1)?.timestamp ?? prev?.lastMessageAt ?? 0,
+              unreadCount: prev?.unreadCount ?? 0,
+              nextCursor: prev?.nextCursor,
+              hasMore: prev?.hasMore ?? false,
+              historyLoaded: false, // still refetch from API
+            },
+          },
+        };
+      });
+    }
 
     try {
       const data = await api.get<WireHistoryResponse>(
@@ -171,13 +204,16 @@ export function createPlainMessagesHistoryRuntime(
         };
       });
       void saveConversationsCache(getMyUserId() ?? "", getMyDeviceId(), get().conversations);
+      void cacheSaveConversation(key, messages, username);
     } catch (err) {
-      logger.error("[PlainMsg] loadHistory failed", err);
+      if (!hasCached) {
+        logger.error("[PlainMsg] loadHistory failed", err);
+      }
     }
   }
 
   async function loadMoreHistory(userId: string): Promise<void> {
-    const key = conversationKeyFor(userId);
+    const key = conversationKeyFor(userId) as ConvKey;
     const conv = get().conversations[key];
     if (!conv?.hasMore || !conv.nextCursor) return;
 
@@ -203,6 +239,7 @@ export function createPlainMessagesHistoryRuntime(
           },
         };
       });
+      void cacheAppendMessages(key, older, conv.username);
     } catch (err) {
       logger.error("[PlainMsg] loadMoreHistory failed", err);
     }

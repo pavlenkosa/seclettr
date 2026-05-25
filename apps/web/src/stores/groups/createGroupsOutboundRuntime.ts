@@ -51,6 +51,7 @@ export function createGroupsOutboundRuntime({
     return postGroupMessagePayloadWithRetry(item.groupId, item.payload);
   }
 
+  // eslint-disable-next-line prefer-const
   let attachmentRuntime!: ReturnType<typeof createGroupsOutboundAttachmentRuntime>;
   const queueRuntime = createGroupsOutboundQueueRuntime({
     set,

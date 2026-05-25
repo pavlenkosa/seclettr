@@ -1,9 +1,11 @@
 import type { StoreApi } from "zustand";
 import { wsClient } from "@/lib/websocket";
 import { showNativeDmNotification } from "@/lib/native-notifications";
+import { logger } from "@/lib/logger";
 import type { PlainMessage } from "../types";
 import type { PlainMessagesState } from "./plain-messages-store";
 import { mergeIncomingMessage, wireToPlainMessage, type WirePlainMessage } from "./plain-messages-wire";
+import { cacheAppendMessages, type ConvKey } from "./plain-message-cache-db";
 
 /**
  * Live WebSocket runtime for plain DM messages.
@@ -68,6 +70,11 @@ export function createPlainMessagesLiveRuntime(deps: PlainMessagesLiveDeps): Pla
           messageType: wire.messageType ?? "text",
         });
       }
+
+      // Write to cache
+      void cacheAppendMessages(`dm:${conversationKey}` as ConvKey, [msg], peerUsername).catch(() => {
+        logger.warn("[PlainMsg] failed to cache incoming message");
+      });
       return;
     }
 

@@ -1,15 +1,19 @@
 package com.seclettr.app;
 
+import android.app.AlarmManager;
 import android.app.Notification;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.app.Service;
+import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.net.Uri;
 import android.os.Build;
 import android.os.IBinder;
+import android.os.PowerManager;
+import android.os.SystemClock;
 import android.util.Log;
 
 import androidx.core.app.NotificationCompat;
@@ -51,6 +55,7 @@ public class PushForegroundService extends Service {
     private String wsUrl;
     private int reconnectDelay = INITIAL_RECONNECT_DELAY_MS;
     private boolean intentionalClose = false;
+    private PowerManager.WakeLock wakeLock;
     private final android.os.Handler handler = new android.os.Handler(android.os.Looper.getMainLooper());
 
     public static boolean isRunning() {
@@ -62,6 +67,20 @@ public class PushForegroundService extends Service {
         super.onCreate();
         Log.d(TAG, "PushForegroundService created");
         createNotificationChannels();
+        acquireWakeLock();
+    }
+
+    /** Keep CPU awake so the WebSocket stays alive during screen-off / Doze. */
+    private void acquireWakeLock() {
+        if (wakeLock != null && wakeLock.isHeld()) return;
+        PowerManager pm = (PowerManager) getSystemService(Context.POWER_SERVICE);
+        if (pm == null) return;
+        wakeLock = pm.newWakeLock(
+            PowerManager.PARTIAL_WAKE_LOCK,
+            "seclettr:push_ws_keepalive"
+        );
+        wakeLock.setReferenceCounted(false);
+        wakeLock.acquire(10 * 60 * 1000L); // auto-release after 10 min as safety
     }
 
     @Override
@@ -117,11 +136,41 @@ public class PushForegroundService extends Service {
 
     @Override
     public void onDestroy() {
-        Log.d(TAG, "PushForegroundService destroyed");
-        intentionalClose = true;
+        Log.d(TAG, "PushForegroundService destroyed (intentional=" + intentionalClose + ")");
+        if (!intentionalClose) {
+            scheduleRestart();
+        }
         closeWebSocket();
         running = false;
+        releaseWakeLock();
         super.onDestroy();
+    }
+
+    @Override
+    public void onTaskRemoved(Intent rootIntent) {
+        Log.d(TAG, "Task removed — scheduling restart");
+        scheduleRestart();
+        super.onTaskRemoved(rootIntent);
+    }
+
+    private void scheduleRestart() {
+        Intent restart = new Intent(this, PushForegroundService.class);
+        PendingIntent pi = PendingIntent.getService(
+            this, 0, restart,
+            PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE
+        );
+        AlarmManager am = (AlarmManager) getSystemService(Context.ALARM_SERVICE);
+        if (am != null) {
+            am.set(AlarmManager.ELAPSED_REALTIME_WAKEUP,
+                SystemClock.elapsedRealtime() + 1000, pi);
+        }
+    }
+
+    private void releaseWakeLock() {
+        if (wakeLock != null && wakeLock.isHeld()) {
+            wakeLock.release();
+            wakeLock = null;
+        }
     }
 
     @Override
@@ -174,6 +223,9 @@ public class PushForegroundService extends Service {
             Log.w(TAG, "Cannot connect: wsUrl or token is null");
             return;
         }
+
+        // refresh WakeLock on each connect attempt
+        acquireWakeLock();
 
         if (httpClient == null) {
             httpClient = new OkHttpClient.Builder()

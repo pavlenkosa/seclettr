@@ -9,6 +9,12 @@ import {
   type WireGroupHistoryResponse,
   type WireGroupListResponse,
 } from "./plain-groups-wire";
+import {
+  cacheLoadConversation,
+  cacheSaveConversation,
+  cacheAppendMessages,
+  type ConvKey,
+} from "../messages/plain-message-cache-db";
 
 /**
  * Group bootstrap / history runtime for the plain groups store.
@@ -67,6 +73,31 @@ export function createPlainGroupsHistoryRuntime(
     const group = get().groups[groupId];
     if (group?.historyLoaded) return;
 
+    const convKey = `group:${groupId}` as ConvKey;
+    const groupName = group?.name ?? groupId;
+
+    // Load from cache immediately
+    let hasCached = false;
+    const cachedMessages = await cacheLoadConversation(convKey);
+    if (cachedMessages.length > 0) {
+      hasCached = true;
+      set((state) => {
+        const g = state.groups[groupId];
+        if (!g) return state;
+        return {
+          groups: {
+            ...state.groups,
+            [groupId]: {
+              ...g,
+              messages: cachedMessages,
+              lastMessageAt: cachedMessages.at(-1)?.timestamp ?? g.lastMessageAt,
+              historyLoaded: false,
+            },
+          },
+        };
+      });
+    }
+
     try {
       const data = await api.get<WireGroupHistoryResponse>(
         `/plain/groups/${encodeURIComponent(groupId)}/messages?limit=50`
@@ -93,14 +124,19 @@ export function createPlainGroupsHistoryRuntime(
           },
         };
       });
+      void cacheSaveConversation(convKey, messages, groupName);
     } catch (err) {
-      logger.error("[PlainGroups] loadHistory failed", err);
+      if (!hasCached) {
+        logger.error("[PlainGroups] loadHistory failed", err);
+      }
     }
   }
 
   async function loadMoreHistory(groupId: string): Promise<void> {
     const group = get().groups[groupId];
     if (!group?.hasMore || !group.nextCursor) return;
+
+    const convKey = `group:${groupId}` as ConvKey;
 
     try {
       const data = await api.get<WireGroupHistoryResponse>(
@@ -124,6 +160,7 @@ export function createPlainGroupsHistoryRuntime(
           },
         };
       });
+      void cacheAppendMessages(convKey, older, group.name ?? groupId);
     } catch (err) {
       logger.error("[PlainGroups] loadMoreHistory failed", err);
     }

@@ -118,6 +118,18 @@ export function PersonIcon() {
   );
 }
 
+export function StorageIcon() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <rect x="3" y="3" width="18" height="5" rx="1.5" stroke="currentColor" strokeWidth="1.7" />
+      <rect x="3" y="12" width="18" height="5" rx="1.5" stroke="currentColor" strokeWidth="1.7" />
+      <rect x="3" y="19.5" width="18" height="2" rx="1" stroke="currentColor" strokeWidth="1.7" />
+      <circle cx="6.5" cy="5.5" r="1" fill="currentColor" />
+      <circle cx="6.5" cy="14.5" r="1" fill="currentColor" />
+    </svg>
+  );
+}
+
 export function ShieldIcon() {
   return (
     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">

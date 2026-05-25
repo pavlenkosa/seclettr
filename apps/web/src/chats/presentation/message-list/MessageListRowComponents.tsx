@@ -8,10 +8,6 @@ import {
   MessageStatusIcon,
   VideoNoteAttachment,
   VoiceNoteAttachment,
-  isFileAttachment,
-  isInlineMedia,
-  isVideoNote,
-  isVoiceNote,
 } from "./MessageListAttachments";
 import { MediaGroupAttachment } from "./MediaGroupAttachment";
 import styles from "../MessageList.module.css";
@@ -338,21 +334,21 @@ export function MessageRowFrame({
     selectionMode && isSelected ? styles.messageRowSelected : "",
   ].join(" ");
 
-  return (
-    <div
-      className={rowClass}
-      onClick={selectionMode ? onToggleSelect : undefined}
-      role={selectionMode ? "checkbox" : undefined}
-      aria-checked={selectionMode ? isSelected : undefined}
-      tabIndex={selectionMode ? 0 : undefined}
-      onKeyDown={selectionMode ? (e) => {
-        if (e.key === " " || e.key === "Enter") {
-          e.preventDefault();
-          onToggleSelect?.();
-        }
-      } : undefined}
-    >
-      {selectionMode ? (
+  if (selectionMode) {
+    return (
+      <div
+        className={rowClass}
+        onClick={onToggleSelect}
+        role="checkbox"
+        aria-checked={!!isSelected}
+        tabIndex={0}
+        onKeyDown={(e) => {
+          if (e.key === " " || e.key === "Enter") {
+            e.preventDefault();
+            onToggleSelect?.();
+          }
+        }}
+      >
         <span
           className={`${styles.selectionCircle} ${isSelected ? styles.selectionCircleChecked : ""}`}
           aria-hidden="true"
@@ -363,8 +359,10 @@ export function MessageRowFrame({
             </svg>
           )}
         </span>
-      ) : null}
-      {children}
-    </div>
-  );
+        {children}
+      </div>
+    );
+  }
+
+  return <div className={rowClass}>{children}</div>;
 }

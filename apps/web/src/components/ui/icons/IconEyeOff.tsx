@@ -1,3 +1,6 @@
+/**
+ * IconEyeOff — inline SVG eye-off/visibility-off glyph rendered as a presentational icon.
+ */
 interface Props {
   readonly size?: number;
   readonly strokeWidth?: number;

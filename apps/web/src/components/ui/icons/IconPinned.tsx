@@ -1,3 +1,6 @@
+/**
+ * IconPinned — inline SVG pin glyph rendered as a presentational icon.
+ */
 interface Props {
   readonly size?: number;
   readonly className?: string;

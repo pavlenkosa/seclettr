@@ -31,6 +31,14 @@
             android:foregroundServiceType="dataSync"
             android:exported="false" />
 
+        <receiver
+            android:name=".BootReceiver"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+            </intent-filter>
+        </receiver>
+
         <provider
             android:name="androidx.core.content.FileProvider"
             android:authorities="${applicationId}.fileprovider"
@@ -57,6 +65,8 @@
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <!-- Schedule exact alarms for local notifications (Android 12+) -->
     <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />
+    <!-- Keep CPU awake during screen-off for WebSocket push -->
+    <uses-permission android:name="android.permission.WAKE_LOCK" />
     <!-- Background runner: auto-restart after device reboot -->
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
     <!-- Foreground service (Android 9+) -->

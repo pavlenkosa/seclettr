@@ -28,7 +28,11 @@ public class MainActivity extends BridgeActivity {
 
         Uri data = intent.getData();
         if (data != null) {
-            Log.d(TAG, "Deep link: " + data.toString());
+            Log.d(TAG, "Deep link: " + data);
+            // Capacitor 8 AppPlugin fires appUrlOpen event natively via
+            // BridgeActivity.load() → onNewIntent(getIntent()) for cold start
+            // AND via onNewIntent(intent) for subsequent launches.
+            // This override exists solely for debug logging.
         }
     }
 }

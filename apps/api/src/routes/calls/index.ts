@@ -1004,7 +1004,7 @@ export async function callRoutes(fastify: FastifyInstance): Promise<void> {
           callerUserId: row.caller_user_id,
           callerUsername: row.caller_username,
           callType: row.call_type,
-          endedAt: row.ended_at,
+          endedAt: new Date(row.ended_at).toISOString(),
         })),
       });
     }

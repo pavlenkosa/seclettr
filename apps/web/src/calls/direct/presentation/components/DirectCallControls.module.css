@@ -112,7 +112,44 @@
   background: color-mix(in srgb, var(--surface-shell) 96%, transparent);
   border: 1px solid color-mix(in srgb, var(--panel-border-soft) 78%, transparent);
   padding: 0.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.18rem;
   animation: controlsDockIn var(--motion-duration-fast) cubic-bezier(0.18, 0.9, 0.2, 1) both;
+}
+
+/* Selectable rows inside the audio output sheet (used for native earpiece/speaker options). */
+.audioSheetOption {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  width: 100%;
+  padding: 0.62rem 0.7rem;
+  border: none;
+  border-radius: 14px;
+  background: transparent;
+  color: var(--text-primary);
+  font-size: 0.88rem;
+  font-weight: 500;
+  cursor: pointer;
+  text-align: left;
+  transition: background var(--motion-duration-fast) ease;
+}
+
+.audioSheetOption:hover {
+  background: color-mix(in srgb, var(--accent) 10%, transparent);
+}
+
+.audioSheetOptionActive {
+  background: color-mix(in srgb, var(--accent) 14%, transparent);
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.audioSheetCheck {
+  margin-left: auto;
+  font-size: 1rem;
+  font-weight: 700;
 }
 
 @media (prefers-reduced-motion: reduce) {

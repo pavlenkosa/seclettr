@@ -3,7 +3,7 @@ import { CallControlButton } from "@/calls/shared/presentation/CallControlButton
 import { CallControlsDock } from "@/calls/shared/presentation/CallControlsDock";
 import { CallDevicePicker, type VideoResolution } from "@/calls/shared/presentation/CallDevicePicker";
 import type { InputDeviceOption } from "@/calls/shared/media/input-devices/useCallInputDevices";
-import { CameraIcon, HangupIcon, MuteIcon, ScreenShareIcon, SpeakerIcon } from "@/calls/shared/presentation/CallIcons";
+import { CameraIcon, HangupIcon, MuteIcon, PhoneIcon, ScreenShareIcon, SpeakerIcon } from "@/calls/shared/presentation/CallIcons";
 import { AudioOutputSelector } from "@/calls/shared/media/audio-output/AudioOutputSelector";
 import { useOptionalCallAudioOutput } from "@/calls/shared/media/audio-output/CallAudioOutputProvider";
 import { useNativeSpeakerToggle } from "@/calls/shared/media/audio-output/useNativeSpeakerToggle";
@@ -14,6 +14,7 @@ import styles from "./DirectCallControls.module.css";
 interface DirectCallControlsProps {
   readonly speakerAriaLabel?: string;
   readonly speakerLabel?: string;
+  readonly earphoneLabel?: string;
   readonly muted: boolean;
   readonly videoOff: boolean;
   readonly screenSharing: boolean;
@@ -56,6 +57,7 @@ const canScreenShare =
 export function DirectCallControls({
   speakerAriaLabel = "Speaker",
   speakerLabel = "Speaker",
+  earphoneLabel = "Earphone",
   muted,
   videoOff,
   screenSharing,
@@ -129,17 +131,64 @@ export function DirectCallControls({
           aria-pressed={videoOff}
         />
         {speakerSupported ? (
-          /* Capacitor native: toggle earpiece ↔ loudspeaker */
-          <CallControlButton
-            onClick={toggleSpeaker}
-            layout="stacked"
-            className={mobileClass}
-            active={!speakerOn}
-            icon={<SpeakerIcon speakerOn={speakerOn} />}
-            label={speakerLabel}
-            aria-label={speakerAriaLabel}
-            aria-pressed={speakerOn}
-          />
+          /* Capacitor native: select earpiece or loudspeaker via a sheet */
+          <div className={styles.audioOutputWrapper}>
+            <CallControlButton
+              onClick={() => { setOutputSheetOpen((prev) => !prev); }}
+              layout="stacked"
+              className={mobileClass}
+              active={outputSheetOpen || !speakerOn}
+              icon={<SpeakerIcon speakerOn={speakerOn} />}
+              label={speakerLabel}
+              aria-label={speakerAriaLabel}
+              aria-expanded={outputSheetOpen}
+            />
+            {outputSheetOpen ? (
+              <>
+                <div
+                  className={styles.audioOutputScrim}
+                  onClick={() => { setOutputSheetOpen(false); }}
+                  aria-hidden="true"
+                />
+                <div
+                  className={styles.audioOutputSheet}
+                  role="dialog"
+                  aria-label={speakerAriaLabel}
+                >
+                  <button
+                    type="button"
+                    className={[
+                      styles.audioSheetOption,
+                      !speakerOn ? styles.audioSheetOptionActive : "",
+                    ].filter(Boolean).join(" ")}
+                    onClick={() => {
+                      if (speakerOn) toggleSpeaker();
+                      setOutputSheetOpen(false);
+                    }}
+                  >
+                    <PhoneIcon />
+                    <span>{earphoneLabel}</span>
+                    {!speakerOn ? <span className={styles.audioSheetCheck} aria-hidden="true">✓</span> : null}
+                  </button>
+                  <button
+                    type="button"
+                    className={[
+                      styles.audioSheetOption,
+                      speakerOn ? styles.audioSheetOptionActive : "",
+                    ].filter(Boolean).join(" ")}
+                    onClick={() => {
+                      if (!speakerOn) toggleSpeaker();
+                      setOutputSheetOpen(false);
+                    }}
+                  >
+                    <SpeakerIcon speakerOn />
+                    <span>{speakerLabel}</span>
+                    {speakerOn ? <span className={styles.audioSheetCheck} aria-hidden="true">✓</span> : null}
+                  </button>
+                </div>
+              </>
+            ) : null}
+          </div>
         ) : showWebOutputButton ? (
           /* Web mobile: open a bottom-sheet with the AudioOutputSelector */
           <div className={styles.audioOutputWrapper}>

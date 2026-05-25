@@ -106,6 +106,10 @@
   .surface {
     width: 100%;
     max-height: min(var(--modal-max-height-mobile, 86dvh), 760px);
+    /* Callers can set --modal-min-height-mobile to ensure the sheet fills a minimum
+       of the viewport even when content is short (avoids a tiny sheet floating at the
+       bottom with a large dark void above it). Default is 0 (no constraint). */
+    min-height: var(--modal-min-height-mobile, 0);
     border-radius: var(--radius-md) var(--radius-md) 0 0;
     border-bottom: 0;
   }

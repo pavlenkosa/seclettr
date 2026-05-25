@@ -1,5 +1,6 @@
 import { useEffect } from "react";
 import { Avatar } from "@/components/ui";
+import { useNativeBackAction } from "@/lib/hooks";
 
 import styles from "./GroupInfoModal.module.css";
 import { normalizeRole, type GroupInfoMember, type GroupRole } from "./group-info-modal-shared";
@@ -38,6 +39,7 @@ export function GroupInfoMemberActionSheet({
   t,
 }: GroupInfoMemberActionSheetProps) {
   void groupKind;
+  useNativeBackAction(onClose);
   const role = normalizeRole(member.role);
   const canRemove = (
     isSelf ||

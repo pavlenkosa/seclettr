@@ -7,6 +7,7 @@
  */
 import { useEffect, type KeyboardEvent } from "react";
 import { createPortal } from "react-dom";
+import { useNativeBackAction } from "@/lib/hooks";
 import styles from "./AttachmentPickerSheet.module.css";
 
 // ── Icons ─────────────────────────────────────────────────────────────────────
@@ -94,6 +95,8 @@ export function AttachmentPickerSheet({
   fileLabel,
   cancelLabel,
 }: AttachmentPickerSheetProps) {
+  useNativeBackAction(onClose, !isExiting);
+
   useEffect(() => {
     const handleKey = (event: globalThis.KeyboardEvent) => {
       if (event.key === "Escape") onClose();

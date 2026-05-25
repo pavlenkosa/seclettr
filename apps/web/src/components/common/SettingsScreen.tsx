@@ -22,6 +22,7 @@ import {
   useState,
 } from "react";
 import { useI18n } from "@/i18n";
+import { useNativeBackAction } from "@/lib/hooks";
 import { useAppearanceSettings, useSecuritySettings } from "@/ui-settings";
 import {
   BellIcon,
@@ -176,6 +177,8 @@ export function SettingsScreen({
       setMobileDetailOpen(true);
     }
   };
+
+  useNativeBackAction(handleBack);
 
   const sectionContent = (
     <Suspense fallback={<SettingsSectionFallback label={t("app.loading")} />}>

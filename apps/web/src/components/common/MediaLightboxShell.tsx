@@ -1,6 +1,7 @@
 import { type RefObject, type ReactNode } from "react";
 import { IconButton, IconClose } from "@/components/ui";
 import motionStyles from "@/components/ui/motion/Motion.module.css";
+import { useNativeBackAction } from "@/lib/hooks";
 import styles from "./MediaLightbox.module.css";
 
 type Translate = (key: string) => string;
@@ -149,6 +150,8 @@ export function MediaLightboxShell({
   totalCount,
   t,
 }: MediaLightboxShellProps) {
+  useNativeBackAction(onClose, !isClosing);
+
   return (
     <dialog
       ref={dialogRef}

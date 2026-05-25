@@ -3,6 +3,7 @@ import { createPortal } from "react-dom";
 import { useI18n } from "@/i18n";
 import { IconButton, PillButton } from "@/components/ui";
 import motionStyles from "@/components/ui/motion/Motion.module.css";
+import { useNativeBackAction } from "@/lib/hooks";
 import { formatBytes } from "../composer/compressImage";
 import type { PendingFile, SendQuality, UseMediaSendDialogResult } from "../composer/useMediaSendDialog";
 import styles from "./MediaSendDialog.module.css";
@@ -273,6 +274,8 @@ export function MediaSendDialog({
   const title = fileCount === 1
     ? t("mediaSend.title.one")
     : t("mediaSend.title.many", { count: fileCount });
+
+  useNativeBackAction(closeDialog, !isExiting);
 
   return createPortal(
     <div

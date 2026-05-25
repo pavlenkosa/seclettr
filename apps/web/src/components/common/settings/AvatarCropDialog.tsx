@@ -8,6 +8,7 @@
  */
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useI18n } from "@/i18n";
+import { useNativeBackAction } from "@/lib/hooks";
 import styles from "./AvatarCropDialog.module.css";
 
 interface AvatarCropDialogProps {
@@ -20,6 +21,7 @@ const CROP_SIZE = 300; // px — output and viewport square size
 
 export function AvatarCropDialog({ file, onConfirm, onCancel }: AvatarCropDialogProps) {
   const { t } = useI18n();
+  useNativeBackAction(onCancel);
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
   // State: pan offset (of image top-left inside the 300×300 crop square)

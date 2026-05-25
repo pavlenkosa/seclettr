@@ -18,6 +18,7 @@ import {
   type ReactNode,
   type Ref,
 } from "react";
+import { createPortal } from "react-dom";
 import { IconClose } from "../icons";
 import motionStyles from "@/components/ui/motion/Motion.module.css";
 import styles from "./ModalShell.module.css";
@@ -88,7 +89,7 @@ function ModalShellInner(
     onClose();
   };
 
-  return (
+  return createPortal(
     <div
       className={`${styles.overlay} ${isClosing ? motionStyles.fadeOut : motionStyles.fadeIn} ${overlayClassName}`.trim()}
       onClick={handleOverlayClick}
@@ -126,7 +127,8 @@ function ModalShellInner(
         <div className={`${styles.body} ${bodyClassName}`.trim()}>{children}</div>
         {footer ? <div className={`${styles.footer} ${footerClassName}`.trim()}>{footer}</div> : null}
       </section>
-    </div>
+    </div>,
+    document.body
   );
 }
 

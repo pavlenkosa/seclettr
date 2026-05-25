@@ -158,7 +158,7 @@ export function useFileAttachmentRuntime({
         cachedBlobRef.current ??
         await fetchAndDecryptAttachmentBlob(attachment, { messageId });
       cachedBlobRef.current = blob;
-      triggerAttachmentDownload(blob, attachment);
+      await triggerAttachmentDownload(blob, attachment);
       setDownloaded(true);
     } catch (error) {
       setErrorCause(resolveChatAttachmentErrorCause(error, "decryptFailed"));

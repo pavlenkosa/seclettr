@@ -1,6 +1,7 @@
 import { decryptAttachment, fromBase64Url } from "@seclettr/crypto";
 import { ApiError, api } from "@/lib/api";
 import { sanitizeDownloadName } from "@/lib/file-names";
+import { isNativePlatform } from "@/lib/native-platform";
 import { getUploadLocalSource } from "@/lib/upload-progress";
 import type { AttachmentMessageMeta } from "@/stores/messages";
 
@@ -241,18 +242,34 @@ export function revokeAttachmentObjectUrl(url: string | null): void {
   URL.revokeObjectURL(url);
 }
 
-export function triggerAttachmentDownload(
+export async function triggerAttachmentDownload(
   blob: Blob,
   attachment: AttachmentMessageMeta
-): void {
-  let url: string | null = null;
+): Promise<void> {
+  const fileName = sanitizeDownloadName(
+    attachment.fileName,
+    `attachment-${attachment.attachmentId}`
+  );
 
+  // On native Android, anchor.click() doesn't trigger a system download.
+  // Use the Web Share API instead so the user gets the OS share sheet
+  // (Save to Downloads, share to another app, etc.)
+  if (isNativePlatform() && navigator.canShare) {
+    try {
+      const file = new File([blob], fileName, { type: blob.type });
+      if (navigator.canShare({ files: [file] })) {
+        await navigator.share({ files: [file], title: fileName });
+        return;
+      }
+    } catch (error) {
+      // User cancelled share or share failed — fall through to anchor approach
+      if (error instanceof Error && error.name === "AbortError") return;
+    }
+  }
+
+  let url: string | null = null;
   try {
     url = createAttachmentObjectUrl(blob);
-    const fileName = sanitizeDownloadName(
-      attachment.fileName,
-      `attachment-${attachment.attachmentId}`
-    );
     const anchor = document.createElement("a");
     anchor.href = url;
     anchor.download = fileName;

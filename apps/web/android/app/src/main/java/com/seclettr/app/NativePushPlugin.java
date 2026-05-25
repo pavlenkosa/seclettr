@@ -34,7 +34,6 @@ public class NativePushPlugin extends Plugin {
     static final String EVENT_AUTH_FAILURE = "pushAuthFailure";
 
     private static NativePushPlugin activeInstance = null;
-    private PluginCall pendingPermissionCall = null;
 
     public static NativePushPlugin getActiveInstance() {
         return activeInstance;
@@ -84,8 +83,7 @@ public class NativePushPlugin extends Plugin {
             return;
         }
 
-        pendingPermissionCall = call;
-        requestPermissionForAlias(PERMISSION_ALIAS, "permissionResult");
+        requestPermissionForAlias(PERMISSION_ALIAS, call, "permissionResult");
     }
 
     @PermissionCallback
@@ -94,12 +92,7 @@ public class NativePushPlugin extends Plugin {
         boolean granted = getPermissionStates().containsKey(PERMISSION_ALIAS)
             && Boolean.TRUE.equals(getPermissionStates().get(PERMISSION_ALIAS));
         result.put("value", granted ? "granted" : "denied");
-
-        PluginCall pending = pendingPermissionCall;
-        pendingPermissionCall = null;
-        if (pending != null) {
-            pending.resolve(result);
-        }
+        call.resolve(result);
     }
 
     @PluginMethod

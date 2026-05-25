@@ -142,7 +142,7 @@ async function getActiveCallSession(
   return calls[0] ?? null;
 }
 
-async function getExistingActiveGroupCall(
+async function _getExistingActiveGroupCall(
   groupId: string
 ): Promise<ActiveCallSession | null> {
   const calls = await query<ActiveCallSession>(

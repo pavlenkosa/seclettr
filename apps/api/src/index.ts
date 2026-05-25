@@ -297,10 +297,16 @@ async function main() {
     app.log.info(`Received ${signal}, shutting down…`);
     clearTimeout(retentionTimer);
     if (retentionInterval) clearInterval(retentionInterval);
+
+    const forceExitTimer = setTimeout(() => {
+      app.log.error("Graceful shutdown timed out — forcing exit");
+      process.exit(1);
+    }, 10_000).unref();
+
     await app.close();
     await pool.end();
     redis.disconnect();
-    process.exit(0);
+    clearTimeout(forceExitTimer);
   };
   process.on("SIGTERM", () => void shutdown("SIGTERM"));
   process.on("SIGINT", () => void shutdown("SIGINT"));

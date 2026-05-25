@@ -150,7 +150,7 @@ export async function plainMessageRoutes(fastify: FastifyInstance): Promise<void
       if (!body) return;
 
       // Verify recipient exists and fetch both usernames in parallel
-      const [[recipient], senderUsername, recipientUsername] = await Promise.all([
+      const [[recipient], senderUsername, _recipientUsername] = await Promise.all([
         query<{ id: string }>("SELECT id FROM users WHERE id = $1", [recipientUserId]),
         fetchUsername(userId),
         fetchUsername(recipientUserId),

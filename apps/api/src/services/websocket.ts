@@ -503,7 +503,9 @@ export async function registerWebSocketHandler(
   });
 }
 
-type WsClientMessage = import("@seclettr/protocol").WsClientMessage;
+import type { WsClientMessage as WsClientMessageType } from "@seclettr/protocol";
+
+type WsClientMessage = WsClientMessageType;
 
 function uniqueDeviceIds(deviceIds: string[]): string[] {
   return [...new Set(deviceIds)];
@@ -751,7 +753,7 @@ async function publishGroupMediaModeEvent(
   await publishGroupCallEventExcludingSender(callId, groupId, senderDeviceId, payload);
 }
 
-function buildParticipantJoinedEvents(input: {
+function _buildParticipantJoinedEvents(input: {
   groupId: string;
   callId: string;
   userId: string;

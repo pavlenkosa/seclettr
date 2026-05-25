@@ -263,11 +263,20 @@ export class SeclettrWebSocket {
               this.token = newToken;
               this.reconnectDelay = 1000;
               void this.doConnect();
+            } else if (!this.intentionalClose) {
+              // Refresh returned null (network error or server rejection).
+              // Schedule a retry — if the session was truly expired, the
+              // sign-out path will call disconnect() which sets intentionalClose
+              // = true, making the next doConnect() a harmless no-op.
+              this.scheduleReconnect();
             }
           })
           .catch(() => {
             if (this.authRefreshInFlight === refreshPromise) {
               this.authRefreshInFlight = null;
+            }
+            if (!this.intentionalClose) {
+              this.scheduleReconnect();
             }
           });
       } else {

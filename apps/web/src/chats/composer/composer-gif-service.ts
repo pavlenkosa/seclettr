@@ -1,6 +1,13 @@
 export interface GifResult {
   id: string;
+  /** Full-quality URL used for preview in the picker grid. */
   url: string;
+  /**
+   * URL actually uploaded when the user sends the GIF.
+   * Uses Giphy's "downsized" variant (≤5 MB) instead of "original"
+   * (which can be 20 MB+), so the client-side download + re-upload is fast.
+   */
+  sendUrl: string;
   previewUrl: string;
   width: number;
   height: number;
@@ -36,15 +43,23 @@ function parseGiphyResult(result: GiphyResult): GifResult | null {
     result.images.original ??
     result.images.downsized ??
     result.images.fixed_width;
+  // "downsized" is capped at ~5 MB by Giphy; "original" can be 20 MB+.
+  // Use downsized as the send URL so the client downloads a small file
+  // before re-uploading; fall back to fixed_width then full if not available.
+  const send =
+    result.images.downsized ??
+    result.images.fixed_width ??
+    full;
   const preview =
     result.images.fixed_width ??
     result.images.fixed_width_small ??
     full;
-  if (!full || !preview) return null;
+  if (!full || !preview || !send) return null;
 
   return {
     id: result.id,
     url: full.url,
+    sendUrl: send.url,
     previewUrl: preview.url,
     width: parseInt(preview.width, 10) || 200,
     height: parseInt(preview.height, 10) || 150,

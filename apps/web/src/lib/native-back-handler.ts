@@ -6,13 +6,16 @@ interface AppPlugin {
 }
 
 interface CapacitorGlobal {
+  App?: AppPlugin;
   Plugins?: Record<string, unknown>;
 }
 
 function getPlugin(): AppPlugin | null {
   if (!isNativePlatform()) return null;
   const cap = (window as unknown as { Capacitor?: CapacitorGlobal }).Capacitor;
-  const plugin = cap?.Plugins?.["App"];
+  // Capacitor core App plugin is exposed as `Capacitor.App` in current native shells.
+  // Keep the legacy `Plugins["App"]` fallback so older bridge shapes still work.
+  const plugin = cap?.App ?? (cap?.Plugins?.["App"] as AppPlugin | undefined);
   return plugin ? (plugin as AppPlugin) : null;
 }
 

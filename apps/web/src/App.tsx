@@ -23,6 +23,7 @@ import { AppBootSkeleton } from "./components/common/AppBootSkeleton";
 import { startAppRealtimeListeners } from "./lib/app-realtime-bootstrap";
 import { logger } from "./lib/logger.js";
 import { useInactivityLock } from "./lib/useInactivityLock";
+import { useAppForegroundResync } from "./lib/useAppForegroundResync";
 import { useAuthStore } from "./stores/auth";
 
 /** 15 minutes — configurable in Settings (future). */
@@ -197,6 +198,10 @@ export function App() {
     timeoutMs: LOCK_TIMEOUT_MS,
     onLock: handleLock,
   });
+
+  // Force a token refresh + WS reconnect when the app returns to the foreground
+  // after being backgrounded (critical on Android where the OS kills WebSockets).
+  useAppForegroundResync(hasActiveSession);
 
   useEffect(() => {
     let cancelled = false;

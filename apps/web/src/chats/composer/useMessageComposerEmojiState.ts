@@ -226,7 +226,7 @@ export function useMessageComposerEmojiState({
       if (!onSendGif || isSendingGif) return;
       setIsSendingGif(true);
       try {
-        await onSendGif(gif.url, `${gif.id}.gif`);
+        await onSendGif(gif.sendUrl, `${gif.id}.gif`);
         setIsEmojiPickerOpen(false);
       } finally {
         setIsSendingGif(false);

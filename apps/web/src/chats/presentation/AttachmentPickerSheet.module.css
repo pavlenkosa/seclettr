@@ -1,0 +1,175 @@
+/* Telegram-style attachment picker: icon-grid bottom sheet. */
+
+.overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 600;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  background: rgb(0 0 0 / 0.44);
+  -webkit-backdrop-filter: blur(3px);
+  backdrop-filter: blur(3px);
+}
+
+.sheet {
+  width: 100%;
+  max-width: 600px;
+  background: var(--surface-float, var(--surface-shell-strong));
+  border-radius: 20px 20px 0 0;
+  border: 1px solid color-mix(in srgb, var(--panel-border-soft, var(--panel-border)) 80%, transparent);
+  border-bottom: none;
+  padding: 0.5rem 1rem calc(env(safe-area-inset-bottom, 0px) + 0.75rem);
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  box-shadow: 0 -4px 32px rgb(0 0 0 / 0.22);
+  will-change: transform;
+}
+
+/* ── drag handle ─────────────────────────────────────────────────────────── */
+
+.handle {
+  width: 36px;
+  height: 4px;
+  border-radius: 2px;
+  background: color-mix(in srgb, var(--text-tertiary, var(--text-secondary)) 40%, transparent);
+  margin: 0.5rem auto 0.75rem;
+  flex-shrink: 0;
+}
+
+/* ── icon grid ───────────────────────────────────────────────────────────── */
+
+.grid {
+  display: flex;
+  flex-direction: row;
+  gap: 0.75rem;
+  justify-content: flex-start;
+  padding: 0.25rem 0.25rem 0.75rem;
+}
+
+.item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  min-width: 68px;
+  flex: 0 0 auto;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.item:active .iconWrap {
+  opacity: 0.72;
+  transform: scale(0.94);
+}
+
+.iconWrap {
+  width: 60px;
+  height: 60px;
+  border-radius: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition:
+    transform 80ms var(--motion-ease-standard, ease),
+    opacity 80ms var(--motion-ease-standard, ease);
+  flex-shrink: 0;
+}
+
+.iconWrap.camera {
+  background: linear-gradient(145deg, #4f8ef7 0%, #7c6af7 100%);
+  color: #fff;
+}
+
+.iconWrap.gallery {
+  background: linear-gradient(145deg, #34c97a 0%, #17b8c4 100%);
+  color: #fff;
+}
+
+.iconWrap.file {
+  background: linear-gradient(145deg, #f7a935 0%, #f05a5a 100%);
+  color: #fff;
+}
+
+.label {
+  font-size: 0.74rem;
+  font-weight: 580;
+  color: var(--text-primary);
+  letter-spacing: 0;
+  text-align: center;
+  white-space: nowrap;
+}
+
+/* ── cancel button ───────────────────────────────────────────────────────── */
+
+.cancelBtn {
+  width: 100%;
+  padding: 0.76rem 0;
+  border: 1px solid color-mix(in srgb, var(--panel-border-soft, #333) 72%, transparent);
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--surface-shell, #1a1a1a) 90%, transparent);
+  color: var(--text-secondary);
+  font-size: 0.92rem;
+  font-weight: 600;
+  cursor: pointer;
+  margin-top: 0.3rem;
+  -webkit-tap-highlight-color: transparent;
+  transition: background-color 100ms ease, color 100ms ease;
+}
+
+.cancelBtn:active {
+  background: color-mix(in srgb, var(--accent, #7c3aed) 10%, var(--surface-shell, #1a1a1a));
+  color: var(--accent, #7c3aed);
+}
+
+/* ── slide-up animation ──────────────────────────────────────────────────── */
+
+@keyframes sheetIn {
+  from { transform: translateY(100%); opacity: 0.6; }
+  to   { transform: translateY(0);    opacity: 1; }
+}
+
+@keyframes sheetOut {
+  from { transform: translateY(0);    opacity: 1; }
+  to   { transform: translateY(100%); opacity: 0; }
+}
+
+@keyframes overlayIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+@keyframes overlayOut {
+  from { opacity: 1; }
+  to   { opacity: 0; }
+}
+
+.overlay.entering {
+  animation: overlayIn 200ms ease both;
+}
+
+.overlay.exiting {
+  animation: overlayOut 180ms ease both;
+  pointer-events: none;
+}
+
+.sheet.entering {
+  animation: sheetIn 240ms var(--motion-ease-standard, cubic-bezier(0.34, 1.1, 0.64, 1)) both;
+}
+
+.sheet.exiting {
+  animation: sheetOut 180ms ease both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sheet.entering,
+  .sheet.exiting,
+  .overlay.entering,
+  .overlay.exiting {
+    animation: none !important;
+  }
+}

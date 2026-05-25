@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useShallow } from "zustand/react/shallow";
 import { useI18n } from "@/i18n";
 import type { AutoDecryptMedia, CallSecurityMode } from "@/ui-settings";
@@ -6,8 +6,20 @@ import { useAuthStore } from "@/stores/auth";
 import { InputField, PillButton, SegmentedControl } from "@/components/ui";
 import { exportChatHistory, importChatHistory } from "@/lib/chat-transfer";
 import { ApiError } from "@/lib/api";
+import {
+  getBiometricEnabled,
+  setBiometricEnabledFlag,
+  verifyPin,
+} from "@/lib/app-lock-password";
+import {
+  checkBiometricAvailability,
+  clearPinBiometric,
+  storePinBiometric,
+  type BiometricAvailability,
+} from "@/lib/native-biometric";
 import { SettingsGroup, SettingsRow } from "./SettingsSectionPrimitives";
 import styles from "./SecuritySettingsSection.module.css";
+import sharedStyles from "../SettingsSections.module.css";
 
 const CALL_SECURITY_MODES: CallSecurityMode[] = ["compatibility", "balanced", "strict"];
 const AUTO_DECRYPT_MEDIA_MODES: AutoDecryptMedia[] = ["on", "off"];
@@ -40,6 +52,155 @@ function PinFeedbackMessage({
     <p className={getPinFeedbackClassName(feedback, bottom)}>
       {feedback.msg}
     </p>
+  );
+}
+
+function BiometricUnlockRow() {
+  const { t } = useI18n();
+  const { pinEnabled } = useAuthStore(useShallow((state) => ({ pinEnabled: state.pinEnabled })));
+  const [avail, setAvail] = useState<BiometricAvailability | null>(null);
+  const [biometricOn, setBiometricOn] = useState(() => getBiometricEnabled());
+  const [mode, setMode] = useState<"idle" | "enable">("idle");
+  const [pin, setPin] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [feedback, setFeedback] = useState<PinFeedbackState | null>(null);
+
+  useEffect(() => {
+    void checkBiometricAvailability().then(setAvail);
+  }, []);
+
+  if (!pinEnabled || !avail?.available) return null;
+
+  const handleDisable = async () => {
+    setBusy(true);
+    try {
+      await clearPinBiometric();
+      setBiometricEnabledFlag(false);
+      setBiometricOn(false);
+      setFeedback({ kind: "success", msg: t("settings.appLock.biometric.disabled") });
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const handleEnable = async () => {
+    if (!pin) {
+      setFeedback({ kind: "error", msg: t("settings.appLock.biometric.enterPin") });
+      return;
+    }
+    setBusy(true);
+    try {
+      // 1. Verify the passcode is correct before storing it biometrically.
+      const pinOk = await verifyPin(pin).catch(() => false);
+      if (!pinOk) {
+        setFeedback({ kind: "error", msg: t("lock.pin.error") });
+        return;
+      }
+      // 2. Store the PIN in the secure enclave (no prior verifyIdentity needed —
+      //    setCredentials uses EncryptedSharedPreferences which does not require
+      //    an active biometric auth token; calling verifyIdentity first would
+      //    consume the token and make the subsequent write fail on Android).
+      const stored = await storePinBiometric(pin);
+      if (stored) {
+        setBiometricEnabledFlag(true);
+        setBiometricOn(true);
+        setMode("idle");
+        setPin("");
+        setFeedback({ kind: "success", msg: t("settings.appLock.biometric.enabled") });
+      } else {
+        setFeedback({ kind: "error", msg: t("settings.appLock.biometric.failed") });
+      }
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const handleStartEnable = () => {
+    setFeedback(null);
+    setPin("");
+    setMode("enable");
+  };
+
+  const handleCancel = () => {
+    setMode("idle");
+    setPin("");
+    setFeedback(null);
+  };
+
+  return (
+    <SettingsRow
+      label={t("settings.appLock.biometric")}
+      description={t("settings.appLock.biometric.description")}
+      layout={mode === "enable" ? "stacked" : "inline"}
+    >
+      {mode === "idle" ? (
+        <div className={styles.pinButtonRow}>
+          {biometricOn ? (
+            <PillButton
+              type="button"
+              tone="danger"
+              appearance="soft"
+              size="sm"
+              onClick={() => { void handleDisable(); }}
+              disabled={busy}
+            >
+              {t("settings.appLock.biometric.disable")}
+            </PillButton>
+          ) : (
+            <PillButton
+              type="button"
+              tone="accent"
+              appearance="soft"
+              size="sm"
+              onClick={handleStartEnable}
+              disabled={busy}
+            >
+              {t("settings.appLock.biometric.enable")}
+            </PillButton>
+          )}
+        </div>
+      ) : (
+        <div className={styles.pinInputGroup}>
+          <p className={styles.pinHint}>{t("settings.appLock.biometric.enterPin")}</p>
+          <InputField
+            type="password"
+            autoComplete="current-password"
+            placeholder={t("settings.appLock.pin")}
+            aria-label={t("settings.appLock.pin")}
+            value={pin}
+            onChange={(e) => { setPin(e.target.value); setFeedback(null); }}
+            disabled={busy}
+            wrapperClassName={styles.pinInput}
+          />
+          {feedback ? <PinFeedbackMessage feedback={feedback} /> : null}
+          <div className={styles.pinButtonRow}>
+            <PillButton
+              type="button"
+              tone="accent"
+              appearance="soft"
+              size="sm"
+              onClick={() => { void handleEnable(); }}
+              disabled={busy}
+            >
+              {t("settings.appLock.biometric.enable")}
+            </PillButton>
+            <PillButton
+              type="button"
+              tone="neutral"
+              appearance="soft"
+              size="sm"
+              onClick={handleCancel}
+              disabled={busy}
+            >
+              {t("settings.appLock.pinEntry.cancel")}
+            </PillButton>
+          </div>
+        </div>
+      )}
+      {mode === "idle" && feedback ? (
+        <PinFeedbackMessage feedback={feedback} bottom />
+      ) : null}
+    </SettingsRow>
   );
 }
 
@@ -240,6 +401,7 @@ function AppLockSection() {
       {mode === "idle" && feedback ? (
         <PinFeedbackMessage feedback={feedback} bottom />
       ) : null}
+      <BiometricUnlockRow />
     </SettingsGroup>
   );
 }
@@ -460,7 +622,7 @@ export function SecuritySettingsSection({
   const autoDecryptOptions = AUTO_DECRYPT_MEDIA_MODES.map((mode) => ({ value: mode, label: t(`settings.autoDecryptMedia.${mode}`) }));
 
   return (
-    <div className={styles.groupStack}>
+    <div className={sharedStyles.groupStack}>
       <SettingsGroup
         eyebrow={t("settings.groups.security.calls")}
         title={t("settings.groups.security.calls.title")}

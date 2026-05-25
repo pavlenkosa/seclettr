@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useI18n } from "@/i18n";
+import { getBiometricEnabled } from "@/lib/app-lock-password";
 import { checkBiometricAvailability, retrievePinBiometric } from "@/lib/native-biometric";
 import styles from "./LockScreen.module.css";
 
@@ -70,7 +71,9 @@ export function LockScreen({ username, isUnlocking, pinWrong, onUnlock, onLogout
 
   useEffect(() => {
     void checkBiometricAvailability().then((avail) => {
-      if (avail.available) {
+      // Only activate biometric unlock if hardware is available AND the user
+      // has not explicitly disabled it (getBiometricEnabled flag).
+      if (avail.available && getBiometricEnabled()) {
         setBiometryKind(getBiometryKind(avail.biometryType));
         void tryBiometric();
       }

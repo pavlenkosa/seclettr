@@ -39,6 +39,9 @@
   font-size: 1.04rem;
   font-weight: 730;
   line-height: 1.2;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 /* === desktop split layout === */
@@ -287,6 +290,19 @@
 /* === mobile split/detail === */
 
 @media (max-width: 760px) {
+  .title {
+    /* Allow up to 2 lines on mobile — truncation looks bad at large system font
+       sizes because rem scales with the OS text-size preference. */
+    max-width: calc(100vw - 96px);
+    font-size: min(1.04rem, calc(2.7vw + 0.36rem));
+    white-space: normal;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    text-overflow: clip;
+  }
+
   .root {
     position: absolute;
     inset: 0;

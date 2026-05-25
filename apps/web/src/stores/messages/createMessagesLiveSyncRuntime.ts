@@ -202,7 +202,7 @@ export function createMessagesLiveSyncRuntime({
       const entries: [string, Conversation][] =
         indexedConversationId && state.conversations[indexedConversationId]
           ? [[indexedConversationId, state.conversations[indexedConversationId]]]
-          : (Object.entries(state.conversations) as [string, Conversation][]);
+          : (Object.entries(state.conversations));
 
       const conversations = { ...state.conversations };
       let changed = false;

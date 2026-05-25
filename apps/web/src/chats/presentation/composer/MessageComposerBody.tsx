@@ -11,7 +11,8 @@ import type { RecordingCopy } from "./message-composer-view-model";
 import styles from "../MessageComposer.module.css";
 
 type AttachmentButtonProps = Readonly<{
-  draft: UseMessageComposerDraftResult;
+  onAttach: () => void;
+  disabled: boolean;
   attachTitle: string;
   attachLabel: string;
 }>;
@@ -33,6 +34,7 @@ type IdleComposerControlsProps = Readonly<{
   emojiPickerId: string;
   draft: UseMessageComposerDraftResult;
   emojiState: UseMessageComposerEmojiStateResult;
+  onAttach: () => void;
   attachTitle: string;
   attachLabel: string;
   placeholder: string;
@@ -47,6 +49,7 @@ type ComposerBodyProps = Readonly<{
   emojiPickerId: string;
   draft: UseMessageComposerDraftResult;
   emojiState: UseMessageComposerEmojiStateResult;
+  onAttach: () => void;
   attachTitle: string;
   attachLabel: string;
   placeholder: string;
@@ -54,14 +57,15 @@ type ComposerBodyProps = Readonly<{
 }>;
 
 function AttachmentButton({
-  draft,
+  onAttach,
+  disabled,
   attachTitle,
   attachLabel,
 }: AttachmentButtonProps) {
   return (
     <IconButton
-      onClick={() => draft.attachmentInputRef.current?.click()}
-      disabled={draft.sending}
+      onClick={onAttach}
+      disabled={disabled}
       className={styles.secondaryBtn}
       title={attachTitle}
       aria-label={attachLabel}
@@ -159,6 +163,7 @@ function IdleComposerControls({
   emojiPickerId,
   draft,
   emojiState,
+  onAttach,
   attachTitle,
   attachLabel,
   placeholder,
@@ -166,7 +171,7 @@ function IdleComposerControls({
 }: IdleComposerControlsProps) {
   return (
     <>
-      <AttachmentButton draft={draft} attachTitle={attachTitle} attachLabel={attachLabel} />
+      <AttachmentButton onAttach={onAttach} disabled={draft.sending} attachTitle={attachTitle} attachLabel={attachLabel} />
       <ComposerTextArea
         draft={draft}
         emojiState={emojiState}
@@ -186,6 +191,7 @@ export function ComposerBody({
   emojiPickerId,
   draft,
   emojiState,
+  onAttach,
   attachTitle,
   attachLabel,
   placeholder,
@@ -209,6 +215,7 @@ export function ComposerBody({
       emojiPickerId={emojiPickerId}
       draft={draft}
       emojiState={emojiState}
+      onAttach={onAttach}
       attachTitle={attachTitle}
       attachLabel={attachLabel}
       placeholder={placeholder}

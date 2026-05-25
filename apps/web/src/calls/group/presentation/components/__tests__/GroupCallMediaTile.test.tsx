@@ -45,8 +45,8 @@ describe("GroupCallMediaTile", () => {
       );
     });
 
-    const tile = container.querySelector('[aria-label="Focus remote content"]') as HTMLElement | null;
-    const stopWatchingButton = container.querySelector('[aria-label="Stop viewing"]') as HTMLButtonElement | null;
+    const tile = container.querySelector('[aria-label="Focus remote content"]');
+    const stopWatchingButton = container.querySelector('[aria-label="Stop viewing"]');
 
     expect(tile).not.toBeNull();
     expect(stopWatchingButton).not.toBeNull();

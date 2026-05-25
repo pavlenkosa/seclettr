@@ -42,16 +42,23 @@ function normalizeServerUrl(raw: string): string | null {
   }
 }
 
-async function testServerConnection(serverUrl: string): Promise<boolean> {
-  try {
-    const res = await fetch(`${serverUrl}/api/users/me`, {
-      method: "GET",
-      signal: AbortSignal.timeout(8000),
-    });
-    return res.status < 500;
-  } catch {
-    return false;
-  }
+/**
+ * Returns true when the error string looks like a network-level failure
+ * (server unreachable, DNS, connection refused) rather than an API error.
+ * Covers browser-specific wording: Chrome "Failed to fetch", Safari "Load failed",
+ * Firefox "NetworkError when attempting to fetch resource".
+ */
+function isNetworkError(error: string): boolean {
+  const n = error.toLowerCase();
+  return (
+    n.includes("failed to fetch") ||
+    n.includes("load failed") ||
+    n.includes("networkerror") ||
+    n.includes("network request failed") ||
+    n.includes("err_connection_refused") ||
+    n.includes("err_name_not_resolved") ||
+    n.includes("err_internet_disconnected")
+  );
 }
 
 // ── Native layout (full-screen, no card wrapper) ──────────────────────────
@@ -296,7 +303,9 @@ export function AuthPage() {
     setLoading(true);
 
     try {
-      // On native: validate and save server URL if changed
+      // On native: validate and save server URL before attempting auth.
+      // Reachability is verified implicitly — if the server is down the login
+      // call will fail with a network error which we detect below.
       if (native) {
         const normalized = normalizeServerUrl(serverUrl);
         if (!normalized) {
@@ -305,11 +314,6 @@ export function AuthPage() {
         }
         const currentStored = getNativeServerUrl();
         if (normalized !== currentStored) {
-          const reachable = await testServerConnection(normalized);
-          if (!reachable) {
-            setServerError("Сервер недоступен. Проверьте URL и подключение.");
-            return;
-          }
           setNativeServerUrl(normalized);
           setServerUrl(normalized);
         }
@@ -320,6 +324,14 @@ export function AuthPage() {
         await register(normalizedUsername, password, deviceName);
       } else {
         await login(normalizedUsername, password, deviceName);
+      }
+
+      // Auth store catches network errors internally and stores them.
+      // Surface them as a clearer server-unreachable message.
+      const storeError = useAuthStore.getState().error;
+      if (storeError && isNetworkError(storeError)) {
+        clearError();
+        setServerError("Сервер недоступен. Проверьте URL и подключение.");
       }
     } catch {
       // error is in store

@@ -271,13 +271,13 @@ export function AppearanceSettingsSection({
           description={t("settings.groups.appearance.style.description")}
           tone="accent"
         >
-          <SettingsRow label={t("settings.colors")} controlClassName={styles.settingControlWide}>
-            <div className={styles.swatches}>
+          <SettingsRow label={t("settings.colors")} layout="stacked">
+            <div className={sharedStyles.swatches}>
               {ACCENTS.map((accent) => (
                 <button
                   key={accent}
                   type="button"
-                  className={`${styles.swatchBtn} ${getAccentClass(accent)} ${accentColor === accent ? styles.swatchBtnActive : ""}`}
+                  className={`${sharedStyles.swatchBtn} ${getAccentClass(accent)} ${accentColor === accent ? sharedStyles.swatchBtnActive : ""}`}
                   onClick={() => setAccentColor(accent)}
                   aria-label={t(`settings.colors.${accent}`)}
                   title={t(`settings.colors.${accent}`)}

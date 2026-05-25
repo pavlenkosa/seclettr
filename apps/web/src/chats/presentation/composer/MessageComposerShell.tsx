@@ -5,6 +5,7 @@ import { MessageComposerPrimaryActions, MessageComposerVideoRecordingOverlay, ty
 import type { UseMessageComposerDraftResult } from "../../composer/useMessageComposerDraft";
 import type { UseMessageComposerEmojiStateResult } from "../../composer/useMessageComposerEmojiState";
 import type { UseMediaSendDialogResult } from "../../composer/useMediaSendDialog";
+import { useAttachmentPicker } from "../../composer/useAttachmentPicker";
 import { ComposerBody } from "./MessageComposerBody";
 import {
   ComposerErrorMessage,
@@ -12,6 +13,7 @@ import {
 } from "./MessageComposerDialogMount";
 import { HiddenAttachmentInput } from "./MessageComposerHiddenAttachmentInput";
 import { ReplyPreview } from "./MessageComposerReplyPreview";
+import { AttachmentPickerSheet } from "../AttachmentPickerSheet";
 import type { DialogState, RecordingCopy } from "./message-composer-view-model";
 import styles from "../MessageComposer.module.css";
 
@@ -31,6 +33,10 @@ interface MessageComposerShellProps {
   readonly emojiState: UseMessageComposerEmojiStateResult;
   readonly attachTitle: string;
   readonly attachLabel: string;
+  readonly pickerCameraLabel: string;
+  readonly pickerGalleryLabel: string;
+  readonly pickerFileLabel: string;
+  readonly pickerCancelLabel: string;
   readonly placeholder: string;
   readonly textareaLabel: string;
   readonly primaryAction: { kind: "send" } | { kind: "record"; mode: RecordMode };
@@ -69,6 +75,10 @@ export function MessageComposerShell({
   emojiState,
   attachTitle,
   attachLabel,
+  pickerCameraLabel,
+  pickerGalleryLabel,
+  pickerFileLabel,
+  pickerCancelLabel,
   placeholder,
   textareaLabel,
   primaryAction,
@@ -91,6 +101,11 @@ export function MessageComposerShell({
   dialogState,
 }: MessageComposerShellProps) {
   const composerRef = useRef<HTMLDivElement>(null);
+
+  const picker = useAttachmentPicker({
+    onFilesReady: mediaSend.openDialog,
+    fileInputRef: draft.attachmentInputRef,
+  });
 
   // Track actual composer height so the fixed-position emoji picker on mobile
   // (which uses bottom: calc(safe-area + var(--composer-height, 72px))) always
@@ -144,6 +159,7 @@ export function MessageComposerShell({
           emojiPickerId={emojiPickerId}
           draft={draft}
           emojiState={emojiState}
+          onAttach={picker.openPicker}
           attachTitle={attachTitle}
           attachLabel={attachLabel}
           placeholder={placeholder}
@@ -174,6 +190,20 @@ export function MessageComposerShell({
 
       <ComposerErrorMessage message={composerError} />
       <MountedMediaSendDialog dialogState={dialogState} mediaSend={mediaSend} />
+
+      {picker.isSheetOpen && (
+        <AttachmentPickerSheet
+          isExiting={picker.isSheetExiting}
+          onCamera={picker.onCamera}
+          onGallery={picker.onGallery}
+          onFile={picker.onFile}
+          onClose={picker.closeSheet}
+          cameraLabel={pickerCameraLabel}
+          galleryLabel={pickerGalleryLabel}
+          fileLabel={pickerFileLabel}
+          cancelLabel={pickerCancelLabel}
+        />
+      )}
     </div>
   );
 }

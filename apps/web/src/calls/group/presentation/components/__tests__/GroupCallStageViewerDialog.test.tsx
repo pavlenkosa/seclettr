@@ -99,8 +99,8 @@ describe("GroupCallStageViewerDialog", () => {
     await flushLazyViewer();
 
     // Dialog portals to document.body — query there, not inside container.
-    const closeButton = document.body.querySelector('button[aria-label="Close viewer"]') as HTMLButtonElement | null;
-    const stopWatchingButton = document.body.querySelector('[aria-label="Stop viewing"]') as HTMLButtonElement | null;
+    const closeButton = document.body.querySelector('button[aria-label="Close viewer"]');
+    const stopWatchingButton = document.body.querySelector('[aria-label="Stop viewing"]');
 
     expect(closeButton).not.toBeNull();
     expect(stopWatchingButton).not.toBeNull();

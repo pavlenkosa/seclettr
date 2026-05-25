@@ -78,7 +78,7 @@ describe("DirectCallStage", () => {
       );
     });
 
-    const initialCompanion = container.querySelector('[aria-label="Show camera on stage"]') as HTMLElement | null;
+    const initialCompanion = container.querySelector('[aria-label="Show camera on stage"]');
     expect(initialCompanion).not.toBeNull();
 
     act(() => {
@@ -101,7 +101,7 @@ describe("DirectCallStage", () => {
 
     const shortcutButton = container.querySelector(
       '[aria-label="Show camera on stage"]'
-    ) as HTMLButtonElement | null;
+    );
     expect(shortcutButton).not.toBeNull();
   });
 
@@ -115,7 +115,7 @@ describe("DirectCallStage", () => {
       );
     });
 
-    const stopWatchingButton = container.querySelector('[aria-label="Stop watching screen share"]') as HTMLButtonElement | null;
+    const stopWatchingButton = container.querySelector('[aria-label="Stop watching screen share"]');
     expect(stopWatchingButton).not.toBeNull();
 
     act(() => {
@@ -124,7 +124,7 @@ describe("DirectCallStage", () => {
 
     const restoreButton = container.querySelector(
       '[aria-label="Show screen share on stage"]'
-    ) as HTMLButtonElement | null;
+    );
     expect(restoreButton).not.toBeNull();
     expect(container.querySelector('[aria-label="Stop watching screen share"]')).toBeNull();
 
@@ -145,7 +145,7 @@ describe("DirectCallStage", () => {
       );
     });
 
-    const stopWatchingButton = container.querySelector('[aria-label="Stop watching screen share"]') as HTMLButtonElement | null;
+    const stopWatchingButton = container.querySelector('[aria-label="Stop watching screen share"]');
     expect(stopWatchingButton).not.toBeNull();
 
     act(() => {

@@ -105,7 +105,7 @@ export function createPlainMessagesHistoryRuntime(
           } else {
             // Update unread count and profile fields from server even if conversation already exists.
             next[key] = {
-              ...next[key]!,
+              ...next[key],
               unreadCount: c.unreadCount,
               displayName: c.peerDisplayName ?? null,
               avatarKey: c.peerAvatarKey ?? null,

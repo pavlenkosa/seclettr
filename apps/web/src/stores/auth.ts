@@ -30,7 +30,6 @@ import { logger } from "@/lib/logger.js";
 import {
   clearLegacyLockSnapshotStorage,
   clearPin,
-  getBiometricEnabled,
   hasPinSet,
   setBiometricEnabledFlag,
   setPinHash,
@@ -51,10 +50,12 @@ import {
 import { nativeStorageRemove } from "@/lib/native-storage";
 import { storePinBiometric, clearPinBiometric } from "@/lib/native-biometric";
 import {
+  onNativePushAuthFailure,
   startNativePushService,
   stopNativePushService,
   updateNativePushToken,
 } from "@/lib/native-notifications";
+import { refreshSessionAccessToken } from "@/lib/session";
 
 export type { AuthLifecycleState, AuthRecoveryReason, AuthState } from "./auth-types";
 
@@ -373,11 +374,9 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     await protectPersistedStorageKeyWithPin(exportableStorageKey, pin);
     await setPinHash(pin);
     // Store PIN in biometric secure enclave so FaceID/TouchID/Fingerprint can retrieve it.
-    // Also re-enable the biometric flag so the settings toggle reflects the correct state.
-    if (getBiometricEnabled()) {
-      void storePinBiometric(pin);
-    }
-    setBiometricEnabledFlag(true);
+    // Await the result: only mark biometric as enabled if the credential was actually stored.
+    const biometricStored = await storePinBiometric(pin).catch(() => false);
+    setBiometricEnabledFlag(biometricStored);
     set({
       pinEnabled: true,
       storageKey: exportableStorageKey,
@@ -447,4 +446,20 @@ const authRealtimeRuntime = createAuthRealtimeRuntime({
     }
     useAuthStore.setState({ ...buildSignedOutState(), pinEnabled: false });
   },
+});
+
+// When the background push foreground-service's WS token expires (4001),
+// the service emits "pushAuthFailure". Refresh the session and hand the
+// service a fresh token so it can reconnect without waiting 30 s.
+void onNativePushAuthFailure(async () => {
+  const state = useAuthStore.getState();
+  if (state.authLifecycle !== "ready") return;
+  try {
+    const token = await refreshSessionAccessToken();
+    if (token) {
+      void updateNativePushToken(token);
+    }
+  } catch {
+    // Network error — service will retry on its own schedule.
+  }
 });

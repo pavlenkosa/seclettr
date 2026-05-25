@@ -66,7 +66,7 @@ describe("DirectCallFloatingPreview", () => {
     expect(preview?.style.top).toBe("24px");
     expect(container.textContent).toContain("You");
     expect(container.querySelector("video")).not.toBeNull();
-    const resizeHandle = container.querySelector('[aria-label="Resize self preview"]') as HTMLButtonElement | null;
+    const resizeHandle = container.querySelector('[aria-label="Resize self preview"]');
     expect(resizeHandle).not.toBeNull();
 
     act(() => {

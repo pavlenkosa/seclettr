@@ -118,7 +118,7 @@ async function readSfuErrorMessage(response: Response): Promise<string> {
     if (text.trim()) {
       message = text;
     }
-  } catch {}
+  } catch { /* ignore */ }
   return message;
 }
 

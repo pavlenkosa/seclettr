@@ -193,3 +193,31 @@ export function clearLegacyLockSnapshotStorage(): void {
     // No-op.
   }
 }
+
+// ── Biometric unlock flag ────────────────────────────────────────────────────
+// Stored as an explicit "disabled" marker so the default (absent key) is
+// "enabled" — matching the behaviour where biometric credentials are
+// automatically stored whenever a passcode is set.
+
+const BIOMETRIC_DISABLED_KEY = "sc:biometric_disabled_v1";
+
+/** Returns true unless the user has explicitly disabled biometric unlock. */
+export function getBiometricEnabled(): boolean {
+  try {
+    return localStorage.getItem(BIOMETRIC_DISABLED_KEY) !== "1";
+  } catch {
+    return true;
+  }
+}
+
+export function setBiometricEnabledFlag(enabled: boolean): void {
+  try {
+    if (enabled) {
+      localStorage.removeItem(BIOMETRIC_DISABLED_KEY);
+    } else {
+      localStorage.setItem(BIOMETRIC_DISABLED_KEY, "1");
+    }
+  } catch {
+    // No-op if localStorage is unavailable.
+  }
+}

@@ -36,6 +36,7 @@ import {
 import { z, type ZodTypeAny } from "zod";
 import { refreshSessionAccessToken } from "./session";
 import { resolveApiBaseUrl } from "./runtime-config";
+import { isNativePlatform, getNativeServerUrl } from "./native-platform";
 
 export interface GroupCallParticipantDto {
   userId: string;
@@ -84,8 +85,21 @@ function buildRequestHeaders(options: RequestInit = {}): Headers {
   // browser-facing origin from standard headers when rewriting presigned S3
   // URLs. We pass it explicitly so the rewritten URL matches the page origin
   // and the browser trusts the cert / honors CORS.
-  if (typeof globalThis.location !== "undefined" && globalThis.location.origin) {
-    headers.set("X-Client-Origin", globalThis.location.origin);
+  //
+  // On Capacitor, location.origin is always `https://localhost` — use the
+  // stored server URL's origin instead so presigned S3 URLs are rewritten to
+  // the real public server (which Nginx proxies to MinIO), not to localhost.
+  let clientOrigin: string | null = null;
+  if (isNativePlatform()) {
+    const serverUrl = getNativeServerUrl();
+    if (serverUrl) {
+      try { clientOrigin = new URL(serverUrl).origin; } catch { /* ignore malformed */ }
+    }
+  } else if (typeof globalThis.location !== "undefined" && globalThis.location.origin) {
+    clientOrigin = globalThis.location.origin;
+  }
+  if (clientOrigin) {
+    headers.set("X-Client-Origin", clientOrigin);
   }
   return headers;
 }

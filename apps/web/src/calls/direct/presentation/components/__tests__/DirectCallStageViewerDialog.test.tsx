@@ -96,7 +96,7 @@ describe("DirectCallStageViewerDialog", () => {
 
     await renderDialog({ onClose, onStopWatchingScreen });
 
-    const stopWatchingButton = document.querySelector('[aria-label="Stop watching screen share"]') as HTMLButtonElement | null;
+    const stopWatchingButton = document.querySelector('[aria-label="Stop watching screen share"]');
     expect(stopWatchingButton).not.toBeNull();
 
     await act(async () => {

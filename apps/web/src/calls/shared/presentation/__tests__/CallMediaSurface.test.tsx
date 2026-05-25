@@ -73,8 +73,8 @@ describe("CallMediaSurface", () => {
       );
     });
 
-    const surface = container.querySelector(".surface") as HTMLElement | null;
-    const secondaryAction = container.querySelector(".secondary") as HTMLButtonElement | null;
+    const surface = container.querySelector(".surface");
+    const secondaryAction = container.querySelector(".secondary");
 
     expect(surface).not.toBeNull();
     expect(surface?.getAttribute("role")).toBe("button");
@@ -107,8 +107,8 @@ describe("CallMediaSurface", () => {
       );
     });
 
-    const pulse = container.querySelector(".pulse") as HTMLElement | null;
-    const fallback = container.querySelector(".fallback") as HTMLElement | null;
+    const pulse = container.querySelector(".pulse");
+    const fallback = container.querySelector(".fallback");
     expect(pulse).not.toBeNull();
     expect(pulse?.className).toContain("pulse-active");
     expect(fallback?.getAttribute("data-audio-present")).toBe("true");

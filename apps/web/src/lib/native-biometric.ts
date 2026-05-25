@@ -1,27 +1,12 @@
 import { isNativePlatform } from "./native-platform";
 
-type BiometryTypeName = "TouchID" | "FaceID" | "Fingerprint" | "FaceAuthentication" | "IrisAuthentication" | "MultipleFingerprint" | "Unknown";
-
 export type BiometricAvailability =
   | { available: true; biometryType: BiometryTypeName }
   | { available: false; reason: string };
 
-interface BiometricAuthPlugin {
-  checkBiometry: () => Promise<{
-    isAvailable: boolean;
-    biometryType: number;
-    reason?: string;
-  }>;
-  authenticate: (opts: { reason: string; cancelTitle?: string; allowDeviceCredential?: boolean }) => Promise<void>;
-  setSecret: (opts: { key: string; value: string }) => Promise<void>;
-  getSecret: (opts: { key: string; reason: string; cancelTitle?: string }) => Promise<{ value: string }>;
-  deleteSecret: (opts: { key: string }) => Promise<void>;
-}
+type BiometryTypeName = "TouchID" | "FaceID" | "Fingerprint" | "FaceAuthentication" | "IrisAuthentication" | "MultipleFingerprint" | "Unknown";
 
-interface CapacitorGlobal {
-  Plugins?: Record<string, unknown>;
-}
-
+/** BiometryType enum values returned by capacitor-native-biometric */
 const BIOMETRY_TYPE_NAMES: Record<number, BiometryTypeName> = {
   1: "TouchID",
   2: "FaceID",
@@ -31,11 +16,35 @@ const BIOMETRY_TYPE_NAMES: Record<number, BiometryTypeName> = {
   6: "MultipleFingerprint",
 };
 
-function getPlugin(): BiometricAuthPlugin | null {
+interface NativeBiometricPlugin {
+  isAvailable(opts?: { useFallback?: boolean }): Promise<{
+    isAvailable: boolean;
+    biometryType: number;
+    errorCode?: number;
+  }>;
+  verifyIdentity(opts?: {
+    reason?: string;
+    title?: string;
+    subtitle?: string;
+    negativeButtonText?: string;
+    useFallback?: boolean;
+  }): Promise<void>;
+  setCredentials(opts: { username: string; password: string; server: string }): Promise<void>;
+  getCredentials(opts: { server: string }): Promise<{ username: string; password: string }>;
+  deleteCredentials(opts: { server: string }): Promise<void>;
+}
+
+interface CapacitorGlobal {
+  Plugins?: Record<string, unknown>;
+}
+
+const BIOMETRIC_SERVER_KEY = "seclettr.biometric.pin.v1";
+
+function getPlugin(): NativeBiometricPlugin | null {
   if (!isNativePlatform()) return null;
   const cap = (window as unknown as { Capacitor?: CapacitorGlobal }).Capacitor;
-  const plugin = cap?.Plugins?.["BiometricAuth"];
-  return plugin ? (plugin as BiometricAuthPlugin) : null;
+  const plugin = cap?.Plugins?.["NativeBiometric"];
+  return plugin ? (plugin as NativeBiometricPlugin) : null;
 }
 
 export async function checkBiometricAvailability(): Promise<BiometricAvailability> {
@@ -43,9 +52,9 @@ export async function checkBiometricAvailability(): Promise<BiometricAvailabilit
   if (!plugin) return { available: false, reason: "not_native" };
 
   try {
-    const result = await plugin.checkBiometry();
+    const result = await plugin.isAvailable();
     if (!result.isAvailable) {
-      return { available: false, reason: result.reason ?? "unavailable" };
+      return { available: false, reason: String(result.errorCode ?? "unavailable") };
     }
     const biometryType = BIOMETRY_TYPE_NAMES[result.biometryType] ?? "Unknown";
     return { available: true, biometryType };
@@ -59,21 +68,27 @@ export async function authenticateBiometric(reason: string): Promise<boolean> {
   if (!plugin) return false;
 
   try {
-    await plugin.authenticate({ reason });
+    await plugin.verifyIdentity({ reason, negativeButtonText: "Отмена" });
     return true;
   } catch {
     return false;
   }
 }
 
-const BIOMETRIC_PIN_KEY = "seclettr.biometric.pin.v1";
-
 export async function storePinBiometric(pin: string): Promise<boolean> {
   const plugin = getPlugin();
   if (!plugin) return false;
 
   try {
-    await plugin.setSecret({ key: BIOMETRIC_PIN_KEY, value: pin });
+    // Delete any stale/invalidated Keystore entry first.
+    // Leftover entries from previous installs or failed attempts cause
+    // setCredentials to silently fail on some Android versions.
+    await plugin.deleteCredentials({ server: BIOMETRIC_SERVER_KEY }).catch(() => undefined);
+    await plugin.setCredentials({
+      username: "pin",
+      password: pin,
+      server: BIOMETRIC_SERVER_KEY,
+    });
     return true;
   } catch {
     return false;
@@ -85,8 +100,9 @@ export async function retrievePinBiometric(reason: string): Promise<string | nul
   if (!plugin) return null;
 
   try {
-    const result = await plugin.getSecret({ key: BIOMETRIC_PIN_KEY, reason });
-    return result.value || null;
+    await plugin.verifyIdentity({ reason, negativeButtonText: "Ввести вручную" });
+    const result = await plugin.getCredentials({ server: BIOMETRIC_SERVER_KEY });
+    return result.password || null;
   } catch {
     return null;
   }
@@ -97,7 +113,7 @@ export async function clearPinBiometric(): Promise<void> {
   if (!plugin) return;
 
   try {
-    await plugin.deleteSecret({ key: BIOMETRIC_PIN_KEY });
+    await plugin.deleteCredentials({ server: BIOMETRIC_SERVER_KEY });
   } catch {
     /* ignore — may not exist */
   }

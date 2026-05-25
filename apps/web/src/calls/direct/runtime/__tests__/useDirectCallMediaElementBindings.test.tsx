@@ -101,7 +101,7 @@ describe("useDirectCallMediaElementBindings", () => {
       root.render(<MediaBindingHarness screenStream={screenStream} />);
     });
 
-    const initialStageVideo = container.querySelector('[data-testid="remote-screen-stage"]') as HTMLVideoElement | null;
+    const initialStageVideo = container.querySelector('[data-testid="remote-screen-stage"]');
     expect(initialStageVideo).not.toBeNull();
     expect(initialStageVideo?.srcObject).toBe(screenStream);
 
@@ -121,7 +121,7 @@ describe("useDirectCallMediaElementBindings", () => {
       showButton?.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true }));
     });
 
-    const restoredStageVideo = container.querySelector('[data-testid="remote-screen-stage"]') as HTMLVideoElement | null;
+    const restoredStageVideo = container.querySelector('[data-testid="remote-screen-stage"]');
     expect(restoredStageVideo).not.toBeNull();
     expect(restoredStageVideo?.srcObject).toBe(screenStream);
   });

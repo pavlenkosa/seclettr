@@ -55,7 +55,8 @@ export function useChatWorkspacePresenceEffects(
     )
   );
 
-  useEffect(() => {
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+useEffect(() => {
     if (!activeConversationUserId) return;
     void fetchUserPresence(activeConversationUserId);
     void markConversationRead(activeConversationUserId);
@@ -75,7 +76,8 @@ export function useChatWorkspacePresenceEffects(
   // Plain chats have no server-side typing signal infrastructure — always false.
   const plainActiveTyping = false;
 
-  useEffect(() => {
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+useEffect(() => {
     if (!activePlainConversation || activePlainConversation.historyLoaded) return;
     void loadPlainHistory(
       activePlainConversation.userId,
@@ -88,7 +90,8 @@ export function useChatWorkspacePresenceEffects(
     loadPlainHistory,
   ]);
 
-  useEffect(() => {
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+useEffect(() => {
     if (!activePlainConversation?.historyLoaded) return;
     if (activePlainConversation.unreadCount === 0) return;
     usePlainMessagesStore.getState().markRead(activePlainConversation.userId);
@@ -98,7 +101,8 @@ export function useChatWorkspacePresenceEffects(
     activePlainConversation?.userId,
   ]);
 
-  useEffect(() => {
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+useEffect(() => {
     if (!plainPeerUserId) return;
     void fetchUserPresence(plainPeerUserId);
     const refreshTimer = setInterval(() => {

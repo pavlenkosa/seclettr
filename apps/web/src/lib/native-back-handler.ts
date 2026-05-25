@@ -33,13 +33,13 @@ export function pushBackHandler(handler: () => void): () => void {
 /** Returns true when the SPA query-string has an active conversation/group param. */
 function hasActiveThread(): boolean {
   try {
-    const search = window.location.search;
+    const params = new URLSearchParams(window.location.search);
     return (
-      search.includes("?chat=") ||
-      search.includes("?group=") ||
-      search.includes("?plain-chat=") ||
-      search.includes("?plain-group=") ||
-      search.includes("?saved=")
+      params.has("chat") ||
+      params.has("group") ||
+      params.has("plain-chat") ||
+      params.has("plain-group") ||
+      params.get("saved") === "1"
     );
   } catch {
     return false;

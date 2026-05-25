@@ -399,7 +399,7 @@ public class PushForegroundService extends Service {
         String deepLinkUrl = serverUrl.replaceFirst("/api/?$", "") + deepLinkPath;
 
         Intent tapIntent = new Intent(Intent.ACTION_VIEW, Uri.parse(deepLinkUrl));
-        tapIntent.setClass(this, com.getcapacitor.BridgeActivity.class);
+        tapIntent.setClass(this, MainActivity.class);
         tapIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP);
 
         PendingIntent pendingIntent = PendingIntent.getActivity(
@@ -466,7 +466,7 @@ public class PushForegroundService extends Service {
     }
 
     private Notification buildServiceNotification() {
-        Intent tapIntent = new Intent(this, com.getcapacitor.BridgeActivity.class);
+        Intent tapIntent = new Intent(this, MainActivity.class);
         tapIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP);
 
         PendingIntent pendingIntent = PendingIntent.getActivity(

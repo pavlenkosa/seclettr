@@ -6,7 +6,6 @@ import { wsClient } from "./websocket";
 const RESYNC_DEBOUNCE_MS = 3_000;
 
 async function resync(): Promise<void> {
-  const now = Date.now();
   try {
     const token = await refreshSessionAccessToken();
     if (!token) return;

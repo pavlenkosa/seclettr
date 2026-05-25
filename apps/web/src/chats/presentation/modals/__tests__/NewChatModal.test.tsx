@@ -67,7 +67,7 @@ describe("NewChatModal search flow", () => {
   }
 
   function getSearchInput(): HTMLInputElement | null {
-    return container.querySelector('input[type="search"]');
+    return document.body.querySelector('input[type="search"]');
   }
 
   function typeIntoSearch(value: string) {
@@ -161,7 +161,7 @@ describe("NewChatModal search flow", () => {
       await Promise.resolve();
     });
 
-    const buttons = container.querySelectorAll('[role="option"]');
+    const buttons = document.body.querySelectorAll('[role="option"]');
     expect(buttons.length).toBe(2);
   });
 
@@ -179,7 +179,7 @@ describe("NewChatModal search flow", () => {
       await Promise.resolve();
     });
 
-    const option = container.querySelector('[role="option"]');
+    const option = document.body.querySelector('[role="option"]');
     act(() => { (option as HTMLElement)?.click(); });
 
     expect(onSelect).toHaveBeenCalledWith("u1", "Alice");

@@ -51,15 +51,22 @@ export function createGroupsOutboundRuntime({
     return postGroupMessagePayloadWithRetry(item.groupId, item.payload);
   }
 
-  // eslint-disable-next-line prefer-const
-  let attachmentRuntime!: ReturnType<typeof createGroupsOutboundAttachmentRuntime>;
+  const attachmentRuntimeRef: {
+    current?: ReturnType<typeof createGroupsOutboundAttachmentRuntime>;
+  } = {};
+  const getAttachmentRuntime = (): ReturnType<typeof createGroupsOutboundAttachmentRuntime> => {
+    if (!attachmentRuntimeRef.current) {
+      throw new Error("Group attachment runtime is not initialized");
+    }
+    return attachmentRuntimeRef.current;
+  };
   const queueRuntime = createGroupsOutboundQueueRuntime({
     set,
     get,
     shared,
     pendingGroupOutboundEnvelopes,
     deliverQueuedGroupOutboundItem,
-    getRetryAttachmentUpload: () => attachmentRuntime.retryAttachmentUpload,
+    getRetryAttachmentUpload: () => getAttachmentRuntime().retryAttachmentUpload,
   });
 
   const textRuntime = createGroupsOutboundTextRuntime({
@@ -67,24 +74,31 @@ export function createGroupsOutboundRuntime({
     get,
     shared,
     pendingGroupOutboundEnvelopes,
-    ensureGroupSenderKeys: senderKeyRuntime.ensureGroupSenderKeys,
+    ensureGroupSenderKeys: (groupId, members) =>
+      senderKeyRuntime.ensureGroupSenderKeys(groupId, members),
     deliverQueuedGroupOutboundItem,
-    markQueuedMessageSent: queueRuntime.markQueuedMessageSent,
+    markQueuedMessageSent: (item, sentMessage) =>
+      queueRuntime.markQueuedMessageSent(item, sentMessage),
   });
-  attachmentRuntime = createGroupsOutboundAttachmentRuntime({
+  attachmentRuntimeRef.current = createGroupsOutboundAttachmentRuntime({
     set,
     get,
     shared,
     pendingGroupOutboundEnvelopes,
-    ensureGroupSenderKeys: senderKeyRuntime.ensureGroupSenderKeys,
+    ensureGroupSenderKeys: (groupId, members) =>
+      senderKeyRuntime.ensureGroupSenderKeys(groupId, members),
     deliverQueuedGroupOutboundItem,
-    markQueuedMessageSent: queueRuntime.markQueuedMessageSent,
+    markQueuedMessageSent: (item, sentMessage) =>
+      queueRuntime.markQueuedMessageSent(item, sentMessage),
   });
 
   return {
-    resumePendingGroupOutboundMessages: queueRuntime.resumePendingGroupOutboundMessages,
-    sendGroupText: textRuntime.sendGroupText,
-    retryGroupMessage: queueRuntime.retryGroupMessage,
+    resumePendingGroupOutboundMessages: () =>
+      queueRuntime.resumePendingGroupOutboundMessages(),
+    sendGroupText: (groupId: string, text: string, reply?: { id: string; snippet: string }) =>
+      textRuntime.sendGroupText(groupId, text, reply),
+    retryGroupMessage: (groupId: string, messageId: string) =>
+      queueRuntime.retryGroupMessage(groupId, messageId),
 
     sendGroupFileAttachment: async (
       groupId: string,
@@ -92,7 +106,7 @@ export function createGroupsOutboundRuntime({
       mediaGroupId?: string,
       caption?: string
     ) => {
-      await attachmentRuntime.uploadAndEncryptGroupAttachment({
+      await getAttachmentRuntime().uploadAndEncryptGroupAttachment({
         groupId,
         blob: file,
         mimeType: file.type || "application/octet-stream",
@@ -104,7 +118,7 @@ export function createGroupsOutboundRuntime({
     },
 
     sendGroupVoiceNote: async (groupId: string, blob: Blob, durationMs: number) => {
-      await attachmentRuntime.uploadAndEncryptGroupAttachment({
+      await getAttachmentRuntime().uploadAndEncryptGroupAttachment({
         groupId,
         blob,
         mimeType: blob.type || "audio/webm",
@@ -115,7 +129,7 @@ export function createGroupsOutboundRuntime({
     },
 
     sendGroupVideoNote: async (groupId: string, blob: Blob, durationMs: number) => {
-      await attachmentRuntime.uploadAndEncryptGroupAttachment({
+      await getAttachmentRuntime().uploadAndEncryptGroupAttachment({
         groupId,
         blob,
         mimeType: blob.type || "video/webm",

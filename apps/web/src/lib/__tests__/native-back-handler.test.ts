@@ -57,6 +57,66 @@ describe("native-back-handler", () => {
     expect(exitApp).not.toHaveBeenCalled();
   });
 
+  it("navigates back when the active thread param is not the first query param", async () => {
+    let backButtonHandler: ((data: { canGoBack: boolean }) => void) | null = null;
+    const exitApp = vi.fn(async () => {});
+    const addListener = vi.fn(async (_event: string, handler: (data: { canGoBack: boolean }) => void) => {
+      backButtonHandler = handler;
+      return { remove: () => {} };
+    });
+
+    Object.defineProperty(window, "Capacitor", {
+      configurable: true,
+      value: {
+        isNativePlatform: () => true,
+        App: {
+          addListener,
+          exitApp,
+        },
+      },
+    });
+
+    window.history.pushState(null, "", "/?devtools=1&chat=user-1");
+    const backSpy = vi.spyOn(window.history, "back").mockImplementation(() => {});
+
+    const { initNativeBackHandler } = await loadModule();
+    initNativeBackHandler();
+    backButtonHandler?.({ canGoBack: false });
+
+    expect(backSpy).toHaveBeenCalledTimes(1);
+    expect(exitApp).not.toHaveBeenCalled();
+  });
+
+  it("navigates back from saved messages when saved is not the first query param", async () => {
+    let backButtonHandler: ((data: { canGoBack: boolean }) => void) | null = null;
+    const exitApp = vi.fn(async () => {});
+    const addListener = vi.fn(async (_event: string, handler: (data: { canGoBack: boolean }) => void) => {
+      backButtonHandler = handler;
+      return { remove: () => {} };
+    });
+
+    Object.defineProperty(window, "Capacitor", {
+      configurable: true,
+      value: {
+        isNativePlatform: () => true,
+        App: {
+          addListener,
+          exitApp,
+        },
+      },
+    });
+
+    window.history.pushState(null, "", "/?devtools=1&saved=1");
+    const backSpy = vi.spyOn(window.history, "back").mockImplementation(() => {});
+
+    const { initNativeBackHandler } = await loadModule();
+    initNativeBackHandler();
+    backButtonHandler?.({ canGoBack: false });
+
+    expect(backSpy).toHaveBeenCalledTimes(1);
+    expect(exitApp).not.toHaveBeenCalled();
+  });
+
   it("closes the topmost registered overlay before navigating back or exiting", async () => {
     let backButtonHandler: ((data: { canGoBack: boolean }) => void) | null = null;
     const exitApp = vi.fn(async () => {});

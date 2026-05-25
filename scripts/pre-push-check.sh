@@ -22,5 +22,9 @@ echo "=== Pre-push check: pnpm verify:release ==="
 pnpm verify:release
 
 echo ""
+echo "=== Pre-push check: pnpm test ==="
+pnpm test
+
+echo ""
 echo "✓ All checks passed. Push safe."
 echo "  To skip: SECLETTR_PREPUSH_SKIP=1 git push"

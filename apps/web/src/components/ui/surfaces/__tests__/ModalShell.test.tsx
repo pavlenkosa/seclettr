@@ -47,7 +47,7 @@ describe("ModalShell", () => {
   }
 
   function getSurface(): HTMLElement {
-    const surface = container.querySelector("[role='dialog']");
+    const surface = document.body.querySelector("[role='dialog']");
     if (!surface) throw new Error("ModalShell did not render a dialog surface");
     return surface as HTMLElement;
   }
@@ -57,12 +57,12 @@ describe("ModalShell", () => {
     const surface = getSurface();
     expect(surface.getAttribute("aria-modal")).toBe("true");
     expect(surface.getAttribute("aria-label")).toBe("Settings dialog");
-    expect(container.querySelector("h2")?.textContent).toContain("Settings");
+    expect(document.body.querySelector("h2")?.textContent).toContain("Settings");
   });
 
   it("closes via the labelled close button", () => {
     const onClose = renderShell();
-    const closeButton = container.querySelector(`.${cssClass(styles.closeButton)}`);
+    const closeButton = document.body.querySelector(`.${cssClass(styles.closeButton)}`);
     expect(closeButton?.getAttribute("aria-label")).toBe("Close");
     act(() => {
       closeButton?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
@@ -72,7 +72,7 @@ describe("ModalShell", () => {
 
   it("closes on Escape from the overlay", () => {
     const onClose = renderShell();
-    const overlay = container.firstElementChild as HTMLElement;
+    const overlay = document.body.querySelector(`.${cssClass(styles.overlay)}`) as HTMLElement;
     act(() => {
       overlay.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true }));
     });
@@ -81,7 +81,7 @@ describe("ModalShell", () => {
 
   it("closes when the overlay backdrop itself is clicked", () => {
     const onClose = renderShell();
-    const overlay = container.firstElementChild as HTMLElement;
+    const overlay = document.body.querySelector(`.${cssClass(styles.overlay)}`) as HTMLElement;
     act(() => {
       overlay.dispatchEvent(new MouseEvent("click", { bubbles: true }));
     });
@@ -100,9 +100,9 @@ describe("ModalShell", () => {
       headerExtra: <span data-testid="hextra">extra</span>,
       footer: <span data-testid="footer">actions</span>,
     });
-    expect(container.querySelector("[data-testid='hstart']")).not.toBeNull();
-    expect(container.querySelector("[data-testid='hextra']")).not.toBeNull();
-    const footer = container.querySelector("[data-testid='footer']")?.parentElement;
+    expect(document.body.querySelector("[data-testid='hstart']")).not.toBeNull();
+    expect(document.body.querySelector("[data-testid='hextra']")).not.toBeNull();
+    const footer = document.body.querySelector("[data-testid='footer']")?.parentElement;
     expect(footer?.className).toContain(styles.footer);
   });
 });

@@ -1,9 +1,11 @@
-import type { RefObject } from "react";
+import { useState, type RefObject } from "react";
 import { CallControlButton } from "@/calls/shared/presentation/CallControlButton";
 import { CallControlsDock } from "@/calls/shared/presentation/CallControlsDock";
 import { CallDevicePicker, type VideoResolution } from "@/calls/shared/presentation/CallDevicePicker";
 import type { InputDeviceOption } from "@/calls/shared/media/input-devices/useCallInputDevices";
 import { CameraIcon, HangupIcon, MuteIcon, ScreenShareIcon, SpeakerIcon } from "@/calls/shared/presentation/CallIcons";
+import { AudioOutputSelector } from "@/calls/shared/media/audio-output/AudioOutputSelector";
+import { useOptionalCallAudioOutput } from "@/calls/shared/media/audio-output/CallAudioOutputProvider";
 import { useNativeSpeakerToggle } from "@/calls/shared/media/audio-output/useNativeSpeakerToggle";
 import { useIsMobileViewport } from "@/lib/hooks/use-is-mobile-viewport";
 
@@ -89,9 +91,18 @@ export function DirectCallControls({
   onSelectScreenResolution,
 }: DirectCallControlsProps) {
   const { supported: speakerSupported, speakerOn, toggle: toggleSpeaker } = useNativeSpeakerToggle();
+  const audioOutput = useOptionalCallAudioOutput();
   // On narrow viewports (mobile phones) use stacked icon+label buttons without the
   // device-picker chevron — the result looks like a proper mobile bottom toolbar.
   const isMobile = useIsMobileViewport();
+  // Bottom-sheet state for web audio output selection on mobile.
+  const [outputSheetOpen, setOutputSheetOpen] = useState(false);
+
+  // Web-audio output button is shown on mobile when native speaker toggle is unavailable
+  // but the browser supports output selection (or can prompt for it).
+  const showWebOutputButton = !speakerSupported && (
+    audioOutput?.support === "full" || audioOutput?.canPromptForDevices === true
+  );
 
   if (isMobile) {
     const mobileClass = `${styles.controlBtn} ${styles.mobileControlBtn}`;
@@ -118,6 +129,7 @@ export function DirectCallControls({
           aria-pressed={videoOff}
         />
         {speakerSupported ? (
+          /* Capacitor native: toggle earpiece ↔ loudspeaker */
           <CallControlButton
             onClick={toggleSpeaker}
             layout="stacked"
@@ -128,6 +140,37 @@ export function DirectCallControls({
             aria-label={speakerAriaLabel}
             aria-pressed={speakerOn}
           />
+        ) : showWebOutputButton ? (
+          /* Web mobile: open a bottom-sheet with the AudioOutputSelector */
+          <div className={styles.audioOutputWrapper}>
+            <CallControlButton
+              onClick={() => { setOutputSheetOpen((prev) => !prev); }}
+              layout="stacked"
+              className={mobileClass}
+              active={outputSheetOpen}
+              icon={<SpeakerIcon speakerOn />}
+              label={speakerLabel}
+              aria-label={speakerAriaLabel}
+              aria-expanded={outputSheetOpen}
+            />
+            {outputSheetOpen ? (
+              <>
+                {/* Transparent scrim — tap outside sheet to dismiss */}
+                <div
+                  className={styles.audioOutputScrim}
+                  onClick={() => { setOutputSheetOpen(false); }}
+                  aria-hidden="true"
+                />
+                <div
+                  className={styles.audioOutputSheet}
+                  role="dialog"
+                  aria-label={speakerAriaLabel}
+                >
+                  <AudioOutputSelector compact hideLabel />
+                </div>
+              </>
+            ) : null}
+          </div>
         ) : null}
         <CallControlButton
           ref={hangupButtonRef}

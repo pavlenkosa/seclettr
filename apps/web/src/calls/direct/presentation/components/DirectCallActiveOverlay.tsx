@@ -456,6 +456,7 @@ export function DirectCallActiveOverlay({
           onMoveResize={onMoveLocalPreviewResize}
           onStopResize={onStopLocalPreviewResize}
           resizeHandleLabel={resizePreviewLabel}
+          isTransitioning={isSwitchingCamera}
           onSecondaryAction={canSwitchCamera ? onSwitchCamera : undefined}
           secondaryActionLabel={canSwitchCamera ? switchCameraLabel : undefined}
           secondaryActionContent={<SwitchCameraIcon />}
@@ -507,9 +508,9 @@ export function DirectCallActiveOverlay({
         micSettingsAriaLabel={micSettingsAriaLabel}
         cameraSettingsAriaLabel={cameraSettingsAriaLabel}
         screenSettingsAriaLabel={screenSettingsAriaLabel}
-        onSelectMic={handleSelectMic}
-        onSelectCamera={handleSelectCamera}
-        onSelectVideoResolution={handleSelectVideoResolution}
+        onSelectMic={(id) => { void handleSelectMic(id); }}
+        onSelectCamera={(id) => { void handleSelectCamera(id); }}
+        onSelectVideoResolution={(res) => { void handleSelectVideoResolution(res); }}
         onSelectScreenResolution={onSelectScreenResolution}
       />
     </dialog>

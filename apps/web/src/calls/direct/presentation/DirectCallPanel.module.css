@@ -982,20 +982,43 @@
     min-height: max(180px, 30dvh);
   }
 
-  /* Bring local PiP up above the taller stacked controls dock (~72px) */
+  /* Bring local PiP above stacked controls dock (~80px) + dialog bottom padding (8px) + gap.
+     Dock occupies ~88px from bottom → use 96px so PiP is visibly above the dock. */
   .localPreview {
     width: 86px;
-    bottom: calc(env(safe-area-inset-bottom, 0px) + 84px);
+    bottom: calc(env(safe-area-inset-bottom, 0px) + 96px);
   }
 
   .localScreenPreview {
     left: max(0.72rem, env(safe-area-inset-left, 0px));
     width: 120px;
-    bottom: calc(env(safe-area-inset-bottom, 0px) + 84px);
+    bottom: calc(env(safe-area-inset-bottom, 0px) + 96px);
   }
 
   .localPreviewRaised,
   .localScreenPreviewRaised {
-    bottom: calc(env(safe-area-inset-bottom, 0px) + 100px);
+    bottom: calc(env(safe-area-inset-bottom, 0px) + 112px);
   }
+
+  /* Scale down the PiP action/resize buttons — at 86px wide a 34px button is too dominant. */
+  .localPreviewAction {
+    width: 28px;
+    height: 28px;
+  }
+
+  .localPreviewResizeHandle {
+    width: 24px;
+    height: 24px;
+    right: 0.24rem;
+    bottom: 0.24rem;
+  }
+}
+
+/* Camera-switch fade: old frame fades down while camera changes, new frame fades back up. */
+.localPreview video {
+  transition: opacity 220ms ease;
+}
+
+.localPreviewTransitioning video {
+  opacity: 0.25;
 }

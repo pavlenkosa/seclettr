@@ -18,6 +18,8 @@ interface NativeNotificationRequest {
 }
 
 interface NativePushPlugin {
+  checkPermission: () => Promise<{ value: "granted" | "denied" }>;
+  requestPermission: () => Promise<{ value: "granted" | "denied" }>;
   start: (opts: { serverUrl: string; token: string }) => Promise<void>;
   stop: () => Promise<void>;
   updateToken: (opts: { token: string }) => Promise<void>;
@@ -198,6 +200,13 @@ function getNativePushPlugin(): NativePushPlugin | null {
 export async function startNativePushService(token: string): Promise<void> {
   const plugin = getNativePushPlugin();
   if (!plugin) return;
+
+  const { value: permission } = await plugin.checkPermission();
+  if (permission !== "granted") {
+    const { value: granted } = await plugin.requestPermission();
+    if (granted !== "granted") return;
+  }
+
   const apiUrl = resolveApiBaseUrl();
   try {
     await plugin.start({ serverUrl: apiUrl, token });

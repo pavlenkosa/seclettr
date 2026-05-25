@@ -16,3 +16,6 @@ project(':capacitor-local-notifications').projectDir = new File('../../../node_m
 
 include ':capacitor-preferences'
 project(':capacitor-preferences').projectDir = new File('../../../node_modules/.pnpm/@capacitor+preferences@8.0.1_@capacitor+core@8.3.4/node_modules/@capacitor/preferences/android')
+
+include ':capacitor-native-biometric'
+project(':capacitor-native-biometric').projectDir = new File('../../../node_modules/.pnpm/capacitor-native-biometric@4.2.2/node_modules/capacitor-native-biometric/android')

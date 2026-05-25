@@ -54,6 +54,7 @@ function trimToSafeLength(fileName: string): string {
 
 export function sanitizeDownloadName(fileName: string | undefined, fallbackName: string): string {
   const candidate = (fileName ?? fallbackName)
+    // eslint-disable-next-line no-control-regex
     .replaceAll(/[\u0000-\u001f\u007f]+/g, "")
     .replaceAll(/[\\/:"*?<>|]+/g, "-")
     .replaceAll(/\s+/g, " ")

@@ -14,9 +14,11 @@
 import { initNativeBackHandler } from "./native-back-handler";
 import { initNativeNotifications } from "./native-notifications";
 import { initPushActionHandler } from "./push-action-handler";
+import { initDeepLinkHandler } from "./deep-link";
 
 export function initAppClientRuntime(): void {
   initPushActionHandler();
   void initNativeNotifications();
   initNativeBackHandler();
+  initDeepLinkHandler();
 }

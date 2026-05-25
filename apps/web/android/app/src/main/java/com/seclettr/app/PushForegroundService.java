@@ -6,6 +6,8 @@ import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.app.Service;
 import android.content.Intent;
+import android.content.SharedPreferences;
+import android.net.Uri;
 import android.os.Build;
 import android.os.IBinder;
 import android.util.Log;
@@ -15,9 +17,9 @@ import androidx.core.app.NotificationCompat;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 
 import okhttp3.OkHttpClient;
@@ -35,6 +37,10 @@ public class PushForegroundService extends Service {
     private static final int NOTIF_BASE_ID = 2000;
     private static final int MAX_RECONNECT_DELAY_MS = 30_000;
     private static final int INITIAL_RECONNECT_DELAY_MS = 1_000;
+
+    private static final String PREFS_NAME = "seclettr_push_state";
+    private static final String KEY_SERVER_URL = "serverUrl";
+    private static final String KEY_TOKEN = "token";
 
     private static boolean running = false;
 
@@ -61,6 +67,8 @@ public class PushForegroundService extends Service {
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
         if (intent == null) {
+            Log.d(TAG, "Restarted by system with null intent — restoring state");
+            restoreStateAndConnect();
             return START_STICKY;
         }
 
@@ -78,6 +86,7 @@ public class PushForegroundService extends Service {
                 serverUrl = newServerUrl;
                 token = newToken;
                 wsUrl = deriveWsUrl(serverUrl);
+                saveState();
                 startForeground(NOTIF_SERVICE_ID, buildServiceNotification());
                 running = true;
                 connectWebSocket();
@@ -87,6 +96,7 @@ public class PushForegroundService extends Service {
                 intentionalClose = true;
                 closeWebSocket();
                 stopForeground(STOP_FOREGROUND_REMOVE);
+                clearState();
                 stopSelf();
                 running = false;
                 break;
@@ -95,6 +105,7 @@ public class PushForegroundService extends Service {
                 String updatedToken = intent.getStringExtra("token");
                 if (updatedToken == null) break;
                 token = updatedToken;
+                saveState();
                 reconnectDelay = INITIAL_RECONNECT_DELAY_MS;
                 closeWebSocket();
                 connectWebSocket();
@@ -118,10 +129,51 @@ public class PushForegroundService extends Service {
         return null;
     }
 
+    // ── State persistence ─────────────────────────────────────────────────────
+
+    private void saveState() {
+        SharedPreferences prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
+        prefs.edit()
+            .putString(KEY_SERVER_URL, serverUrl)
+            .putString(KEY_TOKEN, token)
+            .apply();
+    }
+
+    private void clearState() {
+        SharedPreferences prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
+        prefs.edit().clear().apply();
+    }
+
+    private void restoreStateAndConnect() {
+        if (running && webSocket != null) return;
+
+        SharedPreferences prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
+        String savedServerUrl = prefs.getString(KEY_SERVER_URL, null);
+        String savedToken = prefs.getString(KEY_TOKEN, null);
+
+        if (savedServerUrl == null || savedToken == null) {
+            Log.w(TAG, "No saved state to restore");
+            return;
+        }
+
+        serverUrl = savedServerUrl;
+        token = savedToken;
+        wsUrl = deriveWsUrl(serverUrl);
+        reconnectDelay = INITIAL_RECONNECT_DELAY_MS;
+        intentionalClose = false;
+
+        startForeground(NOTIF_SERVICE_ID, buildServiceNotification());
+        running = true;
+        connectWebSocket();
+    }
+
     // ── WebSocket ─────────────────────────────────────────────────────────────
 
     private void connectWebSocket() {
-        if (wsUrl == null || token == null) return;
+        if (wsUrl == null || token == null) {
+            Log.w(TAG, "Cannot connect: wsUrl or token is null");
+            return;
+        }
 
         if (httpClient == null) {
             httpClient = new OkHttpClient.Builder()
@@ -137,7 +189,7 @@ public class PushForegroundService extends Service {
             .build();
 
         Log.d(TAG, "Connecting WebSocket: " + wsUrl);
-        httpClient.newWebSocket(request, new WebSocketListener() {
+        webSocket = httpClient.newWebSocket(request, new WebSocketListener() {
             @Override
             public void onOpen(WebSocket ws, Response response) {
                 Log.d(TAG, "WebSocket connected");
@@ -186,13 +238,13 @@ public class PushForegroundService extends Service {
 
     private void scheduleReconnect(int closeCode) {
         if (closeCode == 4001) {
-            Log.w(TAG, "Auth failure (4001) — waiting for new token");
+            Log.w(TAG, "Auth failure (4001) — notifying JS layer for token refresh");
             notifyAuthFailure();
             handler.postDelayed(() -> {
                 if (!intentionalClose && token != null) {
                     connectWebSocket();
                 }
-            }, 30_000);
+            }, 5_000);
             return;
         }
 
@@ -215,12 +267,27 @@ public class PushForegroundService extends Service {
             JSONObject msg = new JSONObject(text);
             String type = msg.optString("type", "");
 
-            if ("plain_message.new".equals(type)) {
-                handlePlainMessageNew(msg.optJSONObject("message"));
+            switch (type) {
+                case "plain_message.new":
+                    handlePlainMessageNew(msg.optJSONObject("message"));
+                    break;
+                case "message.new":
+                    handleEncryptedMessageNew(msg.optJSONObject("message"));
+                    break;
+                case "group_message.new":
+                    handleEncryptedGroupMessageNew(msg);
+                    break;
             }
         } catch (JSONException e) {
             Log.w(TAG, "Failed to parse WS message", e);
         }
+    }
+
+    private static final Map<String, Integer> conversationNotifIds = new ConcurrentHashMap<>();
+    private static int notifIdCounter = NOTIF_BASE_ID;
+
+    private static int getOrCreateNotifId(String conversationKey) {
+        return conversationNotifIds.computeIfAbsent(conversationKey, k -> notifIdCounter++);
     }
 
     private void handlePlainMessageNew(JSONObject message) {
@@ -245,9 +312,42 @@ public class PushForegroundService extends Service {
             title = senderUsername;
         }
 
-        int notifId = NOTIF_BASE_ID + Math.abs(conversationKey.hashCode() % 1000);
+        int notifId = getOrCreateNotifId(conversationKey);
 
-        Intent tapIntent = new Intent(this, com.getcapacitor.BridgeActivity.class);
+        String deepLinkPath;
+        if (groupId != null && !groupId.isEmpty()) {
+            deepLinkPath = "/?group=" + Uri.encode(groupId);
+        } else {
+            deepLinkPath = "/?chat=" + Uri.encode(senderUserId);
+        }
+        pushNotification(notifId, title, content, deepLinkPath);
+    }
+
+    private void handleEncryptedMessageNew(JSONObject message) {
+        if (message == null) return;
+
+        String senderUserId = message.optString("senderUserId", null);
+        if (senderUserId == null) return;
+
+        String conversationKey = "en:dm:" + senderUserId;
+        int notifId = getOrCreateNotifId(conversationKey);
+        pushNotification(notifId, "Seclettr", "New encrypted message", "/?chat=" + Uri.encode(senderUserId));
+    }
+
+    private void handleEncryptedGroupMessageNew(JSONObject msg) {
+        String groupId = msg.optString("groupId", null);
+        if (groupId == null) return;
+
+        String conversationKey = "en:group:" + groupId;
+        int notifId = getOrCreateNotifId(conversationKey);
+        pushNotification(notifId, "Seclettr", "New encrypted group message", "/?group=" + Uri.encode(groupId));
+    }
+
+    private void pushNotification(int notifId, String title, String content, String deepLinkPath) {
+        String deepLinkUrl = serverUrl.replaceFirst("/api/?$", "") + deepLinkPath;
+
+        Intent tapIntent = new Intent(Intent.ACTION_VIEW, Uri.parse(deepLinkUrl));
+        tapIntent.setClass(this, com.getcapacitor.BridgeActivity.class);
         tapIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP);
 
         PendingIntent pendingIntent = PendingIntent.getActivity(
@@ -255,8 +355,11 @@ public class PushForegroundService extends Service {
             PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE
         );
 
+        int appIcon = getApplicationInfo().icon;
+        int iconRes = appIcon != 0 ? appIcon : android.R.drawable.ic_dialog_info;
+
         NotificationCompat.Builder builder = new NotificationCompat.Builder(this, CHANNEL_MESSAGES)
-            .setSmallIcon(android.R.drawable.ic_dialog_info)
+            .setSmallIcon(iconRes)
             .setContentTitle(title)
             .setContentText(content)
             .setAutoCancel(true)
@@ -282,9 +385,9 @@ public class PushForegroundService extends Service {
 
     private String formatContent(String content, String messageType) {
         switch (messageType) {
-            case "voice_note": return "🎤 Voice message";
-            case "video_note": return "🎥 Video message";
-            case "attachment": return "📎 File";
+            case "voice_note": return "Voice message";
+            case "video_note": return "Video message";
+            case "attachment": return "File";
             default: return content;
         }
     }
@@ -322,8 +425,11 @@ public class PushForegroundService extends Service {
             PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE
         );
 
+        int appIcon = getApplicationInfo().icon;
+        int iconRes = appIcon != 0 ? appIcon : android.R.drawable.ic_dialog_info;
+
         return new NotificationCompat.Builder(this, CHANNEL_SERVICE)
-            .setSmallIcon(android.R.drawable.ic_dialog_info)
+            .setSmallIcon(iconRes)
             .setContentTitle("Seclettr")
             .setContentText("Push notifications active")
             .setContentIntent(pendingIntent)
@@ -332,10 +438,6 @@ public class PushForegroundService extends Service {
             .build();
     }
 
-    /**
-     * Notifies the web layer via Capacitor event when our WS token expires.
-     * Uses the static plugin reference set by NativePushPlugin on load().
-     */
     private void notifyAuthFailure() {
         NativePushPlugin plugin = NativePushPlugin.getActiveInstance();
         if (plugin != null) {

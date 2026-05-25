@@ -37,13 +37,13 @@
 }
 
 .iconE2ee {
-  background: color-mix(in srgb, #22c55e 15%, transparent);
-  color: #16a34a;
+  background: color-mix(in srgb, var(--success) 15%, transparent);
+  color: var(--success);
 }
 
 .iconPlain {
-  background: color-mix(in srgb, #3b82f6 15%, transparent);
-  color: #2563eb;
+  background: color-mix(in srgb, var(--accent) 15%, transparent);
+  color: var(--accent);
 }
 
 .text {

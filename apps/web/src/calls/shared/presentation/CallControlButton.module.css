@@ -95,24 +95,24 @@
 }
 
 .inline.danger {
-  background: #b91c1c;
+  background: var(--danger);
   border-color: rgb(252 165 165 / 0.4);
   color: #fff;
 }
 
 .inline.danger:hover:not(:disabled) {
-  background: color-mix(in srgb, #dc2626 92%, var(--surface-shell));
+  background: color-mix(in srgb, var(--danger) 96%, var(--surface-shell));
   border-color: rgb(252 165 165 / 0.55);
 }
 
 .stacked.danger {
-  background: color-mix(in srgb, var(--danger, #d14343) 10%, var(--surface-shell));
-  border-color: color-mix(in srgb, var(--danger, #d14343) 28%, transparent);
-  color: var(--danger, #d14343);
+  background: color-mix(in srgb, var(--danger) 10%, var(--surface-shell));
+  border-color: color-mix(in srgb, var(--danger) 28%, transparent);
+  color: var(--danger);
 }
 
 .stacked.danger .icon {
-  background: #dc2626;
+  background: var(--danger);
   color: #fff;
 }
 

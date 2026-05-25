@@ -36,13 +36,13 @@
   width: 10px;
   height: 10px;
   border-radius: 50%;
-  border: 1.5px solid color-mix(in srgb, #d97706 28%, transparent);
-  border-top-color: #d97706;
+  border: 1.5px solid color-mix(in srgb, var(--warning) 28%, transparent);
+  border-top-color: var(--warning);
   flex-shrink: 0;
   animation: spin 0.75s linear infinite;
 }
 
 @media (prefers-reduced-motion: reduce) {
   .stack    { animation: none; }
-  .spinner  { animation: none; border-top-color: #d97706; opacity: 0.7; }
+  .spinner  { animation: none; border-top-color: var(--warning); opacity: 0.7; }
 }

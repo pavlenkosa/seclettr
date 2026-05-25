@@ -31,15 +31,15 @@
 }
 
 .e2eeStatusVerified {
-  background: color-mix(in srgb, #22c55e 14%, transparent);
-  border: 1px solid color-mix(in srgb, #22c55e 35%, transparent);
-  color: #22c55e;
+  background: color-mix(in srgb, var(--success) 14%, transparent);
+  border: 1px solid color-mix(in srgb, var(--success) 35%, transparent);
+  color: var(--success);
 }
 
 .e2eeStatusUnverified {
-  background: color-mix(in srgb, #f59e0b 14%, transparent);
-  border: 1px solid color-mix(in srgb, #f59e0b 35%, transparent);
-  color: #f59e0b;
+  background: color-mix(in srgb, var(--warning) 14%, transparent);
+  border: 1px solid color-mix(in srgb, var(--warning) 35%, transparent);
+  color: var(--warning);
 }
 
 .verificationStatus {
@@ -83,15 +83,15 @@
 
 /* Light theme tuning */
 :global(:root[data-theme="light"]) .e2eeStatusVerified {
-  color: #0a6638;
-  background: color-mix(in srgb, #22c55e 20%, white);
-  border-color: color-mix(in srgb, #16a34a 36%, transparent);
+  color: var(--success);
+  background: color-mix(in srgb, var(--success) 20%, white);
+  border-color: color-mix(in srgb, var(--success) 36%, transparent);
 }
 
 :global(:root[data-theme="light"]) .e2eeStatusUnverified {
   color: var(--warning);
-  background: color-mix(in srgb, #f59e0b 20%, white);
-  border-color: color-mix(in srgb, #d97706 34%, transparent);
+  background: color-mix(in srgb, var(--warning) 20%, white);
+  border-color: color-mix(in srgb, var(--warning) 34%, transparent);
 }
 
 :global(:root[data-theme="light"]) .description,

@@ -34,13 +34,13 @@
 }
 
 .root[data-tone="danger"] {
-  background: #b91c1c;
+  background: var(--danger);
   border-color: rgb(252 165 165 / 0.4);
   color: #fff;
 }
 
 .root[data-tone="danger"]:hover {
-  background: #dc2626;
+  background: color-mix(in srgb, var(--danger) 96%, black);
   border-color: rgb(252 165 165 / 0.55);
 }
 

@@ -122,9 +122,18 @@ importers:
       '@types/ws':
         specifier: ^8.5.10
         version: 8.18.1
+      '@typescript-eslint/eslint-plugin':
+        specifier: 6.21.0
+        version: 6.21.0(@typescript-eslint/parser@6.21.0)(eslint@8.57.0)(typescript@5.9.3)
+      '@typescript-eslint/parser':
+        specifier: 6.21.0
+        version: 6.21.0(eslint@8.57.0)(typescript@5.9.3)
       '@vitest/coverage-v8':
         specifier: 1.6.1
         version: 1.6.1(vitest@1.6.1)
+      eslint:
+        specifier: 8.57.0
+        version: 8.57.0
       tsx:
         specifier: ^4.7.0
         version: 4.21.0
@@ -165,6 +174,15 @@ importers:
       '@types/node':
         specifier: ^20.11.0
         version: 20.19.33
+      '@typescript-eslint/eslint-plugin':
+        specifier: 6.21.0
+        version: 6.21.0(@typescript-eslint/parser@6.21.0)(eslint@8.57.0)(typescript@5.9.3)
+      '@typescript-eslint/parser':
+        specifier: 6.21.0
+        version: 6.21.0(eslint@8.57.0)(typescript@5.9.3)
+      eslint:
+        specifier: 8.57.0
+        version: 8.57.0
       tsx:
         specifier: ^4.7.0
         version: 4.21.0
@@ -204,6 +222,9 @@ importers:
       '@seclettr/protocol':
         specifier: workspace:*
         version: link:../../packages/protocol
+      capacitor-native-biometric:
+        specifier: ^4.2.2
+        version: 4.2.2
       libsodium-wrappers-sumo:
         specifier: 0.7.13
         version: 0.7.13
@@ -293,9 +314,18 @@ importers:
       '@types/libsodium-wrappers-sumo':
         specifier: ^0.7.8
         version: 0.7.8
+      '@typescript-eslint/eslint-plugin':
+        specifier: 6.21.0
+        version: 6.21.0(@typescript-eslint/parser@6.21.0)(eslint@8.57.0)(typescript@5.9.3)
+      '@typescript-eslint/parser':
+        specifier: 6.21.0
+        version: 6.21.0(eslint@8.57.0)(typescript@5.9.3)
       '@vitest/coverage-v8':
         specifier: 1.6.1
         version: 1.6.1(vitest@1.6.1)
+      eslint:
+        specifier: 8.57.0
+        version: 8.57.0
       jsdom:
         specifier: ^28.1.0
         version: 28.1.0
@@ -312,18 +342,21 @@ importers:
         specifier: ^3.22.4
         version: 3.25.76
     devDependencies:
+      '@typescript-eslint/eslint-plugin':
+        specifier: 6.21.0
+        version: 6.21.0(@typescript-eslint/parser@6.21.0)(eslint@8.57.0)(typescript@5.9.3)
+      '@typescript-eslint/parser':
+        specifier: 6.21.0
+        version: 6.21.0(eslint@8.57.0)(typescript@5.9.3)
+      eslint:
+        specifier: 8.57.0
+        version: 8.57.0
       typescript:
         specifier: ^5.3.0
         version: 5.9.3
       vitest:
         specifier: ^1.6.1
         version: 1.6.1(jsdom@28.1.0)
-
-  packages/utils:
-    devDependencies:
-      typescript:
-        specifier: ^5.3.0
-        version: 5.9.3
 
 packages:
 
@@ -2179,6 +2212,12 @@ packages:
     transitivePeerDependencies:
       - supports-color
     dev: true
+
+  /@capacitor/core@3.9.0:
+    resolution: {integrity: sha512-j1lL0+/7stY8YhIq1Lm6xixvUqIn89vtyH5ZpJNNmcZ0kwz6K9eLkcG6fvq1UWMDgSVZg9JrRGSFhb4LLoYOsw==}
+    dependencies:
+      tslib: 2.8.1
+    dev: false
 
   /@capacitor/core@8.3.4:
     resolution: {integrity: sha512-CqRQCkb6HXxcx/N7s+hHTN6ef2CmamFiRMITwm4qB840ph56mS42bzUgn6tKCP+RZjdDweiRHj9ytDDeN6jFag==}
@@ -4764,6 +4803,12 @@ packages:
   /caniuse-lite@1.0.30001770:
     resolution: {integrity: sha512-x/2CLQ1jHENRbHg5PSId2sXq1CIO1CISvwWAj027ltMVG2UNgW+w9oH2+HzgEIRFembL8bUlXtfbBHR1fCg2xw==}
     dev: true
+
+  /capacitor-native-biometric@4.2.2:
+    resolution: {integrity: sha512-stg0h48UxgkNuNcCAgCXLp2DUspRQs79bCBPntpCBhsDxk2bhDRUu+J/QpFtDQHG4M4DioSUcYaAsVw2N6N7wA==}
+    dependencies:
+      '@capacitor/core': 3.9.0
+    dev: false
 
   /chai@4.5.0:
     resolution: {integrity: sha512-RITGBfijLkBddZvnn8jdqoTypxvqbOLYQkGGxXzeFjVHvudaPw0HNFD9x928/eUwYWd2dPCugVqspGALTZZQKw==}

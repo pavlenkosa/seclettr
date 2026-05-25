@@ -738,7 +738,7 @@ describe("Sender Keys (group protocol)", () => {
   });
 
   it("uses aeadVersion=1 for new messages and correctly uses empty AD for aeadVersion=0", async () => {
-    let senderState = await generateSenderKey();
+    const senderState = await generateSenderKey();
     const recvState = { ...senderState, signingPrivateKey: undefined };
 
     const { message } = await senderKeyEncrypt(senderState, distributionId, enc.encode("hello"));

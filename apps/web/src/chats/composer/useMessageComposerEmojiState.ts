@@ -224,10 +224,12 @@ export function useMessageComposerEmojiState({
   const sendGif = useCallback(
     async (gif: GifResult) => {
       if (!onSendGif || isSendingGif) return;
+      // Close the picker immediately on tap so the user gets instant feedback.
+      // The upload continues in the background.
+      setIsEmojiPickerOpen(false);
       setIsSendingGif(true);
       try {
         await onSendGif(gif.sendUrl, `${gif.id}.gif`);
-        setIsEmojiPickerOpen(false);
       } finally {
         setIsSendingGif(false);
       }

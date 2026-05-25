@@ -946,3 +946,56 @@
     border-radius: 18px;
   }
 }
+
+/* Mobile layout: no scroll, stage fills remaining height. Matches useIsMobileViewport 640px. */
+@media (max-width: 640px) {
+  .callOverlay {
+    /* Prevent scroll — the stage shrinks to fit instead of overflowing. */
+    overflow: hidden;
+    gap: 0.48rem;
+    padding:
+      calc(env(safe-area-inset-top, 0px) + 8px)
+      0.72rem
+      calc(env(safe-area-inset-bottom, 0px) + 8px);
+  }
+
+  .callCenter {
+    gap: 0.38rem;
+    /* callCenter already has flex: 1; ensure it really fills the column. */
+    flex: 1 1 0;
+  }
+
+  /* Camera stage: fill callCenter instead of using a fixed dvh height. */
+  .callSurface {
+    flex: 1 1 0;
+    min-height: 0;
+  }
+
+  .callSurface:has(.callStageCompact) {
+    flex: 1 1 0;
+  }
+
+  .callStageCamera {
+    height: 100%;
+    min-height: 0;
+    /* Keep the dvh fallback for very narrow-height orientations */
+    min-height: max(180px, 30dvh);
+  }
+
+  /* Bring local PiP up above the taller stacked controls dock (~72px) */
+  .localPreview {
+    width: 86px;
+    bottom: calc(env(safe-area-inset-bottom, 0px) + 84px);
+  }
+
+  .localScreenPreview {
+    left: max(0.72rem, env(safe-area-inset-left, 0px));
+    width: 120px;
+    bottom: calc(env(safe-area-inset-bottom, 0px) + 84px);
+  }
+
+  .localPreviewRaised,
+  .localScreenPreviewRaised {
+    bottom: calc(env(safe-area-inset-bottom, 0px) + 100px);
+  }
+}

@@ -14,6 +14,13 @@
  * - fullscreen direct-call shell/header/center layout
  */
 
+/* Entrance fade — mirrors the definition in DirectCallPanel.module.css so the
+   dock animates regardless of CSS-module keyframe scoping behaviour. */
+@keyframes controlsDockIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
 .controlsDock {
   --call-controls-position: sticky;
   --call-controls-bottom: calc(env(safe-area-inset-bottom, 0px) + 2px);
@@ -26,7 +33,7 @@
   --call-controls-gap: 0.75rem;
   --call-controls-direction-narrow: row;
   --call-controls-align-narrow: center;
-  animation: callContentIn var(--motion-duration-slow) cubic-bezier(0.18, 0.9, 0.2, 1) 90ms both;
+  animation: controlsDockIn var(--motion-duration-slow) cubic-bezier(0.18, 0.9, 0.2, 1) 90ms both;
 }
 
 .controlBtn {
@@ -46,6 +53,37 @@
     --call-control-inline-compact-width: 56px;
     --call-control-inline-compact-padding: 0;
   }
+}
+
+/* Mobile stacked layout — matches useIsMobileViewport 640px breakpoint */
+@media (max-width: 640px) {
+  .controlsDock {
+    /* Full-width dock, equal-distribution row */
+    --call-controls-width: 100%;
+    --call-controls-max-width: 100%;
+    --call-controls-padding: 0.52rem 0.6rem;
+    --call-controls-gap: 0.38rem;
+    /* Keep row direction so stacked buttons sit side-by-side */
+    --call-controls-direction-narrow: row;
+    --call-controls-align-narrow: stretch;
+    --call-controls-radius-narrow: 22px;
+  }
+
+  .controlBtn {
+    /* Compact stacked sizing tuned for mobile phones */
+    --call-control-stacked-min-height-narrow: 64px;
+    --call-control-stacked-icon-size-narrow: 32px;
+    --call-control-stacked-icon-radius-narrow: 11px;
+    --call-control-stacked-label-size-narrow: 0.6rem;
+    --call-control-stacked-padding-narrow: 0.44rem 0.28rem;
+    --call-control-stacked-radius-narrow: 14px;
+  }
+}
+
+/* .mobileControlBtn — only applied to active-call stacked buttons (not incoming overlay).
+   Scoped separately so the incoming accept/reject buttons keep their fixed width. */
+.mobileControlBtn {
+  flex: 1;
 }
 
 @media (prefers-reduced-motion: reduce) {

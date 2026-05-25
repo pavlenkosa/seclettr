@@ -77,6 +77,14 @@ export function VideoNoteAttachment({
           preload="metadata"
           playsInline
           src={videoUrl}
+          onLoadedMetadata={() => {
+            // Android WebView often doesn't paint a poster frame on preload="metadata".
+            // Seeking to 0.001s forces it to decode and display the first frame.
+            const el = videoRef.current;
+            if (el && el.paused && el.currentTime === 0) {
+              el.currentTime = 0.001;
+            }
+          }}
         >
           <track kind="captions" />
         </video>

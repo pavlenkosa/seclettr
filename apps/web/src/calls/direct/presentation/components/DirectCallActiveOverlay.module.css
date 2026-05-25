@@ -102,3 +102,11 @@
     font-size: 1rem;
   }
 }
+
+/* On mobile, hide the audio-output bar to save vertical space.
+   The native speaker-toggle button in the controls dock handles routing. */
+@media (max-width: 640px) {
+  .callAudioOutputBar {
+    display: none;
+  }
+}

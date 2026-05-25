@@ -297,15 +297,16 @@
 
   .emojiPicker {
     position: fixed;
-    left: 0.5rem;
-    right: 0.5rem;
-    bottom: calc(env(safe-area-inset-bottom, 0px) + var(--composer-height, 72px));
+    left: 0;
+    right: 0;
+    bottom: calc(env(safe-area-inset-bottom, 0px) + var(--composer-height, 72px) + 4px);
     width: auto;
     inline-size: auto;
     max-inline-size: none;
     max-block-size: min(24rem, calc(100dvh - 8rem));
     padding: 0.52rem 0.52rem 0;
-    border-radius: 18px;
+    /* Square bottom edge — sits flush against the composer bar with a 4px gap. */
+    border-radius: 18px 18px 0 0;
   }
 
   .emojiSearchWrap {

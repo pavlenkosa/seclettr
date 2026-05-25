@@ -5,6 +5,7 @@ import { CallDevicePicker, type VideoResolution } from "@/calls/shared/presentat
 import type { InputDeviceOption } from "@/calls/shared/media/input-devices/useCallInputDevices";
 import { CameraIcon, HangupIcon, MuteIcon, ScreenShareIcon, SpeakerIcon } from "@/calls/shared/presentation/CallIcons";
 import { useNativeSpeakerToggle } from "@/calls/shared/media/audio-output/useNativeSpeakerToggle";
+import { useIsMobileViewport } from "@/lib/hooks/use-is-mobile-viewport";
 
 import styles from "./DirectCallControls.module.css";
 
@@ -88,6 +89,59 @@ export function DirectCallControls({
   onSelectScreenResolution,
 }: DirectCallControlsProps) {
   const { supported: speakerSupported, speakerOn, toggle: toggleSpeaker } = useNativeSpeakerToggle();
+  // On narrow viewports (mobile phones) use stacked icon+label buttons without the
+  // device-picker chevron — the result looks like a proper mobile bottom toolbar.
+  const isMobile = useIsMobileViewport();
+
+  if (isMobile) {
+    const mobileClass = `${styles.controlBtn} ${styles.mobileControlBtn}`;
+    return (
+      <CallControlsDock className={styles.controlsDock}>
+        <CallControlButton
+          onClick={onToggleMute}
+          layout="stacked"
+          className={mobileClass}
+          active={muted}
+          icon={<MuteIcon muted={muted} />}
+          label={muteLabel}
+          aria-label={muteAriaLabel}
+          aria-pressed={muted}
+        />
+        <CallControlButton
+          onClick={() => { void onToggleVideo(); }}
+          layout="stacked"
+          className={mobileClass}
+          active={videoOff}
+          icon={<CameraIcon />}
+          label={cameraLabel}
+          aria-label={cameraAriaLabel}
+          aria-pressed={videoOff}
+        />
+        {speakerSupported ? (
+          <CallControlButton
+            onClick={toggleSpeaker}
+            layout="stacked"
+            className={mobileClass}
+            active={!speakerOn}
+            icon={<SpeakerIcon speakerOn={speakerOn} />}
+            label={speakerLabel}
+            aria-label={speakerAriaLabel}
+            aria-pressed={speakerOn}
+          />
+        ) : null}
+        <CallControlButton
+          ref={hangupButtonRef}
+          onClick={onHangup}
+          layout="stacked"
+          className={mobileClass}
+          tone="danger"
+          icon={<HangupIcon />}
+          label={endLabel}
+          aria-label={endAriaLabel}
+        />
+      </CallControlsDock>
+    );
+  }
 
   return (
     <CallControlsDock className={styles.controlsDock}>
@@ -125,7 +179,7 @@ export function DirectCallControls({
         active={videoOff}
       >
         <CallControlButton
-          onClick={() => onToggleVideo()}
+          onClick={() => { void onToggleVideo(); }}
           className={styles.controlBtn}
           active={videoOff}
           icon={<CameraIcon />}
@@ -147,7 +201,7 @@ export function DirectCallControls({
           active={screenSharing}
         >
           <CallControlButton
-            onClick={() => onToggleScreenShare()}
+            onClick={() => { void onToggleScreenShare(); }}
             className={styles.controlBtn}
             active={screenSharing}
             icon={<ScreenShareIcon />}

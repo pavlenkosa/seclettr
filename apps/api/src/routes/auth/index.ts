@@ -30,6 +30,7 @@ const ARGON2_OPTIONS = {
 const AUTH_ROUTE_RATE_LIMIT_WINDOW_SEC = 5 * 60;
 const REFRESH_RATE_LIMIT_WINDOW_SEC = 5 * 60;
 const WS_TICKET_TTL_SECONDS = 60;
+const BACKGROUND_POLL_TOKEN_TTL_SECONDS = 30 * 24 * 60 * 60;
 const WS_TICKET_RATE_LIMIT_WINDOW_SEC = 60;
 const AUTH_ROUTE_RATE_LIMIT_MAX = (() => {
   const override = process.env["QM_API_TEST_AUTH_RATE_LIMIT_MAX"];
@@ -590,6 +591,10 @@ export async function authRoutes(fastify: FastifyInstance): Promise<void> {
           ).catch(() => false);
           if (valid) {
             await query("DELETE FROM auth_sessions WHERE id = $1", [parsedRefresh.sessionId]);
+            await query(
+              "DELETE FROM background_poll_tokens WHERE device_id = $1",
+              [sessions[0]!.device_id]
+            );
             // Force-close any open WebSocket connections for this device.
             await publishForceDisconnect(sessions[0]!.device_id).catch(() => undefined);
           }
@@ -609,13 +614,21 @@ export async function authRoutes(fastify: FastifyInstance): Promise<void> {
     const { sub: userId, deviceId } = request.auth;
     const token = nanoid(64);
     const hash = createHash("sha256").update(token).digest("hex");
+    const expiresAt = new Date(Date.now() + BACKGROUND_POLL_TOKEN_TTL_SECONDS * 1000);
     await query(
-      `INSERT INTO background_poll_tokens (user_id, device_id, token_hash)
-       VALUES ($1, $2, $3)
+      `INSERT INTO background_poll_tokens (user_id, device_id, token_hash, expires_at)
+       VALUES ($1, $2, $3, $4)
        ON CONFLICT (user_id, device_id)
-       DO UPDATE SET token_hash = EXCLUDED.token_hash, created_at = now()`,
-      [userId, deviceId, hash]
+       DO UPDATE SET
+         token_hash = EXCLUDED.token_hash,
+         expires_at = EXCLUDED.expires_at,
+         created_at = now()`,
+      [userId, deviceId, hash, expiresAt]
     );
-    return reply.send({ token });
+    return reply.send({
+      token,
+      expiresAt: expiresAt.toISOString(),
+      expiresInSec: BACKGROUND_POLL_TOKEN_TTL_SECONDS,
+    });
   });
 }

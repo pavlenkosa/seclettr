@@ -157,6 +157,8 @@ const baselineChecks: Record<string, () => Promise<boolean>> = {
     tableExists("background_poll_tokens"),
   "026_user_profiles.sql": async () =>
     columnExists("users", "display_name"),
+  "027_background_poll_token_expiry.sql": async () =>
+    columnExists("background_poll_tokens", "expires_at"),
 };
 
 async function baselineBootstrappedMigrations(files: string[]): Promise<void> {

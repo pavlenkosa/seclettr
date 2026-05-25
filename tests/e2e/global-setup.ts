@@ -44,12 +44,18 @@ export default async function globalSetup(): Promise<void> {
     console.log(`[global-setup] Vite warm-up complete — app is at /auth`);
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
-    console.warn(`[global-setup] Warm-up navigation did not reach /auth: ${msg}`);
-    console.warn(`[global-setup] Last URL: ${page.url()}`);
+    const lastUrl = page.url();
+    console.error(`[global-setup] FAILED: warm-up did not reach /auth — ${msg}`);
+    console.error(`[global-setup] Last URL: ${lastUrl}`);
+    // Screenshot for CI artifacts (saved to playwright-report/ via trace).
+    await page.screenshot({ path: "/tmp/global-setup-failure.png", fullPage: true });
     if (consoleLogs.length > 0) {
-      console.warn(`[global-setup] Browser logs (last 20):\n${consoleLogs.slice(-20).join("\n")}`);
+      console.error(`[global-setup] Browser logs (last 30):\n${consoleLogs.slice(-30).join("\n")}`);
     }
-    // Non-fatal: individual tests will surface the real failure with better context.
+    throw new Error(
+      `SPA did not reach /auth. Last URL: ${lastUrl}. ` +
+      `Console logs:\n${consoleLogs.slice(-30).join("\n")}`
+    );
   } finally {
     await page.close();
     await context.close();

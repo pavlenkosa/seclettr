@@ -566,6 +566,124 @@ describe("Auth: Login", () => {
   });
 });
 
+describe("Auth: Background poll tokens", () => {
+  it("rejects expired background poll tokens", async () => {
+    const username = `bg_expire_${Date.now()}`;
+    const registered = await registerUser(username);
+    expect(registered.status).toBe(201);
+    const registeredBody = registered.body as {
+      userId: string;
+      deviceId: string;
+      accessToken: string;
+    };
+
+    const issued = await apiRequest(
+      "/auth/background-token",
+      { method: "POST" },
+      registeredBody.accessToken
+    );
+    expect(issued.status).toBe(200);
+    const issuedBody = issued.body as {
+      token?: string;
+      expiresAt?: string;
+      expiresInSec?: number;
+    };
+    expect(typeof issuedBody.token).toBe("string");
+    expect(typeof issuedBody.expiresAt).toBe("string");
+    expect(issuedBody.expiresInSec).toBeGreaterThan(0);
+
+    const beforeExpiry = await apiRequest(
+      "/plain/conversations/unread-summary",
+      {},
+      issuedBody.token
+    );
+    expect(beforeExpiry.status).toBe(200);
+
+    await query(
+      `UPDATE background_poll_tokens
+       SET expires_at = now() - INTERVAL '1 second'
+       WHERE user_id = $1 AND device_id = $2`,
+      [registeredBody.userId, registeredBody.deviceId]
+    );
+
+    const afterExpiry = await apiRequest(
+      "/plain/conversations/unread-summary",
+      {},
+      issuedBody.token
+    );
+    expect(afterExpiry.status).toBe(401);
+  });
+
+  it("revokes the current device background poll token on logout", async () => {
+    const username = `bg_logout_${Date.now()}`;
+    const fakeKey = "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA";
+    const fakeSig =
+      "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA";
+
+    const registerResponse = await fetch(`${BASE_URL}/auth/register`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        version: AUTH_PROTOCOL_VERSION,
+        username,
+        password: "TestPassword123!",
+        device: {
+          name: "Background Logout Test Device",
+          identityKeyPublic: fakeKey,
+          signingKeyPublic: fakeKey,
+          registrationId: Math.floor(Math.random() * 16382) + 1,
+          signedPreKey: { id: 1, publicKey: fakeKey, signature: fakeSig },
+          oneTimePreKeys: Array.from({ length: 5 }, (_, index) => ({
+            id: index + 1,
+            publicKey: fakeKey,
+          })),
+        },
+      }),
+    });
+    expect(registerResponse.status).toBe(201);
+
+    const setCookieHeader = registerResponse.headers.get("set-cookie");
+    const refreshTokenMatch = setCookieHeader?.match(/refresh_token=([^;]+)/);
+    expect(refreshTokenMatch?.[1]).toBeTruthy();
+
+    const registeredBody = (await registerResponse.json()) as {
+      accessToken: string;
+    };
+    const issued = await apiRequest(
+      "/auth/background-token",
+      { method: "POST" },
+      registeredBody.accessToken
+    );
+    expect(issued.status).toBe(200);
+    const pollToken = (issued.body as { token?: string }).token;
+    expect(typeof pollToken).toBe("string");
+
+    const beforeLogout = await apiRequest(
+      "/plain/conversations/unread-summary",
+      {},
+      pollToken
+    );
+    expect(beforeLogout.status).toBe(200);
+
+    const logoutResponse = await fetch(`${BASE_URL}/auth/logout`, {
+      method: "POST",
+      headers: {
+        Cookie: `refresh_token=${refreshTokenMatch?.[1] ?? ""}`,
+      },
+    });
+    expect(logoutResponse.status).toBe(200);
+
+    const afterLogout = await apiRequest(
+      "/plain/conversations/unread-summary",
+      {},
+      pollToken
+    );
+    expect(afterLogout.status).toBe(401);
+  });
+});
+
 describe("Protected endpoints require auth", () => {
   it("GET /devices returns 401 without token", async () => {
     const { status } = await apiRequest("/devices");

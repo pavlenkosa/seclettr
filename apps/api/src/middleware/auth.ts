@@ -38,7 +38,10 @@ export async function requireAuth(
   }
 }
 
-/** Accepts a background poll token (Authorization: Bearer <token>) and populates request.auth.sub. */
+/**
+ * Accepts a background poll token (Authorization: Bearer <token>) and populates
+ * request.auth with the user/device pair bound to that token.
+ */
 export async function requireBackgroundToken(
   request: FastifyRequest,
   reply: FastifyReply
@@ -50,8 +53,13 @@ export async function requireBackgroundToken(
     return;
   }
   const hash = createHash("sha256").update(token).digest("hex");
-  const rows = await query<{ user_id: string }>(
-    "SELECT user_id FROM background_poll_tokens WHERE token_hash = $1",
+  const rows = await query<{ user_id: string; device_id: string }>(
+    `SELECT bpt.user_id, bpt.device_id
+     FROM background_poll_tokens bpt
+     INNER JOIN devices d ON d.id = bpt.device_id AND d.user_id = bpt.user_id
+     WHERE bpt.token_hash = $1
+       AND bpt.expires_at > now()
+     LIMIT 1`,
     [hash]
   );
   if (rows.length === 0) {
@@ -60,7 +68,7 @@ export async function requireBackgroundToken(
   }
   (request as FastifyRequest & { auth: AuthPayload }).auth = {
     sub: rows[0]!.user_id,
-    deviceId: "",
+    deviceId: rows[0]!.device_id,
     sessionId: "",
     tokenUse: "access",
     iat: 0,

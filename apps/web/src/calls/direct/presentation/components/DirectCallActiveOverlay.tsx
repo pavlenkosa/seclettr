@@ -349,7 +349,6 @@ export function DirectCallActiveOverlay({
       <div ref={callHeaderRef}>
       <HeaderBar
         className={styles.callHeader}
-        stackCenterOnNarrow
         center={(
           <InfoStack
             className={activeStyles.callHeaderSummary}

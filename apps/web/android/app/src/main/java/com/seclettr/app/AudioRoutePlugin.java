@@ -36,6 +36,10 @@ public class AudioRoutePlugin extends Plugin {
             call.reject("AudioManager unavailable");
             return;
         }
+        // MODE_IN_COMMUNICATION is required for setSpeakerphoneOn to take
+        // effect during a WebRTC call. WebRTC sets this mode itself, but
+        // may not have done so yet when we first apply the earpiece default.
+        am.setMode(AudioManager.MODE_IN_COMMUNICATION);
         am.setSpeakerphoneOn(enabled);
         call.resolve();
     }

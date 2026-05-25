@@ -117,7 +117,7 @@
   border-radius: 11px;
   cursor: pointer;
   user-select: none;
-  transition: background 100ms ease;
+  transition: background var(--motion-duration-fast) ease;
 }
 
 .optionLabel {

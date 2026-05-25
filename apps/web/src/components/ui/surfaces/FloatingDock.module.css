@@ -32,7 +32,7 @@
   flex-shrink: 0;
   touch-action: none;
   cursor: grab;
-  transition: background-color 120ms ease, border-color 120ms ease;
+  transition: background-color var(--motion-duration-fast) ease, border-color var(--motion-duration-fast) ease;
 }
 
 .dragHandle:hover {

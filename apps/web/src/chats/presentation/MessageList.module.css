@@ -375,7 +375,7 @@ button.quotedBubble {
 
 .quotedBubbleClickable {
   cursor: pointer;
-  transition: opacity 120ms ease;
+  transition: opacity var(--motion-duration-fast) ease;
 }
 
 .quotedBubbleClickable:hover {
@@ -1284,7 +1284,7 @@ button.quotedBubble {
   justify-content: center;
   gap: 0.5rem;
   background: rgb(2 6 23 / 0.22);
-  transition: opacity 220ms var(--motion-ease-standard);
+  transition: opacity var(--motion-duration-base) var(--motion-ease-standard);
 }
 
 .videoUploadOverlay[data-exiting="true"] {
@@ -1344,7 +1344,7 @@ button.quotedBubble {
 
 /* Voice upload → player fade */
 .voiceUploadFade {
-  transition: opacity 220ms var(--motion-ease-standard);
+  transition: opacity var(--motion-duration-base) var(--motion-ease-standard);
 }
 
 .voiceUploadFade[data-exiting="true"] {

@@ -89,7 +89,7 @@
   cursor: pointer;
   border-radius: 50%;
   flex-shrink: 0;
-  transition: opacity var(--motion-duration-fast, 120ms) ease;
+  transition: opacity var(--motion-duration-fast) ease;
 }
 
 .avatarBtn:hover {

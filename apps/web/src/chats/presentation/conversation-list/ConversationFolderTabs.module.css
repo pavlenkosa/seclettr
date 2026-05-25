@@ -92,7 +92,7 @@
   font-size: 0.84rem;
   color: var(--text-primary);
   cursor: pointer;
-  transition: background-color 120ms ease;
+  transition: background-color var(--motion-duration-fast) ease;
 }
 
 .menuItem:hover,

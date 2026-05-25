@@ -291,7 +291,7 @@
   color: var(--text-primary);
   font-size: 1rem;
   outline: none;
-  transition: border-color 160ms ease;
+  transition: border-color var(--motion-duration-fast) ease;
   box-sizing: border-box;
 }
 
@@ -365,7 +365,7 @@
   font-weight: 600;
   cursor: pointer;
   margin-top: 0.25rem;
-  transition: opacity 150ms ease;
+  transition: opacity var(--motion-duration-fast) ease;
 }
 
 .nativeSubmit:hover:not(:disabled) {

@@ -54,7 +54,7 @@
   color: var(--text-primary);
   font-size: 0.95rem;
   outline: none;
-  transition: border-color 160ms ease;
+  transition: border-color var(--motion-duration-fast) ease;
   box-sizing: border-box;
 }
 
@@ -86,7 +86,7 @@
   font-size: 0.95rem;
   font-weight: 600;
   cursor: pointer;
-  transition: opacity 150ms ease;
+  transition: opacity var(--motion-duration-fast) ease;
 }
 
 .btn:hover:not(:disabled) {

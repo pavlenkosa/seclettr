@@ -52,7 +52,7 @@
 
 .callAudioOutputBar {
   align-self: center;
-  animation: callContentIn 240ms cubic-bezier(0.18, 0.9, 0.2, 1) 60ms both;
+  animation: callContentIn var(--motion-duration-slow) cubic-bezier(0.18, 0.9, 0.2, 1) 60ms both;
 }
 
 .callEncryptionBadge {

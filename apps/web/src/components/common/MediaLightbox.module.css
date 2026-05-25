@@ -181,15 +181,15 @@
 }
 
 .mediaStageEnter {
-  animation: mediaFadeIn 220ms var(--motion-ease-emphasized, cubic-bezier(0.2, 0, 0, 1)) both;
+  animation: mediaFadeIn var(--motion-duration-base) var(--motion-ease-emphasized, cubic-bezier(0.2, 0, 0, 1)) both;
 }
 
 .mediaStageSlideNext {
-  animation: mediaSlideInFromRight 240ms var(--motion-ease-emphasized, cubic-bezier(0.2, 0, 0, 1)) both;
+  animation: mediaSlideInFromRight var(--motion-duration-slow) var(--motion-ease-emphasized, cubic-bezier(0.2, 0, 0, 1)) both;
 }
 
 .mediaStageSlidePrev {
-  animation: mediaSlideInFromLeft 240ms var(--motion-ease-emphasized, cubic-bezier(0.2, 0, 0, 1)) both;
+  animation: mediaSlideInFromLeft var(--motion-duration-slow) var(--motion-ease-emphasized, cubic-bezier(0.2, 0, 0, 1)) both;
 }
 
 .image {

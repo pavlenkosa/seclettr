@@ -108,7 +108,7 @@
   border-radius: 2px;
   background: currentColor;
   opacity: 0.7;
-  transition: width 120ms ease;
+  transition: width var(--motion-duration-fast) ease;
 }
 
 .uploadProgressFillOwn {
@@ -142,7 +142,7 @@
   background: rgb(0 0 0 / 0.5);
   gap: 0.5rem;
   padding: 0.75rem;
-  transition: opacity 220ms var(--motion-ease-standard);
+  transition: opacity var(--motion-duration-base) var(--motion-ease-standard);
 }
 
 .inlineMediaUploadOverlay[data-exiting="true"] {
@@ -188,7 +188,7 @@
   stroke-linecap: round;
   stroke-dasharray: var(--upload-ring-circumference);
   stroke-dashoffset: var(--upload-ring-offset);
-  transition: stroke-dashoffset 150ms linear;
+  transition: stroke-dashoffset var(--motion-duration-fast) linear;
 }
 
 .uploadRingProgressAnimated {

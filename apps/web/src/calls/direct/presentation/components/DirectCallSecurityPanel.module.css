@@ -47,7 +47,7 @@
   background: rgba(255 255 255 / 0.08);
   color: rgba(255 255 255 / 0.45);
   cursor: pointer;
-  transition: background-color 120ms ease, color 120ms ease;
+  transition: background-color var(--motion-duration-fast) ease, color var(--motion-duration-fast) ease;
 }
 
 .securitySheetClose:hover {

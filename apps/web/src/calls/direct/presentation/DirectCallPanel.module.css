@@ -72,7 +72,7 @@
   pointer-events: auto;
   min-width: 220px;
   max-width: min(92vw, 520px);
-  animation: noticeIn 180ms cubic-bezier(0.18, 0.9, 0.2, 1) both;
+  animation: noticeIn var(--motion-duration-base) cubic-bezier(0.18, 0.9, 0.2, 1) both;
 }
 
 /* ── Active fullscreen overlay shell ────────────────────────────────────── */
@@ -103,7 +103,7 @@
     clamp(0.9rem, 1.5vw, 1.4rem)
     calc(env(safe-area-inset-bottom, 0px) + 14px);
   background: color-mix(in srgb, var(--bg-primary) 48%, #05080f);
-  animation: callSurfaceIn 220ms cubic-bezier(0.18, 0.9, 0.2, 1) both;
+  animation: callSurfaceIn var(--motion-duration-base) cubic-bezier(0.18, 0.9, 0.2, 1) both;
 }
 
 .remoteAudio {
@@ -127,7 +127,7 @@
   margin-inline: auto;
   --header-bar-gap: 0.8rem;
   z-index: var(--z-2);
-  animation: callContentIn 220ms cubic-bezier(0.18, 0.9, 0.2, 1) both;
+  animation: callContentIn var(--motion-duration-base) cubic-bezier(0.18, 0.9, 0.2, 1) both;
 }
 
 .minimizeBtn {
@@ -164,7 +164,7 @@
   flex: 1;
   width: min(100%, 820px);
   overflow: visible;
-  animation: callContentIn 260ms cubic-bezier(0.18, 0.9, 0.2, 1) 40ms both;
+  animation: callContentIn var(--motion-duration-slow) cubic-bezier(0.18, 0.9, 0.2, 1) 40ms both;
 }
 
 .callCenterVisual {
@@ -486,7 +486,7 @@
   --surface-panel-bg-end: color-mix(in srgb, var(--panel-header-bg) 66%, var(--bg-secondary));
   --surface-panel-border: color-mix(in srgb, var(--panel-border-soft) 88%, transparent);
   --surface-panel-shadow: none;
-  animation: callContentIn 260ms cubic-bezier(0.18, 0.9, 0.2, 1) 70ms both;
+  animation: callContentIn var(--motion-duration-slow) cubic-bezier(0.18, 0.9, 0.2, 1) 70ms both;
 }
 
 .callCenterVideo .securityCard {
@@ -570,7 +570,7 @@
   border: 1px solid color-mix(in srgb, var(--panel-border-soft) 90%, transparent);
   background: color-mix(in srgb, var(--panel-header-bg) 84%, var(--bg-secondary));
   z-index: var(--z-3);
-  animation: callContentIn 260ms cubic-bezier(0.18, 0.9, 0.2, 1) 80ms both;
+  animation: callContentIn var(--motion-duration-slow) cubic-bezier(0.18, 0.9, 0.2, 1) 80ms both;
 }
 
 .remoteCompanionPreview {
@@ -684,7 +684,7 @@
   background: color-mix(in srgb, var(--panel-header-bg) 84%, transparent);
   color: var(--text-primary);
   z-index: var(--z-2);
-  transition: background-color 120ms ease, border-color 120ms ease, opacity 120ms ease;
+  transition: background-color var(--motion-duration-fast) ease, border-color var(--motion-duration-fast) ease, opacity var(--motion-duration-fast) ease;
 }
 
 .localPreviewAction:hover:not(:disabled) {
@@ -716,7 +716,7 @@
   z-index: var(--z-2);
   touch-action: none;
   cursor: nwse-resize;
-  transition: background-color 120ms ease, border-color 120ms ease;
+  transition: background-color var(--motion-duration-fast) ease, border-color var(--motion-duration-fast) ease;
 }
 
 .localPreviewResizeHandle:hover {
@@ -768,7 +768,7 @@
   border-radius: 22px;
   border: 1px solid color-mix(in srgb, var(--panel-border-soft) 78%, transparent);
   background: color-mix(in srgb, var(--surface-shell) 88%, transparent);
-  animation: callContentIn 240ms cubic-bezier(0.18, 0.9, 0.2, 1) 80ms both;
+  animation: callContentIn var(--motion-duration-slow) cubic-bezier(0.18, 0.9, 0.2, 1) 80ms both;
 }
 
 /* ── Responsive + reduced motion ────────────────────────────────────────── */

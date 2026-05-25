@@ -54,7 +54,7 @@
   border-radius: 50%;
   color: var(--text-muted);
   cursor: pointer;
-  transition: background 120ms ease, color 120ms ease;
+  transition: background var(--motion-duration-fast) ease, color var(--motion-duration-fast) ease;
   flex-shrink: 0;
 }
 

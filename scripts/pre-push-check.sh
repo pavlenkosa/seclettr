@@ -1,6 +1,11 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+if [ "${SECLETTR_PREPUSH_SKIP:-}" = "1" ]; then
+  echo "SECLETTR_PREPUSH_SKIP=1 — skipping pre-push checks"
+  exit 0
+fi
+
 echo "=== Pre-push check: pnpm typecheck ==="
 pnpm typecheck
 
@@ -18,3 +23,4 @@ pnpm verify:release
 
 echo ""
 echo "✓ All checks passed. Push safe."
+echo "  To skip: SECLETTR_PREPUSH_SKIP=1 git push"

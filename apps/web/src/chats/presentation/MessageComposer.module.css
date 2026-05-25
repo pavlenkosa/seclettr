@@ -14,7 +14,7 @@
 
 .composer {
   position: relative;
-  z-index: 40;
+  z-index: var(--z-40);
   flex-shrink: 0;
   inline-size: 100%;
   max-inline-size: 100%;
@@ -27,7 +27,7 @@
 
 .inner {
   position: relative;
-  z-index: 41;
+  z-index: var(--z-40);
   display: flex;
   align-items: flex-end;
   inline-size: 100%;

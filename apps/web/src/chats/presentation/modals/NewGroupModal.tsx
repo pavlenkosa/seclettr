@@ -86,7 +86,7 @@ export function NewGroupModal({ onClose, onCreate }: Props) {
       bodyClassName={styles.body}
       style={{
         "--modal-width": "520px",
-        "--modal-z-index": 130,
+        "--modal-z-index": "var(--z-200)",
       } as CSSProperties}
       footer={(
         <div className={styles.footer}>

@@ -3,7 +3,7 @@
 .overlay {
   position: fixed;
   inset: 0;
-  z-index: 8000;
+  z-index: var(--z-8000);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -176,7 +176,7 @@
   padding: 0.45rem 1rem;
   border-radius: 10px;
   font-size: 0.875rem;
-  font-weight: 650;
+  font-weight: 600;
   cursor: pointer;
   transition:
     background 120ms ease,

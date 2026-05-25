@@ -108,7 +108,7 @@
   position: absolute;
   bottom: calc(100% + 8px);
   left: 0;
-  z-index: 200;
+  z-index: var(--z-200);
   min-width: 240px;
   max-width: 320px;
   border-radius: 12px;
@@ -197,7 +197,7 @@
 
 .menuItem.selected {
   color: var(--accent, #5865f2);
-  font-weight: 650;
+  font-weight: 600;
 }
 
 .checkmark {
@@ -237,7 +237,7 @@
   .mobileScrim {
     position: fixed;
     inset: 0;
-    z-index: 390;
+    z-index: var(--z-390);
     display: block;
     background: rgb(2 6 23 / 0.34);
   }
@@ -247,7 +247,7 @@
     left: max(0.72rem, env(safe-area-inset-left, 0px));
     right: max(0.72rem, env(safe-area-inset-right, 0px));
     bottom: calc(env(safe-area-inset-bottom, 0px) + 0.72rem);
-    z-index: 400;
+    z-index: var(--z-400);
     width: auto;
     min-width: 0;
     max-width: none;

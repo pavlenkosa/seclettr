@@ -32,7 +32,7 @@
   min-width: 0;
   color: var(--text-primary);
   font-size: clamp(1rem, 2.5vw, 1.22rem);
-  font-weight: 760;
+  font-weight: 700;
   letter-spacing: -0.02em;
 }
 

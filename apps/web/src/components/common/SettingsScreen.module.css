@@ -37,7 +37,7 @@
   min-width: 0;
   color: var(--text-primary);
   font-size: 1.04rem;
-  font-weight: 730;
+  font-weight: 700;
   line-height: 1.2;
   white-space: nowrap;
   overflow: hidden;
@@ -87,7 +87,7 @@
   color: #fff;
   background: var(--accent);
   font-size: 0.9rem;
-  font-weight: 760;
+  font-weight: 700;
 }
 
 .accountInfo {
@@ -103,7 +103,7 @@
   white-space: nowrap;
   color: var(--text-primary);
   font-size: 0.9rem;
-  font-weight: 680;
+  font-weight: 700;
   line-height: 1.25;
 }
 
@@ -162,7 +162,7 @@
 .sectionTitle {
   color: inherit;
   font-size: 0.9rem;
-  font-weight: 680;
+  font-weight: 700;
   line-height: 1.28;
 }
 
@@ -227,7 +227,7 @@
   margin: 0;
   color: var(--text-primary);
   font-size: 1.22rem;
-  font-weight: 760;
+  font-weight: 700;
   line-height: 1.16;
 }
 
@@ -247,7 +247,7 @@
   background: color-mix(in srgb, var(--surface-shell) 72%, transparent);
   color: var(--text-secondary);
   font-size: 0.78rem;
-  font-weight: 650;
+  font-weight: 600;
   line-height: 1.35;
   text-align: right;
   white-space: nowrap;
@@ -306,7 +306,7 @@
   .root {
     position: absolute;
     inset: 0;
-    z-index: 36;
+    z-index: var(--z-30);
   }
 
   .header {

@@ -17,7 +17,7 @@
 .controlsDock {
   --call-controls-position: sticky;
   --call-controls-bottom: calc(env(safe-area-inset-bottom, 0px) + 2px);
-  --call-controls-z-index: 7;
+  --call-controls-z-index: var(--z-8);
   --call-controls-width: fit-content;
   --call-controls-max-width: min(100%, 760px);
   --call-controls-width-narrow: min(100%, 440px);

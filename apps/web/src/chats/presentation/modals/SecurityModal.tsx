@@ -96,7 +96,7 @@ export function SecurityModal({
         "--modal-width": "480px",
         "--modal-max-height": "calc(100dvh - 1.8rem)",
         "--modal-max-height-mobile": "min(88dvh, 780px)",
-        "--modal-z-index": 200,
+        "--modal-z-index": "var(--z-200)",
         "--modal-overlay-padding": "0.9rem",
       }) as CSSProperties}
     >

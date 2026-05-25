@@ -8,7 +8,7 @@
 
 .resizer {
   position: relative;
-  z-index: 20;
+  z-index: var(--z-20);
   width: 0;
   flex-shrink: 0;
   cursor: col-resize;
@@ -55,7 +55,7 @@
 .settingsOverlay {
   position: absolute;
   inset: 0;
-  z-index: 50;
+  z-index: var(--z-50);
   overflow: hidden;
   --motion-enter-duration: 180ms;
   --motion-exit-duration: 140ms;
@@ -76,7 +76,7 @@
 .mediaPanelPresence {
   position: absolute;
   inset: 0;
-  z-index: 30;
+  z-index: var(--z-30);
 }
 
 .mediaPanelLazyFallback {
@@ -89,7 +89,7 @@
 
 .composerLazyFallback {
   position: relative;
-  z-index: 40;
+  z-index: var(--z-40);
   flex-shrink: 0;
   inline-size: 100%;
   max-inline-size: 100%;
@@ -184,7 +184,7 @@
   top: 0;
   left: 0;
   right: 0;
-  z-index: 400;
+  z-index: var(--z-400);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -204,7 +204,7 @@
   top: 0.6rem;
   left: 1rem;
   right: 1rem;
-  z-index: 390;
+  z-index: var(--z-390);
   display: flex;
   flex-direction: column;
   align-items: center;

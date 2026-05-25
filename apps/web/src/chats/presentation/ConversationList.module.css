@@ -126,7 +126,7 @@
   align-items: center;
   gap: 0.28rem;
   font-size: 0.96rem;
-  font-weight: 650;
+  font-weight: 600;
   line-height: 1.2;
   color: var(--text-primary);
   flex: 1;
@@ -171,7 +171,7 @@
   position: absolute;
   top: 100%;
   right: 0.7rem;
-  z-index: 30;
+  z-index: var(--z-30);
   min-width: 9rem;
   margin-top: -0.4rem;
   padding: 0.3rem;
@@ -292,7 +292,7 @@
   padding: 0.05rem 0.3rem;
   border-radius: 999px;
   font-size: 0.68rem;
-  font-weight: 650;
+  font-weight: 600;
   line-height: 1.4;
   color: var(--accent);
   background: color-mix(in srgb, var(--accent) 14%, transparent);
@@ -325,7 +325,7 @@
   background: var(--accent);
   color: #fff;
   font-size: 0.68rem;
-  font-weight: 750;
+  font-weight: 700;
   min-width: 22px;
   height: 22px;
   border-radius: 999px;

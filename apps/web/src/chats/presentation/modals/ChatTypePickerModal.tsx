@@ -55,7 +55,7 @@ export function ChatTypePickerModal({ userId, username, onClose, onSelectE2ee, o
       style={{
         "--modal-width": "400px",
         "--modal-max-height": "60dvh",
-        "--modal-z-index": 101,
+        "--modal-z-index": "var(--z-200)",
       } as CSSProperties}
     >
       <SurfacePanel as="div" className={styles.list} padding="none" radius="lg">

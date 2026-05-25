@@ -29,7 +29,7 @@
   position: fixed;
   left: var(--menu-x);
   top: var(--menu-y);
-  z-index: 200;
+  z-index: var(--z-200);
   min-width: 180px;
   max-width: calc(100vw - 16px);
   padding: 0.32rem;

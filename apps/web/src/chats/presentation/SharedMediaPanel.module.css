@@ -1,7 +1,7 @@
 .panel {
   position: absolute;
   inset: 0;
-  z-index: 30;
+  z-index: var(--z-30);
   display: flex;
   flex-direction: column;
   /* Keep this full-cover panel opaque so messages do not bleed through. */

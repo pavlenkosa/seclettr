@@ -1,7 +1,7 @@
 .root {
   --bottom-dock-side-inset: 0;
   --bottom-dock-bottom-offset: 0;
-  --bottom-dock-z-index: 25;
+  --bottom-dock-z-index: var(--z-20);
   --bottom-dock-inline-width-offset: 0;
   position: fixed;
   left: var(--bottom-dock-side-inset);

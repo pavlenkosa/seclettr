@@ -8,7 +8,7 @@
   border: 1px solid var(--label-pill-border, color-mix(in srgb, var(--panel-border-soft) 88%, transparent));
   background: var(--label-pill-bg, color-mix(in srgb, var(--surface-shell) 88%, transparent));
   color: var(--label-pill-color, var(--text-primary));
-  font-weight: 650;
+  font-weight: 600;
   line-height: 1.1;
   white-space: nowrap;
 }

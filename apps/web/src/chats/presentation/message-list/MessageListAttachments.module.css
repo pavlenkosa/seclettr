@@ -210,7 +210,7 @@
 
 .uploadRingCancel {
   position: relative;
-  z-index: 1;
+  z-index: var(--z-1);
   width: calc(var(--upload-ring-size) - 18px);
   height: calc(var(--upload-ring-size) - 18px);
   border: 1px solid rgb(255 255 255 / 0.18);

@@ -95,7 +95,7 @@
 
 .dropdown {
   position: fixed;
-  z-index: 9000;
+  z-index: var(--z-9000);
   overflow-y: auto;
   overscroll-behavior: contain;
   max-height: 260px;

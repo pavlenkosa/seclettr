@@ -31,7 +31,7 @@
 .inviteTitle {
   color: var(--text-primary);
   font-size: 0.92rem;
-  font-weight: 760;
+  font-weight: 700;
 }
 
 .inviteHint {
@@ -78,7 +78,7 @@
     calc((100% - 1560px) / 2 + clamp(0.85rem, 1.6vw, 1.35rem))
   );
   bottom: calc(env(safe-area-inset-bottom, 0px) + 5.8rem);
-  z-index: 8;
+  z-index: var(--z-8);
   width: clamp(330px, 24vw, 400px);
   max-height: none;
   margin: 0;

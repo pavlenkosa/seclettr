@@ -1,7 +1,7 @@
 .scrim {
   position: fixed;
   inset: 0;
-  z-index: 55;
+  z-index: var(--z-50);
   display: block;
   padding: 0;
   background: transparent;
@@ -9,12 +9,12 @@
 }
 
 .menuOpen {
-  --bottom-dock-z-index: 61;
+  --bottom-dock-z-index: var(--z-50);
 }
 
 .navDock {
   --bottom-dock-columns: 2;
-  --bottom-dock-z-index: 60;
+  --bottom-dock-z-index: var(--z-50);
   position: fixed;
   top: auto;
   right: 0;
@@ -65,7 +65,7 @@
 
 .tabLabel {
   font-size: 0.63rem;
-  font-weight: 650;
+  font-weight: 600;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -76,7 +76,7 @@
   position: fixed;
   right: max(1.1rem, env(safe-area-inset-right, 0px));
   bottom: calc(5.35rem + var(--safe-bottom));
-  z-index: 62;
+  z-index: var(--z-50);
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -87,7 +87,7 @@
   right: 0;
   bottom: calc(100% + 0.7rem);
   width: min(15.2rem, calc(100vw - 2rem));
-  z-index: 5;
+  z-index: var(--z-5);
 }
 
 .createMenuSurface {
@@ -153,7 +153,7 @@
   width: 56px;
   height: 56px;
   position: relative;
-  z-index: 4;
+  z-index: var(--z-4);
   isolation: isolate;
   padding: 0;
   display: inline-flex;

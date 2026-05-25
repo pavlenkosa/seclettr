@@ -40,7 +40,7 @@
 .title {
   color: var(--text-primary);
   font-size: var(--avatar-summary-title-size, 0.825rem);
-  font-weight: 650;
+  font-weight: 600;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;

@@ -6,7 +6,7 @@
   position: fixed;
   inset: 0;
   /* Above chat chrome/resizer artifacts, below global modals. */
-  z-index: 450;
+  z-index: var(--z-450);
   pointer-events: none;
   display: flex;
   flex-direction: column;
@@ -285,7 +285,7 @@
   left: 0;
   right: 0;
   bottom: 8px;
-  z-index: 2;
+  z-index: var(--z-2);
   width: fit-content;
   min-width: 44px;
   margin-inline: auto;

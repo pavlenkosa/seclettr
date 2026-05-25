@@ -48,7 +48,7 @@ export function ForwardPickerModal({ targets, onClose, onSelect }: Props) {
       style={{
         "--modal-width": "400px",
         "--modal-max-height": "72dvh",
-        "--modal-z-index": 135,
+        "--modal-z-index": "var(--z-200)",
       } as CSSProperties}
     >
       <div className={styles.searchWrap}>

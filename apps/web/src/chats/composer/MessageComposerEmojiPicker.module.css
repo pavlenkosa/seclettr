@@ -25,7 +25,7 @@
   position: absolute;
   right: 0;
   bottom: calc(100% + 0.5rem);
-  z-index: 20;
+  z-index: var(--z-20);
   width: min(21rem, calc(100vw - 1rem));
   inline-size: min(21rem, calc(100vw - 1rem));
   max-inline-size: calc(100vw - 1rem);
@@ -94,7 +94,7 @@
 .emojiSectionHeader {
   position: sticky;
   top: 0;
-  z-index: 2;
+  z-index: var(--z-2);
   padding: 0.32rem 0.12rem 0.24rem;
   background: color-mix(in srgb, var(--surface-float) 98%, var(--bg-secondary));
   border-bottom: 1px solid color-mix(in srgb, var(--panel-border-soft) 68%, transparent);

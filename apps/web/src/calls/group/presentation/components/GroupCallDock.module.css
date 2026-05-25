@@ -12,7 +12,7 @@
  */
 
 .dock {
-  --floating-dock-z-index: 250;
+  --floating-dock-z-index: var(--z-250);
   --floating-dock-bottom-offset: 10px;
   /* Default to bottom-right — avoids center-covering the composer */
   --floating-dock-left: auto;

@@ -64,7 +64,7 @@
   display: flex;
   justify-content: center;
   pointer-events: none;
-  z-index: 320;
+  z-index: var(--z-320);
 }
 
 /* Migrated: InlineNotice owns the surface language; this class only positions it. */
@@ -90,7 +90,7 @@
   outline: 0;
   box-sizing: border-box;
   color: inherit;
-  z-index: 260;
+  z-index: var(--z-260);
   overflow: hidden auto;
   overscroll-behavior-y: contain;
   display: flex;
@@ -126,7 +126,7 @@
   width: min(100%, 1480px);
   margin-inline: auto;
   --header-bar-gap: 0.8rem;
-  z-index: 2;
+  z-index: var(--z-2);
   animation: callContentIn 220ms cubic-bezier(0.18, 0.9, 0.2, 1) both;
 }
 
@@ -154,7 +154,7 @@
 /* Feature-local: stage sizing, source switching, and security composition. */
 .callCenter {
   position: relative;
-  z-index: 2;
+  z-index: var(--z-2);
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -251,7 +251,7 @@
   text-align: center;
   top: calc(50% + var(--direct-call-audio-ring-size) / 2 + 1.1rem);
   font-size: clamp(1.05rem, 2.2vw, 1.35rem);
-  font-weight: 720;
+  font-weight: 700;
   color: rgba(255 255 255 / 0.92);
   letter-spacing: -0.015em;
   pointer-events: none;
@@ -312,14 +312,14 @@
   position: absolute;
   top: 0.9rem;
   left: 0.9rem;
-  z-index: 2;
+  z-index: var(--z-2);
 }
 
 .stageActionRail {
   position: absolute;
   top: 0.9rem;
   right: 0.9rem;
-  z-index: 2;
+  z-index: var(--z-2);
   display: flex;
   align-items: center;
   gap: 0.45rem;
@@ -364,7 +364,7 @@
   --avatar-font-size: var(--direct-call-avatar-font-size);
   --avatar-shadow: none;
   position: relative;
-  font-weight: 720;
+  font-weight: 700;
   letter-spacing: 0.02em;
 }
 
@@ -379,7 +379,7 @@
   opacity: 1;
   transition: border-color 0.14s ease, background-color 0.14s ease;
   pointer-events: none;
-  z-index: 0;
+  z-index: var(--z-0);
 }
 
 .stageAudioPulseActive {
@@ -511,7 +511,7 @@
   letter-spacing: 0.06em;
   text-transform: uppercase;
   color: var(--text-secondary);
-  font-weight: 650;
+  font-weight: 600;
   padding-left: 0.12rem;
 }
 
@@ -569,7 +569,7 @@
   overflow: hidden;
   border: 1px solid color-mix(in srgb, var(--panel-border-soft) 90%, transparent);
   background: color-mix(in srgb, var(--panel-header-bg) 84%, var(--bg-secondary));
-  z-index: 3;
+  z-index: var(--z-3);
   animation: callContentIn 260ms cubic-bezier(0.18, 0.9, 0.2, 1) 80ms both;
 }
 
@@ -578,7 +578,7 @@
   right: 0.72rem;
   width: clamp(116px, 18vw, 188px);
   aspect-ratio: 4 / 3;
-  z-index: 4;
+  z-index: var(--z-4);
   cursor: pointer;
   touch-action: manipulation;
 }
@@ -666,7 +666,7 @@
   color: var(--text-primary);
   text-align: center;
   background: color-mix(in srgb, var(--bg-primary) 58%, transparent);
-  z-index: 1;
+  z-index: var(--z-1);
 }
 
 /* Reusable: lift later. Preview action shells are still direct-call-specific. */
@@ -683,7 +683,7 @@
   border: 1px solid color-mix(in srgb, var(--panel-border-soft) 88%, transparent);
   background: color-mix(in srgb, var(--panel-header-bg) 84%, transparent);
   color: var(--text-primary);
-  z-index: 2;
+  z-index: var(--z-2);
   transition: background-color 120ms ease, border-color 120ms ease, opacity 120ms ease;
 }
 
@@ -713,7 +713,7 @@
   border: 1px solid color-mix(in srgb, var(--panel-border-soft) 88%, transparent);
   background: color-mix(in srgb, var(--panel-header-bg) 84%, transparent);
   color: var(--text-primary);
-  z-index: 2;
+  z-index: var(--z-2);
   touch-action: none;
   cursor: nwse-resize;
   transition: background-color 120ms ease, border-color 120ms ease;
@@ -743,7 +743,7 @@
   color: var(--text-primary);
   text-align: left;
   background: color-mix(in srgb, var(--bg-primary) 64%, transparent);
-  z-index: 1;
+  z-index: var(--z-1);
 }
 
 .remoteCompanionName {
@@ -751,7 +751,7 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  font-weight: 650;
+  font-weight: 600;
 }
 
 .remoteCompanionBadge {
@@ -762,7 +762,7 @@
 
 .audioOutputStrip {
   position: relative;
-  z-index: 2;
+  z-index: var(--z-2);
   width: 100%;
   padding: 0.35rem;
   border-radius: 22px;
@@ -850,7 +850,7 @@
     margin-top: 0.58rem;
     margin-left: auto;
     margin-right: 0;
-    z-index: 2;
+    z-index: var(--z-2);
   }
 
   .callStageCamera {

@@ -259,7 +259,7 @@ function ModalShellPreview({ variant }: Readonly<{ variant: "rest" | "focus" }>)
           "--modal-width": "100%",
           "--modal-max-height": "100%",
           "--modal-overlay-padding": "0.7rem",
-          "--modal-z-index": 1,
+          "--modal-z-index": "var(--z-0)",
         } as React.CSSProperties}
       >
         <div className={styles.modalPreviewStack}>

@@ -19,7 +19,7 @@
 
 .chromeRail {
   position: relative;
-  z-index: 3;
+  z-index: var(--z-3);
   flex-shrink: 0;
 }
 
@@ -41,7 +41,7 @@
   padding: 0.52rem 0.82rem;
   background: color-mix(in srgb, var(--bg-primary) 94%, transparent);
   border-top: 1px solid color-mix(in srgb, var(--panel-border) 52%, transparent);
-  z-index: 9;
+  z-index: var(--z-9);
 }
 
 .bulkActionCount {
@@ -103,7 +103,7 @@
   position: absolute;
   right: calc(var(--thread-content-inline-pad, 0.74rem) + 0.08rem);
   bottom: 1rem;
-  z-index: 8;
+  z-index: var(--z-8);
   --icon-button-border-base: color-mix(in srgb, var(--panel-border-soft) 80%, transparent);
   --icon-button-bg-base: color-mix(in srgb, var(--surface-float) 90%, transparent);
   --icon-button-color-base: var(--text-primary);
@@ -151,7 +151,7 @@
 
 .composerRail {
   position: relative;
-  z-index: 10;
+  z-index: var(--z-10);
   min-height: 0;
   padding-top: 0.12rem;
   padding-bottom: 0.72rem;
@@ -209,7 +209,7 @@
 .dropOverlay {
   position: absolute;
   inset: 0;
-  z-index: 20;
+  z-index: var(--z-20);
   display: flex;
   align-items: center;
   justify-content: center;

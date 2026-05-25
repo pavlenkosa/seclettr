@@ -6,7 +6,7 @@
   position: absolute;
   top: calc(100% + 6px);
   right: 0;
-  z-index: 120;
+  z-index: var(--z-100);
   min-width: 188px;
 }
 

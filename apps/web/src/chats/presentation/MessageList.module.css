@@ -1028,7 +1028,7 @@ button.quotedBubble {
 
 .videoCircle {
   position: relative;
-  z-index: 1;
+  z-index: var(--z-1);
   width: 100%;
   height: 100%;
   object-fit: cover;
@@ -1046,7 +1046,7 @@ button.quotedBubble {
   -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 3px), #000 calc(100% - 2px));
   mask: radial-gradient(farthest-side, transparent calc(100% - 3px), #000 calc(100% - 2px));
   pointer-events: none;
-  z-index: 3;
+  z-index: var(--z-3);
 }
 
 .videoPlayOverlay {
@@ -1062,7 +1062,7 @@ button.quotedBubble {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  z-index: 4;
+  z-index: var(--z-4);
 }
 
 .videoPlayOverlay :global(svg) {
@@ -1086,7 +1086,7 @@ button.quotedBubble {
   font-size: 0.66rem;
   line-height: 1.1;
   font-variant-numeric: tabular-nums;
-  z-index: 4;
+  z-index: var(--z-4);
 }
 
 .videoMeta {
@@ -1205,7 +1205,7 @@ button.quotedBubble {
 
 .videoDecryptLock {
   position: relative;
-  z-index: 1;
+  z-index: var(--z-1);
   width: 40px;
   height: 40px;
   border-radius: 50%;
@@ -1277,7 +1277,7 @@ button.quotedBubble {
 .videoUploadOverlay {
   position: absolute;
   inset: 0;
-  z-index: 2;
+  z-index: var(--z-2);
   display: flex;
   flex-direction: column;
   align-items: center;

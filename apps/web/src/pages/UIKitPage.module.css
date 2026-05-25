@@ -92,7 +92,7 @@
 
 .metricValue {
   font-size: 1.05rem;
-  font-weight: 760;
+  font-weight: 700;
   color: var(--text-primary);
 }
 
@@ -142,7 +142,7 @@
 
 .previewTabBar {
   --bottom-dock-inline-width-offset: 0;
-  --bottom-dock-inline-z-index: 1;
+  --bottom-dock-inline-z-index: var(--z-1);
   min-height: 78px;
 }
 
@@ -268,7 +268,7 @@
   background: color-mix(in srgb, var(--surface-shell) 92%, transparent);
   color: var(--text-primary);
   font-size: 0.69rem;
-  font-weight: 650;
+  font-weight: 600;
 }
 
 .a11yStaticNote {

@@ -17,7 +17,7 @@
   outline: none;
   position: fixed;
   inset: 0;
-  z-index: 900;
+  z-index: var(--z-900);
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -69,7 +69,7 @@
   position: absolute;
   top: 0;
   inset-inline: 0;
-  z-index: 2;
+  z-index: var(--z-2);
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -125,7 +125,7 @@
   --icon-button-transform-hover: none;
   --icon-button-transform-active: none;
   --icon-button-blur: 8px;
-  z-index: 1;
+  z-index: var(--z-1);
 }
 
 /* ── Navigation arrows ─────────────────────────────────────────────────── */
@@ -133,7 +133,7 @@
   position: absolute;
   top: 50%;
   transform: translateY(-50%);
-  z-index: 2;
+  z-index: var(--z-2);
   --icon-button-size: 44px;
 }
 
@@ -148,7 +148,7 @@
 /* ── Media viewer stage ────────────────────────────────────────────────── */
 .content {
   position: relative;
-  z-index: 1;
+  z-index: var(--z-1);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -220,7 +220,7 @@
   position: absolute;
   left: 50%;
   bottom: calc(env(safe-area-inset-bottom, 0px) + 1.1rem);
-  z-index: 2;
+  z-index: var(--z-2);
   width: min(640px, calc(100vw - 2rem));
   max-height: min(34vh, 220px);
   overflow: auto;
@@ -290,7 +290,7 @@
     position: absolute;
     left: 50%;
     bottom: calc(env(safe-area-inset-bottom, 0px) + 1.1rem);
-    z-index: 2;
+    z-index: var(--z-2);
     display: flex;
     flex-direction: column;
     align-items: center;

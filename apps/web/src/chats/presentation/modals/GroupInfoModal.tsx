@@ -255,7 +255,7 @@ export function GroupInfoModal({
         "--modal-width": "560px",
         "--modal-max-height": "86dvh",
         "--modal-max-height-mobile": "calc(100dvh - 1.1rem)",
-        "--modal-z-index": 135,
+        "--modal-z-index": "var(--z-200)",
       } as CSSProperties}
       title={null}
     >

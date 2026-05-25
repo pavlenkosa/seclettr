@@ -96,7 +96,7 @@
 
 .label {
   font-size: 0.78rem;
-  font-weight: 650;
+  font-weight: 600;
   color: var(--text-secondary);
   letter-spacing: 0.02em;
 }
@@ -167,7 +167,7 @@
   color: #fff;
   border: none;
   font-size: 0.86rem;
-  font-weight: 650;
+  font-weight: 600;
   cursor: pointer;
   transition:
     opacity var(--motion-duration-fast) var(--motion-ease-standard),

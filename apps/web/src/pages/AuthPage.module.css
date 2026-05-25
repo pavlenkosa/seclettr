@@ -92,7 +92,7 @@
 
 .label {
   font-size: 0.75rem;
-  font-weight: 650;
+  font-weight: 600;
   letter-spacing: 0.04em;
   text-transform: uppercase;
   color: var(--text-secondary);
@@ -248,7 +248,7 @@
 
 .nativeTitle {
   font-size: 1.6rem;
-  font-weight: 750;
+  font-weight: 700;
   color: var(--text-primary);
   letter-spacing: -0.02em;
   margin: 0.4rem 0 0;
@@ -276,7 +276,7 @@
 
 .nativeLabel {
   font-size: 0.72rem;
-  font-weight: 650;
+  font-weight: 600;
   letter-spacing: 0.05em;
   text-transform: uppercase;
   color: var(--text-secondary);
@@ -362,7 +362,7 @@
   background: var(--accent);
   color: #fff;
   font-size: 1rem;
-  font-weight: 650;
+  font-weight: 600;
   cursor: pointer;
   margin-top: 0.25rem;
   transition: opacity 150ms ease;

@@ -2,7 +2,7 @@
   position: fixed;
   bottom: 16px;
   right: 16px;
-  z-index: 9999;
+  z-index: var(--z-9999);
   font-family: var(--font-mono);
   font-size: 12px;
 }
@@ -233,7 +233,7 @@
   top: 0.6rem;
   left: 50%;
   transform: translateX(-50%);
-  z-index: 390;
+  z-index: var(--z-390);
   display: flex;
   flex-direction: column;
   gap: 0.4rem;

@@ -29,7 +29,7 @@
 
 .colorPickerLabel {
   font-size: 0.72rem;
-  font-weight: 720;
+  font-weight: 700;
   color: var(--text-secondary);
   letter-spacing: 0.06em;
   text-transform: uppercase;
@@ -72,7 +72,7 @@
 
 .oklchSliderLabel {
   font-size: 0.66rem;
-  font-weight: 760;
+  font-weight: 700;
   color: var(--text-muted);
   letter-spacing: 0.08em;
   text-transform: uppercase;

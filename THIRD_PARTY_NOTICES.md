@@ -3,8 +3,8 @@
 This file is auto-generated from workspace production dependencies.
 Source: `pnpm licenses list --prod --json`.
 
-- Total production packages: 314
-- Packages without detected local license file: 32
+- Total production packages: 316
+- Packages without detected local license file: 33
 
 ## License Summary
 
@@ -15,7 +15,7 @@ Source: `pnpm licenses list --prod --json`.
 | BlueOak-1.0.0 | 7 |
 | BSD-3-Clause | 4 |
 | ISC | 27 |
-| MIT | 174 |
+| MIT | 176 |
 | MPL-2.0 | 1 |
 
 ## Package Inventory
@@ -67,6 +67,7 @@ Source: `pnpm licenses list --prod --json`.
 | @aws-sdk/xml-builder | 3.972.25 | Apache-2.0 | https://github.com/aws/aws-sdk-js-v3/tree/main/packages-internal/xml-builder | node_modules/.pnpm/@aws-sdk+xml-builder@3.972.25/node_modules/@aws-sdk/xml-builder/LICENSE | AWS SDK for JavaScript Team |
 | @aws/lambda-invoke-store | 0.2.3 | Apache-2.0 | https://github.com/awslabs/aws-lambda-invoke-store | node_modules/.pnpm/@aws+lambda-invoke-store@0.2.3/node_modules/@aws/lambda-invoke-store/LICENSE | Amazon Web Services |
 | @capacitor/android | 8.3.4 | MIT | https://capacitorjs.com | node_modules/.pnpm/@capacitor+android@8.3.4_@capacitor+core@8.3.4/node_modules/@capacitor/android/LICENSE | Ionic Team |
+| @capacitor/app | 8.1.0 | MIT | https://github.com/ionic-team/capacitor-plugins#readme | node_modules/.pnpm/@capacitor+app@8.1.0_@capacitor+core@8.3.4/node_modules/@capacitor/app/LICENSE | Ionic |
 | @capacitor/background-runner | 3.0.0 | MIT | https://github.com/ionic-team/capacitor-background-runner#readme | node_modules/.pnpm/@capacitor+background-runner@3.0.0_@capacitor+core@8.3.4/node_modules/@capacitor/background-runner/LICENSE | Ionic Team |
 | @capacitor/camera | 8.2.0 | MIT | https://github.com/ionic-team/capacitor-camera#readme | node_modules/.pnpm/@capacitor+camera@8.2.0_@capacitor+core@8.3.4/node_modules/@capacitor/camera/LICENSE | Ionic |
 | @capacitor/core | 8.3.4 | MIT | https://capacitorjs.com | node_modules/.pnpm/@capacitor+core@8.3.4/node_modules/@capacitor/core/LICENSE | Ionic Team |
@@ -175,6 +176,7 @@ Source: `pnpm licenses list --prod --json`.
 | bowser | 2.14.1 | MIT | https://github.com/bowser-js/bowser | node_modules/.pnpm/bowser@2.14.1/node_modules/bowser/LICENSE | Dustin Diaz |
 | brace-expansion | 5.0.6 | MIT | https://github.com/juliangruber/brace-expansion#readme | node_modules/.pnpm/brace-expansion@5.0.6/node_modules/brace-expansion/LICENSE | - |
 | buffer-equal-constant-time | 1.0.1 | BSD-3-Clause | https://github.com/goinstant/buffer-equal-constant-time#readme | node_modules/.pnpm/buffer-equal-constant-time@1.0.1/node_modules/buffer-equal-constant-time/LICENSE.txt | GoInstant Inc., a salesforce.com company |
+| capacitor-native-biometric | 4.2.2 | MIT | https://github.com/epicshaggy/capacitor-native-biometric#readme | - | Jose Martinez |
 | chownr | 3.0.0 | BlueOak-1.0.0 | https://github.com/isaacs/chownr#readme | node_modules/.pnpm/chownr@3.0.0/node_modules/chownr/LICENSE.md | Isaac Z. Schlueter |
 | cluster-key-slot | 1.1.2 | Apache-2.0 | https://github.com/Salakar/cluster-key-slot#readme | node_modules/.pnpm/cluster-key-slot@1.1.2/node_modules/cluster-key-slot/LICENSE | Mike Diarmid |
 | color-convert | 2.0.1 | MIT | https://github.com/Qix-/color-convert#readme | node_modules/.pnpm/color-convert@2.0.1/node_modules/color-convert/LICENSE | Heather Arthur |

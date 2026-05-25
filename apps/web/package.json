@@ -16,9 +16,12 @@
     "check:ui-style": "node scripts/check-ui-style.mjs",
     "android:sync": "vite build --mode production && cap sync android",
     "android:open": "cap open android",
-    "android:run": "cap run android"
+    "android:run": "cap run android",
+    "android:build:debug": "bash ./scripts/build-android-artifacts.sh debug",
+    "android:build:release": "bash ./scripts/build-android-artifacts.sh release"
   },
   "dependencies": {
+    "@capacitor/app": "^8.1.0",
     "@capacitor/android": "^8.3.4",
     "@capacitor/background-runner": "^3.0.0",
     "@capacitor/camera": "^8.2.0",

@@ -47,6 +47,13 @@ jobs:
           node-version: 22
           cache: pnpm
 
+      - name: Setup Java
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: "21"
+          cache: gradle
+
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
@@ -90,6 +97,10 @@ jobs:
               --tag  "${{ steps.meta.outputs.image_tag }}"
           fi
 
+      - name: Build Android release artifacts
+        shell: bash
+        run: pnpm --filter @seclettr/web run android:build:release
+
       - name: Locate bundle files
         id: bundle
         shell: bash
@@ -116,6 +127,25 @@ jobs:
           echo "deploy_doc_path=${DEPLOY_DOC_PATH}"             >> "$GITHUB_OUTPUT"
           echo "deployment_guide_path=${DEPLOYMENT_GUIDE_PATH}" >> "$GITHUB_OUTPUT"
           echo "archive_name=$(basename "${ARCHIVE_PATH}")"     >> "$GITHUB_OUTPUT"
+
+      - name: Locate Android files
+        id: android
+        shell: bash
+        run: |
+          DEBUG_APK_PATH="$(ls -1 apps/web/android/app/build/outputs/apk/debug/*.apk | head -n1)"
+          RELEASE_APK_PATH="$(ls -1 apps/web/android/app/build/outputs/apk/release/*.apk | head -n1)"
+          RELEASE_AAB_PATH="$(ls -1 apps/web/android/app/build/outputs/bundle/release/*.aab | head -n1)"
+
+          [[ -n "${DEBUG_APK_PATH}" && -f "${DEBUG_APK_PATH}" ]]       || { echo "Android debug APK not found"; exit 1; }
+          [[ -n "${RELEASE_APK_PATH}" && -f "${RELEASE_APK_PATH}" ]]   || { echo "Android release APK not found"; exit 1; }
+          [[ -n "${RELEASE_AAB_PATH}" && -f "${RELEASE_AAB_PATH}" ]]   || { echo "Android release AAB not found"; exit 1; }
+
+          echo "debug_apk_path=${DEBUG_APK_PATH}"                      >> "$GITHUB_OUTPUT"
+          echo "debug_apk_name=$(basename "${DEBUG_APK_PATH}")"        >> "$GITHUB_OUTPUT"
+          echo "release_apk_path=${RELEASE_APK_PATH}"                  >> "$GITHUB_OUTPUT"
+          echo "release_apk_name=$(basename "${RELEASE_APK_PATH}")"    >> "$GITHUB_OUTPUT"
+          echo "release_aab_path=${RELEASE_AAB_PATH}"                  >> "$GITHUB_OUTPUT"
+          echo "release_aab_name=$(basename "${RELEASE_AAB_PATH}")"    >> "$GITHUB_OUTPUT"
 
       - name: Build release notes
         id: notes
@@ -156,6 +186,9 @@ jobs:
             printf '|------|-------------|\n'
             printf '| `%s` | Release bundle (Docker images + installer) |\n' "$ARCHIVE_NAME"
             printf '| `%s.sha256` | SHA-256 checksum |\n' "$ARCHIVE_NAME"
+            printf '| `%s` | Installable Android debug APK for smoke/beta testing |\n' "${{ steps.android.outputs.debug_apk_name }}"
+            printf '| `%s` | Android release APK build output |\n' "${{ steps.android.outputs.release_apk_name }}"
+            printf '| `%s` | Android App Bundle (AAB) build output |\n' "${{ steps.android.outputs.release_aab_name }}"
             printf '| `RELEASE_INFO.txt` | Build metadata |\n'
             printf '| `DEPLOYMENT.md` | Step-by-step installation guide |\n'
             printf '_Commit: `%s`_\n' "$COMMIT_SHA"
@@ -174,6 +207,9 @@ jobs:
             ${{ steps.bundle.outputs.release_info_path }}
             ${{ steps.bundle.outputs.deploy_doc_path }}
             ${{ steps.bundle.outputs.deployment_guide_path }}
+            ${{ steps.android.outputs.debug_apk_path }}
+            ${{ steps.android.outputs.release_apk_path }}
+            ${{ steps.android.outputs.release_aab_path }}
 
       - name: Publish GitHub prerelease
         id: release
@@ -192,6 +228,9 @@ jobs:
             ${{ steps.bundle.outputs.release_info_path }}
             ${{ steps.bundle.outputs.deploy_doc_path }}
             ${{ steps.bundle.outputs.deployment_guide_path }}
+            ${{ steps.android.outputs.debug_apk_path }}
+            ${{ steps.android.outputs.release_apk_path }}
+            ${{ steps.android.outputs.release_aab_path }}
 
       - name: Publish summary
         shell: bash
@@ -203,6 +242,9 @@ jobs:
             echo "- Commit: \`${{ steps.meta.outputs.commit_sha }}\`"
             echo "- Archive: \`${{ steps.bundle.outputs.archive_name }}\`"
             echo "- SHA256: \`${CHECKSUM_LINE}\`"
+            echo "- Android debug APK: \`${{ steps.android.outputs.debug_apk_name }}\`"
+            echo "- Android release APK: \`${{ steps.android.outputs.release_apk_name }}\`"
+            echo "- Android release AAB: \`${{ steps.android.outputs.release_aab_name }}\`"
             echo ""
             echo "### Download"
             echo "Artifacts → \`seclettr-release-${{ steps.meta.outputs.short_sha }}\`"

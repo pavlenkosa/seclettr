@@ -1,5 +1,6 @@
 import { useEffect, useRef, type RefObject } from "react";
 import { resolveModalKeyAction } from "./modal-focus";
+import { useNativeBackAction } from "./use-native-back-action";
 
 interface Options {
   containerRef: RefObject<HTMLElement>;
@@ -49,6 +50,8 @@ export function useModalSurfaceA11y({
   useEffect(() => {
     initialFocusRefRef.current = initialFocusRef;
   }, [initialFocusRef]);
+
+  useNativeBackAction(onClose, isActive);
 
   useEffect(() => {
     if (!isActive) {

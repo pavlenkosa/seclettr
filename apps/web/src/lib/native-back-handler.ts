@@ -5,18 +5,17 @@ interface AppPlugin {
   exitApp: () => Promise<void>;
 }
 
-interface CapacitorGlobal {
+interface CapacitorBridge {
   App?: AppPlugin;
-  Plugins?: Record<string, unknown>;
+  Plugins?: {
+    App?: AppPlugin;
+  };
 }
 
-function getPlugin(): AppPlugin | null {
-  if (!isNativePlatform()) return null;
-  const cap = (window as unknown as { Capacitor?: CapacitorGlobal }).Capacitor;
-  // Capacitor core App plugin is exposed as `Capacitor.App` in current native shells.
-  // Keep the legacy `Plugins["App"]` fallback so older bridge shapes still work.
-  const plugin = cap?.App ?? (cap?.Plugins?.["App"] as AppPlugin | undefined);
-  return plugin ? (plugin as AppPlugin) : null;
+function getAppPlugin(): AppPlugin | null {
+  if (typeof window === "undefined") return null;
+  const cap = (window as unknown as { Capacitor?: CapacitorBridge }).Capacitor;
+  return cap?.App ?? cap?.Plugins?.App ?? null;
 }
 
 // LIFO stack of close-handlers registered by modals/panels.
@@ -53,7 +52,7 @@ export function initNativeBackHandler(): void {
   if (_initialized || !isNativePlatform()) return;
   _initialized = true;
 
-  const plugin = getPlugin();
+  const plugin = getAppPlugin();
   if (!plugin) return;
 
   void plugin.addListener("backButton", () => {

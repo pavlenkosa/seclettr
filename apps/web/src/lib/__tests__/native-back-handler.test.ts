@@ -14,21 +14,16 @@ async function loadModule() {
 
 describe("native-back-handler", () => {
   beforeEach(() => {
-    Object.defineProperty(window, "Capacitor", {
-      configurable: true,
-      value: undefined,
-    });
     window.history.replaceState(null, "", "/");
   });
 
   afterEach(() => {
     vi.restoreAllMocks();
     vi.unstubAllGlobals();
-    Reflect.deleteProperty(window, "Capacitor");
     window.history.replaceState(null, "", "/");
   });
 
-  it("registers the back button listener from Capacitor.App and navigates back for an active thread", async () => {
+  it("registers the back button listener and navigates back for an active thread", async () => {
     let backButtonHandler: ((data: { canGoBack: boolean }) => void) | null = null;
     const exitApp = vi.fn(async () => {});
     const addListener = vi.fn(async (_event: string, handler: (data: { canGoBack: boolean }) => void) => {
@@ -43,7 +38,7 @@ describe("native-back-handler", () => {
         App: {
           addListener,
           exitApp,
-        } satisfies BackButtonPlugin,
+        },
       },
     });
 
@@ -62,26 +57,36 @@ describe("native-back-handler", () => {
     expect(exitApp).not.toHaveBeenCalled();
   });
 
-  it("still supports the legacy Capacitor.Plugins.App bridge shape", async () => {
+  it("closes the topmost registered overlay before navigating back or exiting", async () => {
+    let backButtonHandler: ((data: { canGoBack: boolean }) => void) | null = null;
     const exitApp = vi.fn(async () => {});
-    const addListener = vi.fn(async () => ({ remove: () => {} }));
+    const addListener = vi.fn(async (_event: string, handler: (data: { canGoBack: boolean }) => void) => {
+      backButtonHandler = handler;
+      return { remove: () => {} };
+    });
 
     Object.defineProperty(window, "Capacitor", {
       configurable: true,
       value: {
         isNativePlatform: () => true,
-        Plugins: {
-          App: {
-            addListener,
-            exitApp,
-          } satisfies BackButtonPlugin,
+        App: {
+          addListener,
+          exitApp,
         },
       },
     });
 
-    const { initNativeBackHandler } = await loadModule();
-    initNativeBackHandler();
+    const { initNativeBackHandler, pushBackHandler } = await loadModule();
+    const lowerHandler = vi.fn();
+    const topHandler = vi.fn();
+    pushBackHandler(lowerHandler);
+    pushBackHandler(topHandler);
 
-    expect(addListener).toHaveBeenCalledWith("backButton", expect.any(Function));
+    initNativeBackHandler();
+    backButtonHandler?.({ canGoBack: false });
+
+    expect(topHandler).toHaveBeenCalledTimes(1);
+    expect(lowerHandler).not.toHaveBeenCalled();
+    expect(exitApp).not.toHaveBeenCalled();
   });
 });

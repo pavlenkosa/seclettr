@@ -47,6 +47,13 @@ jobs:
           node-version: 22
           cache: pnpm
 
+      - name: Setup Java
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: "21"
+          cache: gradle
+
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
@@ -87,6 +94,10 @@ jobs:
               --tag  "${{ steps.meta.outputs.image_tag }}"
           fi
 
+      - name: Build Android debug APK
+        shell: bash
+        run: pnpm --filter @seclettr/web run android:build:debug
+
       - name: Locate bundle files
         id: bundle
         shell: bash
@@ -114,6 +125,19 @@ jobs:
           echo "deployment_guide_path=${DEPLOYMENT_GUIDE_PATH}"      >> "$GITHUB_OUTPUT"
           echo "archive_name=$(basename "${ARCHIVE_PATH}")"          >> "$GITHUB_OUTPUT"
 
+      - name: Locate Android files
+        id: android
+        shell: bash
+        run: |
+          DEBUG_APK_PATH="$(ls -1 apps/web/android/app/build/outputs/apk/debug/*.apk | head -n1)"
+          if [[ -z "${DEBUG_APK_PATH}" || ! -f "${DEBUG_APK_PATH}" ]]; then
+            echo "Android debug APK not found"
+            exit 1
+          fi
+
+          echo "debug_apk_path=${DEBUG_APK_PATH}"           >> "$GITHUB_OUTPUT"
+          echo "debug_apk_name=$(basename "${DEBUG_APK_PATH}")" >> "$GITHUB_OUTPUT"
+
       - name: Upload dev artifact
         uses: actions/upload-artifact@v4
         with:
@@ -125,6 +149,7 @@ jobs:
             ${{ steps.bundle.outputs.release_info_path }}
             ${{ steps.bundle.outputs.deploy_doc_path }}
             ${{ steps.bundle.outputs.deployment_guide_path }}
+            ${{ steps.android.outputs.debug_apk_path }}
 
       - name: Publish summary
         shell: bash
@@ -137,6 +162,7 @@ jobs:
             echo "- Commit: \`${{ steps.meta.outputs.commit_sha }}\`"
             echo "- Archive: \`${{ steps.bundle.outputs.archive_name }}\`"
             echo "- SHA256: \`${CHECKSUM_LINE}\`"
+            echo "- Android debug APK: \`${{ steps.android.outputs.debug_apk_name }}\`"
             echo ""
             echo "### Download"
             echo "Artifacts → \`seclettr-dev-${{ steps.meta.outputs.short_sha }}\`"

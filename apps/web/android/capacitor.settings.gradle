@@ -2,6 +2,9 @@
 include ':capacitor-android'
 project(':capacitor-android').projectDir = new File('../../../node_modules/.pnpm/@capacitor+android@8.3.4_@capacitor+core@8.3.4/node_modules/@capacitor/android/capacitor')
 
+include ':capacitor-app'
+project(':capacitor-app').projectDir = new File('../../../node_modules/.pnpm/@capacitor+app@8.1.0_@capacitor+core@8.3.4/node_modules/@capacitor/app/android')
+
 include ':capacitor-background-runner'
 project(':capacitor-background-runner').projectDir = new File('../../../node_modules/.pnpm/@capacitor+background-runner@3.0.0_@capacitor+core@8.3.4/node_modules/@capacitor/background-runner/android')
 

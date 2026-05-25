@@ -83,3 +83,13 @@ apps/web/src/**/*.js
 apps/web/android/.gradle/
 apps/web/android/local.properties
 apps/web/android/app/build/
+
+# Android Eclipse / ADT metadata
+apps/web/android/.project
+apps/web/android/.settings/
+apps/web/android/app/.classpath
+apps/web/android/app/.project
+apps/web/android/app/.settings/
+
+# Debug APK bundled for local testing
+apps/web/public/seclettr-debug.apk

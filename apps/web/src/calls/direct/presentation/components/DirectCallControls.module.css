@@ -55,18 +55,17 @@
   }
 }
 
-/* Mobile stacked layout — matches useIsMobileViewport 640px breakpoint */
+/* Mobile controls dock — compact pill matching desktop visual language. */
 @media (max-width: 640px) {
   .controlsDock {
-    /* Full-width dock, equal-distribution row */
-    --call-controls-width: 100%;
-    --call-controls-max-width: 100%;
+    /* Centered pill, not edge-to-edge */
+    --call-controls-width: fit-content;
+    --call-controls-max-width: min(100%, 440px);
     --call-controls-padding: 0.52rem 0.6rem;
     --call-controls-gap: 0.38rem;
-    /* Keep row direction so stacked buttons sit side-by-side */
     --call-controls-direction-narrow: row;
-    --call-controls-align-narrow: stretch;
-    --call-controls-radius-narrow: 22px;
+    --call-controls-align-narrow: center;
+    --call-controls-radius-narrow: 999px;
   }
 
   .controlBtn {
@@ -83,7 +82,7 @@
 /* .mobileControlBtn — only applied to active-call stacked buttons (not incoming overlay).
    Scoped separately so the incoming accept/reject buttons keep their fixed width. */
 .mobileControlBtn {
-  flex: 1;
+  /* Natural stacked size — no stretching in a pill-shaped dock */
 }
 
 /* Audio-output sheet — mobile web only (shown when native speaker toggle is unavailable).
@@ -91,7 +90,6 @@
    to the other stacked buttons. The scrim + sheet are position:fixed so they break out
    of the overflow-hidden call overlay and cover the full viewport. */
 .audioOutputWrapper {
-  flex: 1;
   position: relative;
   display: flex;
 }

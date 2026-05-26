@@ -81,7 +81,8 @@
   flex-shrink: 0;
 }
 
-/* Clickable avatar wrapper — used on direct threads to open the profile sheet. */
+/* Clickable avatar wrapper — used on direct threads to open the profile sheet.
+   No global hover-ring: it renders as a drop on circles. Opacity + scale instead. */
 .avatarBtn {
   background: none;
   border: none;
@@ -89,11 +90,22 @@
   cursor: pointer;
   border-radius: 50%;
   flex-shrink: 0;
-  transition: opacity var(--motion-duration-fast) ease;
+  outline: none;
+  transition:
+    opacity var(--motion-duration-fast) ease,
+    transform var(--motion-duration-fast) ease;
 }
 
 .avatarBtn:hover {
   opacity: 0.82;
+  transform: scale(0.96);
+  /* explicitly suppress global hover outline for circle buttons */
+  outline: none;
+}
+
+.avatarBtn:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--accent) 80%, transparent);
+  outline-offset: 3px;
 }
 
 .iconBtn {

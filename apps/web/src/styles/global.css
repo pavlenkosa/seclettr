@@ -628,8 +628,10 @@ button {
   transition: background-color 0.15s ease, opacity 0.15s ease;
 }
 
-button:not(:disabled):hover:not(:focus-visible),
-[role="button"]:not([aria-disabled="true"]):hover:not(:focus-visible) {
+/* Hover ring for interactive buttons — wrapped in :where() so component-level
+   styles can override without fighting specificity battles. */
+:where(button:not(:disabled):hover:not(:focus-visible)),
+:where([role="button"]:not([aria-disabled="true"]):hover:not(:focus-visible)) {
   outline: 1px solid var(--hover-outline);
   outline-offset: -1px;
 }

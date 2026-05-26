@@ -1,4 +1,4 @@
-import { memo, useCallback, useEffect, useId, useLayoutEffect, useRef, useState, type CSSProperties, type MouseEvent as ReactMouseEvent, type PointerEvent as ReactPointerEvent } from "react";
+import { memo, useCallback, useEffect, useId, useLayoutEffect, useRef, useState, type CSSProperties, type KeyboardEvent as ReactKeyboardEvent, type MouseEvent as ReactMouseEvent, type PointerEvent as ReactPointerEvent } from "react";
 
 import { Avatar, MessageDeliveryStatusIcon, type MessageDeliveryStatus } from "@/components/ui";
 import { IconEncrypted, IconPinned } from "@/components/ui/icons";
@@ -71,6 +71,9 @@ export const ConversationListRow = memo(function ConversationListRow({
   const [menuOpen, setMenuOpen] = useState(false);
   const [menuFlipped, setMenuFlipped] = useState(false);
   const menuNodeRef = useRef<HTMLDivElement>(null);
+  const rowButtonRef = useRef<HTMLButtonElement>(null);
+  /** True when the menu was opened via keyboard — used to return focus on close. */
+  const keyboardOpenedRef = useRef(false);
   const isPlainChat = entry.kind === "plain-direct" || entry.kind === "plain-group";
   const canOpenMenu = !!entry.pinKind || isPlainChat;
   const pressStateRef = useRef<{ id: ReturnType<typeof setTimeout>; x: number; y: number } | null>(null);
@@ -82,16 +85,23 @@ export const ConversationListRow = memo(function ConversationListRow({
     }
   }, []);
 
-  const openMenu = useCallback(() => {
+  const openMenu = useCallback((viaKeyboard = false) => {
     // Broadcast so any other open menu (same type or MessageContextMenu) closes first.
     document.dispatchEvent(
       new CustomEvent("seclettr:context-menu-open", { detail: { id: rowId } }),
     );
+    keyboardOpenedRef.current = viaKeyboard;
     setMenuFlipped(false);
     setMenuOpen(true);
   }, [rowId]);
 
-  const closeMenu = useCallback(() => setMenuOpen(false), []);
+  const closeMenu = useCallback(() => {
+    if (keyboardOpenedRef.current) {
+      keyboardOpenedRef.current = false;
+      rowButtonRef.current?.focus();
+    }
+    setMenuOpen(false);
+  }, []);
 
   const startPress = (event: ReactPointerEvent<HTMLButtonElement>) => {
     if (!canOpenMenu || event.pointerType !== "touch") return;
@@ -164,13 +174,31 @@ export const ConversationListRow = memo(function ConversationListRow({
     }
   }, [menuOpen]);
 
+  // Focus the first menu item when the menu was opened via keyboard.
+  useLayoutEffect(() => {
+    if (!menuOpen || !menuNodeRef.current || !keyboardOpenedRef.current) return;
+    const firstItem = menuNodeRef.current.querySelector<HTMLButtonElement>('button[role="menuitem"]');
+    firstItem?.focus();
+  }, [menuOpen]);
+
+  const handleRowKeyDown = (event: ReactKeyboardEvent<HTMLButtonElement>) => {
+    if (!canOpenMenu) return;
+    // ContextMenu key or Shift+F10 — standard keyboard context-menu shortcut.
+    if (event.key === "ContextMenu" || (event.key === "F10" && event.shiftKey)) {
+      event.preventDefault();
+      openMenu(true);
+    }
+  };
+
   return (
     <li className={styles.itemWrap}>
       <button
+        ref={rowButtonRef}
         className={`${styles.item} ${isActive ? styles.active : ""} ${entry.unreadCount > 0 ? styles.itemUnread : ""}`}
         style={itemStyle}
         onClick={() => onSelect({ kind: entry.kind, id: entry.id })}
         onContextMenu={handleContextMenu}
+        onKeyDown={handleRowKeyDown}
         onPointerDown={startPress}
         onPointerUp={cancelPress}
         onPointerMove={movePress}
@@ -178,6 +206,8 @@ export const ConversationListRow = memo(function ConversationListRow({
         onPointerLeave={cancelPress}
         data-testid={`conversation-entry:${entry.kind}:${entry.id}`}
         aria-current={isActive ? "true" : undefined}
+        aria-haspopup={canOpenMenu ? "menu" : undefined}
+        aria-expanded={canOpenMenu ? menuOpen : undefined}
       >
         {entry.kind === "saved"
           ? <SavedMessagesAvatar size={50} />
@@ -225,6 +255,7 @@ export const ConversationListRow = memo(function ConversationListRow({
           folders={folders}
           flipped={menuFlipped}
           t={t}
+          onClose={closeMenu}
           onTogglePin={(menuEntry) => {
             closeMenu();
             onTogglePin(menuEntry);

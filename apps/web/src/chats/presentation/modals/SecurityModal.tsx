@@ -1,4 +1,4 @@
-import { useRef, type CSSProperties } from "react";
+import { useId, useRef, type CSSProperties } from "react";
 import { useI18n } from "@/i18n";
 import type { PeerIdentityAlert } from "@/stores/messages";
 import { useAnimatedClose, useModalSurfaceA11y } from "@/lib/hooks";
@@ -40,6 +40,7 @@ export function SecurityModal({
   const { isClosing, requestClose } = useAnimatedClose(onClose);
   const modalRef = useRef<HTMLElement>(null);
   const closeButtonRef = useRef<HTMLButtonElement>(null);
+  const descId = useId();
 
   useModalSurfaceA11y({
     containerRef: modalRef,
@@ -87,6 +88,7 @@ export function SecurityModal({
       isClosing={isClosing}
       onClose={requestClose}
       ariaLabel={t("security.dialogAria")}
+      ariaDescribedBy={descId}
       closeAriaLabel={t("security.closeAria")}
       closeButtonRef={closeButtonRef}
       bodyClassName={styles.body}
@@ -113,7 +115,7 @@ export function SecurityModal({
         t={t}
         trustIntegrityState={trustIntegrityState}
       />
-      <p className={styles.description}>
+      <p id={descId} className={styles.description}>
         {t("security.description", { recipient: recipientUsername })}
       </p>
       <SecurityQuickGuide t={t} />

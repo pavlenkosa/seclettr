@@ -263,7 +263,7 @@ export async function buildApp() {
   return fastify;
 }
 
-const EXPECTED_LATEST_MIGRATION = "027_plain_group_profiles.sql";
+const EXPECTED_LATEST_MIGRATION = "028_background_poll_token_expiry.sql";
 
 async function checkDbSchemaVersion(): Promise<void> {
   const rows = await query<{ filename: string }>(

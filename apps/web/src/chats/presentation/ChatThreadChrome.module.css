@@ -82,8 +82,12 @@
 }
 
 /* Clickable avatar wrapper — used on direct threads to open the profile sheet.
-   No global hover-ring: it renders as a drop on circles. Opacity + scale instead. */
+   box-shadow used for hover ring (not outline) because outline on border-radius:50%
+   renders as a teardrop with negative outline-offset in some Android WebViews. */
 .avatarBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   background: none;
   border: none;
   padding: 0;
@@ -93,14 +97,13 @@
   outline: none;
   transition:
     opacity var(--motion-duration-fast) ease,
-    transform var(--motion-duration-fast) ease;
+    box-shadow var(--motion-duration-fast) ease;
 }
 
 .avatarBtn:hover {
-  opacity: 0.82;
-  transform: scale(0.96);
-  /* explicitly suppress global hover outline for circle buttons */
-  outline: none;
+  opacity: 0.88;
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 72%, transparent);
+  outline: none; /* suppress global hover outline — teardrop on circles */
 }
 
 .avatarBtn:focus-visible {

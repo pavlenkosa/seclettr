@@ -55,18 +55,23 @@ export function previewRefreshSession(): Promise<RefreshSessionPreview | null> {
 }
 
 async function doPreviewRefreshSession(): Promise<RefreshSessionPreview | null> {
+  let response: Response;
   try {
-    const response = await fetch(`${API_BASE_URL}/auth/session`, {
+    response = await fetch(`${API_BASE_URL}/auth/session`, {
       method: "POST",
       credentials: "include",
     });
-
-    if (!response.ok) {
-      return null;
-    }
-
-    return parseSessionPreviewResponse(await response.json());
   } catch {
+    // Network-level failure (no connectivity, DNS, timeout).
+    // Throw so the caller can distinguish "no session" from "can't reach server".
+    // Signing the user out over a transient connection failure is wrong.
+    throw new Error("network_error");
+  }
+
+  if (!response.ok) {
+    // Server explicitly said "no session" (401) — user is signed out.
     return null;
   }
+
+  return parseSessionPreviewResponse(await response.json());
 }

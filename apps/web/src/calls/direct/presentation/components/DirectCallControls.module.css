@@ -44,6 +44,20 @@
   --call-control-inline-blur: 8px;
 }
 
+/* 640–960 px: the desktop React path renders (isMobile = false) but CallControlsDock's
+   own 960px breakpoint switches its internals to flex-direction:column by default.
+   Override back to a horizontal pill row so the dock never collapses vertically
+   on mid-size viewports (laptops, narrow desktop windows). */
+@media (max-width: 960px) {
+  .controlsDock {
+    --call-controls-direction-narrow: row;
+    --call-controls-align-narrow: center;
+    --call-controls-radius-narrow: 999px;
+    --call-controls-width-narrow: fit-content;
+    --call-controls-max-width: min(100%, 700px);
+  }
+}
+
 @media (max-width: 760px) {
   .controlsDock {
     --call-controls-gap: 0.5rem;

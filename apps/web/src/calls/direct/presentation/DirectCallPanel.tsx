@@ -3,6 +3,7 @@ import { CallAudioOutputProvider } from "@/calls/shared/media/audio-output/CallA
 import { DirectCallSurfaceRenderer } from "@/calls/direct/presentation/components/DirectCallSurfaceRenderer";
 import { useDirectCallSurfaceFocusTrap } from "@/calls/direct/runtime/presentation";
 import { useDirectCallController } from "@/calls/direct/runtime";
+import { useNativeBackAction } from "@/lib/hooks";
 import type { DirectCallPanelHandle } from "@/calls/direct/model/direct-call-types";
 
 export const DirectCallPanel = forwardRef<DirectCallPanelHandle>(function DirectCallPanel(_, ref) {
@@ -16,6 +17,16 @@ export const DirectCallPanel = forwardRef<DirectCallPanelHandle>(function Direct
 
   useImperativeHandle(ref, () => ({ startCall }), [startCall]);
   useDirectCallSurfaceFocusTrap(focusTrapProps);
+
+  // CAL-06: Android Back minimizes the call instead of destroying it.
+  // Only active when the call is covering the full screen.
+  useNativeBackAction(
+    () => {
+      if (surface === "incoming-fullscreen") surfaceRendererProps.onIncomingMinimize();
+      else if (surface === "active-fullscreen") surfaceRendererProps.onActiveMinimize();
+    },
+    surface === "incoming-fullscreen" || surface === "active-fullscreen",
+  );
 
   if (surface === "hidden" && !notice) {
     return null;

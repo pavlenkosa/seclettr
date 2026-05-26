@@ -20,7 +20,7 @@
   flex-direction: column;
   align-items: center;
   gap: 0.52rem;
-  padding: 2rem 1.25rem;
+  padding: var(--space-8) var(--space-5);
   margin: 0;
   text-align: center;
   color: var(--text-muted);

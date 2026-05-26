@@ -5,7 +5,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: var(--modal-overlay-padding, 1rem);
+  padding: var(--modal-overlay-padding, var(--space-4));
   background: rgb(2 6 23 / 0.52);
 }
 
@@ -25,15 +25,15 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 0.75rem;
-  padding: 1rem 1rem 0.82rem;
+  gap: var(--space-3);
+  padding: var(--space-4) var(--space-4) 0.82rem;
 }
 
 .headerMain {
   min-width: 0;
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: var(--space-2);
 }
 
 .title {
@@ -74,7 +74,7 @@
 }
 
 .body {
-  padding: 0 1rem 1rem;
+  padding: 0 var(--space-4) var(--space-4);
   min-height: 0;
   overflow-y: auto;
 }

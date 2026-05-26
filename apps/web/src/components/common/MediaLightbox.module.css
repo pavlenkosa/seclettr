@@ -219,7 +219,7 @@
 .captionBar {
   position: absolute;
   left: 50%;
-  bottom: calc(env(safe-area-inset-bottom, 0px) + 1.1rem);
+  bottom: calc(var(--safe-bottom) + 1.1rem);
   z-index: var(--z-2);
   width: min(640px, calc(100vw - 2rem));
   max-height: min(34vh, 220px);
@@ -260,7 +260,7 @@
 
 @media (max-width: 720px) {
   .toolbar {
-    padding: calc(env(safe-area-inset-top, 0px) + 0.72rem) 0.88rem 0.72rem;
+    padding: calc(var(--safe-top) + 0.72rem) 0.88rem 0.72rem;
   }
 
   .navBtn {
@@ -269,10 +269,10 @@
 
   .content {
     padding:
-      calc(4.5rem + env(safe-area-inset-top, 0px))
-      env(safe-area-inset-right, 0.85rem)
-      calc(4.5rem + env(safe-area-inset-bottom, 0px))
-      env(safe-area-inset-left, 0.85rem);
+      calc(4.5rem + var(--safe-top))
+      max(0.85rem, var(--safe-right))
+      calc(4.5rem + var(--safe-bottom))
+      max(0.85rem, var(--safe-left));
   }
 
   .mediaStage {
@@ -289,7 +289,7 @@
   .mobileSequenceHint {
     position: absolute;
     left: 50%;
-    bottom: calc(env(safe-area-inset-bottom, 0px) + 1.1rem);
+    bottom: calc(var(--safe-bottom) + 1.1rem);
     z-index: var(--z-2);
     display: flex;
     flex-direction: column;
@@ -300,11 +300,11 @@
   }
 
   .mobileSequenceHintWithCaption {
-    bottom: calc(env(safe-area-inset-bottom, 0px) + 5.3rem);
+    bottom: calc(var(--safe-bottom) + 5.3rem);
   }
 
   .captionBar {
-    bottom: calc(env(safe-area-inset-bottom, 0px) + 0.85rem);
+    bottom: calc(var(--safe-bottom) + 0.85rem);
     width: calc(100vw - 1.7rem);
     max-height: min(18dvh, 7rem);
     padding: 0.62rem 0.74rem;
@@ -313,11 +313,11 @@
   }
 
   .overlayWithCaption .content {
-    padding-bottom: calc(6.5rem + env(safe-area-inset-bottom, 0px));
+    padding-bottom: calc(6.5rem + var(--safe-bottom));
   }
 
   .overlayWithCaption .mobileSequenceHint {
-    bottom: calc(env(safe-area-inset-bottom, 0px) + 6.75rem);
+    bottom: calc(var(--safe-bottom) + 6.75rem);
   }
 
   .overlayWithCaption .mobileSwipeHint {

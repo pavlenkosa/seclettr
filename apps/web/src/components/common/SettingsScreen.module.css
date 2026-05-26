@@ -22,7 +22,7 @@
 }
 
 .headerBar {
-  --header-bar-gap: 0.75rem;
+  --header-bar-gap: var(--space-3);
   --header-bar-actions-gap: 0;
 }
 
@@ -110,7 +110,7 @@
 .sectionList {
   display: flex;
   flex-direction: column;
-  gap: 0.25rem;
+  gap: var(--space-1);
   padding: 0;
 }
 
@@ -197,7 +197,7 @@
   min-height: 0;
   overflow-y: auto;
   background: color-mix(in srgb, var(--bg-primary) 95%, var(--surface-shell));
-  padding: 1.12rem clamp(1rem, 2.2vw, 2rem) 2rem;
+  padding: 1.12rem clamp(var(--space-4), 2.2vw, var(--space-8)) var(--space-8);
 }
 
 .detailHeader {
@@ -205,7 +205,7 @@
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
-  gap: 1rem;
+  gap: var(--space-4);
   margin: 0 auto 0.9rem;
   padding-bottom: 0.9rem;
   border-bottom: 1px solid color-mix(in srgb, var(--panel-border-soft) 78%, transparent);

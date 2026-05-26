@@ -1,5 +1,6 @@
 import { memo } from "react";
 import type { GroupActiveCallEntry } from "@seclettr/protocol";
+import { PillButton } from "@/components/ui";
 import motionStyles from "@/components/ui/motion/Motion.module.css";
 import type { useDirectMissedCallAlerts } from "@/calls/direct/runtime/session/useDirectMissedCallAlerts";
 import type {
@@ -42,9 +43,9 @@ export const ChatCallAlertBanners = memo(function ChatCallAlertBanners({
             {t("group.call.missed.notice")}
           </span>
           <div className={styles.callAlertBannerActions}>
-            <button className={styles.callAlertBannerDismiss} onClick={clearMissedCall}>
+            <PillButton tone="neutral" appearance="soft" size="sm" className={styles.callAlertBannerDismiss} onClick={clearMissedCall}>
               {t("group.call.missed.dismiss")}
-            </button>
+            </PillButton>
           </div>
         </div>
       ) : null}
@@ -56,12 +57,15 @@ export const ChatCallAlertBanners = memo(function ChatCallAlertBanners({
               {t("group.call.alert.otherGroup", { group: groupName ?? alert.groupId })}
             </span>
             <div className={styles.callAlertBannerActions}>
-              <button
+              <PillButton
+                tone="accent"
+                appearance="strong"
+                size="sm"
                 className={styles.callAlertBannerBtn}
                 onClick={() => { handleSelectThread({ kind: "group", id: alert.groupId }); }}
               >
                 {t("group.call.alert.go")}
-              </button>
+              </PillButton>
             </div>
           </div>
         );
@@ -72,12 +76,15 @@ export const ChatCallAlertBanners = memo(function ChatCallAlertBanners({
             {t("call.missed.directNotice", { caller: missed.callerUsername })}
           </span>
           <div className={styles.callAlertBannerActions}>
-            <button
+            <PillButton
+              tone="neutral"
+              appearance="soft"
+              size="sm"
               className={styles.callAlertBannerDismiss}
               onClick={() => dismissMissedDirectCall(missed.callId)}
             >
               {t("call.missed.dismiss")}
-            </button>
+            </PillButton>
           </div>
         </div>
       ))}

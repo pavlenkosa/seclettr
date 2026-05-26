@@ -42,6 +42,7 @@ interface IncomingSurfaceData {
 }
 
 interface ActiveSurfaceData {
+  callType: "audio" | "video";
   muted: boolean;
   videoOff: boolean;
   screenSharing: boolean;
@@ -386,6 +387,8 @@ export function DirectCallSurfaceRenderer({
             peerDisplayName={peerDisplayName}
             peerInitials={peerDisplayInitials}
             callStateText={activeCallStateText}
+            callType={active.callType}
+            callTypeLabel={active.callType === "video" ? videoCallLabel : voiceCallLabel}
             duration={active.duration}
             durationStartedAtMs={active.durationStartedAtMs}
             cameraStageLabel={cameraStageLabel}

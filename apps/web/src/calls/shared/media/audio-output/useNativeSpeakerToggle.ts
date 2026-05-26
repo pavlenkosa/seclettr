@@ -11,6 +11,10 @@ interface NativeSpeakerToggleResult {
   toggle: () => void;
 }
 
+interface UseNativeSpeakerToggleOptions {
+  readonly preferredSpeakerOn?: boolean;
+}
+
 /**
  * Manages earpiece / loudspeaker routing for native Android calls.
  *
@@ -26,39 +30,41 @@ interface NativeSpeakerToggleResult {
  * State sync: a 2-second periodic check corrects UI state if WebRTC or the OS
  * flips the audio route without going through our toggle.
  */
-export function useNativeSpeakerToggle(): NativeSpeakerToggleResult {
+export function useNativeSpeakerToggle(
+  { preferredSpeakerOn = false }: UseNativeSpeakerToggleOptions = {},
+): NativeSpeakerToggleResult {
   const supported = isNativeAudioRouteSupported();
   const [speakerOn, setSpeakerOn] = useState(false);
 
-  // Multi-attempt backoff to win the race against WebRTC's audio session init.
+  // Multi-attempt backoff to win the race against WebRTC's audio session init
+  // while still allowing the caller to declare the preferred route for the
+  // current call mode (earpiece for voice, loudspeaker for video).
   useEffect(() => {
     if (!supported) return;
 
     let cancelled = false;
-    // Delays at which to check + re-apply earpiece, in ms after mount.
+    // Delays at which to check + re-apply the preferred route, in ms after mount.
     const DELAYS = [0, 400, 900, 1800] as const;
 
-    const applyEarpiece = async (delay: number): Promise<void> => {
+    const applyPreferredRoute = async (delay: number): Promise<void> => {
       if (delay > 0) {
         await new Promise<void>((resolve) => setTimeout(resolve, delay));
       }
       if (cancelled) return;
-      // Read actual hardware state before writing.
-      // If the hardware is already on earpiece, skip the write to avoid
-      // an unnecessary AudioManager.setMode() round-trip.
       const actual = await getNativeSpeakerOn();
       if (cancelled) return;
-      if (actual) {
-        // WebRTC or OS turned speaker on; re-apply earpiece and sync UI.
-        await setNativeSpeaker(false);
-        if (!cancelled) setSpeakerOn(false);
+      if (actual !== preferredSpeakerOn) {
+        await setNativeSpeaker(preferredSpeakerOn);
+        if (!cancelled) setSpeakerOn(preferredSpeakerOn);
+        return;
       }
+      setSpeakerOn(actual);
     };
 
     const timers: ReturnType<typeof window.setTimeout>[] = [];
-    void applyEarpiece(0);
+    void applyPreferredRoute(0);
     for (const delay of DELAYS.slice(1)) {
-      timers.push(window.setTimeout(() => { void applyEarpiece(delay); }, delay));
+      timers.push(window.setTimeout(() => { void applyPreferredRoute(delay); }, delay));
     }
 
     return () => {
@@ -67,7 +73,7 @@ export function useNativeSpeakerToggle(): NativeSpeakerToggleResult {
       // Restore earpiece on unmount so the device is not left in speaker mode.
       void setNativeSpeaker(false);
     };
-  }, [supported]);
+  }, [preferredSpeakerOn, supported]);
 
   // Periodic state sync: correct React state if the hardware audio route has
   // drifted from what the UI shows (e.g. Bluetooth disconnect, OS override).

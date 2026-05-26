@@ -15,6 +15,7 @@
 
 .callHeaderSummary {
   min-width: 0;
+  width: min(100%, 24rem);
   text-align: center;
 }
 
@@ -93,8 +94,11 @@
 
 .callHeaderMetaRow {
   display: flex;
+  align-items: center;
   justify-content: center;
-  margin-top: 0.28rem;
+  gap: 0.42rem;
+  margin-top: 0.32rem;
+  flex-wrap: wrap;
 }
 
 .callEncryptionBadgeLabel {
@@ -116,6 +120,10 @@
 }
 
 @media (max-width: 720px) {
+  .callHeaderSummary {
+    width: 100%;
+  }
+
   .callHeaderTitle {
     font-size: 1rem;
   }

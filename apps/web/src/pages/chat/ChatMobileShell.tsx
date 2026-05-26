@@ -46,6 +46,7 @@ export function ChatMobileShell({
             styles.sidebarView,
             sidebarPresence.isClosing ? motionStyles.panelOut : motionStyles.panelIn,
           ].filter(Boolean).join(" ")}
+          aria-hidden={sidebarPresence.isClosing ? true : undefined}
         >
           {sidebar}
         </div>
@@ -57,6 +58,7 @@ export function ChatMobileShell({
             styles.threadView,
             threadPresence.isClosing ? motionStyles.panelOut : motionStyles.panelIn,
           ].filter(Boolean).join(" ")}
+          aria-hidden={threadPresence.isClosing ? true : undefined}
         >
           <div className={styles.threadBody}>
             {thread}
@@ -70,13 +72,17 @@ export function ChatMobileShell({
             styles.settingsView,
             settingsPresence.isClosing ? motionStyles.panelOut : motionStyles.panelIn,
           ].filter(Boolean).join(" ")}
+          aria-hidden={settingsPresence.isClosing ? true : undefined}
         >
           {settings}
         </div>
       ) : null}
 
       {sidebarPresence.isMounted ? (
-        <div className={sidebarPresence.isClosing ? motionStyles.fadeOut : motionStyles.fadeIn}>
+        <div
+          className={sidebarPresence.isClosing ? motionStyles.fadeOut : motionStyles.fadeIn}
+          aria-hidden={sidebarPresence.isClosing ? true : undefined}
+        >
           {sidebarDock}
         </div>
       ) : null}

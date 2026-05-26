@@ -6,6 +6,34 @@
   background: var(--bg-primary);
 }
 
+/* Skip-to-content link — visually hidden until keyboard-focused.
+   Uses clip-path (allowed) instead of box-shadow (forbidden by guardrail). */
+.skipLink {
+  position: absolute;
+  top: var(--space-2);
+  left: var(--space-4);
+  z-index: var(--z-modal);
+  padding: 0.5rem 1rem;
+  background: var(--accent);
+  color: #fff;
+  border-radius: 6px;
+  text-decoration: none;
+  font-weight: var(--weight-semibold);
+  font-size: 0.875rem;
+  clip-path: inset(0 0 100% 0);
+  opacity: 0;
+  pointer-events: none;
+  transition: clip-path 120ms ease, opacity 120ms ease;
+}
+
+.skipLink:focus-visible {
+  clip-path: inset(0);
+  opacity: 1;
+  pointer-events: auto;
+  outline: 2px solid #fff;
+  outline-offset: 2px;
+}
+
 .resizer {
   position: relative;
   z-index: var(--z-20);
@@ -40,6 +68,18 @@
   left: -2px;
   width: 3px;
   background: color-mix(in srgb, var(--accent) 64%, transparent);
+}
+
+/* Keyboard focus: suppress the default browser outline (element is 0-width)
+   and draw a visible indicator on the ::before pseudo-element instead. */
+.resizer:focus-visible {
+  outline: none;
+}
+
+.resizer:focus-visible::before {
+  left: -2px;
+  width: 3px;
+  background: var(--accent);
 }
 
 .main {
@@ -162,7 +202,7 @@
   margin: 0;
   color: var(--text-primary);
   font-size: 0.98rem;
-  font-weight: 700;
+  font-weight: var(--weight-bold);
   letter-spacing: -0.01em;
 }
 
@@ -188,12 +228,12 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 0.38rem 1rem;
+  padding: 0.38rem var(--space-4);
   background: color-mix(in srgb, var(--danger, #ef4444) 16%, var(--bg-primary));
   border-bottom: 1px solid color-mix(in srgb, var(--danger, #ef4444) 40%, transparent);
   color: var(--danger, #ef4444);
   font-size: 0.8rem;
-  font-weight: 600;
+  font-weight: var(--weight-semibold);
   letter-spacing: 0.01em;
 }
 
@@ -202,8 +242,8 @@
 .callAlertBanners {
   position: fixed;
   top: 0.6rem;
-  left: 1rem;
-  right: 1rem;
+  left: var(--space-4);
+  right: var(--space-4);
   z-index: var(--z-390);
   display: flex;
   flex-direction: column;
@@ -213,7 +253,7 @@
 }
 
 .callAlertBannersBelowNotice {
-  top: calc(2rem + 0.6rem);
+  top: calc(var(--space-8) + 0.6rem);
 }
 
 .callAlertBanner {
@@ -221,14 +261,14 @@
   align-items: center;
   gap: 0.6rem;
   width: max-content;
-  max-width: min(440px, calc(100vw - 2rem));
-  padding: 0.36rem 0.46rem 0.36rem 1rem;
+  max-width: min(440px, calc(100vw - var(--space-8)));
+  padding: 0.36rem 0.46rem 0.36rem var(--space-4);
   background: var(--surface-shell-strong);
   border: 1px solid color-mix(in srgb, var(--panel-border-soft) 80%, transparent);
   border-radius: 999px;
   color: var(--text-primary);
   font-size: 0.8rem;
-  font-weight: 500;
+  font-weight: var(--weight-medium);
 }
 
 .callAlertBannerMissed {
@@ -252,6 +292,7 @@
 }
 
 .callAlertBannerBtn {
+  min-height: auto;
   padding: 0.24rem 0.7rem;
   border: none;
   border-radius: 999px;
@@ -263,11 +304,12 @@
   white-space: nowrap;
 }
 
-.callAlertBannerBtn:hover {
+.callAlertBannerBtn:hover:not(:disabled) {
   opacity: 0.88;
 }
 
 .callAlertBannerDismiss {
+  min-height: auto;
   padding: 0.24rem 0.7rem;
   border: 1px solid color-mix(in srgb, var(--panel-border-soft) 80%, transparent);
   border-radius: 999px;
@@ -279,7 +321,7 @@
   white-space: nowrap;
 }
 
-.callAlertBannerDismiss:hover {
+.callAlertBannerDismiss:hover:not(:disabled) {
   color: var(--text-primary);
   background: color-mix(in srgb, var(--surface-float) 90%, transparent);
 }

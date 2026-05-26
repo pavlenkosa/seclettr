@@ -335,10 +335,10 @@ export const MessageList = forwardRef<MessageListHandle, Props>(function Message
       )}
 
       {isTyping && !selectionMode && (
-        <div className={styles.typingBubble} aria-live="polite" aria-label="typing">
-          <span className={styles.typingDot} />
-          <span className={styles.typingDot} />
-          <span className={styles.typingDot} />
+        <div className={styles.typingBubble} aria-live="polite" aria-label={t("chat.presence.typing")}>
+          <span className={styles.typingDot} aria-hidden="true" />
+          <span className={styles.typingDot} aria-hidden="true" />
+          <span className={styles.typingDot} aria-hidden="true" />
         </div>
       )}
     </div>

@@ -206,7 +206,14 @@ export const ConversationListRow = memo(function ConversationListRow({
                 {!last.isOwn && senderPrefix}
                 {previewText}
               </span>
-              {entry.unreadCount > 0 ? <span className={styles.badge}>{entry.unreadCount}</span> : null}
+              {entry.unreadCount > 0 ? (
+                <span
+                  className={styles.badge}
+                  aria-label={t("conversation.unreadBadgeAria", { count: entry.unreadCount })}
+                >
+                  {entry.unreadCount}
+                </span>
+              ) : null}
             </div>
           ) : null}
         </div>

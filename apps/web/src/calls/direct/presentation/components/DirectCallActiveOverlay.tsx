@@ -12,11 +12,14 @@ import { useCallInputDevices } from "@/calls/shared/media/input-devices/useCallI
 import type { VideoResolution } from "@/calls/shared/presentation/CallDevicePicker";
 import { CallDurationText } from "@/calls/shared/presentation/CallDurationText";
 import {
+  CameraIcon,
   LockIcon,
   MinimizeIcon,
+  PhoneIcon,
   SwitchCameraIcon,
 } from "@/calls/shared/presentation/CallIcons";
-import { HeaderBar, IconButton, InfoStack } from "@/components/ui";
+import { useI18n } from "@/i18n";
+import { HeaderBar, IconButton, IconPill, InfoStack } from "@/components/ui";
 
 import styles from "@/calls/direct/presentation/DirectCallPanel.module.css";
 import activeStyles from "./DirectCallActiveOverlay.module.css";
@@ -48,6 +51,8 @@ interface DirectCallActiveOverlayProps {
   readonly peerDisplayName: string;
   readonly peerInitials: string;
   readonly callStateText: string;
+  readonly callType: "audio" | "video";
+  readonly callTypeLabel: string;
   readonly duration: number;
   readonly durationStartedAtMs: number | null;
   readonly cameraStageLabel: string;
@@ -142,6 +147,8 @@ export function DirectCallActiveOverlay({
   peerDisplayName,
   peerInitials,
   callStateText,
+  callType,
+  callTypeLabel,
   duration,
   durationStartedAtMs,
   cameraStageLabel,
@@ -208,6 +215,7 @@ export function DirectCallActiveOverlay({
   cameraSettingsAriaLabel,
   screenSettingsAriaLabel,
 }: DirectCallActiveOverlayProps) {
+  const { t } = useI18n();
   const [selectedVideoResolution, setSelectedVideoResolution] = useState<VideoResolution>("720p");
   const callHeaderRef = useRef<HTMLDivElement>(null);
   const [securitySheetTop, setSecuritySheetTop] = useState<number | null>(null);
@@ -331,6 +339,7 @@ export function DirectCallActiveOverlay({
           className={styles.callHeaderDuration}
           baseSeconds={duration}
           startedAtMs={durationStartedAtMs}
+          ariaLabel={t("call.durationAria")}
         />
       );
   return (
@@ -349,6 +358,16 @@ export function DirectCallActiveOverlay({
       <div ref={callHeaderRef}>
       <HeaderBar
         className={styles.callHeader}
+        stackCenterOnNarrow
+        leading={(
+          <IconPill
+            className={styles.modeChip}
+            icon={callType === "video" ? <CameraIcon /> : <PhoneIcon />}
+            size="sm"
+          >
+            {callTypeLabel}
+          </IconPill>
+        )}
         center={(
           <InfoStack
             className={activeStyles.callHeaderSummary}
@@ -478,6 +497,7 @@ export function DirectCallActiveOverlay({
       ) : null}
 
       <DirectCallControls
+        callType={callType}
         muted={muted}
         videoOff={videoOff}
         screenSharing={screenSharing}

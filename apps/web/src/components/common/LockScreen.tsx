@@ -92,6 +92,18 @@ export function LockScreen({ username, isUnlocking, pinWrong, onUnlock, onLogout
     }
   }, [biometryKind]);
 
+  // When the biometric prompt closes (pending → not pending) without starting
+  // an unlock flow, bring focus back to the passcode input so the user does
+  // not have to tap/click manually before typing their passcode.
+  const prevBiometricPendingRef = useRef(false);
+  useEffect(() => {
+    const was = prevBiometricPendingRef.current;
+    prevBiometricPendingRef.current = biometricPending;
+    if (was && !biometricPending && !isUnlocking) {
+      inputRef.current?.focus();
+    }
+  }, [biometricPending, isUnlocking]);
+
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (passcode.length > 0 && !isUnlocking) {

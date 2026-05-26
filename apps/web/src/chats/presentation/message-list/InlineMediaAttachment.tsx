@@ -16,7 +16,8 @@ import styles from "./MessageListAttachments.module.css";
 type InlineMediaPreviewProps = Readonly<{
   isVideo: boolean;
   previewUrl: string | null;
-  fileName?: string;
+  /** Computed alt text: caption > fileName > generic i18n label. */
+  altText: string;
   hidden: boolean;
   onReady: () => void;
 }>;
@@ -37,7 +38,7 @@ type InlineMediaAttachmentProps = Readonly<{
 function InlineMediaPreview({
   isVideo,
   previewUrl,
-  fileName,
+  altText,
   hidden,
   onReady,
 }: InlineMediaPreviewProps) {
@@ -69,7 +70,7 @@ function InlineMediaPreview({
       src={previewUrl ?? undefined}
       className={styles.inlineMediaThumb}
       style={hiddenStyle}
-      alt={fileName || ""}
+      alt={altText}
       draggable={false}
       onLoad={onReady}
     />
@@ -224,7 +225,11 @@ export function InlineMediaAttachment({ msg, isOwn }: InlineMediaAttachmentProps
             <InlineMediaPreview
               isVideo={isVideo}
               previewUrl={previewUrl}
-              fileName={msg.attachment?.fileName}
+              altText={
+                msg.attachment?.caption ||
+                msg.attachment?.fileName ||
+                t(isVideo ? "message.media.videoAlt" : "message.media.imageAlt")
+              }
               hidden={!mediaLoaded}
               onReady={handleMediaReady}
             />

@@ -67,6 +67,7 @@ export function GroupCallHeader({
               className={styles.headerDuration}
               baseSeconds={callDurationSeconds}
               startedAtMs={callDurationStartedAtMs}
+              ariaLabel={t("call.durationAria")}
             />
           )}
           meta={t("group.header.memberCount", { count: memberCount })}

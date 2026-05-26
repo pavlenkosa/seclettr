@@ -364,5 +364,7 @@ export function MessageRowFrame({
     );
   }
 
-  return <div className={rowClass}>{children}</div>;
+  // role="article" lets screen-reader users navigate between messages using
+  // article shortcuts (e.g. NVDA 'A' key) within the parent role="log".
+  return <div role="article" className={rowClass}>{children}</div>;
 }

@@ -1,9 +1,11 @@
 import { useCallback, useEffect, useRef, type PointerEvent } from "react";
 
-const STORAGE_KEY = "sidebar-width";
-const DEFAULT_WIDTH = 340;
-const MIN_WIDTH = 260;
-const MAX_WIDTH = 540;
+export const STORAGE_KEY = "sidebar-width";
+export const DEFAULT_WIDTH = 340;
+export const MIN_WIDTH = 260;
+export const MAX_WIDTH = 540;
+/** Step size (px) used by the keyboard resize contract in ChatMainLayout. */
+export const KEYBOARD_STEP = 20;
 
 function readStoredWidth(): number {
   try {
@@ -44,7 +46,12 @@ export function useSidebarResize() {
       (e.currentTarget as HTMLDivElement).setPointerCapture(e.pointerId);
 
       const startX = e.clientX;
-      const startWidth = widthRef.current;
+      // Prefer the live CSS value so keyboard-adjusted widths are honoured on
+      // subsequent pointer drags (widthRef may be stale after keyboard steps).
+      const cssVal = rootRef.current
+        ? Number.parseInt(rootRef.current.style.getPropertyValue("--sidebar-width"), 10)
+        : NaN;
+      const startWidth = Number.isFinite(cssVal) ? cssVal : widthRef.current;
 
       function onMove(ev: globalThis.PointerEvent) {
         applyWidth(startWidth + ev.clientX - startX);

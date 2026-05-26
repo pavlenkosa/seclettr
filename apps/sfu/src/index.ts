@@ -6,6 +6,18 @@ import * as mediasoup from "mediasoup";
 import { nanoid } from "nanoid";
 import os from "node:os";
 import type { FastifyReply, FastifyRequest } from "fastify";
+
+function isCapacitorOriginAllowed(origin: string): boolean {
+  if (origin === "capacitor://localhost") {
+    return true;
+  }
+  try {
+    const url = new URL(origin);
+    return url.protocol === "https:" && url.hostname === "localhost";
+  } catch {
+    return false;
+  }
+}
 import { FixedWindowRateLimiter } from "./http-rate-limit.js";
 import { config } from "./config.js";
 import {
@@ -370,8 +382,15 @@ async function main() {
     }
   });
 
+  const allowedOrigins = (process.env["CORS_ORIGIN"] ?? "http://localhost:5173").split(",").map(o => o.trim());
   await fastify.register(fastifyCors, {
-    origin: process.env["CORS_ORIGIN"] ?? "http://localhost:5173",
+    origin: (origin, cb) => {
+      if (!origin) return cb(null, true);
+      if (isCapacitorOriginAllowed(origin)) {
+        return cb(null, true);
+      }
+      cb(null, allowedOrigins.includes(origin));
+    },
     credentials: true,
   });
   await fastify.register(fastifyWebsocket);

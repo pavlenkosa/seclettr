@@ -16,7 +16,7 @@ import { resolve } from "node:path";
 import { WS_CLIENT_PROTOCOL } from "@seclettr/protocol";
 
 import { config } from "./config.js";
-import { isDevelopmentCorsOriginAllowed } from "./cors.js";
+import { isCapacitorOriginAllowed, isDevelopmentCorsOriginAllowed } from "./cors.js";
 import { pool, query } from "./db/pool.js";
 import { redis, usingInMemoryRedis } from "./services/redis.js";
 import { registerWebSocketHandler } from "./services/websocket.js";
@@ -113,14 +113,16 @@ export async function buildApp() {
 
   const allowedOrigins = config.CORS_ORIGIN.split(",").map(o => o.trim());
   await fastify.register(fastifyCors, {
-    // In development, also accept requests from any HTTPS LAN address
-    // (needed for testing on mobile devices where crypto.subtle requires HTTPS)
-    origin: config.NODE_ENV === "development"
-      ? (origin, cb) => {
-          if (!origin) return cb(null, true); // same-origin / server-to-server
-          cb(null, isDevelopmentCorsOriginAllowed(origin, allowedOrigins));
-        }
-      : allowedOrigins,
+    origin: (origin, cb) => {
+      if (!origin) return cb(null, true);
+      if (isCapacitorOriginAllowed(origin)) {
+        return cb(null, true);
+      }
+      if (config.NODE_ENV === "development") {
+        return cb(null, isDevelopmentCorsOriginAllowed(origin, allowedOrigins));
+      }
+      cb(null, allowedOrigins.includes(origin));
+    },
     credentials: true,
     methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
     allowedHeaders: ["Authorization", "Content-Type", "X-Request-ID", "X-Client-Origin"],

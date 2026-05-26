@@ -5,7 +5,12 @@
   align-items: center;
   justify-content: center;
   min-height: 100dvh;
-  padding: clamp(1rem, 4vw, 2.5rem);
+  /* Safe-area padding so content clears notches and the Android nav bar. */
+  padding:
+    calc(var(--safe-top, env(safe-area-inset-top, 0px)) + clamp(1rem, 4vw, 2.5rem))
+    calc(var(--safe-right, env(safe-area-inset-right, 0px)) + clamp(1rem, 4vw, 2.5rem))
+    calc(var(--safe-bottom, env(safe-area-inset-bottom, 0px)) + clamp(1rem, 4vw, 2.5rem))
+    calc(var(--safe-left, env(safe-area-inset-left, 0px)) + clamp(1rem, 4vw, 2.5rem));
   background: var(--bg-primary);
 }
 

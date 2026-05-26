@@ -32,10 +32,19 @@ const FaceIdIcon = (
 );
 
 const FingerprintIcon = (
-  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-    <path d="M12 4C8.134 4 5 7.134 5 11v3M19 11c0-2.64-1.358-4.961-3.41-6.32" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
-    <path d="M9 14c0-1.657 1.343-3 3-3s3 1.343 3 3" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
-    <path d="M12 11v4M8 17c.552 1.198 1.688 2 3 2h2" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+    {/* outer arc — top of finger */}
+    <path d="M7 9.5C7 6.46 9.24 4 12 4s5 2.46 5 5.5" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
+    {/* middle arc */}
+    <path d="M9 11c0-1.66 1.34-3 3-3s3 1.34 3 3" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
+    {/* center ridge — vertical loop */}
+    <path d="M12 10v4.5" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
+    {/* lower-left arc */}
+    <path d="M5.5 13.5C5.5 10.46 8.46 8 12 8" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
+    {/* lower-right arc */}
+    <path d="M18.5 13.5C18.5 10.46 15.54 8 12 8" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
+    {/* bottom ridge */}
+    <path d="M8.5 16c.7 1.1 1.96 1.8 3.5 1.8s2.8-.7 3.5-1.8" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
   </svg>
 );
 

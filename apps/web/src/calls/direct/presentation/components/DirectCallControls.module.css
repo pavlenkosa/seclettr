@@ -77,7 +77,8 @@
   .mobileAudioOutputBar {
     display: flex;
     justify-content: center;
-    margin: 0 auto 0.5rem;
+    /* 0.8rem gap between pill and the controls dock below it */
+    margin: 0 auto 0.8rem;
     width: fit-content;
     max-width: calc(100% - 1rem);
   }
@@ -87,10 +88,11 @@
     max-width: 100%;
   }
 
+  /* Sheet must clear: safe-bottom + dock-height (~64px) + pill-height (~44px) + gaps (~24px) */
   .audioOutputSheet {
     left: 0.72rem;
     right: 0.72rem;
-    bottom: calc(var(--safe-bottom) + 96px);
+    bottom: calc(var(--safe-bottom) + 148px);
     border-radius: 22px;
   }
 }
@@ -111,11 +113,12 @@
   z-index: var(--z-9);
 }
 
+/* Sheet must clear: safe-bottom + dock-height (~72px) + gap (~8px) */
 .audioOutputSheet {
   position: fixed;
   left: 0.75rem;
   right: 0.75rem;
-  bottom: calc(var(--safe-bottom) + 96px);
+  bottom: calc(var(--safe-bottom) + 88px);
   z-index: var(--z-10);
   border-radius: 20px;
   background: color-mix(in srgb, var(--surface-shell) 96%, transparent);

@@ -99,8 +99,8 @@ export function DirectCallFloatingPreview({
               onStopResize(event);
             }}
           >
-            <svg width="10" height="10" viewBox="0 0 10 10" fill="none" aria-hidden="true">
-              <path d="M2 9L9 2M4.5 9L9 4.5M7 9L9 7" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
+            <svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true">
+              <path d="M2 10L10 2M5 10L10 5M8 10L10 8" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
             </svg>
           </button>
         ) : null}

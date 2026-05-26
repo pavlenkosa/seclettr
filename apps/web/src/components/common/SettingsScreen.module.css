@@ -204,8 +204,6 @@
   width: min(100%, 920px);
   display: flex;
   align-items: flex-start;
-  justify-content: space-between;
-  gap: var(--space-4);
   margin: 0 auto 0.9rem;
   padding-bottom: 0.9rem;
   border-bottom: 1px solid color-mix(in srgb, var(--panel-border-soft) 78%, transparent);
@@ -238,22 +236,6 @@
   line-height: 1.45;
 }
 
-.detailSummary {
-  flex: 0 0 auto;
-  max-width: min(280px, 45%);
-  padding: 0.34rem 0.58rem;
-  border: 1px solid color-mix(in srgb, var(--panel-border-soft) 74%, transparent);
-  border-radius: 999px;
-  background: color-mix(in srgb, var(--surface-shell) 72%, transparent);
-  color: var(--text-secondary);
-  font-size: 0.78rem;
-  font-weight: 600;
-  line-height: 1.35;
-  text-align: right;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
 
 /* === loading === */
 

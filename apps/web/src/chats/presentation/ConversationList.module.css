@@ -221,7 +221,7 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 0.5rem;
+  gap: var(--space-2);
 }
 
 .contextMenuChevron {
@@ -261,7 +261,7 @@
 
 .contextMenuSeparator {
   height: 1px;
-  margin: 0.25rem 0.62rem;
+  margin: var(--space-1) 0.62rem;
   background: color-mix(in srgb, var(--panel-border) 60%, transparent);
 }
 
@@ -295,7 +295,7 @@
   line-height: 1.4;
   color: var(--accent);
   background: color-mix(in srgb, var(--accent) 14%, transparent);
-  margin-inline-end: 0.25rem;
+  margin-inline-end: var(--space-1);
 }
 
 .previewStatus {

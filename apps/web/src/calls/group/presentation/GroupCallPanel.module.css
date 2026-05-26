@@ -304,7 +304,7 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 0.75rem;
+  gap: var(--space-3);
 }
 
 .stageMeta {
@@ -577,7 +577,7 @@
   position: absolute;
   inset: 0 0 3.9rem;
   align-items: center;
-  padding: 1rem;
+  padding: var(--space-4);
 }
 
 .mediaTileAudioOnly .mediaAudioPulse {
@@ -833,7 +833,7 @@
   }
 
   .controlRail {
-    gap: 0.5rem;
+    gap: var(--space-2);
   }
 
   .controlBtn {
@@ -879,12 +879,12 @@
 
   .mediaGridAudioOnly {
     grid-template-columns: repeat(auto-fit, minmax(156px, 1fr));
-    gap: 0.75rem;
+    gap: var(--space-3);
   }
 
   .mediaGridCrowded {
     grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 0.5rem;
+    gap: var(--space-2);
     max-height: min(44vh, 380px);
     padding-right: 0.08rem;
   }
@@ -999,7 +999,7 @@
     --group-call-strip-tile-width: clamp(132px, 40vw, 168px);
     display: flex;
     align-items: stretch;
-    gap: 0.5rem;
+    gap: var(--space-2);
     overflow-x: auto;
     overflow-y: hidden;
     overscroll-behavior-x: contain;
@@ -1033,7 +1033,7 @@
   }
 
   .mediaStrip .mediaTileAudioOnly.mediaTileStrip .mediaAudioFallback {
-    padding: 1rem;
+    padding: var(--space-4);
   }
 
   .mediaStrip .mediaTileAudioOnly.mediaTileStrip .mediaTileMeta {
@@ -1113,7 +1113,7 @@
   --call-controls-z-index: var(--z-5);
   --call-controls-width: min(100%, 1040px);
   --call-controls-margin: auto auto 0;
-  --call-controls-gap: 0.75rem;
+  --call-controls-gap: var(--space-3);
   --call-controls-padding: 0.56rem;
   --call-controls-radius: 32px;
 }

@@ -106,6 +106,7 @@
   --z-call-panel:     255;
   --z-floating-dock:  260;
   --z-call-controls:    5;
+  --z-call-alert:     390;  /* incoming/missed call banners — above call panel, below chat notice */
 }
 
 :root,

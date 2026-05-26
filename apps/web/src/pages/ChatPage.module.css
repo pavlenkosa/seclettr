@@ -244,7 +244,7 @@
   top: 0.6rem;
   left: var(--space-4);
   right: var(--space-4);
-  z-index: var(--z-390);
+  z-index: var(--z-call-alert);
   display: flex;
   flex-direction: column;
   align-items: center;

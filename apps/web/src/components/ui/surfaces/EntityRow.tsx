@@ -41,12 +41,12 @@ interface EntityRowBaseProps {
 }
 
 type EntityRowButtonProps = EntityRowBaseProps &
-  Omit<ButtonHTMLAttributes<HTMLButtonElement>, "children"> & {
+  Omit<ButtonHTMLAttributes<HTMLButtonElement>, "children" | "title"> & {
     as?: "button";
   };
 
 type EntityRowDivProps = EntityRowBaseProps &
-  Omit<HTMLAttributes<HTMLDivElement>, "children"> & {
+  Omit<HTMLAttributes<HTMLDivElement>, "children" | "title"> & {
     as: "div";
   };
 

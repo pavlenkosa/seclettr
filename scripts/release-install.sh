@@ -859,9 +859,9 @@ runtime_image_for_service() {
     minio) printf '%s' "minio/minio:latest" ;;
     minio-init) printf '%s' "minio/mc:latest" ;;
     coturn) printf '%s' "coturn/coturn:latest" ;;
-    api|migrate) printf '%s:%s' "${SECLETTR_API_IMAGE:-seclettr/api}" "${SECLETTR_IMAGE_TAG:-release}" ;;
-    sfu) printf '%s:%s' "${SECLETTR_SFU_IMAGE:-seclettr/sfu}" "${SECLETTR_IMAGE_TAG:-release}" ;;
-    web) printf '%s:%s' "${SECLETTR_WEB_IMAGE:-seclettr/web}" "${SECLETTR_IMAGE_TAG:-release}" ;;
+    api|migrate) printf '%s:%s' "${SECLETTR_API_IMAGE:-ghcr.io/pavlenkosa/seclettr/api}" "${SECLETTR_IMAGE_TAG:-latest}" ;;
+    sfu) printf '%s:%s' "${SECLETTR_SFU_IMAGE:-ghcr.io/pavlenkosa/seclettr/sfu}" "${SECLETTR_IMAGE_TAG:-latest}" ;;
+    web) printf '%s:%s' "${SECLETTR_WEB_IMAGE:-ghcr.io/pavlenkosa/seclettr/web}" "${SECLETTR_IMAGE_TAG:-latest}" ;;
     *) return 1 ;;
   esac
 }
@@ -895,7 +895,9 @@ validate_runtime_images_available() {
   done
 
   if [[ ${#missing[@]} -gt 0 ]]; then
-    die "Required Docker image(s) are not available after loading $IMAGE_ARCHIVE: ${missing[*]}. Rebuild the release bundle or rerun without --skip-load."
+    die "Required Docker image(s) are not available: ${missing[*]}.
+  If installing offline: ensure prebuilt-images.tar.gz is present and run: docker load -i prebuilt-images.tar.gz
+  If installing online: check your internet connection and run: docker compose pull"
   fi
 }
 
@@ -1992,10 +1994,15 @@ if [[ "$ACTION" == "update" && "$SKIP_BACKUP" == "false" ]]; then
 fi
 
 if [[ "$SKIP_LOAD" == "false" ]]; then
-  step "Loading Docker images"
-  [[ -f "$IMAGE_ARCHIVE" ]] || die "Image archive not found: $IMAGE_ARCHIVE"
-  run_quiet "Importing prebuilt-images.tar.gz (this may take a minute…)" \
-    "${DOCKER_CMD[@]}" load -i "$IMAGE_ARCHIVE"
+  if [[ -f "$IMAGE_ARCHIVE" ]]; then
+    step "Loading Docker images from offline archive"
+    run_quiet "Importing prebuilt-images.tar.gz (this may take a minute…)" \
+      "${DOCKER_CMD[@]}" load -i "$IMAGE_ARCHIVE"
+  else
+    step "Pulling Docker images from registry"
+    run_quiet "Pulling images from container registry" \
+      docker_compose pull
+  fi
 fi
 
 validate_runtime_images_available
@@ -2026,47 +2033,76 @@ _WEB_PROTO="https"
 [[ "$NETWORK_MODE" == "http" ]] && _WEB_PROTO="http"
 _WEB_HOST="${TURN_DOMAIN:-$(hostname -f 2>/dev/null || hostname)}"
 
-echo ""
-echo -e "${GRN}${BLD}╔══════════════════════════════════════════════════╗${RST}"
-echo -e "${GRN}${BLD}║        Seclettr is up and running!  🚀            ║${RST}"
-echo -e "${GRN}${BLD}╚══════════════════════════════════════════════════╝${RST}"
-echo ""
-
-if is_mode_with_web; then
-  echo -e "  ${BLD}URL:${RST}              ${GRN}${_WEB_PROTO}://${_WEB_HOST}${RST}"
-fi
-
-if is_mode_with_backend; then
-  echo -e "  ${BLD}API health:${RST}       http://127.0.0.1:${API_HOST_PORT:-3001}/health"
-fi
-
-if [[ "$ACTION" == "update" && -n "$BACKUP_DIR" ]]; then
-  echo -e "  ${BLD}Update backup:${RST}    ${BACKUP_DIR}"
-fi
-
+_cert_type="trusted"
+_cert_warning=""
 if [[ "$NETWORK_MODE" == "tls" ]]; then
-  _cert_type="trusted"
   if command -v openssl >/dev/null 2>&1 && [[ -f "$BUNDLE_DIR/nginx/certs/cert.pem" ]]; then
     _cert_issuer="$(openssl x509 -noout -issuer  -in "$BUNDLE_DIR/nginx/certs/cert.pem" 2>/dev/null)"
     _cert_subject="$(openssl x509 -noout -subject -in "$BUNDLE_DIR/nginx/certs/cert.pem" 2>/dev/null)"
     [[ "$_cert_issuer" == "$_cert_subject" ]] && _cert_type="self-signed"
   fi
-  if [[ "$_cert_type" == "self-signed" ]]; then
-    echo -e "  ${BLD}TLS certificate:${RST}  ${YLW}self-signed${RST} (browsers will warn — replace for production)"
-  else
-    echo -e "  ${BLD}TLS certificate:${RST}  ${GRN}trusted${RST}"
-  fi
+fi
+
+if [[ "$_cert_type" == "self-signed" ]]; then
+  _cert_display="${YLW}⚠️ Self-signed certificate${RST}"
+  _cert_warning="Browser will show a security warning — this is normal for testing. Use Let's Encrypt or a trusted certificate for production."
+else
+  _cert_display="${GRN}✅ Trusted certificate${RST}"
 fi
 
 echo ""
-echo -e "  ${DIM}───────────────────────────────────────────────────${RST}"
-echo -e "  ${BLD}Settings file:${RST}    ${ENV_FILE}"
-echo -e "  ${DIM}Keep this file safe — it contains your secret keys.${RST}"
+echo -e "${GRN}${BLD}╔════════════════════════════════════════════════════════════╗${RST}"
+echo -e "${GRN}${BLD}║                                                            ║${RST}"
+echo -e "${GRN}${BLD}║   🚀  Seclettr is up and running!                        ║${RST}"
+echo -e "${GRN}${BLD}║                                                            ║${RST}"
+echo -e "${GRN}${BLD}╚════════════════════════════════════════════════════════════╝${RST}"
 echo ""
-echo -e "  ${BLD}Useful commands:${RST}"
-_DC_PREFIX="docker compose -p ${PROJECT_NAME} --env-file \"${ENV_FILE}\" -f \"${COMPOSE_FILE}\""
-echo -e "    ${DIM}Logs:${RST}    ${_DC_PREFIX} logs -f"
-echo -e "    ${DIM}Stop:${RST}    ${_DC_PREFIX} down"
-echo -e "    ${DIM}Restart:${RST} ${_DC_PREFIX} restart"
-echo -e "    ${DIM}Update:${RST}  unpack a new bundle, then run: ./install.sh update --from \"${BUNDLE_DIR}\""
+
+echo -e "${BLD}═══════════════════════════════════════════════════════════════════════${RST}"
+echo -e "${BLD}  OPEN IN BROWSER:${RST}"
+echo -e ""
+echo -e "     ${GRN}${BLD}${_WEB_PROTO}://${_WEB_HOST}${RST}"
+echo -e ""
+echo -e "${BLD}═══════════════════════════════════════════════════════════════════════${RST}"
+echo ""
+
+echo -e "${BLD}📋 Next steps:${RST}"
+echo ""
+echo -e "  1️⃣  Open the link above in your browser"
+echo -e "  2️⃣  Click \"Register\" and create your first account"
+echo -e "  3️⃣  Share the link with other users"
+echo ""
+
+if [[ -n "$_cert_warning" ]]; then
+  echo -e "${BLD}🔒 Security certificate:${RST} $_cert_display"
+  echo -e "     $_cert_warning"
+  echo ""
+fi
+
+if is_mode_with_backend; then
+  echo -e "${DIM}─────────────────────────────────────────────────────────────────────────${RST}"
+  echo -e "${BLD}⚙️  For technical users:${RST}"
+  echo ""
+  echo -e "  API health:       http://127.0.0.1:${API_HOST_PORT:-3001}/health"
+  echo -e "  Settings file:    ${ENV_FILE}"
+  echo -e "  ${DIM}(keep this file safe — it contains all your secrets)${RST}"
+  echo ""
+  _DC_PREFIX="docker compose -p ${PROJECT_NAME} --env-file \"${ENV_FILE}\" -f \"${COMPOSE_FILE}\""
+  echo -e "  Commands:"
+  echo -e "    View logs:    ${_DC_PREFIX} logs -f"
+  echo -e "    Stop:         ${_DC_PREFIX} down"
+  echo -e "    Restart:      ${_DC_PREFIX} restart"
+  echo -e "    Update:       unpack a new release and run:"
+  echo -e "                  ./install.sh update --from \"${BUNDLE_DIR}\""
+fi
+
+if [[ "$ACTION" == "update" && -n "$BACKUP_DIR" ]]; then
+  echo -e ""
+  echo -e "  📦 Backup before update: ${BACKUP_DIR}"
+fi
+
+echo ""
+echo -e "${GRN}${BLD}═══════════════════════════════════════════════════════════════════════${RST}"
+echo -e "${GRN}${BLD}  Done! You can now use Seclettr.${RST}"
+echo -e "${GRN}${BLD}═══════════════════════════════════════════════════════════════════════${RST}"
 echo ""

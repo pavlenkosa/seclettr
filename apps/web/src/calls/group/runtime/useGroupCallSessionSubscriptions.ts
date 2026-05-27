@@ -17,11 +17,11 @@
  */
 import {
   useEffect,
-  useRef,
   type Dispatch,
   type MutableRefObject,
   type SetStateAction,
 } from "react";
+import { useStableSubscription } from "@/calls/shared/useStableSubscription";
 import type { WsServerMessage } from "@seclettr/protocol";
 import { wsClient } from "@/lib/websocket";
 import { logGroupCallError } from "@/calls/group/runtime/media-key/logger";
@@ -358,22 +358,19 @@ export function useGroupCallSessionSubscriptions({
   performUnloadCleanup,
   onClose,
 }: UseGroupCallSessionSubscriptionsOptions) {
-  const unloadSubscriptionRunIdRef = useRef(0);
-  const connectionSubscriptionRunIdRef = useRef(0);
-  const messageSubscriptionRunIdRef = useRef(0);
+  const unloadSub = useStableSubscription();
+  const connectionSub = useStableSubscription();
+  const messageSub = useStableSubscription();
 
   useEffect(() => {
     if (!session || !callId) {
       return;
     }
 
-    const subscriptionRunId = unloadSubscriptionRunIdRef.current + 1;
-    unloadSubscriptionRunIdRef.current = subscriptionRunId;
-    const isCurrentSubscription = () =>
-      unloadSubscriptionRunIdRef.current === subscriptionRunId;
+    const { isCurrent, close } = unloadSub.open();
 
     const handlePageUnload = () => {
-      if (!isCurrentSubscription()) return;
+      if (!isCurrent()) return;
       performUnloadCleanup();
     };
 
@@ -381,13 +378,11 @@ export function useGroupCallSessionSubscriptions({
     globalThis.addEventListener("beforeunload", handlePageUnload);
 
     return () => {
-      if (isCurrentSubscription()) {
-        unloadSubscriptionRunIdRef.current += 1;
-      }
+      close();
       globalThis.removeEventListener("pagehide", handlePageUnload);
       globalThis.removeEventListener("beforeunload", handlePageUnload);
     };
-  }, [callId, performUnloadCleanup, session]);
+  }, [callId, performUnloadCleanup, session, unloadSub]);
 
   // Show "Reconnecting…" during WS dropout and return to ready when signaling
   // reconnects. SFU transport failures are handled by the lifecycle runtime,
@@ -397,13 +392,10 @@ export function useGroupCallSessionSubscriptions({
       return;
     }
 
-    const subscriptionRunId = connectionSubscriptionRunIdRef.current + 1;
-    connectionSubscriptionRunIdRef.current = subscriptionRunId;
-    const isCurrentSubscription = () =>
-      connectionSubscriptionRunIdRef.current === subscriptionRunId;
+    const { isCurrent, close } = connectionSub.open();
 
     const unsubscribe = wsClient.onConnectionChange((connected) => {
-      if (!isCurrentSubscription()) return;
+      if (!isCurrent()) return;
       if (connected) {
         dispatchStatus({ type: "SESSION_READY" });
       } else {
@@ -412,29 +404,24 @@ export function useGroupCallSessionSubscriptions({
     });
 
     return () => {
-      if (isCurrentSubscription()) {
-        connectionSubscriptionRunIdRef.current += 1;
-      }
+      close();
       unsubscribe();
     };
-  }, [callId, dispatchStatus, session]);
+  }, [callId, connectionSub, dispatchStatus, session]);
 
   useEffect(() => {
     if (!session || !callId) {
       return;
     }
 
-    const subscriptionRunId = messageSubscriptionRunIdRef.current + 1;
-    messageSubscriptionRunIdRef.current = subscriptionRunId;
-    const isCurrentSubscription = () =>
-      messageSubscriptionRunIdRef.current === subscriptionRunId;
+    const { isCurrent, close } = messageSub.open();
     const syncRemoteProducers = (
       client: GroupSfuClient | null,
       failureMessage: string
     ) => {
       if (!client) return;
       client.syncRemoteProducers().catch((syncError) => {
-        if (!isCurrentSubscription() || sfuClientRef.current !== client) return;
+        if (!isCurrent() || sfuClientRef.current !== client) return;
         logGroupCallError(failureMessage, syncError);
       });
     };
@@ -458,14 +445,12 @@ export function useGroupCallSessionSubscriptions({
     };
 
     const unsubscribe = wsClient.on((msg) => {
-      if (!isCurrentSubscription()) return;
+      if (!isCurrent()) return;
       handleGroupCallSessionMessage(msg, messageContext);
     });
 
     return () => {
-      if (isCurrentSubscription()) {
-        messageSubscriptionRunIdRef.current += 1;
-      }
+      close();
       unsubscribe();
     };
   }, [
@@ -473,6 +458,7 @@ export function useGroupCallSessionSubscriptions({
     cleanupLocalMedia,
     deviceId,
     joinedParticipantRef,
+    messageSub,
     onClose,
     ownsServerCallRef,
     resetMinimizedDock,
@@ -483,6 +469,7 @@ export function useGroupCallSessionSubscriptions({
     setRemoteParticipantMediaModes,
     setRemoteMedia,
     dispatchStatus,
-    sfuClientRef,
+    // sfuClientRef intentionally omitted: useRef values are stable by identity;
+    // the ref is read inside the callback, not used to decide when to re-subscribe.
   ]);
 }

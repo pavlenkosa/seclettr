@@ -12,7 +12,7 @@ import {
 import { DirectCallStageViewerDialog } from "./DirectCallStageViewerDialog";
 import { InfoStack, IconButton, LabelPill } from "@/components/ui";
 
-import styles from "@/calls/direct/presentation/DirectCallPanel.module.css";
+import styles from "./DirectCallStage.module.css";
 
 interface DirectCallStageProps {
   readonly remoteScreenStream: MediaStream | null;

@@ -38,7 +38,7 @@ export interface ProcessLockedIncomingMessageParams {
 
 export interface MessagesInboundProcessingRuntimeDeps {
   get: GetMessagesState;
-  shared: Pick<MessagesRuntimeShared, "warmPeerTrustStore">;
+  shared: Pick<MessagesRuntimeShared, "warmPeerTrustStore" | "getStorageKey">;
 }
 
 export interface MessagesInboundProcessingRuntime {
@@ -111,7 +111,7 @@ export function createMessagesInboundProcessingRuntime(
         await inboundPlaintextRuntime.handleSenderKeyDistributionMessage({
           message,
           rawBody,
-          shared: deps.shared as never,
+          shared: deps.shared,
           schedulePendingMessageSync,
           handleInboundFailure,
           commitTerminalAndFlushAck,

@@ -15,7 +15,7 @@
  *
  * Does not own lifecycle state derivation (see group-call-lifecycle.ts) or any hooks.
  */
-import type { GroupCallRemoteMedia } from "@/calls/group/runtime/sfu";
+import type { GroupCallRemoteMedia } from "@/calls/group/runtime";
 import type { GroupMember } from "@/stores/groups";
 
 export type CallType = "audio" | "video";

@@ -35,7 +35,10 @@
   white-space: nowrap;
   transition: background-color 140ms ease, color 140ms ease;
   line-height: 1.35;
-  height: 30px;
+  /* min-height 44px meets Apple HIG and Material touch target requirements;
+     height: auto lets content dictate the natural size, min-height sets the floor */
+  height: auto;
+  min-height: 44px;
   display: flex;
   align-items: center;
 }

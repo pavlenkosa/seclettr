@@ -81,19 +81,9 @@
   gap: 0.3rem;
 }
 
-.deviceSelect {
-  background: color-mix(in srgb, var(--surface-shell) 80%, transparent);
-  color: var(--text-primary);
-  border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-md);
-  padding: 0.5rem 0.55rem;
+/* SelectField wrapper — aligns with the fingerprint section visual language */
+.deviceSelectWrapper {
   font-size: 0.75rem;
-  transition: border-color 0.14s ease, background-color 0.14s ease;
-}
-
-.deviceSelect:focus-visible {
-  outline: none;
-  border-color: color-mix(in srgb, var(--accent) 40%, transparent);
 }
 
 :global(:root[data-theme="light"]) .technicalSummary {
@@ -101,16 +91,7 @@
 }
 
 :global(:root[data-theme="light"]) .fingerprintSection,
-:global(:root[data-theme="light"]) .fingerprint,
-:global(:root[data-theme="light"]) .deviceSelect {
+:global(:root[data-theme="light"]) .fingerprint {
   border-color: var(--border-subtle);
   background: var(--surface-lighten-mid);
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .deviceSelect {
-    animation: none !important;
-    transition: none !important;
-    transform: none !important;
-  }
 }

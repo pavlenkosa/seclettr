@@ -1,3 +1,5 @@
+import { useId } from "react";
+import { SelectField } from "@/components/ui";
 import { formatFingerprint } from "@/lib/safety";
 import styles from "./SecurityTechnicalDetails.module.css";
 import {
@@ -10,7 +12,6 @@ interface PeerDeviceSelectorProps {
   readonly effectivePeerDeviceId?: string | null;
   readonly includeEmptyOption?: boolean;
   readonly peerDeviceEntries: SecurityModalLogicState["peerDeviceEntries"];
-  readonly selectId: string;
   readonly setSelectedPeerDeviceId: (deviceId: string | null) => void;
   readonly t: SecurityTranslate;
 }
@@ -77,20 +78,21 @@ function PeerDeviceSelector({
   effectivePeerDeviceId,
   includeEmptyOption = false,
   peerDeviceEntries,
-  selectId,
   setSelectedPeerDeviceId,
   t,
 }: PeerDeviceSelectorProps) {
+  const selectId = useId();
   return (
     <div className={styles.deviceSelector}>
       <label htmlFor={selectId} className={styles.deviceHint}>
         {t("security.peerDevice")}
       </label>
-      <select
+      <SelectField
         id={selectId}
         value={effectivePeerDeviceId ?? ""}
         onChange={(event) => setSelectedPeerDeviceId(event.currentTarget.value || null)}
-        className={styles.deviceSelect}
+        size="md"
+        wrapperClassName={styles.deviceSelectWrapper}
       >
         {includeEmptyOption ? <option value="">{t("security.selectDevice")}</option> : null}
         {peerDeviceEntries.map(([deviceId]) => (
@@ -98,7 +100,7 @@ function PeerDeviceSelector({
             {formatDeviceLabel(deviceId)}
           </option>
         ))}
-      </select>
+      </SelectField>
     </div>
   );
 }
@@ -147,7 +149,6 @@ function PeerFingerprintSection({
             effectivePeerDeviceId={effectivePeerDeviceId}
             includeEmptyOption
             peerDeviceEntries={peerDeviceEntries}
-            selectId="peer-device-select-pending"
             setSelectedPeerDeviceId={setSelectedPeerDeviceId}
             t={t}
           />
@@ -166,7 +167,6 @@ function PeerFingerprintSection({
         <PeerDeviceSelector
           effectivePeerDeviceId={effectivePeerDeviceId}
           peerDeviceEntries={peerDeviceEntries}
-          selectId="peer-device-select"
           setSelectedPeerDeviceId={setSelectedPeerDeviceId}
           t={t}
         />

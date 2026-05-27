@@ -1,11 +1,8 @@
-import { useEffect, useRef, type RefObject } from "react";
+import { useEffect, useRef } from "react";
 
-import type { MessageReplyMeta } from "@/stores/messages";
-import { MessageComposerPrimaryActions, MessageComposerVideoRecordingOverlay, type RecordMode } from "../../composer";
-import type { UseMessageComposerDraftResult } from "../../composer/useMessageComposerDraft";
-import type { UseMessageComposerEmojiStateResult } from "../../composer/useMessageComposerEmojiState";
-import type { UseMediaSendDialogResult } from "../../composer/useMediaSendDialog";
+import { MessageComposerPrimaryActions, MessageComposerVideoRecordingOverlay } from "../../composer";
 import { useAttachmentPicker } from "../../composer/useAttachmentPicker";
+import { useComposerContext } from "./ComposerContext";
 import { ComposerBody } from "./MessageComposerBody";
 import {
   ComposerErrorMessage,
@@ -14,92 +11,58 @@ import {
 import { HiddenAttachmentInput } from "./MessageComposerHiddenAttachmentInput";
 import { ReplyPreview } from "./MessageComposerReplyPreview";
 import { AttachmentPickerSheet } from "../AttachmentPickerSheet";
-import type { DialogState, RecordingCopy } from "./message-composer-view-model";
 import styles from "../MessageComposer.module.css";
 
-interface MessageComposerShellProps {
-  readonly isTextFocused: boolean;
-  readonly replyTo?: MessageReplyMeta;
-  readonly onClearReply?: () => void;
-  readonly clearReplyLabel: string;
-  readonly isVideoRecording: boolean;
-  readonly previewVideoRef: RefObject<HTMLVideoElement>;
-  readonly recordingCopy: RecordingCopy;
-  readonly isRecording: boolean;
-  readonly recordingWaveformBars: number[];
-  readonly emojiPickerId: string;
-  readonly draft: UseMessageComposerDraftResult;
-  readonly mediaSend: UseMediaSendDialogResult;
-  readonly emojiState: UseMessageComposerEmojiStateResult;
-  readonly attachTitle: string;
-  readonly attachLabel: string;
-  readonly pickerCameraLabel: string;
-  readonly pickerGalleryLabel: string;
-  readonly pickerFileLabel: string;
-  readonly pickerCancelLabel: string;
-  readonly placeholder: string;
-  readonly textareaLabel: string;
-  readonly primaryAction: { kind: "send" } | { kind: "record"; mode: RecordMode };
-  readonly showRecordModeChip: boolean;
-  readonly isRecordHintVisible: boolean;
-  readonly recordHintText: string;
-  readonly currentRecordMode: RecordMode;
-  readonly currentRecordModeLabel: string;
-  readonly recordModeToggleAriaLabel: string;
-  readonly recordModeToggleTitle: string;
-  readonly primaryButtonDisabled: boolean;
-  readonly cancelRecordingAriaLabel: string;
-  readonly cancelRecordingTitle: string;
-  readonly primaryButtonAriaLabel: string;
-  readonly primaryButtonTitle: string;
-  readonly onToggleRecordMode: () => void;
-  readonly onCancelRecording: () => void;
-  readonly onPrimaryActionClick: () => void;
-  readonly composerError: string | null;
-  readonly dialogState: DialogState;
-}
+/**
+ * MessageComposerShell — layout shell for the composer subtree.
+ *
+ * Reads all state and labels from `ComposerContext` (provided by
+ * `MessageComposer`). No props — this eliminates the previous 39-prop
+ * drilling surface (ARCH-01).
+ */
+export function MessageComposerShell() {
+  const {
+    replyTo,
+    onClearReply,
+    clearReplyLabel,
+    isTextFocused,
+    composerError,
+    isRecording,
+    isVideoRecording,
+    recordingCopy,
+    recordingWaveformBars,
+    previewVideoRef,
+    draft,
+    emojiState,
+    mediaSend,
+    emojiPickerId,
+    dialogState,
+    primaryAction,
+    showRecordModeChip,
+    isRecordHintVisible,
+    primaryButtonDisabled,
+    currentRecordMode,
+    onToggleRecordMode,
+    onCancelRecording,
+    onPrimaryActionClick,
+    attachTitle,
+    attachLabel,
+    pickerCameraLabel,
+    pickerGalleryLabel,
+    pickerFileLabel,
+    pickerCancelLabel,
+    placeholder,
+    textareaLabel,
+    recordHintText,
+    currentRecordModeLabel,
+    recordModeToggleAriaLabel,
+    recordModeToggleTitle,
+    cancelRecordingAriaLabel,
+    cancelRecordingTitle,
+    primaryButtonAriaLabel,
+    primaryButtonTitle,
+  } = useComposerContext();
 
-export function MessageComposerShell({
-  isTextFocused,
-  replyTo,
-  onClearReply,
-  clearReplyLabel,
-  isVideoRecording,
-  previewVideoRef,
-  recordingCopy,
-  isRecording,
-  recordingWaveformBars,
-  emojiPickerId,
-  draft,
-  mediaSend,
-  emojiState,
-  attachTitle,
-  attachLabel,
-  pickerCameraLabel,
-  pickerGalleryLabel,
-  pickerFileLabel,
-  pickerCancelLabel,
-  placeholder,
-  textareaLabel,
-  primaryAction,
-  showRecordModeChip,
-  isRecordHintVisible,
-  recordHintText,
-  currentRecordMode,
-  currentRecordModeLabel,
-  recordModeToggleAriaLabel,
-  recordModeToggleTitle,
-  primaryButtonDisabled,
-  cancelRecordingAriaLabel,
-  cancelRecordingTitle,
-  primaryButtonAriaLabel,
-  primaryButtonTitle,
-  onToggleRecordMode,
-  onCancelRecording,
-  onPrimaryActionClick,
-  composerError,
-  dialogState,
-}: MessageComposerShellProps) {
   const composerRef = useRef<HTMLDivElement>(null);
 
   const picker = useAttachmentPicker({

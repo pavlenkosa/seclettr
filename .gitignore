@@ -93,3 +93,6 @@ apps/web/android/app/.settings/
 
 # Debug APK bundled for local testing
 apps/web/public/seclettr-debug.apk
+
+# Firebase config — contains API keys, never commit
+apps/web/android/app/google-services.json

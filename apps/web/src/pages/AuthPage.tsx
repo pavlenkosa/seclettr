@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { LanguageSwitcher } from "@/components/common/LanguageSwitcher";
-import { IconEye, IconEyeOff, LabelPill } from "@/components/ui";
+import { IconButton, IconEye, IconEyeOff, LabelPill } from "@/components/ui";
 import { useI18n } from "@/i18n";
 import { getAuthErrorCode, mapAuthErrorMessage, shouldShowAuthErrorDetails } from "@/lib/auth-errors";
 import {
@@ -183,14 +183,16 @@ function NativeAuthForm({
               minLength={8}
               required
             />
-            <button
+            <IconButton
               type="button"
+              size={36}
+              variant="ghost"
               className={styles.nativePasswordToggle}
               onClick={onTogglePassword}
               aria-label={showPassword ? t("auth.hidePassword") : t("auth.showPassword")}
             >
               {showPassword ? <IconEyeOff /> : <IconEye />}
-            </button>
+            </IconButton>
           </div>
         </div>
 

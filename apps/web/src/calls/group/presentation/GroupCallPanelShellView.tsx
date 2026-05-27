@@ -1,6 +1,6 @@
 import { lazy, Suspense, type ComponentProps } from "react";
 import { createPortal } from "react-dom";
-import type { GroupCallRemoteMedia } from "@/calls/group/runtime/sfu";
+import type { GroupCallRemoteMedia } from "@/calls/group/runtime";
 import { CallAudioOutputProvider } from "@/calls/shared/media/audio-output/CallAudioOutputProvider";
 import { CallControlsDock } from "@/calls/shared/presentation/CallControlsDock";
 import { CallPanelShell } from "@/calls/shared/presentation/CallPanelShell";

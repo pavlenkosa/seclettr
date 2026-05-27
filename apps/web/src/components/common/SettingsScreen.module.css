@@ -66,45 +66,9 @@
   padding: 0.9rem 0.74rem;
 }
 
-.accountPanel {
+.accountSummary {
+  width: 100%;
   margin-bottom: 0.72rem;
-}
-
-.accountRow {
-  display: grid;
-  grid-template-columns: 48px minmax(0, 1fr);
-  align-items: center;
-  gap: 0.78rem;
-}
-
-.accountAvatar {
-  width: 48px;
-  height: 48px;
-  border-radius: 999px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  color: #fff;
-  background: var(--accent);
-  font-size: 0.9rem;
-  font-weight: 700;
-}
-
-.accountInfo {
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 0.14rem;
-}
-
-.accountHandle {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  color: var(--text-primary);
-  font-size: 0.9rem;
-  font-weight: 700;
-  line-height: 1.25;
 }
 
 .sectionList {
@@ -334,7 +298,7 @@
     display: none;
   }
 
-  .accountPanel {
+  .accountSummary {
     margin-bottom: 0.68rem;
   }
 

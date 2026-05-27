@@ -320,7 +320,7 @@
   }
 
   .emojiViewport {
-    height: min(13.5rem, calc(100vh - 9.5rem));
+    height: min(13.5rem, calc(100dvh - 9.5rem));
     min-height: 8rem;
   }
 

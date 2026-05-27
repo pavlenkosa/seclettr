@@ -1,6 +1,6 @@
 import { lazy, Suspense } from "react";
 import type { GroupCallPanelSession } from "@/calls/group/model/entry";
-import type { GroupCallRemoteMedia } from "@/calls/group/runtime/sfu";
+import type { GroupCallRemoteMedia } from "@/calls/group/runtime";
 import type { UseGroupCallPanelRuntimeResult } from "@/calls/group/runtime/useGroupCallPanelRuntime";
 import type { UseGroupCallDevDebugOptions } from "@/calls/group/runtime/useGroupCallDevDebug";
 

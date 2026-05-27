@@ -16,6 +16,7 @@ import { resolve } from "node:path";
 import { WS_CLIENT_PROTOCOL } from "@seclettr/protocol";
 
 import { config } from "./config.js";
+import { APP_VERSION } from "./version.js";
 import { isCapacitorOriginAllowed, isDevelopmentCorsOriginAllowed } from "./cors.js";
 import { pool, query } from "./db/pool.js";
 import { redis, usingInMemoryRedis } from "./services/redis.js";
@@ -190,21 +191,21 @@ export async function buildApp() {
 
   // GET /health/live  — process liveness only, no external dep checks (cheap)
   fastify.get("/health/live", async () => {
-    return { status: "ok" };
+    return { status: "ok", version: APP_VERSION };
   });
 
   // GET /health/ready — checks DB + Redis readiness (used by load balancers)
   fastify.get("/health/ready", async () => {
     const { dbOk, redisOk } = await checkDependencies();
     const status = dbOk && redisOk ? "ok" : "degraded";
-    return { status, dependencies: { db: dbOk, redis: redisOk } };
+    return { status, version: APP_VERSION, dependencies: { db: dbOk, redis: redisOk } };
   });
 
   // GET /health — legacy alias for /health/ready
   fastify.get("/health", async () => {
     const { dbOk, redisOk } = await checkDependencies();
     const status = dbOk && redisOk ? "ok" : "degraded";
-    return { status };
+    return { status, version: APP_VERSION };
   });
 
   fastify.get("/metrics", async (request, reply) => {
@@ -265,7 +266,7 @@ export async function buildApp() {
   return fastify;
 }
 
-const EXPECTED_LATEST_MIGRATION = "028_background_poll_token_expiry.sql";
+const EXPECTED_LATEST_MIGRATION = "029_fcm_device_tokens.sql";
 
 async function checkDbSchemaVersion(): Promise<void> {
   const rows = await query<{ filename: string }>(

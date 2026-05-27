@@ -1,3 +1,4 @@
+import { PillButton } from "@/components/ui";
 import type { PeerIdentityAlert } from "@/stores/messages";
 import styles from "./SecuritySafetyNumberSection.module.css";
 import type { SecurityModalLogicState, SecurityTranslate } from "./security-modal-shared";
@@ -27,15 +28,29 @@ export function SafetyNumberSection({
       <code className={styles.shortCode}>{codes.shortCode}</code>
       <div className={styles.actions}>
         {verifiedAt ? (
-          <button type="button" className={styles.secondaryBtn} onClick={() => resetVerification()}>
+          <PillButton
+            type="button"
+            tone="neutral"
+            appearance="soft"
+            size="md"
+            fullWidth
+            onClick={() => { void resetVerification(); }}
+          >
             {t("security.resetVerification")}
-          </button>
+          </PillButton>
         ) : (
-          <button type="button" className={styles.primaryBtn} onClick={() => markVerified()}>
+          <PillButton
+            type="button"
+            tone="accent"
+            appearance="strong"
+            size="md"
+            fullWidth
+            onClick={() => { void markVerified(); }}
+          >
             {effectivePeerIdentityAlert
               ? t("security.markVerifiedNewIdentity")
               : t("security.markVerified")}
-          </button>
+          </PillButton>
         )}
       </div>
       <details className={styles.advanced}>

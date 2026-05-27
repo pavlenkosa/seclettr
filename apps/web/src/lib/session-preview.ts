@@ -2,6 +2,8 @@
  * Non-rotating refresh-cookie session preview used only by auth restore.
  */
 import { resolveApiBaseUrl } from "./runtime-config";
+import { isNativePlatform } from "./native-platform";
+import { getNativeRefreshToken } from "./native-storage";
 
 const API_BASE_URL = resolveApiBaseUrl();
 const AUTH_PROTOCOL_VERSION = 1;
@@ -55,11 +57,24 @@ export function previewRefreshSession(): Promise<RefreshSessionPreview | null> {
 }
 
 async function doPreviewRefreshSession(): Promise<RefreshSessionPreview | null> {
+  // On native, attach the persisted refresh token as a header fallback.
+  // The cookie may have been wiped after an Android process kill, but
+  // Capacitor Preferences survives restarts.  The server only accepts
+  // this header from known native WebView origins.
+  const headers: Record<string, string> = {};
+  if (isNativePlatform()) {
+    const nativeToken = await getNativeRefreshToken();
+    if (nativeToken) {
+      headers["X-Refresh-Token"] = nativeToken;
+    }
+  }
+
   let response: Response;
   try {
     response = await fetch(`${API_BASE_URL}/auth/session`, {
       method: "POST",
       credentials: "include",
+      headers,
     });
   } catch {
     // Network-level failure (no connectivity, DNS, timeout).

@@ -330,13 +330,13 @@ export function DirectCallActiveOverlay({
   const hasAudioOutputControls = audioOutputSupport === "full" || audioCanPrompt;
 
   const callStateSpan = callStateText
-    ? <span className={styles.callHeaderDuration}>{callStateText}</span>
+    ? <span className={activeStyles.callHeaderDuration}>{callStateText}</span>
     : null;
   const callHeaderDuration = durationStartedAtMs === null
     ? callStateSpan
     : (
         <CallDurationText
-          className={styles.callHeaderDuration}
+          className={activeStyles.callHeaderDuration}
           baseSeconds={duration}
           startedAtMs={durationStartedAtMs}
           ariaLabel={t("call.durationAria")}
@@ -454,10 +454,6 @@ export function DirectCallActiveOverlay({
         />
       </div>
 
-      {hasAudioOutputControls ? (
-        <AudioOutputSelector compact hideLabel className={activeStyles.callAudioOutputBar} />
-      ) : null}
-
       {shouldRenderLocalCameraPreview ? (
         <DirectCallFloatingPreview
           shellRef={localPreviewShellRef}
@@ -496,7 +492,16 @@ export function DirectCallActiveOverlay({
         />
       ) : null}
 
-      <DirectCallControls
+      {/* callControlsArea groups the audio-output selector and the controls dock so
+          they render as one visual unit rather than two separate flex rows. On desktop
+          the AudioOutputSelector pill sits just above the dock; on mobile the pill is
+          hidden (display:none) and DirectCallControls renders its own mobileAudioOutputBar
+          — both end up inside this container, visually unified. */}
+      <div className={activeStyles.callControlsArea}>
+        {hasAudioOutputControls ? (
+          <AudioOutputSelector compact hideLabel className={activeStyles.callAudioOutputBar} />
+        ) : null}
+        <DirectCallControls
         callType={callType}
         muted={muted}
         videoOff={videoOff}
@@ -532,6 +537,7 @@ export function DirectCallActiveOverlay({
         onSelectVideoResolution={(res) => { void handleSelectVideoResolution(res); }}
         onSelectScreenResolution={onSelectScreenResolution}
       />
+      </div>
     </dialog>
   );
 }

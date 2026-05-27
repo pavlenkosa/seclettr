@@ -35,7 +35,7 @@ import {
   type StoredDeviceRegistration,
 } from "@/lib/browser-trust-store";
 import { isNativePlatform } from "@/lib/native-platform";
-import { nativeStorageSet } from "@/lib/native-storage";
+import { nativeStorageSet, storeNativeRefreshToken } from "@/lib/native-storage";
 import {
   type StoredDeviceKeys,
   hasUsableDeviceKeys,
@@ -103,6 +103,12 @@ export async function runRegisterFlow({
       })),
     },
   });
+
+  // Persist the refresh token to native Preferences so it survives Android
+  // process-kill (which can wipe the WebView cookie store).
+  if (result.refreshToken) {
+    void storeNativeRefreshToken(result.refreshToken);
+  }
 
   const otkPrivateKeys: Record<number, string> = {};
   for (const otk of otks) {
@@ -209,6 +215,11 @@ export async function runLoginFlow({
       },
     });
 
+    // Persist the refresh token to native Preferences.
+    if (result.refreshToken) {
+      void storeNativeRefreshToken(result.refreshToken);
+    }
+
     await clearRatchetSessions("login");
 
     for (const otk of topupOtks) {
@@ -270,6 +281,11 @@ export async function runLoginFlow({
       })),
     },
   });
+
+  // Persist the refresh token to native Preferences.
+  if (result.refreshToken) {
+    void storeNativeRefreshToken(result.refreshToken);
+  }
 
   await clearRatchetSessions("login");
 

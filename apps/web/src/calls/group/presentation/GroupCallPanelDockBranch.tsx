@@ -1,6 +1,6 @@
 import { createPortal } from "react-dom";
 import type { ComponentProps } from "react";
-import type { GroupCallRemoteMedia } from "@/calls/group/runtime/sfu";
+import type { GroupCallRemoteMedia } from "@/calls/group/runtime";
 import { CallAudioOutputProvider } from "@/calls/shared/media/audio-output/CallAudioOutputProvider";
 import { GroupCallDock } from "@/calls/group/presentation/components/GroupCallDock";
 import { GroupCallRemoteAudioTargets } from "@/calls/group/presentation/components/GroupCallRemoteAudioTargets";

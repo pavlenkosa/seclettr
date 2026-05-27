@@ -42,6 +42,7 @@ import {
 import { useGroupCallLocalMedia } from "./useGroupCallLocalMedia";
 import { useGroupCallMediaKeyRuntime } from "./useGroupCallMediaKeyRuntime";
 import { useGroupCallSessionRuntime } from "./useGroupCallSessionRuntime";
+import type { MediaKeyRotationState } from "./session/session-types";
 import type { VideoResolution } from "@/calls/shared/presentation/CallDevicePicker";
 
 interface UseGroupCallPanelRuntimeOptions {
@@ -52,10 +53,6 @@ interface UseGroupCallPanelRuntimeOptions {
   setPinnedStageTileId: React.Dispatch<React.SetStateAction<string | null>>;
 }
 
-interface MediaKeyRotationState {
-  lastRotatedAtMs: number | null;
-  participantFingerprint: string | null;
-}
 
 export interface UseGroupCallPanelRuntimeResult {
   deviceId: string | null;

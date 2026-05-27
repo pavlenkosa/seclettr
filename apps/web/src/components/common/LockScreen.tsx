@@ -9,6 +9,7 @@ interface Props {
   readonly username: string | null;
   readonly isUnlocking: boolean;
   readonly pinWrong?: boolean;
+  readonly errorMessage?: string;
   readonly onUnlock: (passcode: string) => void;
   readonly onLogout: () => void;
 }
@@ -56,7 +57,7 @@ function getBiometryKind(biometryType: string): BiometryKind {
   return null;
 }
 
-export function LockScreen({ username, isUnlocking, pinWrong, onUnlock, onLogout }: Props) {
+export function LockScreen({ username, isUnlocking, pinWrong, errorMessage, onUnlock, onLogout }: Props) {
   const { t } = useI18n();
   const [passcode, setPasscode] = useState("");
   const [biometryKind, setBiometryKind] = useState<BiometryKind>(null);
@@ -143,6 +144,9 @@ export function LockScreen({ username, isUnlocking, pinWrong, onUnlock, onLogout
           />
           {pinWrong && (
             <p className={styles.error} role="alert">{t("lock.pin.error")}</p>
+          )}
+          {!pinWrong && errorMessage && (
+            <p className={styles.error} role="alert">{errorMessage}</p>
           )}
           <button
             type="submit"

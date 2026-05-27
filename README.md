@@ -183,6 +183,39 @@ If you need the deployment path, legal framing, or a more operator-oriented setu
 - [LEGAL_NOTICE.md](LEGAL_NOTICE.md)
 - [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md)
 
+## Quick Start
+
+### Online Mode (Recommended — Fast)
+
+Images are pulled from GitHub Container Registry. You don't need to build from source or download large bundles.
+
+```bash
+# 1. Install Docker (if missing)
+curl -fsSL https://get.docker.com | sh
+
+# 2. Get the deployment files
+mkdir -p /opt/seclettr && cd /opt/seclettr
+
+# 3. Download docker-compose.yml and .env.example
+curl -fLO https://raw.githubusercontent.com/pavlenkosa/seclettr/main/infra/docker-compose.release.yml
+curl -fLO https://raw.githubusercontent.com/pavlenkosa/seclettr/main/infra/.env.example
+
+mv docker-compose.release.yml docker-compose.yml
+mv .env.example .env
+
+# 4. Edit .env — set your domain or IP:
+#   - CORS_ORIGIN: e.g., https://chat.example.com or http://192.168.1.100
+#   - TURN_DOMAIN: your domain or IP
+#   - TURN_EXTERNAL_IP and ANNOUNCED_IP: your public IP
+
+# 5. Start everything
+docker compose up -d
+```
+
+### Offline Mode (Air-gapped servers)
+
+Download a release bundle with prebuilt images from the [Releases page](https://github.com/pavlenkosa/seclettr/releases).
+
 ## Monorepo Layout
 
 | Path | Role |

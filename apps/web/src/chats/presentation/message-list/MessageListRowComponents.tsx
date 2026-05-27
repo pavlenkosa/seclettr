@@ -1,4 +1,4 @@
-import { type ReactNode } from "react";
+import { memo, type ReactNode } from "react";
 import { SurfacePanel } from "@/components/ui";
 import { IconEncrypted, IconPinned } from "@/components/ui/icons";
 import type { MessageListRowPresentation } from "./message-list-presentation";
@@ -73,7 +73,7 @@ interface MessageRowFrameProps {
   readonly onToggleSelect?: () => void;
 }
 
-export function DateSeparator({ presentation }: DateSeparatorProps) {
+export const DateSeparator = memo(function DateSeparator({ presentation }: DateSeparatorProps) {
   if (!presentation.showDateSeparator) return null;
 
   return (
@@ -81,9 +81,9 @@ export function DateSeparator({ presentation }: DateSeparatorProps) {
       <span className={styles.dateSeparatorLabel}>{presentation.dateSeparatorLabel}</span>
     </div>
   );
-}
+});
 
-export function CallEventRow({ presentation }: CallEventRowProps) {
+export const CallEventRow = memo(function CallEventRow({ presentation }: CallEventRowProps) {
   if (!presentation.callEvent) return null;
 
   return (
@@ -97,13 +97,13 @@ export function CallEventRow({ presentation }: CallEventRowProps) {
       </SurfacePanel>
     </div>
   );
-}
+});
 
-export function SenderLabel({ presentation, message }: SenderLabelProps) {
+export const SenderLabel = memo(function SenderLabel({ presentation, message }: SenderLabelProps) {
   return !message.isOwn && presentation.senderLabel
     ? <div className={styles.senderLabel}>{presentation.senderLabel}</div>
     : null;
-}
+});
 
 export function EncryptedBadge({ ariaLabel }: { readonly ariaLabel: string }) {
   return <IconEncrypted className={styles.encryptedBadge} ariaLabel={ariaLabel} />;

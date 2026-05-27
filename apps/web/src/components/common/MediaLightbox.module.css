@@ -168,7 +168,7 @@
   justify-content: center;
   width: min(68vw, 1080px);
   max-width: 100%;
-  max-height: min(calc(100vh - 220px), 780px);
+  max-height: min(calc(100dvh - 220px), 780px);
   will-change: transform, opacity;
   transition:
     transform 180ms var(--motion-ease-emphasized, cubic-bezier(0.2, 0, 0, 1)),
@@ -362,5 +362,48 @@
     font-size: 0.92rem;
     line-height: 1;
     color: rgb(255 255 255 / 0.62);
+  }
+}
+
+/* ── prefers-reduced-motion ────────────────────────────────────────────────
+   Collapse all scale/translate animations to opacity-only.
+   MediaLightbox has no reduced-motion block at all — every keyframe here
+   uses transform and must be overridden. */
+
+@media (prefers-reduced-motion: reduce) {
+  /* Redefine keyframes — opacity fade only, no transform */
+  @keyframes mediaFadeIn {
+    from { opacity: 0; }
+    to   { opacity: 1; }
+  }
+
+  @keyframes mediaSlideInFromRight {
+    from { opacity: 0; }
+    to   { opacity: 1; }
+  }
+
+  @keyframes mediaSlideInFromLeft {
+    from { opacity: 0; }
+    to   { opacity: 1; }
+  }
+
+  /* Close animation: opacity-only, no translate/scale */
+  .mediaStageClosing {
+    opacity: 0;
+    transform: none;
+  }
+
+  /* Stage transition: only animate opacity, not transform */
+  .mediaStage {
+    transition: opacity 120ms var(--motion-ease-emphasized, ease);
+  }
+
+  /* Dot active state: no scale — background-color change is enough */
+  .mobileSequenceDot {
+    transition: background-color 100ms ease;
+  }
+
+  .mobileSequenceDotActive {
+    transform: none;
   }
 }

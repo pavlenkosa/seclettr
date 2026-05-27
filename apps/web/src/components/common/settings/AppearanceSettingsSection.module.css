@@ -172,4 +172,8 @@
   .oklchSlider::-webkit-slider-thumb {
     transition: none !important;
   }
+  /* scale is forbidden under reduced-motion — border-color change is sufficient feedback */
+  .colorChip:hover {
+    transform: none;
+  }
 }

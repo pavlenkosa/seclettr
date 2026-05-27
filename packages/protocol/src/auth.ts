@@ -44,6 +44,10 @@ export const RegisterResponseSchema = versionedWireObject(AUTH_PROTOCOL_VERSION,
   userId: z.string().uuid(),
   deviceId: z.string().uuid(),
   accessToken: z.string(),
+  /** Present only when the server detects a native client (Capacitor WebView origin).
+   *  Clients should persist this to native Preferences so the session can survive
+   *  Android process-kill cookie loss. */
+  refreshToken: z.string().optional(),
 });
 export type RegisterResponseWire = z.infer<typeof RegisterResponseSchema>;
 export type RegisterResponse = StripVersion<RegisterResponseWire>;
@@ -61,12 +65,16 @@ export const LoginResponseSchema = versionedWireObject(AUTH_PROTOCOL_VERSION, {
   deviceId: z.string().uuid(),
   accessToken: z.string(),
   user: z.object({ username: z.string() }),
+  /** Present only when the server detects a native client. See RegisterResponseSchema. */
+  refreshToken: z.string().optional(),
 });
 export type LoginResponseWire = z.infer<typeof LoginResponseSchema>;
 export type LoginResponse = StripVersion<LoginResponseWire>;
 
 export const RefreshResponseSchema = versionedWireObject(AUTH_PROTOCOL_VERSION, {
   accessToken: z.string(),
+  /** Rotated refresh token — present only for native clients. See RegisterResponseSchema. */
+  refreshToken: z.string().optional(),
 });
 export type RefreshResponseWire = z.infer<typeof RefreshResponseSchema>;
 export type RefreshResponse = StripVersion<RefreshResponseWire>;

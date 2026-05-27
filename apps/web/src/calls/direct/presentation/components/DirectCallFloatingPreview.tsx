@@ -6,7 +6,7 @@ import type {
 } from "react";
 import { CallMediaSurface } from "@/calls/shared/presentation/CallMediaSurface";
 
-import styles from "@/calls/direct/presentation/DirectCallPanel.module.css";
+import styles from "./DirectCallFloatingPreview.module.css";
 
 export interface DirectCallFloatingPreviewProps {
   readonly shellRef: RefObject<HTMLDivElement>;

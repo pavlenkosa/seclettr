@@ -30,6 +30,46 @@
   width: 100%;
 }
 
+/* Flat-layout stack: no gap, dividers between groups (native/mobile style) */
+.groupStackFlat {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  width: 100%;
+}
+
+/* ─── Flat group (no card) — used on native Capacitor builds ───────────── */
+
+.groupFlat {
+  width: 100%;
+  padding: var(--space-5) 0;
+  border-bottom: 1px solid color-mix(in srgb, var(--panel-border-soft) 56%, transparent);
+}
+
+.groupFlat:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.groupFlatHeader {
+  display: flex;
+  flex-direction: column;
+  gap: 0.22rem;
+  margin-bottom: 1rem;
+}
+
+/* Full-width controls inside flat groups (buttons expand to fill row) */
+.groupFlat .settingControl {
+  justify-content: flex-start;
+  width: 100%;
+}
+
+/* Full-width segmented controls */
+.groupFlat :global(.root[class*="segmented"]),
+.groupFlat :global([class*="SegmentedControl"]) {
+  width: 100%;
+}
+
 .groupPanel {
   --surface-panel-bg-start: color-mix(in srgb, var(--surface-shell) 92%, var(--bg-primary));
   --surface-panel-border: color-mix(in srgb, var(--panel-border-soft) 86%, transparent);

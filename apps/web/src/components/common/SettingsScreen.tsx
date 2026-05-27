@@ -267,7 +267,7 @@ export function SettingsScreen({
 
       <div className={styles.layout} data-detail-open={isMobileViewport && mobileDetailOpen ? "true" : "false"}>
         <aside className={styles.menuPane}>
-          <SettingsAccountSummary username={username} />
+          <SettingsAccountSummary username={username} onClick={() => handleSectionClick("profile")} />
           <SettingsSectionNav
             sections={sectionEntries}
             activeSection={activeSection}

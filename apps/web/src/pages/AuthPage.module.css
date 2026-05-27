@@ -321,20 +321,13 @@
 .nativePasswordToggle {
   position: absolute;
   right: var(--space-3);
-  background: none;
-  border: none;
-  padding: var(--space-1);
-  cursor: pointer;
-  color: var(--text-secondary);
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 6px;
-  transition: color 140ms ease;
-}
-
-.nativePasswordToggle:hover {
-  color: var(--text-primary);
+  --icon-button-size: 36px;
+  --icon-button-bg-base: transparent;
+  --icon-button-border-base: transparent;
+  --icon-button-bg-hover-base: color-mix(in srgb, var(--accent) 8%, transparent);
+  --icon-button-border-hover-base: transparent;
+  --icon-button-color-base: var(--text-secondary);
+  --icon-button-color-hover-base: var(--text-primary);
 }
 
 .nativeError {

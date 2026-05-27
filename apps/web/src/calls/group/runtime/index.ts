@@ -1,3 +1,6 @@
+// Public type boundary — presentation layers import GroupCallRemoteMedia from here,
+// not from the internal sfu/ subdirectory.
+export type { GroupCallRemoteMedia } from "./media-key/remote-media";
 export * from "./group-call-error-utils";
 export * from "./useGroupCallGlobalAlerts";
 export * from "./useGroupCallAudioActivity";

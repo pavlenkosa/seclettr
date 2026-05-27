@@ -51,6 +51,25 @@
   animation: callContentIn 200ms cubic-bezier(0.18, 0.9, 0.2, 1) both;
 }
 
+/* Groups the audio-output selector pill and the controls dock into one visual
+   block so they don't render as two unrelated rows inside the callOverlay flex
+   column. gap: 0.4rem on desktop; on mobile the gap is zeroed — the
+   mobileAudioOutputBar margin-bottom inside DirectCallControls provides spacing. */
+.callControlsArea {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.4rem;
+  flex-shrink: 0;
+  width: 100%;
+}
+
+@media (max-width: 640px) {
+  .callControlsArea {
+    gap: 0;
+  }
+}
+
 .callAudioOutputBar {
   align-self: center;
   animation: callContentIn var(--motion-duration-slow) cubic-bezier(0.18, 0.9, 0.2, 1) 60ms both;

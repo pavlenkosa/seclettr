@@ -14,7 +14,7 @@
  * Does not own stage tile selection (see group-call-stage.ts) or presentation
  * composition (see useGroupCallPanelPresentation.ts).
  */
-import type { GroupCallRemoteMedia } from "@/calls/group/runtime/sfu";
+import type { GroupCallRemoteMedia } from "@/calls/group/runtime";
 import type {
   GroupCallPanelSession,
   GroupCallStageTile,

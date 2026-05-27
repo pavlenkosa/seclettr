@@ -23,11 +23,18 @@
   background: color-mix(in srgb, var(--surface-shell) 96%, transparent);
 }
 
-.triggerOpen,
+/* Dropdown open via click/pointer — accent border only.
+   No outline here: the inner-ring (outline-offset: -2px) created a "double hover"
+   visual artefact when clicking to open the listbox. */
+.triggerOpen {
+  border-color: var(--accent);
+}
+
+/* Keyboard focus ring — standard outside ring, distinct from hover. */
 .trigger:focus-visible {
   border-color: var(--accent);
-  outline: 2px solid color-mix(in srgb, var(--accent) 22%, transparent);
-  outline-offset: -2px;
+  outline: 2px solid color-mix(in srgb, var(--accent) 28%, transparent);
+  outline-offset: 2px;
 }
 
 .trigger:disabled {

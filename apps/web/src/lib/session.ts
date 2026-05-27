@@ -1,5 +1,7 @@
 import { setAccessToken as setApiAccessToken } from "./api";
 import { resolveApiBaseUrl } from "./runtime-config";
+import { isNativePlatform } from "./native-platform";
+import { getNativeRefreshToken, storeNativeRefreshToken } from "./native-storage";
 
 /**
  * Centralised session/token management for the web client.
@@ -12,7 +14,7 @@ const API_BASE_URL = resolveApiBaseUrl();
 
 function parseRefreshResponse(
   payload: unknown
-): { accessToken: string } | null {
+): { accessToken: string; refreshToken?: string } | null {
   if (!payload || typeof payload !== "object") {
     return null;
   }
@@ -22,7 +24,14 @@ function parseRefreshResponse(
     return null;
   }
 
-  return { accessToken };
+  const refreshToken = (payload as { refreshToken?: unknown }).refreshToken;
+
+  return {
+    accessToken,
+    refreshToken: typeof refreshToken === "string" && refreshToken.length > 0
+      ? refreshToken
+      : undefined,
+  };
 }
 
 export function setSessionAccessToken(token: string | null): void {
@@ -42,11 +51,22 @@ export function refreshSessionAccessToken(): Promise<string | null> {
 }
 
 async function _doRefreshSessionAccessToken(): Promise<string | null> {
+  // On native, attach the persisted refresh token as a header fallback in case
+  // the WebView cookie was wiped after an Android process kill.
+  const headers: Record<string, string> = {};
+  if (isNativePlatform()) {
+    const nativeToken = await getNativeRefreshToken();
+    if (nativeToken) {
+      headers["X-Refresh-Token"] = nativeToken;
+    }
+  }
+
   let response: Response;
   try {
     response = await fetch(`${API_BASE_URL}/auth/refresh`, {
       method: "POST",
       credentials: "include",
+      headers,
     });
   } catch {
     // Network-level failure (no connectivity, DNS, etc.).
@@ -65,6 +85,12 @@ async function _doRefreshSessionAccessToken(): Promise<string | null> {
   if (!payload) {
     setSessionAccessToken(null);
     return null;
+  }
+
+  // The server rotates the refresh token on every /auth/refresh call.
+  // Keep native Preferences in sync so the next app launch has the latest token.
+  if (payload.refreshToken) {
+    void storeNativeRefreshToken(payload.refreshToken);
   }
 
   setSessionAccessToken(payload.accessToken);

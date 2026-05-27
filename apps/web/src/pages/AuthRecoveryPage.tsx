@@ -4,6 +4,7 @@ import { LanguageSwitcher } from "@/components/common/LanguageSwitcher";
 import { useI18n } from "@/i18n";
 import { mapAuthErrorMessage, shouldShowAuthErrorDetails } from "@/lib/auth-errors";
 import { logger } from "@/lib/logger.js";
+import { isNativePlatform } from "@/lib/native-platform";
 import { useAuthStore } from "@/stores/auth";
 import { AuthCard } from "./auth/AuthCard";
 import { AuthErrorNotice } from "./auth/AuthErrorNotice";
@@ -17,6 +18,9 @@ export function AuthRecoveryPage() {
   const { error, authRecoveryReason, clearError, resetLocalDeviceData } = useAuthStore();
   const [isResetting, setIsResetting] = useState(false);
   const [hasResetCompleted, setHasResetCompleted] = useState(false);
+  // On native Capacitor the step sections render as flat rows with hairline dividers
+  // instead of nested SurfacePanel cards — same pattern as SecuritySettingsSection.
+  const flat = isNativePlatform();
 
   const friendlyError = useMemo(() => mapAuthErrorMessage(error, t), [error, t]);
   const showErrorDetails = shouldShowAuthErrorDetails(error);
@@ -67,6 +71,7 @@ export function AuthRecoveryPage() {
                 title={t("auth.recovery.reasonTitle")}
                 body={recoveryReasonText}
                 tone="accent"
+                flat={flat}
               />
             ) : null}
 
@@ -74,6 +79,7 @@ export function AuthRecoveryPage() {
               id="auth-recovery-step-1"
               title={t("auth.recovery.stepCredentialsTitle")}
               body={t("auth.recovery.stepCredentialsBody")}
+              flat={flat}
             />
 
             <AuthRecoveryDestructiveAction
@@ -85,12 +91,14 @@ export function AuthRecoveryPage() {
               disabled={isResetting}
               onClick={handleResetLocalData}
               successNotice={<AuthRecoverySuccess visible={hasResetCompleted} message={t("auth.recovery.resetDone")} />}
+              flat={flat}
             />
 
             <AuthRecoveryExplanation
               id="auth-recovery-step-3"
               title={t("auth.recovery.stepPasswordTitle")}
               body={t("auth.recovery.stepPasswordBody")}
+              flat={flat}
             />
 
             <AuthErrorNotice message={friendlyError} detail={errorDetail} />

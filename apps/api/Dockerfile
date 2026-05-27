@@ -20,10 +20,8 @@ RUN pnpm --filter @seclettr/crypto build
 RUN pnpm --filter @seclettr/protocol build
 RUN pnpm --filter @seclettr/api build
 
-FROM build AS deploy
-RUN pnpm --filter @seclettr/api deploy --prod /deploy
-
 FROM node:22-alpine AS production
+RUN corepack enable && corepack prepare pnpm@8.15.0 --activate
 ARG SECLETTR_VERSION=0.0.0
 ARG GIT_REVISION=
 ARG BUILD_TIMESTAMP=
@@ -34,7 +32,7 @@ LABEL org.opencontainers.image.created="${BUILD_TIMESTAMP}"
 LABEL org.opencontainers.image.source="https://github.com/pavlenkosa/seclettr"
 WORKDIR /app
 
-COPY --from=deploy /deploy .
+COPY --from=build /app /app
 
 WORKDIR /app/apps/api
 

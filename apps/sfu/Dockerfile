@@ -17,10 +17,8 @@ RUN pnpm install --frozen-lockfile --filter @seclettr/protocol... --filter @secl
 RUN pnpm --filter @seclettr/protocol build
 RUN pnpm --filter @seclettr/sfu build
 
-FROM build AS deploy
-RUN pnpm --filter @seclettr/sfu deploy --prod /deploy
-
 FROM node:22-alpine AS production
+RUN corepack enable && corepack prepare pnpm@8.15.0 --activate
 ARG SECLETTR_VERSION=0.0.0
 ARG GIT_REVISION=
 ARG BUILD_TIMESTAMP=
@@ -32,7 +30,7 @@ LABEL org.opencontainers.image.source="https://github.com/pavlenkosa/seclettr"
 RUN apk add --no-cache libstdc++
 WORKDIR /app
 
-COPY --from=deploy /deploy .
+COPY --from=build /app /app
 
 WORKDIR /app/apps/sfu
 

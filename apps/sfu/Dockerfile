@@ -1,4 +1,3 @@
-# mediasoup requires build tools for native bindings
 FROM node:22-alpine AS base
 RUN apk add --no-cache python3 py3-pip make g++ linux-headers
 RUN corepack enable && corepack prepare pnpm@8.15.0 --activate
@@ -18,17 +17,26 @@ RUN pnpm install --frozen-lockfile --filter @seclettr/protocol... --filter @secl
 RUN pnpm --filter @seclettr/protocol build
 RUN pnpm --filter @seclettr/sfu build
 
+FROM build AS deploy
+RUN pnpm --filter @seclettr/sfu deploy --prod /deploy
+
 FROM node:22-alpine AS production
-RUN corepack enable && corepack prepare pnpm@8.15.0 --activate
+ARG SECLETTR_VERSION=0.0.0
+ARG GIT_REVISION=
+ARG BUILD_TIMESTAMP=
+LABEL org.opencontainers.image.title="Seclettr SFU"
+LABEL org.opencontainers.image.version="${SECLETTR_VERSION}"
+LABEL org.opencontainers.image.revision="${GIT_REVISION}"
+LABEL org.opencontainers.image.created="${BUILD_TIMESTAMP}"
+LABEL org.opencontainers.image.source="https://github.com/pavlenkosa/seclettr"
+RUN apk add --no-cache libstdc++
 WORKDIR /app
 
-# Copy full workspace to preserve pnpm workspace links at runtime.
-COPY --from=build /app /app
+COPY --from=deploy /deploy .
 
 WORKDIR /app/apps/sfu
 
 ENV NODE_ENV=production
 USER node
 EXPOSE 3002
-# SFU uses network_mode: host in compose so ports are not mapped here
 CMD ["node", "dist/index.js"]

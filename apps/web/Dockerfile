@@ -25,6 +25,14 @@ RUN pnpm --filter @seclettr/protocol build
 RUN pnpm --filter @seclettr/web build
 
 FROM nginxinc/nginx-unprivileged:alpine AS production
+ARG SECLETTR_VERSION=0.0.0
+ARG GIT_REVISION=
+ARG BUILD_TIMESTAMP=
+LABEL org.opencontainers.image.title="Seclettr Web"
+LABEL org.opencontainers.image.version="${SECLETTR_VERSION}"
+LABEL org.opencontainers.image.revision="${GIT_REVISION}"
+LABEL org.opencontainers.image.created="${BUILD_TIMESTAMP}"
+LABEL org.opencontainers.image.source="https://github.com/pavlenkosa/seclettr"
 COPY --from=build /app/apps/web/dist /usr/share/nginx/html
 COPY apps/web/nginx.conf /etc/nginx/conf.d/default.conf
 EXPOSE 8080

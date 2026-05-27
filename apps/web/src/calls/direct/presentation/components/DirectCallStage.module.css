@@ -1,0 +1,417 @@
+/*
+ * DirectCallStage — remote media stage, companion preview, and audio-mode avatar.
+ *
+ * Owns:
+ * - callSurface / callStage shell and all size variants
+ * - stageVideo, stageMeta, stageAction*, stageAudio*, stagePlaceholder*
+ * - audioAvatar and its audio ring
+ * - remoteCompanion* floating windows
+ * - peerName / callState stage text
+ * - per-stage responsive compaction
+ *
+ * Does not own the shared fullscreen overlay shell (callOverlay, callHeader,
+ * callCenter) or the local-preview floating shells — those live in
+ * DirectCallPanel.module.css.
+ *
+ * Banned-pattern check: clean.
+ */
+
+@keyframes callContentIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+/* === call surface + stage shell === */
+
+.callSurface {
+  width: 100%;
+  max-width: none;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  flex: 0 1 auto;
+  min-height: 0;
+}
+
+.callSurface:has(.callStageCompact) {
+  flex: 1;
+  min-height: 0;
+}
+
+.callSurfaceScreenFocused {
+  align-items: stretch;
+}
+
+.callStage {
+  --direct-call-avatar-size: clamp(84px, 12vw, 124px);
+  --direct-call-avatar-font-size: clamp(1.32rem, 2vw, 1.82rem);
+  --direct-call-audio-ring-size: calc(var(--direct-call-avatar-size) + 22px);
+  position: relative;
+  width: 100%;
+  border-radius: 18px;
+  overflow: hidden;
+  border: 1px solid color-mix(in srgb, var(--panel-border-soft) 86%, transparent);
+  background: color-mix(in srgb, var(--panel-header-bg) 72%, var(--bg-primary));
+}
+
+.callStageCamera {
+  aspect-ratio: auto;
+  min-height: 320px;
+  height: min(62vh, calc(100vh - 290px));
+  height: min(62dvh, calc(100dvh - 290px));
+}
+
+.callStageScreen {
+  aspect-ratio: 16 / 9;
+  min-height: 240px;
+  max-height: min(64dvh, calc(100dvh - 280px));
+}
+
+.callStageCompact {
+  width: min(100%, 420px);
+  aspect-ratio: 4 / 3;
+  min-height: unset;
+  max-height: 320px;
+  margin-inline: auto;
+  background: color-mix(in srgb, var(--surface-shell) 90%, var(--bg-primary));
+}
+
+.callStageAudio {
+  border-color: transparent;
+  background: transparent;
+}
+
+/* Audio-only mode: avatar fills all available center height — no border box */
+.callStageAudio.callStageCompact {
+  width: 100%;
+  aspect-ratio: unset;
+  max-height: none;
+  flex: 1;
+  margin-inline: 0;
+  border-color: transparent;
+  background: transparent;
+  border-radius: 0;
+  overflow: visible;
+  --direct-call-avatar-size: clamp(110px, 17vw, 165px);
+  --direct-call-avatar-font-size: clamp(1.7rem, 3.2vw, 2.5rem);
+  --direct-call-audio-ring-size: calc(var(--direct-call-avatar-size) + 30px);
+}
+
+/* === stage content === */
+
+.stageVideo {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.callStageScreen .stageVideo {
+  object-fit: contain;
+  background: color-mix(in srgb, var(--bg-primary) 92%, var(--surface-shell-strong));
+}
+
+.stagePlaceholder {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.8rem;
+  padding: 1.2rem;
+  background: color-mix(in srgb, var(--surface-shell) 90%, var(--bg-primary));
+}
+
+.callStageAudio .stagePlaceholder {
+  background: transparent;
+}
+
+.stagePlaceholderName {
+  position: absolute;
+  left: var(--space-4);
+  right: var(--space-4);
+  text-align: center;
+  top: calc(50% + var(--direct-call-audio-ring-size) / 2 + 1.1rem);
+  font-size: clamp(1.05rem, 2.2vw, 1.35rem);
+  font-weight: 700;
+  color: rgba(255 255 255 / 0.92);
+  letter-spacing: -0.015em;
+  pointer-events: none;
+}
+
+.stagePlaceholderStatus {
+  position: absolute;
+  left: var(--space-4);
+  right: var(--space-4);
+  text-align: center;
+  top: calc(50% + var(--direct-call-audio-ring-size) / 2 + 1.1rem + 1.8rem);
+  font-size: 0.82rem;
+  color: rgba(255 255 255 / 0.52);
+  font-variant-numeric: tabular-nums;
+  pointer-events: none;
+}
+
+.stageMeta {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  --info-stack-gap: 0.12rem;
+  padding: 0.8rem 0.92rem 0.78rem;
+  background: color-mix(in srgb, var(--bg-primary) 62%, transparent);
+}
+
+.stageVisualBadge {
+  position: absolute;
+  top: 0.9rem;
+  left: 0.9rem;
+  z-index: var(--z-2);
+}
+
+.stageActionRail {
+  position: absolute;
+  top: 0.9rem;
+  right: 0.9rem;
+  z-index: var(--z-2);
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+/* Reusable: lift later. Stage action shells overlap with compact call-control language. */
+.stageActionIconBtn {
+  --icon-button-size: 34px;
+  --icon-button-border: color-mix(in srgb, var(--panel-border-soft) 88%, transparent);
+  --icon-button-border-hover: color-mix(in srgb, var(--accent) 28%, var(--panel-border-soft));
+  --icon-button-bg: color-mix(in srgb, var(--panel-header-bg) 82%, transparent);
+  --icon-button-bg-hover: color-mix(in srgb, var(--panel-header-bg) 68%, transparent);
+  --icon-button-bg-active: color-mix(in srgb, var(--panel-header-bg) 62%, transparent);
+  --icon-button-color: var(--text-primary);
+  --icon-button-color-hover: var(--text-primary);
+  --icon-button-shadow: none;
+  --icon-button-shadow-hover: none;
+  --icon-button-transform-hover: none;
+  --icon-button-blur: 0;
+}
+
+.audioAvatar {
+  --avatar-size: var(--direct-call-avatar-size);
+  --avatar-font-size: var(--direct-call-avatar-font-size);
+  --avatar-shadow: none;
+  position: relative;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+.stageAudioPulse {
+  position: absolute;
+  width: var(--direct-call-audio-ring-size);
+  aspect-ratio: 1 / 1;
+  border-radius: 999px;
+  /* Functional exception: active-audio ring is a real speaking-state cue, not decorative glow. */
+  border: 2px solid color-mix(in srgb, var(--accent) 58%, transparent);
+  background: transparent;
+  opacity: 1;
+  transition: border-color 0.14s ease, background-color 0.14s ease;
+  pointer-events: none;
+  z-index: var(--z-0);
+}
+
+.stageAudioPulseActive {
+  border-color: color-mix(in srgb, var(--accent) 58%, transparent);
+  background: transparent;
+}
+
+/* Feature-local exception: primary stage text must stay high-contrast over live media. */
+.peerName {
+  color: var(--text-primary);
+  font-weight: 700;
+  font-size: clamp(0.94rem, 1.6vw, 1.12rem);
+  letter-spacing: -0.008em;
+  text-align: left;
+  line-height: 1.2;
+}
+
+/* === remote companion floating window === */
+
+.remoteCompanionPreview {
+  position: absolute;
+  border-radius: 14px;
+  overflow: hidden;
+  border: 1px solid color-mix(in srgb, var(--panel-border-soft) 90%, transparent);
+  background: color-mix(in srgb, var(--panel-header-bg) 84%, var(--bg-secondary));
+  z-index: var(--z-3);
+  animation: callContentIn var(--motion-duration-slow) cubic-bezier(0.18, 0.9, 0.2, 1) 80ms both;
+  top: 0.72rem;
+  right: 0.72rem;
+  width: clamp(116px, 18vw, 188px);
+  aspect-ratio: 4 / 3;
+  z-index: var(--z-4);
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+.remoteCompanionPreview:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.remoteCompanionPreviewCamera {
+  aspect-ratio: 3 / 4;
+  width: clamp(112px, 16vw, 156px);
+}
+
+.remoteCompanionPreviewDocked {
+  width: clamp(104px, 13vw, 134px);
+}
+
+.remoteCompanionPreviewScreen video {
+  object-fit: contain;
+  background: color-mix(in srgb, var(--bg-primary) 92%, var(--surface-shell-strong));
+}
+
+.remoteCompanionPreview video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.remoteCompanionMeta {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.18rem;
+  padding: 0.38rem 0.46rem;
+  font-size: 0.6875rem;
+  color: var(--text-primary);
+  text-align: left;
+  background: color-mix(in srgb, var(--bg-primary) 64%, transparent);
+  z-index: var(--z-1);
+}
+
+.remoteCompanionName {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 600;
+}
+
+.remoteCompanionBadge {
+  align-self: flex-start;
+}
+
+/* === light theme === */
+
+:global(:root[data-theme="light"]) .callStage {
+  border-color: var(--border-subtle);
+  background: color-mix(in srgb, var(--panel-header-bg) 72%, white);
+}
+
+:global(:root[data-theme="light"]) .stageMeta {
+  background: color-mix(in srgb, var(--panel-header-bg) 18%, transparent);
+}
+
+:global(:root[data-theme="light"]) .peerName {
+  color: var(--text-primary);
+}
+
+/* === responsive === */
+
+@media (max-width: 760px) {
+  .remoteCompanionPreview {
+    top: var(--space-3);
+    width: 104px;
+  }
+
+  .remoteCompanionPreviewDocked {
+    position: static;
+    inset: auto;
+    width: min(132px, 36vw);
+    margin-top: 0.58rem;
+    margin-left: auto;
+    margin-right: 0;
+    z-index: var(--z-2);
+  }
+
+  .callStageCamera {
+    height: min(54dvh, calc(100dvh - 300px));
+    min-height: 240px;
+  }
+
+  .callStageScreen {
+    max-height: min(50dvh, calc(100dvh - 320px));
+  }
+
+  .callStageCompact {
+    --direct-call-avatar-size: clamp(78px, 20vw, 106px);
+    --direct-call-avatar-font-size: clamp(1.2rem, 5.3vw, 1.62rem);
+    --direct-call-audio-ring-size: calc(var(--direct-call-avatar-size) + 20px);
+    width: min(100%, 320px);
+    max-height: 240px;
+  }
+
+  .callStageAudio.callStageCompact {
+    width: 100%;
+    max-height: none;
+    --direct-call-avatar-size: clamp(94px, 22vw, 140px);
+    --direct-call-avatar-font-size: clamp(1.45rem, 5.5vw, 2.1rem);
+    --direct-call-audio-ring-size: calc(var(--direct-call-avatar-size) + 24px);
+  }
+
+  .callSurfaceScreenFocused {
+    align-items: stretch;
+  }
+}
+
+@media (orientation: portrait) {
+  .callStageCamera {
+    height: min(68vh, calc(100vh - 284px));
+    height: min(68dvh, calc(100dvh - 284px));
+    min-height: clamp(300px, 44dvh, 420px);
+  }
+
+  .callStageScreen {
+    max-height: min(52vh, calc(100vh - 340px));
+    max-height: min(52dvh, calc(100dvh - 340px));
+  }
+}
+
+@media (max-width: 720px) {
+  .callStage {
+    border-radius: 18px;
+  }
+}
+
+@media (max-width: 640px) {
+  .callSurface {
+    flex: 1 1 0;
+    min-height: 0;
+  }
+
+  .callSurface:has(.callStageCompact) {
+    flex: 1 1 0;
+  }
+
+  .callStageCamera {
+    height: 100%;
+    min-height: 0;
+    /* Keep the dvh fallback for very narrow-height orientations */
+    min-height: max(180px, 30dvh);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .remoteCompanionPreview {
+    animation: none !important;
+    transition: none !important;
+  }
+}

@@ -1,0 +1,41 @@
+/*
+ * DirectCallSurfaceRenderer — notice layer positioning for direct calls.
+ *
+ * Owns:
+ * - noticeLayer: fixed safe-area positioned container for inline notices
+ * - notice: individual notice chip width + entrance animation
+ *
+ * Does not own notice visual surface (that is InlineNotice's contract).
+ *
+ * Banned-pattern check: clean.
+ */
+
+@keyframes noticeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+.noticeLayer {
+  position: fixed;
+  top: calc(var(--safe-top) + 10px);
+  left: 0;
+  right: 0;
+  display: flex;
+  justify-content: center;
+  pointer-events: none;
+  z-index: var(--z-320);
+}
+
+/* Migrated: InlineNotice owns the surface language; this class only positions it. */
+.notice {
+  pointer-events: auto;
+  min-width: 220px;
+  max-width: min(92vw, 520px);
+  animation: noticeIn var(--motion-duration-base) cubic-bezier(0.18, 0.9, 0.2, 1) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .notice {
+    animation: none !important;
+  }
+}

@@ -7,6 +7,7 @@ import {
   getPushPreferences,
   getVapidPublicKey,
   isPushEnabled,
+  isFcmAvailable,
   upsertPushPreferences,
 } from "../../services/push.js";
 
@@ -31,6 +32,10 @@ const PushPreferencesBodySchema = z.object({
   groupMessagesEnabled: z.boolean(),
   callInvitesEnabled: z.boolean(),
   showSender: z.boolean(),
+});
+
+const FcmTokenBodySchema = z.object({
+  fcmToken: z.string().min(1).max(4096),
 });
 
 export async function pushRoutes(fastify: FastifyInstance): Promise<void> {
@@ -182,6 +187,84 @@ export async function pushRoutes(fastify: FastifyInstance): Promise<void> {
       const body = parseOrReply(reply, PushPreferencesBodySchema, request.body);
       if (!body) return;
       return upsertPushPreferences(request.auth.sub, body);
+    }
+  );
+
+  // ── FCM device token endpoints (optional) ────────────────────────────
+
+  fastify.post(
+    "/fcm/token",
+    { preHandler: requireAuth },
+    async (request, reply) => {
+      if (!isFcmAvailable()) {
+        return reply.code(503).send({ error: "FCM is not configured on this server" });
+      }
+      const body = parseOrReply(reply, FcmTokenBodySchema, request.body);
+      if (!body) return;
+      const { sub: userId, deviceId } = request.auth;
+
+      await query(
+        `INSERT INTO push_device_tokens (user_id, device_id, fcm_token, updated_at)
+         VALUES ($1, $2, $3, now())
+         ON CONFLICT (fcm_token)
+         DO UPDATE SET
+           user_id = EXCLUDED.user_id,
+           device_id = EXCLUDED.device_id,
+           revoked_at = NULL,
+           updated_at = now()`,
+        [userId, deviceId, body.fcmToken]
+      );
+
+      return reply.code(204).send();
+    }
+  );
+
+  fastify.delete(
+    "/fcm/token",
+    { preHandler: requireAuth },
+    async (request, reply) => {
+      const body = parseOrReply(reply, FcmTokenBodySchema, request.body);
+      if (!body) return;
+      const { sub: userId } = request.auth;
+
+      await query(
+        `UPDATE push_device_tokens
+         SET revoked_at = now(), updated_at = now()
+         WHERE user_id = $1 AND fcm_token = $2 AND revoked_at IS NULL`,
+        [userId, body.fcmToken]
+      );
+
+      return reply.code(204).send();
+    }
+  );
+
+  fastify.get(
+    "/fcm/tokens",
+    { preHandler: requireAuth },
+    async (request) => {
+      const rows = await query<{
+        id: string;
+        created_at: string;
+        updated_at: string;
+        device_id: string | null;
+      }>(
+        `SELECT id, device_id, created_at, updated_at
+         FROM push_device_tokens
+         WHERE user_id = $1
+           AND revoked_at IS NULL
+         ORDER BY updated_at DESC`,
+        [request.auth.sub]
+      );
+
+      return {
+        tokens: rows.map((row) => ({
+          id: row.id,
+          deviceId: row.device_id,
+          createdAt: new Date(row.created_at).toISOString(),
+          updatedAt: new Date(row.updated_at).toISOString(),
+          currentDevice: row.device_id === request.auth.deviceId,
+        })),
+      };
     }
   );
 }

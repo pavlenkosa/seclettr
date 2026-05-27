@@ -35,7 +35,7 @@ import {
   setPinHash,
   verifyPin,
 } from "@/lib/app-lock-password";
-import type { AuthState } from "./auth-types";
+import type { AuthState, RestoreSessionResult } from "./auth-types";
 import {
   buildLockedState,
   buildReadyState,
@@ -47,8 +47,8 @@ import {
   revokeServerSession,
   wipeLocalDeviceMaterial,
 } from "./auth-session-restore";
-import { nativeStorageRemove } from "@/lib/native-storage";
-import { storePinBiometric, clearPinBiometric } from "@/lib/native-biometric";
+import { clearNativeRefreshToken, nativeStorageRemove } from "@/lib/native-storage";
+import { clearPinBiometric } from "@/lib/native-biometric";
 import {
   onNativePushAuthFailure,
   startNativePushService,
@@ -201,7 +201,20 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       set({ pinEnabled });
       clearLegacyLockSnapshotStorage();
 
-      const restoreResult = await resolveRestoredSession();
+      // Wrap resolveRestoredSession in a single retry for transient network failures.
+      // On Android the radio may not be ready immediately after the process is killed.
+      let restoreResult!: RestoreSessionResult;
+      try {
+        restoreResult = await resolveRestoredSession();
+      } catch (firstErr) {
+        if (firstErr instanceof Error && firstErr.message === "network_error") {
+          logger.warn("[auth] network error on restore — retrying in 1.5s");
+          await new Promise<void>((resolve) => setTimeout(resolve, 1500));
+          restoreResult = await resolveRestoredSession(); // second attempt; may throw → outer catch
+        } else {
+          throw firstErr;
+        }
+      }
 
       if (restoreResult.outcome === "signed_out") {
         suspendRealtimeSession("restore-signed-out");
@@ -241,6 +254,14 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
       return true;
     } catch (err) {
+      // Two consecutive network failures — genuinely offline (or first non-network error).
+      // Keep authLifecycle: "restoring" with error flag so App can render the retry UI
+      // instead of the scary recovery screen.
+      if (err instanceof Error && err.message === "network_error") {
+        logger.warn("[auth] session restore failed — no network after retry");
+        set({ error: "network_error" });
+        return false;
+      }
       logger.warn("[auth] unexpected error during session restore", err);
       suspendRealtimeSession("restore-error");
       set(buildRecoveryRequiredState(
@@ -352,6 +373,13 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       void startNativePushService(restoreResult.session.accessToken);
       return true;
     } catch (err) {
+      // Network failure during session restore: keep the screen locked so the user
+      // can retry. Destroying the session for a transient connectivity blip is wrong.
+      if (err instanceof Error && err.message === "network_error") {
+        logger.warn("[auth] network error during unlock — staying locked for retry");
+        set({ authOperation: "idle", error: "network_error" });
+        return false;
+      }
       logger.warn("[auth] unexpected error during unlock", err);
       suspendRealtimeSession("unlock-error");
       set(buildRecoveryRequiredState(
@@ -373,10 +401,11 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     } = await ensureExportableStorageKey(state.storageKey);
     await protectPersistedStorageKeyWithPin(exportableStorageKey, pin);
     await setPinHash(pin);
-    // Store PIN in biometric secure enclave so FaceID/TouchID/Fingerprint can retrieve it.
-    // Await the result: only mark biometric as enabled if the credential was actually stored.
-    const biometricStored = await storePinBiometric(pin).catch(() => false);
-    setBiometricEnabledFlag(biometricStored);
+    // Any previously stored biometric credential now holds the old PIN — clear it.
+    // Biometric unlock must be re-enabled explicitly via the Security settings UI
+    // after setting or changing the passcode.
+    void clearPinBiometric();
+    setBiometricEnabledFlag(false);
     set({
       pinEnabled: true,
       storageKey: exportableStorageKey,
@@ -398,6 +427,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
   logout: async () => {
     void nativeStorageRemove(BACKGROUND_POLL_TOKEN_KEY);
+    void clearNativeRefreshToken();
     void stopNativePushService();
     await clearLocalSessionSecrets({
       storageKey: get().storageKey,

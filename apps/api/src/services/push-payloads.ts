@@ -59,6 +59,10 @@ function truncateText(text: string): string {
 }
 
 const MARK_READ_ACTION = { action: "mark-read", title: "Mark as read" };
+const REPLY_ACTION = { action: "reply", title: "Reply" };
+const ANSWER_ACTION = { action: "answer", title: "Answer" };
+const DECLINE_ACTION = { action: "decline", title: "Decline" };
+const JOIN_ACTION = { action: "join", title: "Join" };
 
 /**
  * Returns a short, emoji-prefixed description for a plain message body, or
@@ -130,13 +134,15 @@ export function buildDirectMessagePushPayload({
     tag: `msg:${senderUserId}`,
     timestamp: Date.now(),
     renotify: true,
-    actions: [MARK_READ_ACTION],
+    actions: [REPLY_ACTION, MARK_READ_ACTION],
     data: {
       type: "message",
       fromUserId: senderUserId,
       fromUsername: preferences.showSender ? (senderUsername ?? "") : "",
       messageKind: hasAttachment ? "attachment" : "text",
       url: `/?chat=${encodeURIComponent(senderUserId)}`,
+      replyConversationId: senderUserId,
+      replyType: "dm",
     },
   };
 }
@@ -180,7 +186,7 @@ export function buildGroupMessagePushPayload({
     tag: `group:${groupId}`,
     timestamp: Date.now(),
     renotify: true,
-    actions: [MARK_READ_ACTION],
+    actions: [REPLY_ACTION, MARK_READ_ACTION],
     data: {
       type: "group_message",
       groupId,
@@ -188,6 +194,8 @@ export function buildGroupMessagePushPayload({
       fromUserId: senderUserId,
       fromUsername: preferences.showSender ? (senderUsername ?? "") : "",
       url: `/?group=${encodeURIComponent(groupId)}`,
+      replyConversationId: groupId,
+      replyType: "group",
     },
   };
 }
@@ -229,6 +237,7 @@ export function buildGroupCallStartedPushPayload({
     timestamp: Date.now(),
     renotify: true,
     requireInteraction: true,
+    actions: [JOIN_ACTION, DECLINE_ACTION],
     data: {
       type: "group_call_invite",
       callId,
@@ -267,6 +276,7 @@ export function buildCallInvitePushPayload({
     timestamp: Date.now(),
     renotify: true,
     requireInteraction: true,
+    actions: [ANSWER_ACTION, DECLINE_ACTION],
     data: {
       type: "call_invite",
       callId,

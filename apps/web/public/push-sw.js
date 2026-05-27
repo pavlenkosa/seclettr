@@ -158,6 +158,7 @@ self.addEventListener("notificationclick", (event) => {
   const data = event.notification.data || {};
   const action = event.action || "";
 
+  // Actions that only signal the client app (no navigation needed)
   if (action === "mark-read") {
     event.waitUntil((async () => {
       const allClients = await clients.matchAll({ type: "window", includeUncontrolled: true });
@@ -167,6 +168,13 @@ self.addEventListener("notificationclick", (event) => {
     })());
     return;
   }
+
+  // All other actions (reply, answer, decline, join) navigate to data.url
+  // - reply: opens chat with composer focus
+  // - answer: opens chat for the incoming call
+  // - join: opens group with active call
+  // - decline: web SW cannot make API calls (no auth), so just opens the app
+  // - (no explicit action): default click behavior
 
   const targetUrl = normalizeTargetUrl(data.url);
 

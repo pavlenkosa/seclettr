@@ -25,6 +25,7 @@ import { logger } from "./lib/logger.js";
 import { useInactivityLock } from "./lib/useInactivityLock";
 import { useAppForegroundResync } from "./lib/useAppForegroundResync";
 import { useAuthStore } from "./stores/auth";
+import { useI18n } from "./i18n";
 
 /** 15 minutes — configurable in Settings (future). */
 const LOCK_TIMEOUT_MS = 15 * 60 * 1000;
@@ -175,11 +176,14 @@ export function App() {
     clearError: state.clearError,
   })));
 
+  const { t } = useI18n();
+
   const hasActiveSession = authLifecycle === "ready" && Boolean(userId && identityDhKeyPair);
   const isSessionLocked = authLifecycle === "locked" && pinEnabled && Boolean(userId);
   const isBootstrapping = authLifecycle === "restoring";
   const shouldForceRecovery = authLifecycle === "recovery_required";
   const isUnlocking = authOperation === "unlocking";
+  const lockErrorMessage = authError === "network_error" ? t("lock.pin.networkError") : undefined;
 
   const [isDevToolsVisible, setIsDevToolsVisible] = useState(() => readDevToolsVisibility());
   const hasStarted = useRef(false);
@@ -283,6 +287,7 @@ export function App() {
           username={username}
           isUnlocking={isUnlocking}
           pinWrong={authError === "pin_wrong"}
+          errorMessage={lockErrorMessage}
           onUnlock={(pin) => {
             clearError();
             void unlock(pin);
@@ -296,6 +301,14 @@ export function App() {
   }
 
   if (isBootstrapping) {
+    if (authError === "network_error") {
+      return (
+        <AppBootSkeleton
+          offline
+          onRetry={() => { void tryRestoreSession(); }}
+        />
+      );
+    }
     return loadingFallback;
   }
 

@@ -32,8 +32,11 @@ public class NativePushPlugin extends Plugin {
     static final String ACTION_STOP = "stop";
     static final String ACTION_UPDATE_TOKEN = "updateToken";
     static final String EVENT_AUTH_FAILURE = "pushAuthFailure";
+    static final String EVENT_FCM_TOKEN = "fcmTokenReceived";
 
     private static NativePushPlugin activeInstance = null;
+    private String fcmToken = null;
+    private boolean fcmActive = false;
 
     public static NativePushPlugin getActiveInstance() {
         return activeInstance;
@@ -49,6 +52,26 @@ public class NativePushPlugin extends Plugin {
     protected void handleOnDestroy() {
         activeInstance = null;
         super.handleOnDestroy();
+    }
+
+    void notifyFcmToken(String token) {
+        fcmToken = token;
+        JSObject result = new JSObject();
+        result.put("token", token);
+        notifyListeners(EVENT_FCM_TOKEN, result);
+    }
+
+    @PluginMethod
+    public void getFcmToken(PluginCall call) {
+        JSObject result = new JSObject();
+        result.put("token", fcmToken != null ? fcmToken : "");
+        call.resolve(result);
+    }
+
+    @PluginMethod
+    public void useFcm(PluginCall call) {
+        fcmActive = true;
+        call.resolve();
     }
 
     @PluginMethod
@@ -105,6 +128,12 @@ public class NativePushPlugin extends Plugin {
             return;
         }
 
+        // When FCM is active, skip the WebSocket ForegroundService
+        if (fcmActive) {
+            call.resolve();
+            return;
+        }
+
         Intent intent = new Intent(getContext(), PushForegroundService.class);
         intent.setAction(ACTION_START);
         intent.putExtra("serverUrl", serverUrl);
@@ -125,14 +154,21 @@ public class NativePushPlugin extends Plugin {
 
         try {
             getContext().startService(intent);
-            call.resolve();
         } catch (Exception e) {
             call.reject("Failed to stop push service: " + e.getMessage());
+            return;
         }
+
+        call.resolve();
     }
 
     @PluginMethod
     public void updateToken(PluginCall call) {
+        if (fcmActive) {
+            call.resolve();
+            return;
+        }
+
         String token = call.getString("token");
         if (token == null) {
             call.reject("token is required");
@@ -154,7 +190,7 @@ public class NativePushPlugin extends Plugin {
     @PluginMethod
     public void isRunning(PluginCall call) {
         JSObject result = new JSObject();
-        result.put("value", PushForegroundService.isRunning());
+        result.put("value", fcmActive || PushForegroundService.isRunning());
         call.resolve(result);
     }
 

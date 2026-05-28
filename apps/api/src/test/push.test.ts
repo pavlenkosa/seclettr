@@ -140,7 +140,7 @@ describe("push payload preferences", () => {
     expect(payload?.body).toBe("New group message");
     expect(payload?.body).not.toContain("Secret");
     // Sender identity must be suppressed
-    expect(payload?.data.fromUsername).toBe("");
+    expect(payload?.data?.['fromUsername']).toBe("");
   });
 
   it("builds group-message push with sender and text when privacy is enabled", () => {

@@ -35,6 +35,13 @@ esac
 echo "[android] syncing web assets into Capacitor shell"
 (cd "${APP_DIR}" && pnpm run android:sync)
 
+BACKGROUND_RUNNER_AAR="${APP_DIR}/node_modules/@capacitor/background-runner/android/src/main/libs/android-js-engine-release.aar"
+if [[ ! -f "${BACKGROUND_RUNNER_AAR}" ]]; then
+  echo "[android] ERROR: missing ${BACKGROUND_RUNNER_AAR}" >&2
+  echo "[android] run pnpm install and verify @capacitor/background-runner package is installed" >&2
+  exit 1
+fi
+
 echo "[android] building ${MODE} artifacts"
 cd "${ANDROID_DIR}"
 

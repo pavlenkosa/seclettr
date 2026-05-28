@@ -40,7 +40,7 @@ jobs:
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
         with:
-          version: 8.15.9
+          version: 11.4.0
 
       - name: Setup Node.js
         uses: actions/setup-node@v5
@@ -161,6 +161,10 @@ jobs:
               --name "${{ steps.meta.outputs.bundle_prefix }}" \
               --tag  "${{ steps.meta.outputs.image_tag }}"
           fi
+
+      - name: Build workspace packages (required for Android sync)
+        shell: bash
+        run: pnpm --filter @seclettr/protocol run build && pnpm --filter @seclettr/crypto run build
 
       - name: Build Android release artifacts
         shell: bash

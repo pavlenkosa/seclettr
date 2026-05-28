@@ -1,5 +1,5 @@
 FROM node:22-alpine AS base
-RUN corepack enable && corepack prepare pnpm@8.15.0 --activate
+RUN corepack enable && corepack prepare pnpm@11.4.0 --activate
 WORKDIR /app
 
 FROM base AS deps
@@ -21,7 +21,7 @@ RUN pnpm --filter @seclettr/protocol build
 RUN pnpm --filter @seclettr/api build
 
 FROM node:22-alpine AS production
-RUN corepack enable && corepack prepare pnpm@8.15.0 --activate
+RUN corepack enable && corepack prepare pnpm@11.4.0 --activate
 ARG SECLETTR_VERSION=0.0.0
 ARG GIT_REVISION=
 ARG BUILD_TIMESTAMP=

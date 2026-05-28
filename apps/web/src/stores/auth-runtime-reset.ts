@@ -15,6 +15,7 @@ import { clearPlainAttachmentBlobCache } from "@/chats/runtime/plain-attachment-
 import { useGroupsStore } from "@/stores/groups";
 import { useMessagesStore } from "@/stores/messages";
 import { usePlainGroupsStore, usePlainMessagesStore, usePlainPinsStore } from "@/stores/plain";
+import { useSavedMessagesStore } from "@/stores/saved/useSavedMessagesStore";
 
 export function clearEncryptedRuntimeState(): void {
   useMessagesStore.getState().reset();
@@ -27,4 +28,8 @@ export function clearFullRuntimeState(): void {
   usePlainGroupsStore.getState().reset();
   usePlainPinsStore.getState().reset();
   clearPlainAttachmentBlobCache();
+  // SEC: saved messages are userId-keyed in localStorage; reset clears both
+  // the in-memory state and the localStorage entry so a subsequent login
+  // as a different user does not see the previous session's saved messages.
+  useSavedMessagesStore.getState().reset();
 }

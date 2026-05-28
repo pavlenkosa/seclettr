@@ -166,18 +166,22 @@ export function buildGroupMessagePushPayload({
     : normalizedGroupName;
   const mediaLine = formatMediaSummary(mediaSummary);
   let body: string;
-  if (messageText) {
-    body = preferences.showSender && senderUsername
+  if (!preferences.showSender) {
+    // Privacy mode: hide message content and sender identity entirely,
+    // matching the DM behaviour where showSender=false → "New message".
+    body = "New group message";
+  } else if (messageText) {
+    body = senderUsername
       ? `@${senderUsername}: ${truncateText(messageText)}`
       : truncateText(messageText);
   } else if (mediaLine) {
-    body = preferences.showSender && senderUsername
+    body = senderUsername
       ? `@${senderUsername} in ${normalizedGroupName}: ${mediaLine}`
       : `${normalizedGroupName}: ${mediaLine}`;
   } else {
-    body = preferences.showSender && senderUsername
+    body = senderUsername
       ? `@${senderUsername} sent a new group message in ${normalizedGroupName}`
-      : "New encrypted group message";
+      : "New group message";
   }
 
   return {

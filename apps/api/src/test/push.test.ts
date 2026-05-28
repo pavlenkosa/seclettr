@@ -90,7 +90,7 @@ describe("push payload preferences", () => {
     expect(payload).toBeNull();
   });
 
-  it("builds group-message push with sender privacy applied", () => {
+  it("builds group-message push with sender privacy applied (no text)", () => {
     const payload = buildGroupMessagePushPayload({
       senderUserId: "sender-1",
       senderUsername: "alice",
@@ -106,7 +106,7 @@ describe("push payload preferences", () => {
 
     expect(payload).toMatchObject({
       title: "Design team",
-      body: "New encrypted group message",
+      body: "New group message",
       tag: "group:group-1",
       data: {
         groupId: "group-1",
@@ -116,6 +116,53 @@ describe("push payload preferences", () => {
         url: "/?group=group-1",
       },
     });
+  });
+
+  it("hides group message text when sender privacy is disabled (SEC: showSender=false must not leak content)", () => {
+    // Previously group push leaked messageText even with showSender=false,
+    // while DM push correctly returned "New encrypted message".
+    const payload = buildGroupMessagePushPayload({
+      senderUserId: "sender-1",
+      senderUsername: "alice",
+      groupId: "group-1",
+      groupName: "Team",
+      messageText: "Secret project details nobody should see",
+      preferences: {
+        directMessagesEnabled: true,
+        groupMessagesEnabled: true,
+        callInvitesEnabled: true,
+        showSender: false,
+      },
+    });
+
+    expect(payload).not.toBeNull();
+    // Body must NOT contain any part of the actual message text
+    expect(payload?.body).toBe("New group message");
+    expect(payload?.body).not.toContain("Secret");
+    // Sender identity must be suppressed
+    expect(payload?.data.fromUsername).toBe("");
+  });
+
+  it("builds group-message push with sender and text when privacy is enabled", () => {
+    const payload = buildGroupMessagePushPayload({
+      senderUserId: "sender-1",
+      senderUsername: "alice",
+      groupId: "group-1",
+      groupName: "Team",
+      messageText: "Hello everyone",
+      preferences: {
+        directMessagesEnabled: true,
+        groupMessagesEnabled: true,
+        callInvitesEnabled: true,
+        showSender: true,
+      },
+    });
+
+    expect(payload).toMatchObject({
+      title: "@alice",
+      data: { fromUsername: "alice" },
+    });
+    expect(payload?.body).toContain("Hello everyone");
   });
 
   it("suppresses call-invite push when call notifications are disabled", () => {

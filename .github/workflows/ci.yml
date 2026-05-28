@@ -53,13 +53,13 @@ jobs:
     steps:
       - uses: actions/checkout@v5
 
+      - uses: pnpm/action-setup@v6
+
       - uses: actions/setup-node@v5
         with:
           node-version: 22
-
-      - uses: pnpm/action-setup@v6
-        with:
-          cache: true
+          cache: pnpm
+          package-manager-cache: false
 
       - run: pnpm install --frozen-lockfile
 

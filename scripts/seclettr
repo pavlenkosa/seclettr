@@ -1,0 +1,229 @@
+#!/usr/bin/env bash
+# Seclettr CLI — unified developer toolchain.
+set -euo pipefail
+
+SECLETTR_CLI_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+ROOT_DIR="$(cd -- "$SECLETTR_CLI_DIR/.." && pwd)"
+
+source "$SECLETTR_CLI_DIR/common.sh"
+source "$SECLETTR_CLI_DIR/lib/common.sh"
+
+main() {
+  if [[ $# -eq 0 ]]; then
+    seclettr_help
+    exit 0
+  fi
+
+  case "$1" in
+    help|--help|-h)
+      seclettr_help
+      exit 0
+      ;;
+    --version|-V)
+      node -e "console.log(require('$ROOT_DIR/package.json').version)" 2>/dev/null || echo "?"
+      exit 0
+      ;;
+    dev)    shift; cmd_dev "$@" ;;
+    release) shift; cmd_release "$@" ;;
+    server-install) shift; cmd_server_install "$@" ;;
+    ghcr)   shift; cmd_ghcr "$@" ;;
+    *)
+      echo -e "${RED}ERR${RST} Unknown command: $1"
+      echo "  Run 'seclettr help' for usage."
+      exit 1
+      ;;
+  esac
+}
+
+# ── dev ─────────────────────────────────────────────────────────────────────────
+
+cmd_dev() {
+  if [[ $# -eq 0 ]]; then
+    echo -e "${RED}ERR${RST} Usage: seclettr dev <up|down|install|certs|status|logs|test-env>"
+    exit 1
+  fi
+
+  case "$1" in
+    up)       shift; seclettr_logo; cmd_dev_up "$@" ;;
+    down)     shift; seclettr_logo; cmd_dev_down "$@" ;;
+    install)  shift; seclettr_logo; cmd_dev_install "$@" ;;
+    certs)    shift; seclettr_logo; cmd_dev_certs "$@" ;;
+    status|ps) shift; seclettr_logo; cmd_dev_status "$@" ;;
+    logs)     shift; seclettr_logo; cmd_dev_logs "$@" ;;
+    test-env) shift; seclettr_logo; cmd_dev_test_env "$@" ;;
+    *)
+      echo -e "${RED}ERR${RST} Unknown dev command: $1"
+      exit 1
+      ;;
+  esac
+}
+
+cmd_dev_up() {
+  local lan=false
+  local passthrough_args=()
+
+  while [[ $# -gt 0 ]]; do
+    case "$1" in
+      --lan|-l) lan=true; shift ;;
+      --) shift; passthrough_args+=("$@"); break ;;
+      *) passthrough_args+=("$1"); shift ;;
+    esac
+  done
+
+  if [[ "$lan" == "true" ]]; then
+    log_step "Starting dev environment in LAN mode..."
+    exec bash "$SECLETTR_CLI_DIR/dev/up-lan.sh" "${passthrough_args[@]}"
+  else
+    log_step "Starting dev environment (localhost)..."
+    exec bash "$SECLETTR_CLI_DIR/dev/up.sh" "${passthrough_args[@]}"
+  fi
+}
+
+cmd_dev_down() {
+  local has_volumes=false
+  local passthrough_args=()
+
+  for arg in "$@"; do
+    if [[ "$arg" == "--volumes" ]]; then
+      has_volumes=true
+    fi
+    passthrough_args+=("$arg")
+  done
+
+  if [[ "$has_volumes" == "true" ]]; then
+    log_warn "This will remove all Docker volumes (database data, minio data)!"
+    if ! seclettr_confirm "Remove volumes?" "n"; then
+      log_ok "Cancelled"
+      exit 0
+    fi
+  fi
+
+  exec bash "$SECLETTR_CLI_DIR/dev/down.sh" "${passthrough_args[@]}"
+}
+
+cmd_dev_status() {
+  resolve_docker_cmd
+  local project="${1:-seclettr-dev}"
+
+  if ! docker_cli ps --filter "label=com.docker.compose.project=$project" --format '{{.Names}}' 2>/dev/null | grep -q .; then
+    log_warn "No containers found for project '$project'"
+    echo "  Start the stack with: seclettr dev up"
+    exit 0
+  fi
+
+  echo -e "  ${BLD}Project:${RST} $project"
+  echo ""
+  docker_cli ps --filter "label=com.docker.compose.project=$project" \
+    --format '  {{.Names}}\t{{.Status}}\t{{.Ports}}' \
+    | column -t -s $'\t' \
+    | while IFS= read -r line; do
+      if echo "$line" | grep -q "Up "; then
+        echo -e "  ${GRN}●${RST} $line"
+      else
+        echo -e "  ${RED}○${RST} $line"
+      fi
+    done
+  echo ""
+}
+
+cmd_dev_logs() {
+  local project="seclettr-dev"
+  local service=""
+  local follow=false
+
+  while [[ $# -gt 0 ]]; do
+    case "$1" in
+      --project|-p) project="$2"; shift 2 ;;
+      -f|--follow) follow=true; shift ;;
+      -*) shift ;;
+      *) service="$1"; shift ;;
+    esac
+  done
+
+  resolve_docker_cmd
+  local log_args=("logs")
+  [[ "$follow" == "true" ]] && log_args+=("-f")
+  [[ -n "$service" ]] && log_args+=("$service")
+
+  docker_compose \
+    -p "$project" \
+    -f "$INFRA_DIR/docker-compose.yml" \
+    -f "$INFRA_DIR/docker-compose.dev.yml" \
+    --profile dev-turn \
+    --profile dev-web \
+    --env-file "$DEFAULT_DEV_ENV_FILE" \
+    "${log_args[@]}"
+}
+
+cmd_dev_install() {
+  exec bash "$SECLETTR_CLI_DIR/dev/install.sh" "$@"
+}
+
+cmd_dev_certs() {
+  exec bash "$SECLETTR_CLI_DIR/dev/certs.sh" "$@"
+}
+
+cmd_dev_test_env() {
+  exec bash "$SECLETTR_CLI_DIR/dev/test-env.sh" "$@"
+}
+
+# ── release ─────────────────────────────────────────────────────────────────────
+
+cmd_release() {
+  if [[ $# -eq 0 ]]; then
+    echo -e "${RED}ERR${RST} Usage: seclettr release <build|install>"
+    exit 1
+  fi
+
+  case "$1" in
+    build)
+      shift
+      seclettr_logo
+      exec bash "$SECLETTR_CLI_DIR/release/build.sh" "$@"
+      ;;
+    install)
+      shift
+      seclettr_logo
+      exec bash "$SECLETTR_CLI_DIR/release/install.sh" "$@"
+      ;;
+    *)
+      echo -e "${RED}ERR${RST} Unknown release command: $1"
+      exit 1
+      ;;
+  esac
+}
+
+# ── server-install ──────────────────────────────────────────────────────────────
+
+cmd_server_install() {
+  seclettr_logo
+  exec bash "$SECLETTR_CLI_DIR/server/install.sh" "$@"
+}
+
+# ── ghcr ────────────────────────────────────────────────────────────────────────
+
+cmd_ghcr() {
+  if [[ $# -eq 0 ]]; then
+    echo -e "${RED}ERR${RST} Usage: seclettr ghcr <update>"
+    exit 1
+  fi
+
+  case "$1" in
+    update)
+      shift
+      seclettr_logo
+      if [[ "$*" != *"--apply"* ]]; then
+        log_warn "Dry-run mode. Add --apply to actually pull images and restart."
+      fi
+      exec bash "$SECLETTR_CLI_DIR/ops/ghcr-update.sh" "$@"
+      ;;
+    *)
+      echo -e "${RED}ERR${RST} Unknown ghcr command: $1"
+      exit 1
+      ;;
+  esac
+}
+
+# ── Entry ──────────────────────────────────────────────────────────────────────
+
+main "$@"

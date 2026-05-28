@@ -29,10 +29,10 @@
   right: 0;
   z-index: var(--z-2);
   padding:
-    calc(env(safe-area-inset-top, 0px) + 0.7rem)
-    calc(env(safe-area-inset-right, 0px) + 0.75rem)
+    calc(var(--safe-top) + 0.7rem)
+    calc(var(--safe-right) + 0.75rem)
     0.8rem
-    calc(env(safe-area-inset-left, 0px) + 0.75rem);
+    calc(var(--safe-left) + 0.75rem);
   display: flex;
   align-items: flex-start;
   justify-content: space-between;

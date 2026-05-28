@@ -1,4 +1,4 @@
-import { forwardRef, useState, type MouseEvent as ReactMouseEvent } from "react";
+import { forwardRef, useState, type KeyboardEvent as ReactKeyboardEvent, type MouseEvent as ReactMouseEvent } from "react";
 import type { PlainFolder } from "@/stores/plain";
 import { IconChevronRight } from "@/components/ui/icons";
 import type { ConversationEntry } from "./conversation-list-helpers";
@@ -9,6 +9,7 @@ interface ConversationListPinMenuProps {
   readonly folders: PlainFolder[];
   readonly flipped?: boolean;
   readonly t: (key: string, params?: Record<string, string | number>) => string;
+  readonly onClose: () => void;
   readonly onTogglePin: (entry: ConversationEntry) => void;
   readonly onMoveToFolder: (entry: ConversationEntry, folderId: string) => void;
   readonly onRemoveFromFolder: (entry: ConversationEntry) => void;
@@ -22,6 +23,7 @@ function ConversationListPinMenu({
   folders,
   flipped = false,
   t,
+  onClose,
   onTogglePin,
   onMoveToFolder,
   onRemoveFromFolder,
@@ -47,7 +49,29 @@ function ConversationListPinMenu({
       tabIndex={-1}
       onClick={(e) => e.stopPropagation()}
       onMouseDown={(e) => e.stopPropagation()}
-      onKeyDown={(e) => e.stopPropagation()}
+      onKeyDown={(e: ReactKeyboardEvent<HTMLDivElement>) => {
+        e.stopPropagation();
+        if (e.key === "Escape") {
+          e.preventDefault();
+          onClose();
+          return;
+        }
+        if (e.key === "ArrowDown" || e.key === "ArrowUp" || e.key === "Home" || e.key === "End") {
+          e.preventDefault();
+          // Collect visible (non-aria-hidden) menu items.
+          const items = Array.from(
+            e.currentTarget.querySelectorAll<HTMLButtonElement>('button[role="menuitem"]')
+          ).filter((btn) => !btn.closest('[aria-hidden="true"]'));
+          if (!items.length) return;
+          const currentIdx = items.indexOf(document.activeElement as HTMLButtonElement);
+          let nextIdx: number;
+          if (e.key === "ArrowDown") nextIdx = currentIdx < 0 ? 0 : (currentIdx + 1) % items.length;
+          else if (e.key === "ArrowUp") nextIdx = currentIdx < 0 ? items.length - 1 : (currentIdx - 1 + items.length) % items.length;
+          else if (e.key === "Home") nextIdx = 0;
+          else nextIdx = items.length - 1;
+          items[nextIdx]?.focus();
+        }
+      }}
     >
       {/* Pin / Unpin */}
       <button

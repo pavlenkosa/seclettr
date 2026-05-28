@@ -24,6 +24,7 @@ import {
   getRecordModeLabel,
   useMediaDialogMountState,
 } from "./composer/message-composer-view-model";
+import { ComposerProvider } from "./composer/ComposerContext";
 import { MessageComposerShell } from "./composer/MessageComposerShell";
 
 interface Props {
@@ -200,47 +201,56 @@ const MessageComposerView = forwardRef<MessageComposerHandle, Props>(function Me
     : t("composer.aria.typeMessage");
 
   return (
-    <MessageComposerShell
-      isTextFocused={draft.isTextFocused}
-      replyTo={replyTo}
-      onClearReply={onClearReply}
-      clearReplyLabel={t("message.context.clearReply")}
-      isVideoRecording={isVideoRecording}
-      previewVideoRef={previewVideoRef}
-      recordingCopy={recordingCopy}
-      isRecording={isRecording}
-      recordingWaveformBars={recordingWaveformBars}
-      emojiPickerId={emojiPickerId}
-      draft={draft}
-      mediaSend={mediaSend}
-      emojiState={emojiState}
-      attachTitle={t("composer.title.attachFile")}
-      attachLabel={t("composer.aria.attachFile")}
-      pickerCameraLabel={t("composer.picker.camera")}
-      pickerGalleryLabel={t("composer.picker.gallery")}
-      pickerFileLabel={t("composer.picker.file")}
-      pickerCancelLabel={t("composer.picker.cancel")}
-      placeholder={composerPlaceholder}
-      textareaLabel={composerAriaLabel}
-      primaryAction={primaryAction}
-      showRecordModeChip={showRecordModeChip}
-      isRecordHintVisible={isRecordHintVisible}
-      recordHintText={t("composer.hint.switchRecordMode")}
-      currentRecordMode={currentRecordMode}
-      currentRecordModeLabel={currentRecordModeLabel}
-      recordModeToggleAriaLabel={t("composer.aria.switchRecordMode", { mode: nextRecordModeLabel })}
-      recordModeToggleTitle={t("composer.title.switchRecordMode", { mode: nextRecordModeLabel })}
-      primaryButtonDisabled={primaryButtonDisabled}
-      cancelRecordingAriaLabel={t("composer.aria.cancelRecording")}
-      cancelRecordingTitle={t("composer.title.cancelRecording")}
-      primaryButtonAriaLabel={primaryButtonCopy.ariaLabel}
-      primaryButtonTitle={primaryButtonCopy.title}
-      onToggleRecordMode={handleRecordModeToggle}
-      onCancelRecording={handleCancelRecording}
-      onPrimaryActionClick={handlePrimaryActionClick}
-      composerError={composerError}
-      dialogState={dialogState}
-    />
+    <ComposerProvider value={{
+      // Reply
+      replyTo,
+      onClearReply,
+      clearReplyLabel: t("message.context.clearReply"),
+      // Focus / error
+      isTextFocused: draft.isTextFocused,
+      composerError,
+      // Recording
+      isRecording,
+      isVideoRecording,
+      recordingCopy,
+      recordingWaveformBars,
+      previewVideoRef,
+      // Hook-result objects
+      draft,
+      emojiState,
+      mediaSend,
+      emojiPickerId,
+      dialogState,
+      // Primary action state
+      primaryAction,
+      showRecordModeChip,
+      isRecordHintVisible,
+      primaryButtonDisabled,
+      currentRecordMode,
+      // Callbacks
+      onToggleRecordMode: handleRecordModeToggle,
+      onCancelRecording: handleCancelRecording,
+      onPrimaryActionClick: handlePrimaryActionClick,
+      // Labels
+      attachTitle: t("composer.title.attachFile"),
+      attachLabel: t("composer.aria.attachFile"),
+      pickerCameraLabel: t("composer.picker.camera"),
+      pickerGalleryLabel: t("composer.picker.gallery"),
+      pickerFileLabel: t("composer.picker.file"),
+      pickerCancelLabel: t("composer.picker.cancel"),
+      placeholder: composerPlaceholder,
+      textareaLabel: composerAriaLabel,
+      recordHintText: t("composer.hint.switchRecordMode"),
+      currentRecordModeLabel,
+      recordModeToggleAriaLabel: t("composer.aria.switchRecordMode", { mode: nextRecordModeLabel }),
+      recordModeToggleTitle: t("composer.title.switchRecordMode", { mode: nextRecordModeLabel }),
+      cancelRecordingAriaLabel: t("composer.aria.cancelRecording"),
+      cancelRecordingTitle: t("composer.title.cancelRecording"),
+      primaryButtonAriaLabel: primaryButtonCopy.ariaLabel,
+      primaryButtonTitle: primaryButtonCopy.title,
+    }}>
+      <MessageComposerShell />
+    </ComposerProvider>
   );
 });
 

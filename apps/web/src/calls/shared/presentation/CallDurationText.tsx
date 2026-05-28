@@ -20,6 +20,12 @@ import {
 interface CallDurationTextProps extends Readonly<CallDurationClock> {
   readonly className?: string;
   readonly fallbackText?: string;
+  /**
+   * Accessible label for the timer element (e.g. "Call duration").
+   * When provided the element renders with `role="timer"` and `aria-label`,
+   * which tells screen readers this is a timer without announcing every tick.
+   */
+  readonly ariaLabel?: string;
 }
 
 export function CallDurationText({
@@ -27,6 +33,7 @@ export function CallDurationText({
   startedAtMs,
   className,
   fallbackText,
+  ariaLabel,
 }: Readonly<CallDurationTextProps>) {
   const [nowMs, setNowMs] = useState(() => Date.now());
   const isRunning = startedAtMs !== null && startedAtMs !== undefined;
@@ -50,9 +57,13 @@ export function CallDurationText({
     ? formatCallDuration(resolveCallDurationSeconds({ baseSeconds, startedAtMs }, nowMs))
     : fallbackText ?? formatCallDuration(baseSeconds);
 
-  if (className) {
-    return <span className={className}>{label}</span>;
-  }
-
-  return <>{label}</>;
+  return (
+    <span
+      className={className}
+      role={ariaLabel ? "timer" : undefined}
+      aria-label={ariaLabel}
+    >
+      {label}
+    </span>
+  );
 }

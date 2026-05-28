@@ -107,7 +107,7 @@
 
 /* Migrated: InlineNotice already owns the error surface language. */
 .errorNotice {
-  margin-top: 0.5rem;
+  margin-top: var(--space-2);
 }
 
 /* ── Theme overrides ────────────────────────────────────────────────────── */

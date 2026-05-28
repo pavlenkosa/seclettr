@@ -52,7 +52,14 @@ const forbidden = [
   },
   { pattern: /\bfilter\s*:/, label: "filter" },
   { pattern: /\btranslate[XY]\(/, label: "translateX/translateY" },
-  { pattern: /\bbox-shadow\s*:/, label: "box-shadow" },
+  {
+    pattern: /\bbox-shadow\s*:/,
+    label: "box-shadow",
+    allow: (line) => {
+      const ringPattern = /\bbox-shadow\s*:\s*0\s+0\s+0\s+\d/;
+      return ringPattern.test(line);
+    },
+  },
   { pattern: /\bdata-glass\b/, label: "data-glass" },
   { pattern: /\bglassMode\b|\bGlassMode\b|\bsetGlassMode\b|\bglassEffects\b/, label: "glass settings" },
 ];

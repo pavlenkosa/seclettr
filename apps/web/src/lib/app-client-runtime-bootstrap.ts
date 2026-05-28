@@ -13,6 +13,9 @@
  */
 import { initNativeBackHandler } from "./native-back-handler";
 import { initNativeNotifications } from "./native-notifications";
+import { initKeyboardSafeArea } from "./native-keyboard";
+import { initStatusBarTheme } from "./native-status-bar";
+import { initPwaThemeColor } from "./pwa-theme-color";
 import { initPushActionHandler } from "./push-action-handler";
 import { initDeepLinkHandler } from "./deep-link";
 
@@ -21,4 +24,7 @@ export function initAppClientRuntime(): void {
   void initNativeNotifications();
   initNativeBackHandler();
   initDeepLinkHandler();
+  initKeyboardSafeArea();
+  initStatusBarTheme();
+  initPwaThemeColor();
 }

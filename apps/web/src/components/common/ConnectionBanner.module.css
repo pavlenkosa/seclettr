@@ -10,7 +10,7 @@
 /* Floating pill container — centered, doesn't cover sidebar */
 .stack {
   position: fixed;
-  top: calc(env(safe-area-inset-top, 0px) + 0.65rem);
+  top: calc(var(--safe-top) + 0.65rem);
   left: 50%;
   transform: translateX(-50%);
   z-index: var(--z-400);

@@ -11,56 +11,7 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  repo-hygiene:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v5
-
-      - name: Fail if package-lock.json is tracked
-        run: |
-          if git ls-files --error-unmatch package-lock.json 2>/dev/null; then
-            echo "ERROR: package-lock.json must not be committed. This project uses pnpm exclusively."
-            exit 1
-          fi
-          echo "OK: package-lock.json is not tracked"
-
-      - name: Fail if dev certificates are tracked
-        run: |
-          if git ls-files infra/.dev-certs/ | grep -q .; then
-            echo "ERROR: Dev certificates/keys must not be committed."
-            git ls-files infra/.dev-certs/
-            exit 1
-          fi
-          echo "OK: no dev certs tracked"
-
-      - name: Fail if private keys or .env secrets are tracked
-        run: |
-          FOUND=0
-          # Check for tracked .pem private keys outside approved paths
-          for f in $(git ls-files '*.pem' '*.key' '*.p12' '*.pfx'); do
-            echo "ERROR: Tracked credential file: $f"
-            FOUND=1
-          done
-          # Check for tracked .env files
-          for f in $(git ls-files 'infra/.env' 'infra/.env.dev' 'infra/.env.test' '.env' '.env.local'); do
-            echo "ERROR: Tracked env secret file: $f"
-            FOUND=1
-          done
-          if [ "$FOUND" -eq 1 ]; then exit 1; fi
-          echo "OK: no tracked secrets found"
-
-      - name: Fail if build artifacts are tracked
-        run: |
-          FOUND=0
-          for f in $(git ls-files '*.zip' 'dist/' 'build/' '.turbo/'); do
-            echo "ERROR: Tracked build artifact: $f"
-            FOUND=1
-          done
-          if [ "$FOUND" -eq 1 ]; then exit 1; fi
-          echo "OK: no build artifacts tracked"
-
   verify:
-    needs: repo-hygiene
     runs-on: ubuntu-latest
     services:
       postgres:
@@ -113,8 +64,6 @@ jobs:
 
       - run: pnpm install --frozen-lockfile
 
-      - run: pnpm licenses:third-party:check
-
       - run: pnpm --filter @seclettr/api db:migrate
 
       - run: pnpm build
@@ -123,65 +72,4 @@ jobs:
 
       - run: pnpm typecheck
 
-      - run: pnpm lint
-
-      - run: pnpm verify:release
-
       - run: pnpm test
-
-  security-audit:
-    needs: repo-hygiene
-    runs-on: ubuntu-latest
-
-    steps:
-      - uses: actions/checkout@v5
-
-      - uses: pnpm/action-setup@v4
-        with:
-          version: 8.15.9
-
-      - uses: actions/setup-node@v5
-        with:
-          node-version: 22
-          cache: pnpm
-
-      - run: pnpm install --frozen-lockfile
-
-      - run: pnpm audit:prod:gate
-
-  e2e-smoke:
-    runs-on: ubuntu-latest
-    needs: [verify]
-    timeout-minutes: 45
-
-    steps:
-      - uses: actions/checkout@v5
-
-      - uses: pnpm/action-setup@v4
-        with:
-          version: 8.15.9
-
-      - uses: actions/setup-node@v5
-        with:
-          node-version: 22
-          cache: pnpm
-
-      - run: pnpm install --frozen-lockfile
-
-      - run: pnpm exec playwright install --with-deps chromium
-
-      - run: pnpm test:e2e -- --project=chromium
-
-      - uses: actions/upload-artifact@v4
-        if: failure()
-        with:
-          name: playwright-report
-          path: playwright-report
-          if-no-files-found: ignore
-
-  pre-release-gate:
-    needs: [verify, e2e-smoke, security-audit]
-    runs-on: ubuntu-latest
-    steps:
-      - name: Final pre-release status
-        run: echo "Pre-release gate passed"

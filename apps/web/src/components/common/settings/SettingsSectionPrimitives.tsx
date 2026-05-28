@@ -17,6 +17,12 @@ interface SettingsGroupProps {
   readonly description?: ReactNode;
   readonly tone?: "default" | "accent" | "strong";
   readonly children: ReactNode;
+  /**
+   * When true, renders without the floating SurfacePanel card.
+   * Used on native mobile (Capacitor) where sections are flat iOS-style
+   * rows separated by a thin divider, matching the AuthPage native layout.
+   */
+  readonly flat?: boolean;
 }
 
 export function SettingsRow({
@@ -56,7 +62,23 @@ export function SettingsGroup({
   description,
   tone = "default",
   children,
+  flat = false,
 }: SettingsGroupProps) {
+  if (flat) {
+    return (
+      <div className={styles.groupFlat}>
+        <div className={styles.groupFlatHeader}>
+          <div className={styles.groupEyebrow}>{eyebrow}</div>
+          <h3 className={styles.groupTitle}>{title}</h3>
+          {description ? <p className={styles.groupDescription}>{description}</p> : null}
+        </div>
+        <div className={styles.groupBody}>
+          {children}
+        </div>
+      </div>
+    );
+  }
+
   return (
     <SurfacePanel
       className={[

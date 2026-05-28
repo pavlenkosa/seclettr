@@ -102,9 +102,25 @@ export async function pickPhotos(limit = 10): Promise<File[]> {
 
     const files: File[] = [];
     for (const photo of result.photos) {
-      const url = photo.dataUrl;
-      if (url) {
-        files.push(dataUrlToFile(url, photo.format));
+      // dataUrl is only populated when the plugin is configured with
+      // resultType:"dataUrl", which pickImages does not support.
+      // On Android the plugin always returns webPath (a Capacitor local-server
+      // URL like http://localhost/_capacitor_file_/...) — fetch it to get the blob.
+      if (photo.dataUrl) {
+        files.push(dataUrlToFile(photo.dataUrl, photo.format));
+        continue;
+      }
+      if (photo.webPath) {
+        try {
+          const response = await fetch(photo.webPath);
+          const blob = await response.blob();
+          const ext = photo.format === "jpeg" ? "jpg" : photo.format;
+          const mimeType = blob.type || (photo.format === "jpeg" ? "image/jpeg" : `image/${photo.format}`);
+          files.push(new File([blob], `photo_${Date.now()}.${ext}`, { type: mimeType }));
+        } catch {
+          // Failed to fetch this photo — skip it.
+        }
+        continue;
       }
     }
     return files;

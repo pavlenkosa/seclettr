@@ -18,7 +18,7 @@ export function RoomCallStateNotice({ variant, errorMessage, onLeave }: RoomCall
   if (variant === "connecting") {
     return (
       <SurfacePanel className={styles.centeredState} padding="lg" radius="xl">
-        <p className={styles.mutedText}>{t("group.call.starting")}</p>
+        <p className={styles.mutedText} role="status" aria-live="polite">{t("group.call.starting")}</p>
       </SurfacePanel>
     );
   }

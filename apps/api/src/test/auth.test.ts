@@ -2295,7 +2295,7 @@ describe("Call access contracts", () => {
       expect(hangup.type).toBe("call.hangup");
       await waitFor(async () => {
         const persisted = await loadPersistedCallSession(callId);
-        return persisted?.status === "ended" && persisted.ended_at !== null;
+        return persisted?.status === "missed" && persisted.ended_at !== null;
       });
     } finally {
       callerWs.close();

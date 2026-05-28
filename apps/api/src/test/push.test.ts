@@ -155,6 +155,10 @@ describe("push payload preferences", () => {
       tag: "call:call-1",
       renotify: true,
       requireInteraction: true,
+      actions: [
+        { action: "answer", title: "Answer" },
+        { action: "decline", title: "Decline" },
+      ],
       data: {
         callId: "call-1",
         callType: "video",

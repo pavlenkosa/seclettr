@@ -5,9 +5,8 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(0, 0, 0, 0.7);
-  backdrop-filter: blur(4px);
-  -webkit-backdrop-filter: blur(4px);
+  /* Flat dark scrim — no backdrop-filter (design system standard) */
+  background: rgb(0 0 0 / 0.7);
   padding: 1.5rem;
 }
 
@@ -18,9 +17,10 @@
   gap: 1.1rem;
   background: var(--surface-shell, var(--bg-secondary));
   border-radius: 20px;
+  border: 1px solid color-mix(in srgb, var(--panel-border) 60%, transparent);
   padding: 1.75rem 1.5rem 1.5rem;
   width: min(360px, 100%);
-  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.45);
+  /* No decorative shadow — border provides visual separation */
 }
 
 .title {

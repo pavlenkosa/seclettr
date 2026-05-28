@@ -16,7 +16,8 @@ import { resolve } from "node:path";
 import { WS_CLIENT_PROTOCOL } from "@seclettr/protocol";
 
 import { config } from "./config.js";
-import { isDevelopmentCorsOriginAllowed } from "./cors.js";
+import { APP_VERSION } from "./version.js";
+import { isCapacitorOriginAllowed, isDevelopmentCorsOriginAllowed } from "./cors.js";
 import { pool, query } from "./db/pool.js";
 import { redis, usingInMemoryRedis } from "./services/redis.js";
 import { registerWebSocketHandler } from "./services/websocket.js";
@@ -113,14 +114,16 @@ export async function buildApp() {
 
   const allowedOrigins = config.CORS_ORIGIN.split(",").map(o => o.trim());
   await fastify.register(fastifyCors, {
-    // In development, also accept requests from any HTTPS LAN address
-    // (needed for testing on mobile devices where crypto.subtle requires HTTPS)
-    origin: config.NODE_ENV === "development"
-      ? (origin, cb) => {
-          if (!origin) return cb(null, true); // same-origin / server-to-server
-          cb(null, isDevelopmentCorsOriginAllowed(origin, allowedOrigins));
-        }
-      : allowedOrigins,
+    origin: (origin, cb) => {
+      if (!origin) return cb(null, true);
+      if (isCapacitorOriginAllowed(origin)) {
+        return cb(null, true);
+      }
+      if (config.NODE_ENV === "development") {
+        return cb(null, isDevelopmentCorsOriginAllowed(origin, allowedOrigins));
+      }
+      cb(null, allowedOrigins.includes(origin));
+    },
     credentials: true,
     methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
     allowedHeaders: ["Authorization", "Content-Type", "X-Request-ID", "X-Client-Origin"],
@@ -188,21 +191,21 @@ export async function buildApp() {
 
   // GET /health/live  — process liveness only, no external dep checks (cheap)
   fastify.get("/health/live", async () => {
-    return { status: "ok" };
+    return { status: "ok", version: APP_VERSION };
   });
 
   // GET /health/ready — checks DB + Redis readiness (used by load balancers)
   fastify.get("/health/ready", async () => {
     const { dbOk, redisOk } = await checkDependencies();
     const status = dbOk && redisOk ? "ok" : "degraded";
-    return { status, dependencies: { db: dbOk, redis: redisOk } };
+    return { status, version: APP_VERSION, dependencies: { db: dbOk, redis: redisOk } };
   });
 
   // GET /health — legacy alias for /health/ready
   fastify.get("/health", async () => {
     const { dbOk, redisOk } = await checkDependencies();
     const status = dbOk && redisOk ? "ok" : "degraded";
-    return { status };
+    return { status, version: APP_VERSION };
   });
 
   fastify.get("/metrics", async (request, reply) => {
@@ -263,7 +266,7 @@ export async function buildApp() {
   return fastify;
 }
 
-const EXPECTED_LATEST_MIGRATION = "027_plain_group_profiles.sql";
+const EXPECTED_LATEST_MIGRATION = "029_fcm_device_tokens.sql";
 
 async function checkDbSchemaVersion(): Promise<void> {
   const rows = await query<{ filename: string }>(

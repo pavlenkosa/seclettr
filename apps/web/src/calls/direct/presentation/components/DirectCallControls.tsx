@@ -1,4 +1,4 @@
-import { useState, type RefObject } from "react";
+import { useEffect, useRef, useState, type RefObject } from "react";
 import { useI18n } from "@/i18n";
 import { CallControlButton } from "@/calls/shared/presentation/CallControlButton";
 import { CallControlsDock } from "@/calls/shared/presentation/CallControlsDock";
@@ -8,11 +8,13 @@ import { CameraIcon, HangupIcon, MuteIcon, PhoneIcon, ScreenShareIcon, SpeakerIc
 import { AudioOutputSelector } from "@/calls/shared/media/audio-output/AudioOutputSelector";
 import { useOptionalCallAudioOutput } from "@/calls/shared/media/audio-output/CallAudioOutputProvider";
 import { useNativeSpeakerToggle } from "@/calls/shared/media/audio-output/useNativeSpeakerToggle";
+import { PillButton } from "@/components/ui";
 import { useIsMobileViewport } from "@/lib/hooks/use-is-mobile-viewport";
 
 import styles from "./DirectCallControls.module.css";
 
 interface DirectCallControlsProps {
+  readonly callType: "audio" | "video";
   readonly speakerAriaLabel?: string;
   readonly speakerLabel?: string;
   readonly earphoneLabel?: string;
@@ -56,6 +58,7 @@ const canScreenShare =
   typeof navigator.mediaDevices?.getDisplayMedia === "function";
 
 export function DirectCallControls({
+  callType,
   speakerAriaLabel,
   speakerLabel,
   earphoneLabel,
@@ -94,17 +97,38 @@ export function DirectCallControls({
   onSelectScreenResolution,
 }: DirectCallControlsProps) {
   const { t } = useI18n();
-  const { supported: speakerSupported, speakerOn, toggle: toggleSpeaker } = useNativeSpeakerToggle();
+  const { supported: speakerSupported, speakerOn, toggle: toggleSpeaker } = useNativeSpeakerToggle({
+    preferredSpeakerOn: callType === "video",
+  });
   const audioOutput = useOptionalCallAudioOutput();
-  // On narrow viewports (mobile phones) use stacked icon+label buttons without the
-  // device-picker chevron — the result looks like a proper mobile bottom toolbar.
+  // On narrow viewports keep the direct-call actions in the same compact toolbar
+  // family as desktop instead of switching to a separate card/grid language.
   const isMobile = useIsMobileViewport();
   // Bottom-sheet state for web audio output selection on mobile.
   const [outputSheetOpen, setOutputSheetOpen] = useState(false);
 
+  // Refs for sheet focus management (CAL-03).
+  // One ref per sheet variant; trigger refs to restore focus on close.
+  const nativeSpeakerSheetRef = useRef<HTMLDivElement>(null);
+  const webOutputSheetRef = useRef<HTMLDivElement>(null);
+  const nativeSpeakerBtnRef = useRef<HTMLButtonElement>(null);
+  const webOutputBtnRef = useRef<HTMLButtonElement>(null);
+
+  // Move focus into the active sheet when it opens; return to trigger on close.
+  useEffect(() => {
+    if (outputSheetOpen) {
+      const sheet = nativeSpeakerSheetRef.current ?? webOutputSheetRef.current;
+      sheet?.focus();
+    } else {
+      const btn = nativeSpeakerBtnRef.current ?? webOutputBtnRef.current;
+      btn?.focus();
+    }
+  }, [outputSheetOpen]);
+
   const resolvedSpeakerLabel = speakerLabel ?? t("call.speaker");
   const resolvedSpeakerAriaLabel = speakerAriaLabel ?? t("call.speakerAria");
   const resolvedEarphoneLabel = earphoneLabel ?? t("call.earpiece");
+  const audioOutputLabel = t("call.audioOutput.label");
 
   // Web-audio output button is shown on mobile when native speaker toggle is unavailable
   // but the browser supports output selection (or can prompt for it).
@@ -113,131 +137,169 @@ export function DirectCallControls({
   );
 
   if (isMobile) {
-    const mobileClass = `${styles.controlBtn} ${styles.mobileControlBtn}`;
+    const mobileClass = `${styles.controlBtn} ${styles.mobileToolbarBtn}`;
+    const mobileAudioOutputTrigger = speakerSupported || showWebOutputButton ? (
+      <div className={styles.mobileAudioOutputBar}>
+        <PillButton
+          ref={speakerSupported ? nativeSpeakerBtnRef : webOutputBtnRef}
+          onClick={() => { setOutputSheetOpen((prev) => !prev); }}
+          className={styles.mobileAudioOutputButton}
+          tone={outputSheetOpen ? "accent" : "neutral"}
+          appearance="soft"
+          size="sm"
+          leading={speakerSupported
+            ? (speakerOn ? <SpeakerIcon speakerOn /> : <PhoneIcon />)
+            : <SpeakerIcon speakerOn />}
+          aria-label={audioOutputLabel}
+          aria-expanded={outputSheetOpen}
+          aria-haspopup="dialog"
+        >
+          {speakerSupported
+            ? (speakerOn ? resolvedSpeakerLabel : resolvedEarphoneLabel)
+            : audioOutputLabel}
+        </PillButton>
+      </div>
+    ) : null;
+
     return (
-      <CallControlsDock className={styles.controlsDock}>
-        <CallControlButton
-          onClick={onToggleMute}
-          layout="stacked"
-          className={mobileClass}
-          active={muted}
-          icon={<MuteIcon muted={muted} />}
-          label={muteLabel}
-          aria-label={muteAriaLabel}
-          aria-pressed={muted}
-        />
-        <CallControlButton
-          onClick={() => { void onToggleVideo(); }}
-          layout="stacked"
-          className={mobileClass}
-          active={videoOff}
-          icon={<CameraIcon />}
-          label={cameraLabel}
-          aria-label={cameraAriaLabel}
-          aria-pressed={videoOff}
-        />
+      <>
+        {mobileAudioOutputTrigger}
+        <CallControlsDock className={styles.controlsDock}>
+          <CallControlButton
+            onClick={onToggleMute}
+            layout="inline"
+            className={mobileClass}
+            active={muted}
+            icon={<MuteIcon muted={muted} />}
+            label={muteLabel}
+            collapseLabelOnNarrow
+            compactOnNarrow
+            aria-label={muteAriaLabel}
+            aria-pressed={muted}
+          />
+          <CallControlButton
+            onClick={() => { void onToggleVideo(); }}
+            layout="inline"
+            className={mobileClass}
+            active={videoOff}
+            icon={<CameraIcon />}
+            label={cameraLabel}
+            collapseLabelOnNarrow
+            compactOnNarrow
+            aria-label={cameraAriaLabel}
+            aria-pressed={videoOff}
+          />
+          {canScreenShare ? (
+            <CallControlButton
+              onClick={() => { void onToggleScreenShare(); }}
+              layout="inline"
+              className={mobileClass}
+              active={screenSharing}
+              icon={<ScreenShareIcon />}
+              label={screenShareLabel}
+              collapseLabelOnNarrow
+              compactOnNarrow
+              aria-label={screenShareAriaLabel}
+              aria-pressed={screenSharing}
+            />
+          ) : null}
+          <CallControlButton
+            ref={hangupButtonRef}
+            onClick={onHangup}
+            layout="inline"
+            className={mobileClass}
+            tone="danger"
+            icon={<HangupIcon />}
+            label={endLabel}
+            collapseLabelOnNarrow
+            compactOnNarrow
+            aria-label={endAriaLabel}
+          />
+        </CallControlsDock>
         {speakerSupported ? (
-          /* Capacitor native: select earpiece or loudspeaker via a sheet */
-          <div className={styles.audioOutputWrapper}>
-            <CallControlButton
-              onClick={() => { setOutputSheetOpen((prev) => !prev); }}
-              layout="stacked"
-              className={mobileClass}
-              active={speakerOn || outputSheetOpen}
-              icon={<SpeakerIcon speakerOn={speakerOn} />}
-              label={resolvedSpeakerLabel}
-              aria-label={resolvedSpeakerAriaLabel}
-              aria-expanded={outputSheetOpen}
+          <>
+            <div
+              className={styles.audioOutputScrim}
+              onClick={() => { setOutputSheetOpen(false); }}
+              aria-hidden="true"
+              hidden={!outputSheetOpen}
             />
             {outputSheetOpen ? (
-              <>
-                <div
-                  className={styles.audioOutputScrim}
-                  onClick={() => { setOutputSheetOpen(false); }}
-                  aria-hidden="true"
-                />
-                <div
-                  className={styles.audioOutputSheet}
-                  role="dialog"
-                  aria-label={resolvedSpeakerAriaLabel}
-                >
-                  <button
-                    type="button"
-                    className={[
-                      styles.audioSheetOption,
-                      !speakerOn ? styles.audioSheetOptionActive : "",
-                    ].filter(Boolean).join(" ")}
-                    onClick={() => {
-                      if (speakerOn) toggleSpeaker();
-                      setOutputSheetOpen(false);
-                    }}
-                  >
-                    <PhoneIcon />
-                    <span>{resolvedEarphoneLabel}</span>
-                    {!speakerOn ? <span className={styles.audioSheetCheck} aria-hidden="true">✓</span> : null}
-                  </button>
-                  <button
-                    type="button"
-                    className={[
-                      styles.audioSheetOption,
-                      speakerOn ? styles.audioSheetOptionActive : "",
-                    ].filter(Boolean).join(" ")}
-                    onClick={() => {
-                      if (!speakerOn) toggleSpeaker();
-                      setOutputSheetOpen(false);
-                    }}
-                  >
-                    <SpeakerIcon speakerOn />
-                    <span>{resolvedSpeakerLabel}</span>
-                    {speakerOn ? <span className={styles.audioSheetCheck} aria-hidden="true">✓</span> : null}
-                  </button>
+              <div
+                ref={nativeSpeakerSheetRef}
+                className={styles.audioOutputSheet}
+                role="dialog"
+                aria-modal="true"
+                aria-label={audioOutputLabel}
+                tabIndex={-1}
+                onKeyDown={(e) => { if (e.key === "Escape") setOutputSheetOpen(false); }}
+              >
+                <div className={styles.audioOutputSheetHeader}>
+                  <span className={styles.audioOutputSheetTitle}>{audioOutputLabel}</span>
+                  <span className={styles.audioOutputSheetHint}>
+                    {speakerOn ? resolvedSpeakerLabel : resolvedEarphoneLabel}
+                  </span>
                 </div>
-              </>
+                <button
+                  type="button"
+                  className={[
+                    styles.audioSheetOption,
+                    !speakerOn ? styles.audioSheetOptionActive : "",
+                  ].filter(Boolean).join(" ")}
+                  onClick={() => {
+                    if (speakerOn) toggleSpeaker();
+                    setOutputSheetOpen(false);
+                  }}
+                >
+                  <PhoneIcon />
+                  <span>{resolvedEarphoneLabel}</span>
+                  {!speakerOn ? <span className={styles.audioSheetCheck} aria-hidden="true">✓</span> : null}
+                </button>
+                <button
+                  type="button"
+                  className={[
+                    styles.audioSheetOption,
+                    speakerOn ? styles.audioSheetOptionActive : "",
+                  ].filter(Boolean).join(" ")}
+                  onClick={() => {
+                    if (!speakerOn) toggleSpeaker();
+                    setOutputSheetOpen(false);
+                  }}
+                >
+                  <SpeakerIcon speakerOn />
+                  <span>{resolvedSpeakerLabel}</span>
+                  {speakerOn ? <span className={styles.audioSheetCheck} aria-hidden="true">✓</span> : null}
+                </button>
+              </div>
             ) : null}
-          </div>
+          </>
         ) : showWebOutputButton ? (
-          /* Web mobile: open a bottom-sheet with the AudioOutputSelector */
-          <div className={styles.audioOutputWrapper}>
-            <CallControlButton
-              onClick={() => { setOutputSheetOpen((prev) => !prev); }}
-              layout="stacked"
-              className={mobileClass}
-              active={outputSheetOpen}
-              icon={<SpeakerIcon speakerOn />}
-              label={resolvedSpeakerLabel}
-              aria-label={resolvedSpeakerAriaLabel}
-              aria-expanded={outputSheetOpen}
+          <>
+            <div
+              className={styles.audioOutputScrim}
+              onClick={() => { setOutputSheetOpen(false); }}
+              aria-hidden="true"
+              hidden={!outputSheetOpen}
             />
             {outputSheetOpen ? (
-              <>
-                {/* Transparent scrim — tap outside sheet to dismiss */}
-                <div
-                  className={styles.audioOutputScrim}
-                  onClick={() => { setOutputSheetOpen(false); }}
-                  aria-hidden="true"
-                />
-                <div
-                  className={styles.audioOutputSheet}
-                  role="dialog"
-                  aria-label={resolvedSpeakerAriaLabel}
-                >
-                  <AudioOutputSelector compact hideLabel />
+              <div
+                ref={webOutputSheetRef}
+                className={styles.audioOutputSheet}
+                role="dialog"
+                aria-modal="true"
+                aria-label={audioOutputLabel}
+                tabIndex={-1}
+                onKeyDown={(e) => { if (e.key === "Escape") setOutputSheetOpen(false); }}
+              >
+                <div className={styles.audioOutputSheetHeader}>
+                  <span className={styles.audioOutputSheetTitle}>{audioOutputLabel}</span>
                 </div>
-              </>
+                <AudioOutputSelector compact hideLabel />
+              </div>
             ) : null}
-          </div>
+          </>
         ) : null}
-        <CallControlButton
-          ref={hangupButtonRef}
-          onClick={onHangup}
-          layout="stacked"
-          className={mobileClass}
-          tone="danger"
-          icon={<HangupIcon />}
-          label={endLabel}
-          aria-label={endAriaLabel}
-        />
-      </CallControlsDock>
+      </>
     );
   }
 

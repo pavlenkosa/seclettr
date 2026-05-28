@@ -74,7 +74,7 @@
 
 .createLayer {
   position: fixed;
-  right: max(1.1rem, env(safe-area-inset-right, 0px));
+  right: max(1.1rem, var(--safe-right));
   bottom: calc(5.35rem + var(--safe-bottom));
   z-index: var(--z-50);
   display: inline-flex;

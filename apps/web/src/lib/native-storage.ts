@@ -1,5 +1,18 @@
 import { isNativePlatform } from "./native-platform";
 
+/**
+ * Key under which the refresh token is persisted via Capacitor Preferences
+ * (maps to NSUserDefaults on iOS and SharedPreferences on Android).
+ * We use a dedicated helper set so callers never need to know the key string,
+ * and so we can easily migrate the storage location in the future.
+ *
+ * Why native storage? Capacitor's WebView cookie store can be wiped after an
+ * Android process kill, causing the session to look "signed out".  Preferences
+ * storage survives process restarts, so we keep a copy of the refresh token
+ * there and send it as an `X-Refresh-Token` header fallback on the next launch.
+ */
+const NATIVE_REFRESH_TOKEN_STORAGE_KEY = "sc:refresh_token";
+
 interface PreferencesPlugin {
   get: (opts: { key: string }) => Promise<{ value: string | null }>;
   set: (opts: { key: string; value: string }) => Promise<void>;
@@ -42,4 +55,27 @@ export async function nativeStorageRemove(key: string): Promise<void> {
     return;
   }
   try { localStorage.removeItem(key); } catch { /* ignore */ }
+}
+
+// ---------------------------------------------------------------------------
+// Refresh-token native store (native-only — no localStorage fallback)
+// ---------------------------------------------------------------------------
+
+/** Persists the refresh token to native Preferences.  No-op on non-native. */
+export async function storeNativeRefreshToken(token: string): Promise<void> {
+  if (!isNativePlatform()) return;
+  await nativeStorageSet(NATIVE_REFRESH_TOKEN_STORAGE_KEY, token);
+}
+
+/** Retrieves the persisted refresh token from native Preferences.
+ *  Returns `null` on non-native or when not set. */
+export async function getNativeRefreshToken(): Promise<string | null> {
+  if (!isNativePlatform()) return null;
+  return nativeStorageGet(NATIVE_REFRESH_TOKEN_STORAGE_KEY);
+}
+
+/** Clears the persisted refresh token from native Preferences.  No-op on non-native. */
+export async function clearNativeRefreshToken(): Promise<void> {
+  if (!isNativePlatform()) return;
+  await nativeStorageRemove(NATIVE_REFRESH_TOKEN_STORAGE_KEY);
 }

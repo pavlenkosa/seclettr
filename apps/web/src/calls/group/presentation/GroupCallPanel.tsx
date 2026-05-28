@@ -1,5 +1,5 @@
 import { useCallback, useRef } from "react";
-import { useIsMobileViewport } from "@/lib/hooks";
+import { useIsMobileViewport, useNativeBackAction } from "@/lib/hooks";
 import { useI18n } from "@/i18n";
 import { useGroupCallPanelDock } from "@/calls/group/presentation/useGroupCallPanelDock";
 import { useGroupCallPanelPresentation } from "@/calls/group/presentation/useGroupCallPanelPresentation";
@@ -86,6 +86,11 @@ export function GroupCallPanel({ session, onClose }: Props) {
   const combinedRemoteMedia = useGroupCallPanelDevMocks(runtime.remoteMedia);
 
   const surface = resolveGroupCallPanelSurface(isMinimized);
+
+  // GRP-05: Android Back minimizes the full-screen group call panel to the dock.
+  // Disabled when the panel is already docked so Back falls through to app navigation.
+  useNativeBackAction(handleMinimize, surface === "panel");
+
   const { isStageFullscreen, handleToggleStageFullscreen } = useGroupCallStageFullscreen({
     stageShellRef,
   });

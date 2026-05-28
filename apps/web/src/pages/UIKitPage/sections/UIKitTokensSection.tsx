@@ -16,6 +16,18 @@ interface UIKitTokensSectionProps {
   readonly resolvedAccents: readonly ResolvedAccentSnapshot[];
 }
 
+const spacingScale = [
+  { token: "--space-1", rem: "0.25rem", px: "4px", use: "icon gaps, micro spacing" },
+  { token: "--space-2", rem: "0.5rem", px: "8px", use: "inline gaps, badge padding" },
+  { token: "--space-3", rem: "0.75rem", px: "12px", use: "element padding, list gap" },
+  { token: "--space-4", rem: "1rem", px: "16px", use: "section padding, card inset" },
+  { token: "--space-5", rem: "1.25rem", px: "20px", use: "large inset" },
+  { token: "--space-6", rem: "1.5rem", px: "24px", use: "section gap" },
+  { token: "--space-8", rem: "2rem", px: "32px", use: "panel padding" },
+  { token: "--space-10", rem: "2.5rem", px: "40px", use: "touch target base" },
+  { token: "--space-12", rem: "3rem", px: "48px", use: "mobile row min height" },
+];
+
 export function UIKitTokensSection({
   resolvedThemes,
   resolvedAccents,
@@ -59,9 +71,36 @@ export function UIKitTokensSection({
         ))}
       </div>
 
+      <div className={styles.tokenScaleSection}>
+        <div className={styles.sectionHeading}>
+          <div>
+            <span className={styles.sectionEyebrow}>Spacing Scale</span>
+            <h2 className={styles.sectionTitle}>--space-1 through --space-12</h2>
+          </div>
+          <LabelPill size="sm">Added F-01</LabelPill>
+        </div>
+
+        <div className={styles.spacingScale}>
+          {spacingScale.map((item) => (
+            <div key={item.token} className={styles.spacingRow}>
+              <div
+                className={styles.spacingSwatch}
+                style={{
+                  height: `var(${item.token})`,
+                } as CSSProperties}
+              />
+              <div className={styles.spacingLabel}>
+                <span className={styles.tokenName}>var({item.token})</span>
+                <span className={styles.tokenValue}>{item.rem} ({item.px}) — {item.use}</span>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
       <InlineNotice tone="info" size="sm">
         Existing token families cover surfaces, text, borders, radius, motion, accents,
-        and feature states. New UI work should consume them instead of adding local color systems.
+        spacing, and feature states. New UI work should consume them instead of adding local systems.
       </InlineNotice>
     </SurfacePanel>
   );

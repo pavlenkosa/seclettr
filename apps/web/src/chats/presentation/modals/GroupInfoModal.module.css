@@ -524,6 +524,13 @@
   to   { transform: translateY(0);    opacity: 1; }
 }
 
+@media (prefers-reduced-motion: reduce) {
+  @keyframes sheetIn {
+    from { opacity: 0; }
+    to   { opacity: 1; }
+  }
+}
+
 .sheetHeader {
   display: flex;
   align-items: center;

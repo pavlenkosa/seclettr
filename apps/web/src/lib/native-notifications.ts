@@ -24,6 +24,8 @@ interface NativePushPlugin {
   stop: () => Promise<void>;
   updateToken: (opts: { token: string }) => Promise<void>;
   isRunning: () => Promise<{ value: boolean }>;
+  getFcmToken: () => Promise<{ token: string }>;
+  useFcm: () => Promise<void>;
   addListener: (event: string, handler: (data: unknown) => void) => Promise<{ remove: () => void }>;
 }
 
@@ -197,6 +199,35 @@ function getNativePushPlugin(): NativePushPlugin | null {
   return plugin ? (plugin as NativePushPlugin) : null;
 }
 
+let _fcmTokenCleanup: (() => void) | null = null;
+
+async function registerFcmTokenOnServer(token: string): Promise<boolean> {
+  try {
+    const apiBase = resolveApiBaseUrl().replace(/\/+$/, "");
+    const resp = await fetch(`${apiBase}/push/fcm/token`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ fcmToken: token }),
+    });
+    return resp.ok;
+  } catch {
+    return false;
+  }
+}
+
+async function unregisterFcmTokenOnServer(token: string): Promise<void> {
+  try {
+    const apiBase = resolveApiBaseUrl().replace(/\/+$/, "");
+    await fetch(`${apiBase}/push/fcm/token`, {
+      method: "DELETE",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ fcmToken: token }),
+    });
+  } catch {
+    // Best-effort
+  }
+}
+
 export async function startNativePushService(token: string): Promise<void> {
   const plugin = getNativePushPlugin();
   if (!plugin) return;
@@ -207,21 +238,72 @@ export async function startNativePushService(token: string): Promise<void> {
     if (granted !== "granted") return;
   }
 
+  // Check if FCM token already exists
+  let fcmToken = "";
+  try {
+    const result = await plugin.getFcmToken();
+    fcmToken = result.token;
+  } catch {
+    // FCM SDK not available or not initialized — proceed with FG fallback
+  }
+  if (fcmToken) {
+    const registered = await registerFcmTokenOnServer(fcmToken);
+    if (registered) {
+      await plugin.useFcm();
+      return;
+    }
+  }
+
+  // No FCM token yet — start FG service as fallback and listen for token
   const apiUrl = resolveApiBaseUrl();
   try {
     await plugin.start({ serverUrl: apiUrl, token });
   } catch {
-    // Non-critical — push service won't start in background
+    return;
+  }
+
+  // Listen for FCM token to upgrade
+  if (!_fcmTokenCleanup) {
+    try {
+      const handle = await plugin.addListener("fcmTokenReceived", async (data: unknown) => {
+        const { token: newToken } = data as { token: string };
+        if (!newToken) return;
+        const registered = await registerFcmTokenOnServer(newToken);
+        if (registered) {
+          await plugin.useFcm();
+          await plugin.stop();
+        }
+      });
+      _fcmTokenCleanup = () => handle.remove();
+    } catch {
+      // Non-critical — FG service will continue working
+    }
   }
 }
 
 export async function stopNativePushService(): Promise<void> {
   const plugin = getNativePushPlugin();
   if (!plugin) return;
+
+  // Unregister FCM token on server
+  try {
+    const { token: fcmToken } = await plugin.getFcmToken();
+    if (fcmToken) {
+      await unregisterFcmTokenOnServer(fcmToken);
+    }
+  } catch {
+    // Best-effort
+  }
+
   try {
     await plugin.stop();
   } catch {
     // Ignore
+  }
+
+  if (_fcmTokenCleanup) {
+    _fcmTokenCleanup();
+    _fcmTokenCleanup = null;
   }
 }
 

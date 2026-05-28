@@ -1,24 +1,76 @@
 # Deployment Guide (Step-by-Step)
 
 This guide is written for first-time operators.
-You do not need to build from source: use the prebuilt release bundle from GitHub.
+You do not need to build from source.
 
-## 1. What You Need
+---
 
+## Installation Modes
+
+Seclettr supports two deployment modes:
+
+### Online Mode (Recommended)
+- Images pulled automatically from `ghcr.io/pavlenkosa/seclettr/*`
+- Fast updates: only changed layers are downloaded
+- No need to download large bundles (~10MB: scripts + configs only)
+
+### Offline Mode
+- Images loaded from local `prebuilt-images.tar.gz`
+- Works on air-gapped servers
+- Larger bundle size (~1GB)
+
+---
+
+## Quick Start (Online Mode)
+
+### 1. Prerequisites
 - Linux server (Ubuntu 22.04+ recommended)
 - Docker + Docker Compose plugin
 - Open ports:
-  - `80` and `443` for web mode/full mode
-  - `3478` (TURN) + UDP media ranges if calls are enabled
+  - `80` and `443` for web access
+  - `3478` (TURN) + UDP media ranges for calls
 - Domain name (recommended for production)
 
-If Docker is missing, use the helper installer from the release bundle:
-
+Install Docker if missing:
 ```bash
-./install-docker.sh
+curl -fsSL https://get.docker.com | sh
 ```
 
-## 2. Download the Bundle from GitHub
+### 2. Get Deployment Files
+
+```bash
+mkdir -p /opt/seclettr && cd /opt/seclettr
+
+# Get compose file and env template
+curl -fLO https://raw.githubusercontent.com/pavlenkosa/seclettr/main/infra/docker-compose.release.yml
+curl -fLO https://raw.githubusercontent.com/pavlenkosa/seclettr/main/infra/.env.example
+
+# Rename for convenience
+mv docker-compose.release.yml docker-compose.yml
+mv .env.example .env
+```
+
+### 3. Configure Environment
+
+Edit `.env` and set these values:
+- `CORS_ORIGIN`: URL your users will access (e.g., `https://chat.example.com`)
+- `TURN_DOMAIN`: domain or IP of your server
+- `TURN_EXTERNAL_IP`: public IP
+- `ANNOUNCED_IP`: public IP (same as TURN_EXTERNAL_IP)
+
+Leave `CHANGE_ME_*` values as-is — they are auto-generated on first run.
+
+### 4. Run
+
+```bash
+docker compose up -d
+```
+
+---
+
+## Release Bundle Installation (Online or Offline)
+
+### 1. Download the Bundle from GitHub
 
 1. Open the repository page on GitHub.
 2. Go to **Releases**.
@@ -26,7 +78,7 @@ If Docker is missing, use the helper installer from the release bundle:
 - `seclettr-release-main-<timestamp>.tar.gz`
 - `seclettr-release-main-<timestamp>.tar.gz.sha256`
 
-## 3. Verify Download Integrity
+### 2. Verify Download Integrity
 
 ```bash
 sha256sum -c seclettr-release-main-<timestamp>.tar.gz.sha256
@@ -34,51 +86,42 @@ sha256sum -c seclettr-release-main-<timestamp>.tar.gz.sha256
 
 Expected result: `OK`.
 
-## 4. Unpack the Bundle
+### 3. Unpack the Bundle
 
 ```bash
 tar -xzf seclettr-release-main-<timestamp>.tar.gz
 cd seclettr-release-main-<timestamp>
 ```
 
-## 5. Prepare Environment File
+### 4. Prepare Environment File
 
-The installer generates secrets automatically on first run, so you can skip this step and go straight to step 8.
+The installer generates secrets automatically on first run, so you can skip this step.
 
 If you want to review or customise values before the first run:
-
 ```bash
 cp .env.example .env
 ```
 
 Open `.env` and adjust:
-
 - `CORS_ORIGIN` — the URL your users will access (e.g. `https://chat.example.com`)
 - `TURN_DOMAIN` — domain or IP of the TURN server
 - `TURN_EXTERNAL_IP` / `ANNOUNCED_IP` — public IP of the server (auto-detected if omitted)
 
-All cryptographic secrets (`POSTGRES_PASSWORD`, `REDIS_PASSWORD`, `JWT_SECRET`, `TURN_SECRET`,
-`MINIO_ACCESS_KEY`, `MINIO_SECRET_KEY`, `METRICS_BEARER_TOKEN`) are generated automatically
-if you leave them as `CHANGE_ME_*` placeholders.
+All cryptographic secrets are generated automatically if you leave them as `CHANGE_ME_*` placeholders.
 
-## 6. Choose Deployment Mode
+### 5. Choose Deployment Mode
 
-### Mode A: Full stack (web + backend + infra)
-Best for single-server deployment.
+| Mode | Services | Best for |
+|------|----------|----------|
+| `full` | web + API + SFU + infra | Single-server deployment (recommended) |
+| `backend` | API + SFU + infra (no web) | Separate web/backend deployments |
+| `web` | web only | External backend URL |
 
-### Mode B: Backend only
-Runs API/SFU/infra without web frontend.
+### 6. TLS or HTTP
 
-### Mode C: Web only
-Runs web frontend only and points to external API/SFU.
-
-## 7. TLS or HTTP
-
-### Production (recommended): TLS
-- If `./nginx/certs/cert.pem` and `key.pem` are absent, the installer generates a
-  **self-signed certificate** automatically using the configured domain/IP.
-- To use a trusted certificate (Let's Encrypt, etc.), place files into `./nginx/certs/`
-  **before** running the installer:
+#### Production (recommended): TLS
+- If `./nginx/certs/cert.pem` and `key.pem` are absent, the installer generates a **self-signed certificate** automatically.
+- To use a trusted certificate (Let's Encrypt, etc.), place files into `./nginx/certs/` **before** running the installer:
   - `cert.pem`
   - `key.pem`
 - Keep `NETWORK_MODE=tls`.
@@ -86,18 +129,18 @@ Runs web frontend only and points to external API/SFU.
 > **Note:** Self-signed certificates will trigger a browser security warning.
 > Replace them with a CA-signed certificate for public-facing deployments.
 
-### Local/test only: HTTP
+#### Local/test only: HTTP
 - Use `--network http` at install time.
 
-## 8. Run Installer
+### 7. Run Installer
 
-### Interactive (recommended for first run)
+#### Interactive (recommended for first run)
 
 ```bash
 ./install.sh --interactive
 ```
 
-### Non-interactive examples
+#### Non-interactive examples
 
 ```bash
 # Full stack over TLS
@@ -112,46 +155,52 @@ Runs web frontend only and points to external API/SFU.
   --web-sfu-url https://api.example.com/sfu
 ```
 
-## 9. Check That Services Are Healthy
+---
+
+## Post-Installation
+
+### Check That Services Are Healthy
 
 ```bash
 docker compose -p seclettr --env-file .env -f docker-compose.yml ps
 ```
 
 Then verify:
-
 - API health: `http://127.0.0.1:3001/health`
 - Web:
   - `https://<your-domain>` (TLS mode)
   - `http://<your-domain>` (HTTP mode)
 
-## 10. Common Operations
+### Common Operations
 
-### View logs
+| Operation | Command |
+|-----------|---------|
+| View logs | `docker compose -p seclettr --env-file .env -f docker-compose.yml logs -f` |
+| Restart services | `docker compose -p seclettr --env-file .env -f docker-compose.yml restart` |
+| Stop stack | `docker compose -p seclettr --env-file .env -f docker-compose.yml down` |
+| Pull updates | `docker compose -p seclettr --env-file .env -f docker-compose.yml pull` |
+
+---
+
+## Update to a New Version
+
+### Online Mode (Using GHCR)
 
 ```bash
-docker compose -p seclettr --env-file .env -f docker-compose.yml logs -f api sfu web
+cd /opt/seclettr
+
+# Pull new images
+docker compose pull
+
+# Restart with new images
+docker compose up -d
 ```
 
-### Restart services
+### Release Bundle Update
 
-```bash
-docker compose -p seclettr --env-file .env -f docker-compose.yml restart
-```
+The release bundle has a built-in update mode. It keeps Docker volumes in place, copies your runtime configuration, and restarts containers.
 
-### Stop stack
-
-```bash
-docker compose -p seclettr --env-file .env -f docker-compose.yml down
-```
-
-## 11. Update to a New Version
-
-The release bundle has a built-in update mode. It keeps Docker volumes in place,
-copies your runtime configuration from the previous bundle, loads the new images,
-runs migrations, and restarts only the services required by the selected mode.
-
-### Easiest update path
+#### Easiest update path
 
 Upload the new release archive into the current unpacked release directory and run:
 
@@ -161,18 +210,15 @@ cd /path/to/current/seclettr-release-main-<old-timestamp>
 ```
 
 The current installer will:
-
 - unpack the new archive next to the current release directory
 - hand off to the new archive's `install.sh`
 - copy `.env` and TLS certificates from the current release
 - create a backup
 - load new Docker images
-- force `.env` to use the image tag bundled with the new release
-- verify that all required images are available locally after loading
 - run database migrations
 - restart containers without deleting Docker volumes
 
-### Manual update path
+#### Manual update path
 
 ```bash
 # 1. Download and verify the new bundle
@@ -187,7 +233,6 @@ cd seclettr-release-main-<new-timestamp>
 ```
 
 During update the installer creates `backups/update-<timestamp>/` with:
-
 - `.env`
 - TLS certificates, if present
 - `runtime-config.js`, if present
@@ -197,7 +242,9 @@ Do not run `uninstall.sh` for an update unless you intentionally want to remove
 the deployment. The update flow does not remove Docker volumes, so Postgres and
 MinIO data remain in place.
 
-## 12. Security Notes
+---
+
+## Security Notes
 
 - Do not expose Postgres/Redis/MinIO ports publicly.
 - Use strong secrets in `.env`.

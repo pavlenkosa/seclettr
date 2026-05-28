@@ -5,7 +5,7 @@ import { CallAudioOutputProvider } from "@/calls/shared/media/audio-output/CallA
 import { CallDurationText } from "@/calls/shared/presentation/CallDurationText";
 import { GroupCallDock } from "@/calls/group/presentation/components/GroupCallDock";
 import { GroupCallRemoteAudioTargets } from "@/calls/group/presentation/components/GroupCallRemoteAudioTargets";
-import type { GroupCallRemoteMedia } from "@/calls/group/runtime/sfu";
+import type { GroupCallRemoteMedia } from "@/calls/group/runtime";
 
 type DockProps = ComponentProps<typeof GroupCallDock>;
 

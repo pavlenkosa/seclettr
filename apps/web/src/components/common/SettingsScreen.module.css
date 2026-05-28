@@ -22,7 +22,7 @@
 }
 
 .headerBar {
-  --header-bar-gap: 0.75rem;
+  --header-bar-gap: var(--space-3);
   --header-bar-actions-gap: 0;
 }
 
@@ -66,51 +66,15 @@
   padding: 0.9rem 0.74rem;
 }
 
-.accountPanel {
+.accountSummary {
+  width: 100%;
   margin-bottom: 0.72rem;
-}
-
-.accountRow {
-  display: grid;
-  grid-template-columns: 48px minmax(0, 1fr);
-  align-items: center;
-  gap: 0.78rem;
-}
-
-.accountAvatar {
-  width: 48px;
-  height: 48px;
-  border-radius: 999px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  color: #fff;
-  background: var(--accent);
-  font-size: 0.9rem;
-  font-weight: 700;
-}
-
-.accountInfo {
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 0.14rem;
-}
-
-.accountHandle {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  color: var(--text-primary);
-  font-size: 0.9rem;
-  font-weight: 700;
-  line-height: 1.25;
 }
 
 .sectionList {
   display: flex;
   flex-direction: column;
-  gap: 0.25rem;
+  gap: var(--space-1);
   padding: 0;
 }
 
@@ -197,15 +161,13 @@
   min-height: 0;
   overflow-y: auto;
   background: color-mix(in srgb, var(--bg-primary) 95%, var(--surface-shell));
-  padding: 1.12rem clamp(1rem, 2.2vw, 2rem) 2rem;
+  padding: 1.12rem clamp(var(--space-4), 2.2vw, var(--space-8)) var(--space-8);
 }
 
 .detailHeader {
   width: min(100%, 920px);
   display: flex;
   align-items: flex-start;
-  justify-content: space-between;
-  gap: 1rem;
   margin: 0 auto 0.9rem;
   padding-bottom: 0.9rem;
   border-bottom: 1px solid color-mix(in srgb, var(--panel-border-soft) 78%, transparent);
@@ -238,22 +200,6 @@
   line-height: 1.45;
 }
 
-.detailSummary {
-  flex: 0 0 auto;
-  max-width: min(280px, 45%);
-  padding: 0.34rem 0.58rem;
-  border: 1px solid color-mix(in srgb, var(--panel-border-soft) 74%, transparent);
-  border-radius: 999px;
-  background: color-mix(in srgb, var(--surface-shell) 72%, transparent);
-  color: var(--text-secondary);
-  font-size: 0.78rem;
-  font-weight: 600;
-  line-height: 1.35;
-  text-align: right;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
 
 /* === loading === */
 
@@ -352,7 +298,7 @@
     display: none;
   }
 
-  .accountPanel {
+  .accountSummary {
     margin-bottom: 0.68rem;
   }
 

@@ -4,7 +4,7 @@
   --surface-panel-border: color-mix(in srgb, var(--panel-border-soft) 76%, transparent);
   position: var(--call-controls-position, relative);
   bottom: var(--call-controls-bottom, auto);
-  z-index: var(--call-controls-z-index, 5);
+  z-index: var(--z-call-controls);
   width: var(--call-controls-width, min(100%, 1040px));
   max-width: var(--call-controls-max-width, 100%);
   margin: var(--call-controls-margin, auto auto 0);

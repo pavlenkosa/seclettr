@@ -1,4 +1,5 @@
 import webpush, { type PushSubscription } from "web-push";
+import { readFileSync } from "node:fs";
 import { query } from "../db/pool.js";
 import { config } from "../config.js";
 import {
@@ -7,10 +8,16 @@ import {
   type PushPreferences,
 } from "./push-payloads.js";
 
-interface PushSubscriptionRow {
+// ── Types ────────────────────────────────────────────────────────────────────
+
+interface VapidSubscriptionRow {
   endpoint: string;
   p256dh: string;
   auth: string;
+}
+
+interface FcmTokenRow {
+  fcm_token: string;
 }
 
 interface PushPreferencesRow {
@@ -20,21 +27,23 @@ interface PushPreferencesRow {
   show_sender: boolean;
 }
 
+// ── VAPID provider ───────────────────────────────────────────────────────────
+
 const vapidKeys =
   config.VAPID_PUBLIC_KEY && config.VAPID_PRIVATE_KEY
     ? { publicKey: config.VAPID_PUBLIC_KEY, privateKey: config.VAPID_PRIVATE_KEY }
     : null;
-let pushInitialised = false;
+let vapidInitialised = false;
 
-function ensurePushConfigured(): boolean {
+function ensureVapidConfigured(): boolean {
   if (!vapidKeys) return false;
-  if (pushInitialised) return true;
+  if (vapidInitialised) return true;
   webpush.setVapidDetails(config.VAPID_SUBJECT, vapidKeys.publicKey, vapidKeys.privateKey);
-  pushInitialised = true;
+  vapidInitialised = true;
   return true;
 }
 
-function rowToSubscription(row: PushSubscriptionRow): PushSubscription {
+function rowToSubscription(row: VapidSubscriptionRow): PushSubscription {
   return {
     endpoint: row.endpoint,
     keys: {
@@ -51,15 +60,6 @@ async function markSubscriptionDead(endpoint: string): Promise<void> {
   );
 }
 
-export function isPushEnabled(): boolean {
-  return ensurePushConfigured();
-}
-
-export function getVapidPublicKey(): string | null {
-  if (!ensurePushConfigured()) return null;
-  return vapidKeys?.publicKey ?? null;
-}
-
 function mapPushPreferencesRow(row: PushPreferencesRow | undefined): PushPreferences {
   if (!row) return DEFAULT_PUSH_PREFERENCES;
   return {
@@ -68,6 +68,99 @@ function mapPushPreferencesRow(row: PushPreferencesRow | undefined): PushPrefere
     callInvitesEnabled: row.call_invites_enabled,
     showSender: row.show_sender,
   };
+}
+
+// ── FCM provider ─────────────────────────────────────────────────────────────
+
+let fcmInitialised = false;
+let fcmMessaging: import("firebase-admin/messaging").Messaging | null = null;
+
+function isFcmConfigured(): boolean {
+  return Boolean(config.FCM_SERVICE_ACCOUNT_PATH) || Boolean(config.FCM_SERVICE_ACCOUNT_JSON);
+}
+
+async function ensureFcmConfigured(): Promise<boolean> {
+  if (!isFcmConfigured()) return false;
+  if (fcmInitialised && fcmMessaging) return true;
+
+  try {
+    const mod = await import("firebase-admin");
+    const admin = mod as unknown as typeof import("firebase-admin");
+    const serviceAccountPath = config.FCM_SERVICE_ACCOUNT_PATH;
+    const serviceAccountJson = config.FCM_SERVICE_ACCOUNT_JSON;
+
+    let credential: ReturnType<typeof admin.credential.cert>;
+    if (serviceAccountPath) {
+      const fileContent = readFileSync(serviceAccountPath, "utf8");
+      credential = admin.credential.cert(JSON.parse(fileContent));
+    } else {
+      credential = admin.credential.cert(JSON.parse(serviceAccountJson!));
+    }
+
+    if (!admin.apps.length) {
+      admin.initializeApp({ credential });
+    }
+    fcmMessaging = admin.messaging();
+    fcmInitialised = true;
+    return true;
+  } catch (err) {
+    console.error("Failed to initialise Firebase Admin SDK:", err);
+    return false;
+  }
+}
+
+async function sendFcmPush(token: string, payload: PushPayload): Promise<boolean> {
+  if (!(await ensureFcmConfigured()) || !fcmMessaging) return false;
+
+  const androidData: Record<string, string> = {};
+  if (payload.tag) androidData["tag"] = payload.tag;
+  if (payload.data) {
+    for (const [k, v] of Object.entries(payload.data)) {
+      androidData[k] = v ?? "";
+    }
+  }
+  if (payload.timestamp) androidData["timestamp"] = String(payload.timestamp);
+  androidData["serverUrl"] = config.APP_URL;
+  androidData["body"] = payload.body;
+
+  try {
+    await fcmMessaging.send({
+      token,
+      data: androidData,
+      android: {
+        priority: "high" as const,
+        ttl: 60000,
+      },
+      apns: {
+        payload: {
+          aps: {
+            alert: { title: payload.title, body: payload.body },
+            badge: 1,
+            sound: "default",
+            ...(payload.requireInteraction ? { "content-available": 1 } : {}),
+          },
+        },
+      },
+    });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+// ── Public API ───────────────────────────────────────────────────────────────
+
+export function isPushEnabled(): boolean {
+  return ensureVapidConfigured() || isFcmConfigured();
+}
+
+export function isFcmAvailable(): boolean {
+  return isFcmConfigured();
+}
+
+export function getVapidPublicKey(): string | null {
+  if (!ensureVapidConfigured()) return null;
+  return vapidKeys?.publicKey ?? null;
 }
 
 export async function getPushPreferences(userId: string): Promise<PushPreferences> {
@@ -114,40 +207,66 @@ export async function upsertPushPreferences(
 }
 
 export async function sendPushToUser(userId: string, payload: PushPayload): Promise<void> {
-  if (!ensurePushConfigured()) return;
+  const isFcmReady = isFcmConfigured();
 
-  const rows = await query<PushSubscriptionRow>(
-    `SELECT endpoint, p256dh, auth
-     FROM push_subscriptions
-     WHERE user_id = $1
-       AND revoked_at IS NULL`,
-    [userId]
-  );
-  if (rows.length === 0) return;
+  if (!ensureVapidConfigured() && !isFcmReady) return;
 
-  const body = JSON.stringify(payload);
-  await Promise.all(
-    rows.map(async (row) => {
-      try {
-        await webpush.sendNotification(rowToSubscription(row), body, {
-          TTL: 60,
-          urgency: "high",
-        });
-        await query(
-          "UPDATE push_subscriptions SET last_success_at = now(), updated_at = now() WHERE endpoint = $1",
-          [row.endpoint]
-        );
-      } catch (err) {
-        const statusCode = (err as { statusCode?: number }).statusCode;
-        if (statusCode === 404 || statusCode === 410) {
-          await markSubscriptionDead(row.endpoint);
-          return;
-        }
-        await query(
-          "UPDATE push_subscriptions SET last_error_at = now(), updated_at = now() WHERE endpoint = $1",
-          [row.endpoint]
-        );
-      }
-    })
-  );
+  // ── VAPID: query browser push subscriptions ───────────────────────────
+  const vapidConfigured = ensureVapidConfigured();
+  if (vapidConfigured) {
+    const rows = await query<VapidSubscriptionRow>(
+      `SELECT endpoint, p256dh, auth
+       FROM push_subscriptions
+       WHERE user_id = $1
+         AND revoked_at IS NULL`,
+      [userId]
+    );
+
+    if (rows.length > 0) {
+      const body = JSON.stringify(payload);
+      await Promise.all(
+        rows.map(async (row) => {
+          try {
+            await webpush.sendNotification(rowToSubscription(row), body, {
+              TTL: 60,
+              urgency: "high",
+            });
+            await query(
+              "UPDATE push_subscriptions SET last_success_at = now(), updated_at = now() WHERE endpoint = $1",
+              [row.endpoint]
+            );
+          } catch (err) {
+            const statusCode = (err as { statusCode?: number }).statusCode;
+            if (statusCode === 404 || statusCode === 410) {
+              await markSubscriptionDead(row.endpoint);
+              return;
+            }
+            await query(
+              "UPDATE push_subscriptions SET last_error_at = now(), updated_at = now() WHERE endpoint = $1",
+              [row.endpoint]
+            );
+          }
+        })
+      );
+    }
+  }
+
+  // ── FCM: query native device tokens ───────────────────────────────────
+  if (isFcmReady) {
+    const fcmRows = await query<FcmTokenRow>(
+      `SELECT fcm_token
+       FROM push_device_tokens
+       WHERE user_id = $1
+         AND revoked_at IS NULL`,
+      [userId]
+    );
+
+    if (fcmRows.length > 0) {
+      await Promise.all(
+        fcmRows.map(async (row) => {
+          await sendFcmPush(row.fcm_token, payload);
+        })
+      );
+    }
+  }
 }

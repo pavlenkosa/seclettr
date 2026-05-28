@@ -24,7 +24,7 @@ interface PasscodeRecord {
 }
 
 /**
- * Legacy app-lock verifier written by app-lock-pin.ts.
+ * Legacy app-lock verifier from older builds (PBKDF2-SHA-256, no algo marker).
  *
  * Older builds stored the PIN verifier without an explicit algorithm marker.
  * Treating that record as "no PIN" is dangerous: a browser with a PIN-wrapped

@@ -89,7 +89,12 @@ export function MediaGroupCell({
     <img
       src={previewUrl ?? undefined}
       className={styles.mediaGroupThumb}
-      alt={msg.attachment?.fileName || ""}
+      alt={
+        msg.attachment?.caption ||
+        fallbackCaption ||
+        msg.attachment?.fileName ||
+        t(isVideo ? "message.media.videoAlt" : "message.media.imageAlt")
+      }
       draggable={false}
       onLoad={(e) => {
         if (e.currentTarget.naturalWidth > 0 && e.currentTarget.naturalHeight > 0) {

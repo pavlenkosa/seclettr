@@ -12,11 +12,14 @@ import { useCallInputDevices } from "@/calls/shared/media/input-devices/useCallI
 import type { VideoResolution } from "@/calls/shared/presentation/CallDevicePicker";
 import { CallDurationText } from "@/calls/shared/presentation/CallDurationText";
 import {
+  CameraIcon,
   LockIcon,
   MinimizeIcon,
+  PhoneIcon,
   SwitchCameraIcon,
 } from "@/calls/shared/presentation/CallIcons";
-import { HeaderBar, IconButton, InfoStack } from "@/components/ui";
+import { useI18n } from "@/i18n";
+import { HeaderBar, IconButton, IconPill, InfoStack } from "@/components/ui";
 
 import styles from "@/calls/direct/presentation/DirectCallPanel.module.css";
 import activeStyles from "./DirectCallActiveOverlay.module.css";
@@ -48,6 +51,8 @@ interface DirectCallActiveOverlayProps {
   readonly peerDisplayName: string;
   readonly peerInitials: string;
   readonly callStateText: string;
+  readonly callType: "audio" | "video";
+  readonly callTypeLabel: string;
   readonly duration: number;
   readonly durationStartedAtMs: number | null;
   readonly cameraStageLabel: string;
@@ -142,6 +147,8 @@ export function DirectCallActiveOverlay({
   peerDisplayName,
   peerInitials,
   callStateText,
+  callType,
+  callTypeLabel,
   duration,
   durationStartedAtMs,
   cameraStageLabel,
@@ -208,6 +215,7 @@ export function DirectCallActiveOverlay({
   cameraSettingsAriaLabel,
   screenSettingsAriaLabel,
 }: DirectCallActiveOverlayProps) {
+  const { t } = useI18n();
   const [selectedVideoResolution, setSelectedVideoResolution] = useState<VideoResolution>("720p");
   const callHeaderRef = useRef<HTMLDivElement>(null);
   const [securitySheetTop, setSecuritySheetTop] = useState<number | null>(null);
@@ -322,15 +330,16 @@ export function DirectCallActiveOverlay({
   const hasAudioOutputControls = audioOutputSupport === "full" || audioCanPrompt;
 
   const callStateSpan = callStateText
-    ? <span className={styles.callHeaderDuration}>{callStateText}</span>
+    ? <span className={activeStyles.callHeaderDuration}>{callStateText}</span>
     : null;
   const callHeaderDuration = durationStartedAtMs === null
     ? callStateSpan
     : (
         <CallDurationText
-          className={styles.callHeaderDuration}
+          className={activeStyles.callHeaderDuration}
           baseSeconds={duration}
           startedAtMs={durationStartedAtMs}
+          ariaLabel={t("call.durationAria")}
         />
       );
   return (
@@ -350,6 +359,15 @@ export function DirectCallActiveOverlay({
       <HeaderBar
         className={styles.callHeader}
         stackCenterOnNarrow
+        leading={(
+          <IconPill
+            className={styles.modeChip}
+            icon={callType === "video" ? <CameraIcon /> : <PhoneIcon />}
+            size="sm"
+          >
+            {callTypeLabel}
+          </IconPill>
+        )}
         center={(
           <InfoStack
             className={activeStyles.callHeaderSummary}
@@ -369,7 +387,7 @@ export function DirectCallActiveOverlay({
                 aria-label={callSecurityToggleLabel}
               >
                 <LockIcon />
-                <span>{callSecurityStatusLabel}</span>
+                <span className={activeStyles.callEncryptionBadgeLabel}>{callSecurityStatusLabel}</span>
               </button>
             )}
             titleClassName={activeStyles.callHeaderTitle}
@@ -436,10 +454,6 @@ export function DirectCallActiveOverlay({
         />
       </div>
 
-      {hasAudioOutputControls ? (
-        <AudioOutputSelector compact hideLabel className={activeStyles.callAudioOutputBar} />
-      ) : null}
-
       {shouldRenderLocalCameraPreview ? (
         <DirectCallFloatingPreview
           shellRef={localPreviewShellRef}
@@ -478,7 +492,17 @@ export function DirectCallActiveOverlay({
         />
       ) : null}
 
-      <DirectCallControls
+      {/* callControlsArea groups the audio-output selector and the controls dock so
+          they render as one visual unit rather than two separate flex rows. On desktop
+          the AudioOutputSelector pill sits just above the dock; on mobile the pill is
+          hidden (display:none) and DirectCallControls renders its own mobileAudioOutputBar
+          — both end up inside this container, visually unified. */}
+      <div className={activeStyles.callControlsArea}>
+        {hasAudioOutputControls ? (
+          <AudioOutputSelector compact hideLabel className={activeStyles.callAudioOutputBar} />
+        ) : null}
+        <DirectCallControls
+        callType={callType}
         muted={muted}
         videoOff={videoOff}
         screenSharing={screenSharing}
@@ -513,6 +537,7 @@ export function DirectCallActiveOverlay({
         onSelectVideoResolution={(res) => { void handleSelectVideoResolution(res); }}
         onSelectScreenResolution={onSelectScreenResolution}
       />
+      </div>
     </dialog>
   );
 }

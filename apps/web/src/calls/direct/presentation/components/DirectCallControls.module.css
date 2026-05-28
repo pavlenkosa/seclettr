@@ -23,7 +23,7 @@
 
 .controlsDock {
   --call-controls-position: sticky;
-  --call-controls-bottom: calc(env(safe-area-inset-bottom, 0px) + 2px);
+  --call-controls-bottom: calc(var(--safe-bottom) + 2px);
   --call-controls-z-index: var(--z-8);
   --call-controls-width: fit-content;
   --call-controls-max-width: min(100%, 760px);
@@ -44,6 +44,20 @@
   --call-control-inline-blur: 8px;
 }
 
+/* 640–960 px: the desktop React path renders (isMobile = false) but CallControlsDock's
+   own 960px breakpoint switches its internals to flex-direction:column by default.
+   Override back to a horizontal pill row so the dock never collapses vertically
+   on mid-size viewports (laptops, narrow desktop windows). */
+@media (max-width: 960px) {
+  .controlsDock {
+    --call-controls-direction-narrow: row;
+    --call-controls-align-narrow: center;
+    --call-controls-radius-narrow: 999px;
+    --call-controls-width-narrow: fit-content;
+    --call-controls-max-width: min(100%, 700px);
+  }
+}
+
 @media (max-width: 760px) {
   .controlsDock {
     --call-controls-gap: 0.5rem;
@@ -55,58 +69,70 @@
   }
 }
 
-/* Mobile stacked layout — matches useIsMobileViewport 640px breakpoint */
+/* Mobile controls dock — compact pill matching desktop visual language. */
 @media (max-width: 640px) {
   .controlsDock {
-    /* Full-width dock, equal-distribution row */
-    --call-controls-width: 100%;
-    --call-controls-max-width: 100%;
-    --call-controls-padding: 0.52rem 0.6rem;
-    --call-controls-gap: 0.38rem;
-    /* Keep row direction so stacked buttons sit side-by-side */
+    --call-controls-width: fit-content;
+    --call-controls-width-narrow: fit-content;
+    --call-controls-max-width: calc(100% - 1rem);
+    --call-controls-padding: 0.48rem 0.56rem;
+    --call-controls-gap: 0.42rem;
     --call-controls-direction-narrow: row;
-    --call-controls-align-narrow: stretch;
-    --call-controls-radius-narrow: 22px;
+    --call-controls-align-narrow: center;
+    --call-controls-radius-narrow: 999px;
   }
 
   .controlBtn {
-    /* Compact stacked sizing tuned for mobile phones */
-    --call-control-stacked-min-height-narrow: 64px;
-    --call-control-stacked-icon-size-narrow: 32px;
-    --call-control-stacked-icon-radius-narrow: 11px;
-    --call-control-stacked-label-size-narrow: 0.6rem;
-    --call-control-stacked-padding-narrow: 0.44rem 0.28rem;
-    --call-control-stacked-radius-narrow: 14px;
+    --call-control-inline-height: 58px;
+    --call-control-inline-compact-width: 58px;
+    --call-control-inline-compact-padding: 0;
+  }
+
+  .mobileAudioOutputBar {
+    display: flex;
+    justify-content: center;
+    /* 0.8rem gap between pill and the controls dock below it */
+    margin: 0 auto 0.8rem;
+    width: fit-content;
+    max-width: calc(100% - 1rem);
+  }
+
+  .mobileAudioOutputButton {
+    min-height: 44px;
+    max-width: 100%;
+  }
+
+  /* Sheet must clear: safe-bottom + dock-height (~64px) + pill-height (~44px) + gaps (~24px) */
+  .audioOutputSheet {
+    left: 0.72rem;
+    right: 0.72rem;
+    bottom: calc(var(--safe-bottom) + 148px);
+    border-radius: 22px;
   }
 }
 
-/* .mobileControlBtn — only applied to active-call stacked buttons (not incoming overlay).
-   Scoped separately so the incoming accept/reject buttons keep their fixed width. */
-.mobileControlBtn {
-  flex: 1;
+/* Compact mobile direct-call controls stay in the same visual family as desktop:
+   one pill dock with icon-first inline actions instead of stacked cards. */
+.mobileToolbarBtn {
+  --call-control-inline-min-width: 58px;
 }
 
-/* Audio-output sheet — mobile web only (shown when native speaker toggle is unavailable).
-   Wrapper matches the mobileControlBtn flex contract so the button lays out identically
-   to the other stacked buttons. The scrim + sheet are position:fixed so they break out
-   of the overflow-hidden call overlay and cover the full viewport. */
-.audioOutputWrapper {
-  flex: 1;
-  position: relative;
-  display: flex;
-}
-
+/* Audio-output sheet — mobile route chooser shown from the compact bar above the dock.
+   The scrim + sheet are position:fixed so they break out of the overflow-hidden call
+   overlay and cover the full viewport. */
 .audioOutputScrim {
   position: fixed;
   inset: 0;
+  background: color-mix(in srgb, var(--bg-primary) 34%, transparent);
   z-index: var(--z-9);
 }
 
+/* Sheet must clear: safe-bottom + dock-height (~72px) + gap (~8px) */
 .audioOutputSheet {
   position: fixed;
   left: 0.75rem;
   right: 0.75rem;
-  bottom: calc(env(safe-area-inset-bottom, 0px) + 96px);
+  bottom: calc(var(--safe-bottom) + 88px);
   z-index: var(--z-10);
   border-radius: 20px;
   background: color-mix(in srgb, var(--surface-shell) 96%, transparent);
@@ -114,8 +140,28 @@
   padding: 0.5rem;
   display: flex;
   flex-direction: column;
-  gap: 0.18rem;
+  gap: 0.26rem;
   animation: controlsDockIn var(--motion-duration-fast) cubic-bezier(0.18, 0.9, 0.2, 1) both;
+}
+
+.audioOutputSheetHeader {
+  display: flex;
+  flex-direction: column;
+  gap: 0.16rem;
+  padding: 0.22rem 0.38rem 0.36rem;
+}
+
+.audioOutputSheetTitle {
+  color: var(--text-primary);
+  font-size: 0.82rem;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+}
+
+.audioOutputSheetHint {
+  color: var(--text-secondary);
+  font-size: 0.7rem;
+  line-height: 1.35;
 }
 
 /* Selectable rows inside the audio output sheet (used for native earpiece/speaker options). */
@@ -134,6 +180,11 @@
   cursor: pointer;
   text-align: left;
   transition: background var(--motion-duration-fast) ease;
+}
+
+.audioSheetOption:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
 }
 
 .audioSheetOption:hover {

@@ -108,7 +108,18 @@ async function enforceWsTicketRateLimit(request: FastifyRequest, reply: FastifyR
 async function resolveRefreshSession(
   request: FastifyRequest
 ): Promise<RefreshSessionResolution> {
-  const rawToken = request.cookies["refresh_token"];
+  // Cookie is the primary carrier.  Native clients (Capacitor) may additionally
+  // send an `X-Refresh-Token` header as a fallback: on Android the WebView cookie
+  // store can be wiped after an OS-level process kill, while Preferences storage
+  // (used by `@capacitor/preferences`) survives restarts.
+  // The header fallback is only accepted from known native origins to prevent
+  // regular browser JS from using this path.
+  const cookieToken = request.cookies["refresh_token"];
+  const headerToken = isNativeClient(request)
+    ? (request.headers["x-refresh-token"] as string | undefined)
+    : undefined;
+  const rawToken = cookieToken ?? headerToken;
+
   if (!rawToken) {
     return { ok: false, error: "No refresh token", clearCookie: false };
   }
@@ -173,6 +184,25 @@ function sendRefreshSessionError(
 }
 
 /**
+ * Returns true for Capacitor / Ionic WebView origins (Android: `https://localhost`,
+ * iOS: `capacitor://localhost`).  Used to:
+ *   1. Set `SameSite=None` on the refresh cookie so it round-trips cross-origin.
+ *   2. Return the refresh token in the response body so the client can persist it
+ *      to native Preferences and survive Android process-kill cookie loss.
+ *   3. Accept an `X-Refresh-Token` header as a fallback when the WebView cookie
+ *      store has been wiped (e.g. after OS-level process kill on Android).
+ */
+function isNativeClient(request: FastifyRequest): boolean {
+  if (config.NODE_ENV === "development") return true;
+  const origin = request.headers["origin"] ?? "";
+  return (
+    origin === "https://localhost" ||
+    origin === "capacitor://localhost" ||
+    origin === "ionic://localhost"
+  );
+}
+
+/**
  * Capacitor Android uses `https://localhost` as its WebView origin;
  * Capacitor iOS uses `capacitor://localhost`.  Both are cross-site relative
  * to the server domain, so `SameSite=Strict` blocks the refresh-token cookie
@@ -183,16 +213,7 @@ function sendRefreshSessionError(
 function resolveRefreshCookieSameSite(
   request: FastifyRequest
 ): "strict" | "none" {
-  if (config.NODE_ENV === "development") return "none";
-  const origin = request.headers["origin"] ?? "";
-  if (
-    origin === "https://localhost" ||
-    origin === "capacitor://localhost" ||
-    origin === "ionic://localhost"
-  ) {
-    return "none";
-  }
-  return "strict";
+  return isNativeClient(request) ? "none" : "strict";
 }
 
 export async function authRoutes(fastify: FastifyInstance): Promise<void> {
@@ -321,6 +342,8 @@ export async function authRoutes(fastify: FastifyInstance): Promise<void> {
       userId: result.userId,
       deviceId: result.deviceId,
       accessToken: result.accessToken,
+      // Native clients need the token in the body to persist it to Preferences.
+      ...(isNativeClient(request) ? { refreshToken: result.refreshToken } : {}),
     }));
   });
 
@@ -501,6 +524,8 @@ export async function authRoutes(fastify: FastifyInstance): Promise<void> {
       deviceId: result.deviceId,
       accessToken: result.accessToken,
       user: result.user,
+      // Native clients need the token in the body to persist it to Preferences.
+      ...(isNativeClient(request) ? { refreshToken: result.refreshToken } : {}),
     });
   });
 
@@ -556,6 +581,9 @@ export async function authRoutes(fastify: FastifyInstance): Promise<void> {
     return RefreshResponseSchema.parse({
       version: AUTH_PROTOCOL_VERSION,
       accessToken,
+      // Return the rotated token in the body for native clients so they can
+      // keep Preferences in sync (the cookie is rotated but may not survive restart).
+      ...(isNativeClient(request) ? { refreshToken: newRefreshToken } : {}),
     });
   });
 

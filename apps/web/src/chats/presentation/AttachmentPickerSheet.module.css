@@ -8,8 +8,7 @@
   align-items: flex-end;
   justify-content: center;
   background: rgb(0 0 0 / 0.44);
-  -webkit-backdrop-filter: blur(3px);
-  backdrop-filter: blur(3px);
+  /* No backdrop-filter — flat overlay is the Seclettr design system standard */
 }
 
 .sheet {
@@ -19,7 +18,7 @@
   border-radius: 20px 20px 0 0;
   border: 1px solid color-mix(in srgb, var(--panel-border-soft, var(--panel-border)) 80%, transparent);
   border-bottom: none;
-  padding: 0.5rem 1rem calc(env(safe-area-inset-bottom, 0px) + 0.75rem);
+  padding: 0.5rem 1rem calc(var(--safe-bottom) + 0.75rem);
   display: flex;
   flex-direction: column;
   gap: 0;
@@ -60,6 +59,14 @@
   min-width: 68px;
   flex: 0 0 auto;
   -webkit-tap-highlight-color: transparent;
+  outline: none;
+}
+
+/* Focus ring sits on the iconWrap, not the button itself, so the circle/square
+   focus indicator follows the visual shape of the icon. */
+.item:focus-visible .iconWrap {
+  outline: 2px solid color-mix(in srgb, var(--accent) 80%, transparent);
+  outline-offset: 3px;
 }
 
 .item:active .iconWrap {
@@ -75,29 +82,31 @@
   align-items: center;
   justify-content: center;
   transition:
-    transform 80ms var(--motion-ease-standard, ease),
     opacity 80ms var(--motion-ease-standard, ease);
   flex-shrink: 0;
 }
 
+/* Icon backgrounds use flat accent-tinted surfaces — no decorative gradients.
+   Each icon type gets a distinct hue offset via color-mix so they remain
+   visually differentiated while inheriting the user's accent and theme. */
 .iconWrap.camera {
-  background: linear-gradient(145deg, #4f8ef7 0%, #7c6af7 100%);
+  background: color-mix(in srgb, var(--accent) 82%, var(--surface-shell));
   color: #fff;
 }
 
 .iconWrap.gallery {
-  background: linear-gradient(145deg, #34c97a 0%, #17b8c4 100%);
+  background: color-mix(in srgb, var(--accent) 58%, var(--surface-shell));
   color: #fff;
 }
 
 .iconWrap.file {
-  background: linear-gradient(145deg, #f7a935 0%, #f05a5a 100%);
+  background: color-mix(in srgb, var(--accent) 38%, var(--surface-shell));
   color: #fff;
 }
 
 .label {
   font-size: 0.74rem;
-  font-weight: 580;
+  font-weight: 600;
   color: var(--text-primary);
   letter-spacing: 0;
   text-align: center;
@@ -171,5 +180,9 @@
   .overlay.entering,
   .overlay.exiting {
     animation: none !important;
+  }
+  /* active scale is forbidden under reduced-motion; opacity-only feedback */
+  .item:active .iconWrap {
+    transform: none;
   }
 }

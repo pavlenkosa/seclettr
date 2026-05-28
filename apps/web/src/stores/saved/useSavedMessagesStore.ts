@@ -136,6 +136,16 @@ export const useSavedMessagesStore = create<SavedMessagesState>((set, get) => ({
   },
 
   reset() {
+    // Remove persisted data from localStorage before clearing the userId reference
+    // so the key can still be computed. This prevents stale plaintext data from
+    // lingering on disk after logout (SEC-01).
+    if (currentUserId) {
+      try {
+        localStorage.removeItem(storageKey(currentUserId));
+      } catch {
+        // storage may be unavailable; best-effort
+      }
+    }
     currentUserId = null;
     set({ messages: [] });
   },

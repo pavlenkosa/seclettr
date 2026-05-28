@@ -24,9 +24,14 @@ export function CacheSettingsSection() {
 
   const refresh = useCallback(async () => {
     setLoading(true);
-    const s = await cacheGetStats();
-    setStats(s);
-    setLoading(false);
+    try {
+      const s = await cacheGetStats();
+      setStats(s);
+    } catch {
+      // best-effort; keep stale stats visible
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
   useEffect(() => {
@@ -35,19 +40,27 @@ export function CacheSettingsSection() {
 
   const handleClearAll = async () => {
     setClearMode("busy");
-    await cacheClearAll();
-    setClearMode("done");
-    await refresh();
-    setTimeout(() => setClearMode("idle"), 2000);
+    try {
+      await cacheClearAll();
+      setClearMode("done");
+      await refresh();
+      setTimeout(() => setClearMode("idle"), 2000);
+    } catch {
+      setClearMode("idle");
+    }
   };
 
   const handleClearOlderThanWeek = async () => {
     setClearOldMode("busy");
-    const oneWeekAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
-    await cacheClearOlderThan(oneWeekAgo);
-    setClearOldMode("done");
-    await refresh();
-    setTimeout(() => setClearOldMode("idle"), 2000);
+    try {
+      const oneWeekAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
+      await cacheClearOlderThan(oneWeekAgo);
+      setClearOldMode("done");
+      await refresh();
+      setTimeout(() => setClearOldMode("idle"), 2000);
+    } catch {
+      setClearOldMode("idle");
+    }
   };
 
   return (

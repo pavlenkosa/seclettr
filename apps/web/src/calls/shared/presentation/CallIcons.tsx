@@ -47,10 +47,13 @@ export function CameraIcon() {
 export function SwitchCameraIcon() {
   return (
     <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden="true">
-      <path d="M4.5 9A4.5 4.5 0 0 0 13.5 9" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
-      <path d="M12.1 7.6L13.5 9L14.9 7.6" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
-      <path d="M13.5 9A4.5 4.5 0 0 0 4.5 9" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
-      <path d="M5.9 10.4L4.5 9L3.1 10.4" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+      {/* camera body */}
+      <rect x="2" y="5" width="14" height="10" rx="2" stroke="currentColor" strokeWidth="1.5" />
+      {/* lens */}
+      <circle cx="9" cy="10" r="2.5" stroke="currentColor" strokeWidth="1.4" />
+      {/* flip arrows in top notch */}
+      <path d="M6.5 3.5L8 2l1.5 1.5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M11.5 3.5L10 2" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
     </svg>
   );
 }

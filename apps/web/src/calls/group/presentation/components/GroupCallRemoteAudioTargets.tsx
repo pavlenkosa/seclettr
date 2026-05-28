@@ -1,5 +1,5 @@
 import { useMediaElementBinding } from "@/calls/shared/media/useMediaElementBinding";
-import type { GroupCallRemoteMedia } from "@/calls/group/runtime/sfu";
+import type { GroupCallRemoteMedia } from "@/calls/group/runtime";
 
 import styles from "@/calls/group/presentation/GroupCallPanel.module.css";
 

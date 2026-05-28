@@ -1,5 +1,29 @@
 import { describe, expect, it } from "vitest";
-import { isDevelopmentCorsOriginAllowed } from "../cors.js";
+import { isCapacitorOriginAllowed, isDevelopmentCorsOriginAllowed } from "../cors.js";
+
+describe("isCapacitorOriginAllowed", () => {
+  it("allows capacitor://localhost for Capacitor custom scheme", () => {
+    expect(isCapacitorOriginAllowed("capacitor://localhost")).toBe(true);
+  });
+
+  it("allows https://localhost for default Capacitor WebView", () => {
+    expect(isCapacitorOriginAllowed("https://localhost")).toBe(true);
+  });
+
+  it("rejects http://localhost (not secure)", () => {
+    expect(isCapacitorOriginAllowed("http://localhost")).toBe(false);
+  });
+
+  it("rejects other origins", () => {
+    expect(isCapacitorOriginAllowed("https://seclettr.com")).toBe(false);
+    expect(isCapacitorOriginAllowed("https://example.com")).toBe(false);
+  });
+
+  it("rejects malformed origins without throwing", () => {
+    expect(() => isCapacitorOriginAllowed("not a url")).not.toThrow();
+    expect(isCapacitorOriginAllowed("not a url")).toBe(false);
+  });
+});
 
 describe("development CORS origin validation", () => {
   it("allows explicitly configured origins", () => {

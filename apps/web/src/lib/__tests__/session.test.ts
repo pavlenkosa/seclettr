@@ -84,6 +84,7 @@ describe("refreshSessionAccessToken", () => {
     expect(fetchMock).toHaveBeenCalledWith("/api/auth/session", {
       method: "POST",
       credentials: "include",
+      headers: {},
     });
     expect(mockSetAccessToken).not.toHaveBeenCalled();
   });

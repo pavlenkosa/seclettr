@@ -16,7 +16,7 @@
 import { useMemo } from "react";
 import { useI18n } from "@/i18n";
 import type { LocalGroupCallMediaKey } from "@/calls/group/runtime/media-key/media-key";
-import type { GroupCallRemoteMedia } from "@/calls/group/runtime/sfu";
+import type { GroupCallRemoteMedia } from "@/calls/group/runtime";
 import { type StatusBadgeTone } from "@/components/ui";
 
 import {

@@ -11,7 +11,7 @@
  * Does not affect any production code paths.
  */
 import { useEffect, useMemo, useState } from "react";
-import type { GroupCallRemoteMedia } from "@/calls/group/runtime/sfu";
+import type { GroupCallRemoteMedia } from "@/calls/group/runtime";
 
 export function useGroupCallPanelDevMocks(remoteMedia: GroupCallRemoteMedia[]) {
   const [mockRemoteMedia, setMockRemoteMedia] = useState<GroupCallRemoteMedia[]>([]);

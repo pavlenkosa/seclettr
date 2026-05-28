@@ -27,6 +27,7 @@ import { isMediaCaptureError, resolveErrorMessage } from "@/calls/group/runtime/
 import type { GroupCallRuntimeMediaEncryptionMode } from "@/calls/group/runtime/media-key/media-encryption-negotiation";
 import type { GroupCallStatusAction } from "@/calls/group/model/group-call-types";
 import { createSfuClientWithRetry, wait, type CreateSfuClientWithRetryContext } from "./sfu-client";
+import { logger } from "@/lib/logger.js";
 
 export class GroupCallSessionAbortError extends Error {
   constructor() {
@@ -132,6 +133,11 @@ export async function handleStartGroupCallFailure(
   ctx: BootstrapContext,
   state: BootstrapCallState
 ): Promise<void> {
+  logger.error("[group-call] bootstrap failed", {
+    groupId: ctx.groupId,
+    callId: state.createdCallId ?? ctx.callIdRef.current,
+    error,
+  });
   if (!ctx.isCurrentSessionRun()) {
     ctx.stopLocalStream(state.localStream);
     await ctx.leaveJoinedCall();
@@ -284,6 +290,13 @@ export async function runGroupCallBootstrap(
         return;
       }
 
+      logger.warn("[group-call] bootstrap attempt failed — retrying", {
+        groupId: ctx.groupId,
+        callId: state.createdCallId ?? ctx.callIdRef.current,
+        attempt: bootstrapAttempt,
+        maxAttempts: INITIAL_CALL_BOOTSTRAP_ATTEMPTS,
+        error,
+      });
       ctx.sfuClientRef.current?.close();
       ctx.sfuClientRef.current = null;
       await ctx.leaveJoinedCall();

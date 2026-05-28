@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { Avatar } from "@/components/ui";
+import { Avatar, PillButton } from "@/components/ui";
 import { useNativeBackAction } from "@/lib/hooks";
 
 import styles from "./GroupInfoModal.module.css";
@@ -87,33 +87,33 @@ export function GroupInfoMemberActionSheet({
         </div>
         <div className={styles.sheetActions}>
           {canVerify ? (
-            <button type="button" className={styles.sheetAction} onClick={onVerify}>
+            <PillButton type="button" tone="neutral" appearance="soft" size="md" fullWidth onClick={onVerify}>
               {t("group.members.verify")}
-            </button>
+            </PillButton>
           ) : null}
           {canPromote && !isSelf && role === "member" ? (
-            <button type="button" className={styles.sheetAction} onClick={onPromote} disabled={busy}>
+            <PillButton type="button" tone="accent" appearance="soft" size="md" fullWidth onClick={onPromote} disabled={busy}>
               {t("group.info.action.promoteAdmin")}
-            </button>
+            </PillButton>
           ) : null}
           {canPromote && !isSelf && role === "admin" ? (
-            <button type="button" className={styles.sheetAction} onClick={onDemote} disabled={busy}>
+            <PillButton type="button" tone="neutral" appearance="soft" size="md" fullWidth onClick={onDemote} disabled={busy}>
               {t("group.info.action.demoteMember")}
-            </button>
+            </PillButton>
           ) : null}
           {canPromote && !isSelf && role !== "owner" ? (
-            <button type="button" className={styles.sheetAction} onClick={onTransferOwnership} disabled={busy}>
+            <PillButton type="button" tone="neutral" appearance="soft" size="md" fullWidth onClick={onTransferOwnership} disabled={busy}>
               {t("group.info.action.transferOwnership")}
-            </button>
+            </PillButton>
           ) : null}
           {canRemove ? (
-            <button type="button" className={`${styles.sheetAction} ${styles.sheetActionDanger}`} onClick={onRemove} disabled={busy}>
+            <PillButton type="button" tone="danger" appearance="soft" size="md" fullWidth onClick={onRemove} disabled={busy}>
               {isSelf ? t("group.members.leave") : t("group.members.remove")}
-            </button>
+            </PillButton>
           ) : null}
-          <button type="button" className={styles.sheetAction} onClick={onClose}>
+          <PillButton type="button" tone="neutral" appearance="soft" size="md" fullWidth onClick={onClose}>
             {t("group.info.cancel")}
-          </button>
+          </PillButton>
         </div>
       </div>
     </div>

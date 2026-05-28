@@ -398,27 +398,34 @@ public class PushForegroundService extends Service {
     private void pushNotification(int notifId, String title, String content, String deepLinkPath) {
         String deepLinkUrl = serverUrl.replaceFirst("/api/?$", "") + deepLinkPath;
 
-        Intent tapIntent = new Intent(Intent.ACTION_VIEW, Uri.parse(deepLinkUrl));
-        tapIntent.setClass(this, MainActivity.class);
-        tapIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP);
-
-        PendingIntent pendingIntent = PendingIntent.getActivity(
-            this, notifId, tapIntent,
-            PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE
-        );
+        PendingIntent tapIntent = createNavigatePendingIntent(deepLinkUrl, notifId);
+        PendingIntent replyIntent = createNavigatePendingIntent(deepLinkUrl, notifId + 1);
+        PendingIntent markReadIntent = createNavigatePendingIntent(deepLinkUrl, notifId + 2);
 
         NotificationCompat.Builder builder = new NotificationCompat.Builder(this, CHANNEL_MESSAGES)
             .setSmallIcon(R.drawable.ic_stat_notification)
             .setContentTitle(title)
             .setContentText(content)
             .setAutoCancel(true)
-            .setContentIntent(pendingIntent)
-            .setPriority(NotificationCompat.PRIORITY_HIGH);
+            .setContentIntent(tapIntent)
+            .setPriority(NotificationCompat.PRIORITY_HIGH)
+            .addAction(R.drawable.ic_stat_notification, "Reply", replyIntent)
+            .addAction(R.drawable.ic_stat_notification, "Mark as read", markReadIntent);
 
         NotificationManager nm = getSystemService(NotificationManager.class);
         if (nm != null) {
             nm.notify(notifId, builder.build());
         }
+    }
+
+    private PendingIntent createNavigatePendingIntent(String deepLinkUrl, int requestCode) {
+        Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(deepLinkUrl));
+        intent.setClass(this, MainActivity.class);
+        intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP);
+        return PendingIntent.getActivity(
+            this, requestCode, intent,
+            PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE
+        );
     }
 
     // ── Helpers ───────────────────────────────────────────────────────────────

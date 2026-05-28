@@ -2,7 +2,7 @@
  * Centralised configuration loaded from environment variables.
  * All secrets come from env - never hardcoded.
  */
-import { readFileSync } from "node:fs";
+import { readFileSync, existsSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { resolve, dirname } from "node:path";
 import { z } from "zod";
@@ -78,6 +78,10 @@ const ConfigSchema = z.object({
   VAPID_PUBLIC_KEY: z.string().optional(),
   VAPID_PRIVATE_KEY: z.string().optional(),
   VAPID_SUBJECT: z.string().default("mailto:dev@localhost"),
+
+  // FCM (optional — overrides Android native WebSocket push when configured)
+  FCM_SERVICE_ACCOUNT_PATH: z.string().optional(),
+  FCM_SERVICE_ACCOUNT_JSON: z.string().optional(),
   DELIVERED_MESSAGE_RETENTION_DAYS: z.coerce.number().int().min(1).default(30),
   UNDELIVERED_MESSAGE_RETENTION_DAYS: z.coerce.number().int().min(1).default(90),
   GROUP_MESSAGE_RETENTION_DAYS: z.coerce.number().int().min(1).default(30),

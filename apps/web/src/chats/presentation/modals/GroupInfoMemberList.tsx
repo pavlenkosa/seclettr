@@ -1,6 +1,4 @@
-import { Avatar } from "@/components/ui";
-
-import styles from "./GroupInfoModal.module.css";
+import { Avatar, EntityRow, LabelPill } from "@/components/ui";
 import { normalizeRole, type GroupInfoMember } from "./group-info-modal-shared";
 
 interface GroupInfoMemberListProps {
@@ -19,7 +17,7 @@ export function GroupInfoMemberList({
   t,
 }: GroupInfoMemberListProps) {
   return (
-    <ul className={styles.memberList}>
+    <ul style={{ listStyle: "none", margin: 0, padding: 0 }}>
       {members.map((member) => {
         const role = normalizeRole(member.role);
         const isSelf = member.userId === myUserId;
@@ -27,28 +25,27 @@ export function GroupInfoMemberList({
 
         return (
           <li key={member.userId}>
-            <button
-              type="button"
-              className={styles.memberRow}
+            <EntityRow
+              leading={<Avatar label={member.username} size={42} fontSize="0.9rem" ariaHidden />}
+              title={
+                <>
+                  @{member.username}
+                  {isSelf ? (
+                    <LabelPill size="xs" tone="default" style={{ marginLeft: "0.4rem" }}>
+                      {t("group.members.you")}
+                    </LabelPill>
+                  ) : null}
+                </>
+              }
+              meta={showRoleBadge ? (
+                <LabelPill size="xs" tone={role === "owner" ? "warning" : "default"}>
+                  {t(`group.members.role.${role}`)}
+                </LabelPill>
+              ) : null}
+              size="md"
               onClick={() => onSelectMember(member.userId)}
               disabled={busyMemberId === member.userId}
-            >
-              <Avatar label={member.username} size={42} fontSize="0.9rem" ariaHidden />
-              <span className={styles.memberMain}>
-                <span className={styles.memberName}>
-                  @{member.username}
-                  {isSelf ? <span className={styles.youTag}>{t("group.members.you")}</span> : null}
-                </span>
-                {showRoleBadge ? (
-                  <span className={`${styles.roleBadge} ${role === "owner" ? styles.roleOwner : styles.roleAdmin}`}>
-                    {t(`group.members.role.${role}`)}
-                  </span>
-                ) : null}
-              </span>
-              <svg className={styles.memberChevron} width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true">
-                <path d="M4.5 2.5L8 6l-3.5 3.5" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
-              </svg>
-            </button>
+            />
           </li>
         );
       })}

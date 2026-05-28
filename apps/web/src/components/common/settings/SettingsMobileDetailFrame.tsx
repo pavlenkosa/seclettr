@@ -4,14 +4,12 @@ import styles from "../SettingsScreen.module.css";
 interface SettingsMobileDetailFrameProps {
   readonly title: string;
   readonly description: string;
-  readonly summary: string;
   readonly children: ReactNode;
 }
 
 export function SettingsMobileDetailFrame({
   title,
   description,
-  summary,
   children,
 }: Readonly<SettingsMobileDetailFrameProps>) {
   return (
@@ -21,7 +19,6 @@ export function SettingsMobileDetailFrame({
           <h2 className={styles.detailTitle}>{title}</h2>
           <p className={styles.detailDescription}>{description}</p>
         </div>
-        <div className={styles.detailSummary}>{summary}</div>
       </div>
       <div className={styles.detailContent}>{children}</div>
     </main>

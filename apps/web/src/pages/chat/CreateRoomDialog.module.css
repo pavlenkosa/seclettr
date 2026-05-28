@@ -1,74 +1,16 @@
-/* ─── Overlay ─────────────────────────────────────────────────────────────── */
+/*
+ * CreateRoomDialog — room creation form body, footer, and field layout.
+ *
+ * Owns:
+ * - .body, .field, .label, .error — form layout inside ModalShell body
+ * - .footer — footer slot content (button row)
+ *
+ * Shell, header, overlay, and close button are owned by ModalShell.
+ * Call-type selection uses SegmentedControl; TTL selection uses SelectField;
+ * action buttons use PillButton — primitives own their visual language.
+ */
 
-.overlay {
-  position: fixed;
-  inset: 0;
-  z-index: var(--z-8000);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 1rem;
-  background: rgb(0 0 0 / 0.52);
-}
-
-/* ─── Surface ─────────────────────────────────────────────────────────────── */
-
-.surface {
-  position: relative;
-  display: flex;
-  flex-direction: column;
-  width: min(400px, 100%);
-  border-radius: 22px;
-  border: 1px solid color-mix(in srgb, var(--panel-border-soft) 88%, transparent);
-  background: color-mix(in srgb, var(--surface-shell) 98%, var(--surface-float));
-  overflow: hidden;
-  outline: none;
-}
-
-/* ─── Header ─────────────────────────────────────────────────────────────── */
-
-.header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.5rem;
-  padding: 0.9rem 1rem 0.9rem 1.2rem;
-  border-bottom: 1px solid color-mix(in srgb, var(--panel-border-soft) 72%, transparent);
-  flex-shrink: 0;
-}
-
-.headerTitle {
-  font-size: 0.95rem;
-  font-weight: 670;
-  color: var(--text-primary);
-  letter-spacing: -0.01em;
-}
-
-.headerClose {
-  all: unset;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 28px;
-  height: 28px;
-  border-radius: 50%;
-  color: var(--text-muted);
-  cursor: pointer;
-  transition: background var(--motion-duration-fast) ease, color var(--motion-duration-fast) ease;
-  flex-shrink: 0;
-}
-
-.headerClose:hover {
-  background: color-mix(in srgb, var(--accent) 12%, transparent);
-  color: var(--text-primary);
-}
-
-.headerClose:focus-visible {
-  outline: 2px solid var(--accent);
-  outline-offset: 1px;
-}
-
-/* ─── Body ────────────────────────────────────────────────────────────────── */
+/* ─── Body ─────────────────────────────────────��──────────────────────────── */
 
 .body {
   display: flex;
@@ -91,63 +33,7 @@
   letter-spacing: 0.01em;
 }
 
-/* ─── Segment control ────────────────────────────────────────────────────── */
-
-.segments {
-  display: flex;
-  gap: 0.5rem;
-}
-
-.segmentButton {
-  flex: 1;
-  min-height: 36px;
-  padding: 0.45rem 0.7rem;
-  border: 1px solid color-mix(in srgb, var(--panel-border-soft) 86%, transparent);
-  border-radius: 10px;
-  background: color-mix(in srgb, var(--surface-shell) 60%, transparent);
-  color: var(--text-secondary);
-  font-size: 0.875rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition:
-    background 120ms ease,
-    border-color 120ms ease,
-    color 120ms ease;
-}
-
-.segmentButton:hover {
-  border-color: color-mix(in srgb, var(--accent) 34%, var(--panel-border-soft));
-  color: var(--text-primary);
-}
-
-.segmentButtonActive {
-  border-color: color-mix(in srgb, var(--accent) 58%, transparent);
-  background: color-mix(in srgb, var(--accent) 18%, transparent);
-  color: var(--accent);
-}
-
-/* ─── Select ─────────────────────────────────────────────────────────────── */
-
-.select {
-  display: block;
-  width: 100%;
-  min-height: 38px;
-  padding: 0.5rem 0.75rem;
-  border: 1px solid color-mix(in srgb, var(--panel-border-soft) 86%, transparent);
-  border-radius: 10px;
-  background: color-mix(in srgb, var(--surface-shell) 60%, transparent);
-  color: var(--text-primary);
-  font-size: 0.875rem;
-  appearance: auto;
-}
-
-.select:focus {
-  outline: 2px solid color-mix(in srgb, var(--accent) 28%, transparent);
-  outline-offset: -1px;
-  border-color: color-mix(in srgb, var(--accent) 48%, var(--panel-border-soft));
-}
-
-/* ─── Error ──────────────────────────────────────────────────────────────── */
+/* ─── Error ───────────────────────────────────────────────────────���──────── */
 
 .error {
   margin: 0 0 0.5rem;
@@ -163,55 +49,4 @@
   align-items: center;
   justify-content: flex-end;
   gap: 0.5rem;
-  padding: 0.82rem 1.2rem 1rem;
-  border-top: 1px solid color-mix(in srgb, var(--panel-border-soft) 60%, transparent);
-  margin-top: 0.25rem;
-  flex-shrink: 0;
-}
-
-/* ─── Buttons ────────────────────────────────────────────────────────────── */
-
-.button {
-  min-height: 36px;
-  padding: 0.45rem 1rem;
-  border-radius: 10px;
-  font-size: 0.875rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition:
-    background 120ms ease,
-    border-color 120ms ease,
-    opacity 120ms ease;
-}
-
-.button:disabled {
-  cursor: not-allowed;
-  opacity: 0.55;
-}
-
-.secondaryButton {
-  border: 1px solid color-mix(in srgb, var(--panel-border-soft) 86%, transparent);
-  background: transparent;
-  color: var(--text-primary);
-}
-
-.secondaryButton:hover:not(:disabled) {
-  border-color: color-mix(in srgb, var(--accent) 34%, var(--panel-border-soft));
-  background: color-mix(in srgb, var(--accent) 8%, transparent);
-}
-
-.primaryButton {
-  border: 1px solid color-mix(in srgb, var(--accent) 58%, transparent);
-  background: var(--accent);
-  color: #fff;
-}
-
-.primaryButton:hover:not(:disabled) {
-  background: color-mix(in srgb, var(--accent) 88%, black 12%);
-}
-
-/* ─── Light theme ────────────────────────────────────────────────────────── */
-
-:global(:root[data-theme="light"]) .surface {
-  background: var(--surface-lighten);
 }

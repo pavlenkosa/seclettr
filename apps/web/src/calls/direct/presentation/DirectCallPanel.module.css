@@ -1,83 +1,57 @@
 /*
- * Ownership map
- * - Feature-local: incoming/fullscreen/minimized direct-call layout, stage aspect ratios,
- *   security-card composition, floating preview drag/resize shells, and responsive tuning.
- * - Migrated: wrappers that only tune shared FloatingDock, IconButton, IconPill,
- *   HeaderBar, CallControlsDock, and CallControlButton contracts.
- * - Reusable: lift later. Stage action chips and preview action shells still express
- *   direct-call-specific chrome and should move only after direct/group/room parity hardens.
+ * DirectCallPanel — shared overlay shell for direct-call fullscreen surfaces.
+ *
+ * Ownership map:
+ * - Shared overlay shell: callOverlay, callCenter, callCenterVisual, callHeader,
+ *   callHeaderDuration, minimizeBtn, modeChip — used by BOTH
+ *   DirectCallActiveOverlay and DirectCallIncomingOverlay.
+ * - Invisible media elements: remoteAudio (active + minimized), mediaProbe —
+ *   sized to zero but kept with the overlay shell for locality.
+ * - Local preview containers: localPreview, localScreenPreview — outer positioned
+ *   shells owned by DirectCallActiveOverlay; inner content is in
+ *   DirectCallFloatingPreview.module.css.
+ * - Keyframes: entrance animations shared by overlay and preview shells.
+ *
+ * Per-component sections now live in their own modules:
+ * - DirectCallStage.module.css       — stage, callSurface, companion windows
+ * - DirectCallFloatingPreview.module.css — floating preview inner content
+ * - DirectCallSurfaceRenderer.module.css — notice layer
+ * - DirectCallMinimizedDock.module.css   — minimized dock chrome
+ * - DirectCallControls.module.css        — controls dock
+ * - DirectCallActiveOverlay.module.css   — active-call header meta
+ * - DirectCallIncomingOverlay.module.css — incoming-call specific layout
+ * - DirectCallSecurityPanel.module.css   — security sheet
+ *
+ * Banned-pattern check (synced 2026-05-28): clean.
  */
 
-/* ── Motion + notice layer ──────────────────────────────────────────────── */
+/* ── Entrance keyframes ─────────────────────────────────────────────────── */
 
-/* Feature-local: incoming pulse and direct-call entrance timing. */
 @keyframes incomingRingPulse {
-  0% {
-    opacity: 0.6;
-  }
-  100% {
-    opacity: 0;
-  }
-}
-
-@keyframes noticeIn {
-  from {
-    opacity: 0;
-  }
-  to {
-    opacity: 1;
-  }
+  0%   { opacity: 0.6; }
+  100% { opacity: 0; }
 }
 
 @keyframes callSurfaceIn {
-  from {
-    opacity: 0;
-  }
-  to {
-    opacity: 1;
-  }
+  from { opacity: 0; }
+  to   { opacity: 1; }
 }
 
 @keyframes callDockIn {
-  from {
-    opacity: 0;
-  }
-  to {
-    opacity: 1;
-  }
+  from { opacity: 0; }
+  to   { opacity: 1; }
 }
 
 @keyframes callContentIn {
-  from {
-    opacity: 0;
-  }
-  to {
-    opacity: 1;
-  }
+  from { opacity: 0; }
+  to   { opacity: 1; }
 }
 
-.noticeLayer {
-  position: fixed;
-  top: calc(env(safe-area-inset-top, 0px) + 10px);
-  left: 0;
-  right: 0;
-  display: flex;
-  justify-content: center;
-  pointer-events: none;
-  z-index: var(--z-320);
-}
+/* ── Fullscreen overlay shell ───────────────────────────────────────────── */
 
-/* Migrated: InlineNotice owns the surface language; this class only positions it. */
-.notice {
-  pointer-events: auto;
-  min-width: 220px;
-  max-width: min(92vw, 520px);
-  animation: noticeIn var(--motion-duration-base) cubic-bezier(0.18, 0.9, 0.2, 1) both;
-}
-
-/* ── Active fullscreen overlay shell ────────────────────────────────────── */
-
-/* Feature-local: fullscreen shell, safe-area padding, and scroll behavior. */
+/* Feature-local: fullscreen shell, safe-area padding, and scroll behavior.
+   Shared between active (DirectCallActiveOverlay) and incoming
+   (DirectCallIncomingOverlay) — both apply callOverlay as the root dialog. */
 .callOverlay {
   position: fixed;
   inset: 0;
@@ -99,9 +73,9 @@
   justify-content: flex-start;
   gap: clamp(0.5rem, 1vw, 0.75rem);
   padding:
-    calc(env(safe-area-inset-top, 0px) + 14px)
+    calc(var(--safe-top) + 14px)
     clamp(0.9rem, 1.5vw, 1.4rem)
-    calc(env(safe-area-inset-bottom, 0px) + 14px);
+    calc(var(--safe-bottom) + 14px);
   background: color-mix(in srgb, var(--bg-primary) 48%, #05080f);
   animation: callSurfaceIn var(--motion-duration-base) cubic-bezier(0.18, 0.9, 0.2, 1) both;
 }
@@ -149,9 +123,9 @@
   --icon-pill-gap: 0.425rem;
 }
 
-/* ── Stage shell + security surfaces ────────────────────────────────────── */
+/* ── Center region ──────────────────────────────────────────────────────── */
 
-/* Feature-local: stage sizing, source switching, and security composition. */
+/* Feature-local: stage center region, shared between active and incoming overlays. */
 .callCenter {
   position: relative;
   z-index: var(--z-2);
@@ -171,397 +145,10 @@
   justify-content: flex-start;
 }
 
-.callCenterSecurityOpen {
-  gap: 0.62rem;
-}
+/* ── Local preview containers ───────────────────────────────────────────── */
 
-.callSurface {
-  width: 100%;
-  max-width: none;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  flex: 0 1 auto;
-  min-height: 0;
-}
-
-.callSurface:has(.callStageCompact) {
-  flex: 1;
-  min-height: 0;
-}
-
-.callSurfaceScreenFocused {
-  align-items: stretch;
-}
-
-.callStage {
-  --direct-call-avatar-size: clamp(84px, 12vw, 124px);
-  --direct-call-avatar-font-size: clamp(1.32rem, 2vw, 1.82rem);
-  --direct-call-audio-ring-size: calc(var(--direct-call-avatar-size) + 22px);
-  position: relative;
-  width: 100%;
-  border-radius: 18px;
-  overflow: hidden;
-  border: 1px solid color-mix(in srgb, var(--panel-border-soft) 86%, transparent);
-  background: color-mix(in srgb, var(--panel-header-bg) 72%, var(--bg-primary));
-}
-
-.callStageCamera {
-  aspect-ratio: auto;
-  min-height: 320px;
-  height: min(62vh, calc(100vh - 290px));
-  height: min(62dvh, calc(100dvh - 290px));
-}
-
-.callStageScreen {
-  aspect-ratio: 16 / 9;
-  min-height: 240px;
-  max-height: min(64dvh, calc(100dvh - 280px));
-}
-
-.callStageCompact {
-  width: min(100%, 420px);
-  aspect-ratio: 4 / 3;
-  min-height: unset;
-  max-height: 320px;
-  margin-inline: auto;
-  background: color-mix(in srgb, var(--surface-shell) 90%, var(--bg-primary));
-}
-
-/* Audio-only mode: avatar fills all available center height — no border box */
-.callStageAudio.callStageCompact {
-  width: 100%;
-  aspect-ratio: unset;
-  max-height: none;
-  flex: 1;
-  margin-inline: 0;
-  border-color: transparent;
-  background: transparent;
-  border-radius: 0;
-  overflow: visible;
-  --direct-call-avatar-size: clamp(110px, 17vw, 165px);
-  --direct-call-avatar-font-size: clamp(1.7rem, 3.2vw, 2.5rem);
-  --direct-call-audio-ring-size: calc(var(--direct-call-avatar-size) + 30px);
-}
-
-.stagePlaceholderName {
-  position: absolute;
-  left: 1rem;
-  right: 1rem;
-  text-align: center;
-  top: calc(50% + var(--direct-call-audio-ring-size) / 2 + 1.1rem);
-  font-size: clamp(1.05rem, 2.2vw, 1.35rem);
-  font-weight: 700;
-  color: rgba(255 255 255 / 0.92);
-  letter-spacing: -0.015em;
-  pointer-events: none;
-}
-
-.stagePlaceholderStatus {
-  position: absolute;
-  left: 1rem;
-  right: 1rem;
-  text-align: center;
-  top: calc(50% + var(--direct-call-audio-ring-size) / 2 + 1.1rem + 1.8rem);
-  font-size: 0.82rem;
-  color: rgba(255 255 255 / 0.52);
-  font-variant-numeric: tabular-nums;
-  pointer-events: none;
-}
-
-.stageVideo {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-
-.callStageScreen .stageVideo {
-  object-fit: contain;
-  background: color-mix(in srgb, var(--bg-primary) 92%, var(--surface-shell-strong));
-}
-
-.stagePlaceholder {
-  position: absolute;
-  inset: 0;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 0.8rem;
-  padding: 1.2rem;
-  background: color-mix(in srgb, var(--surface-shell) 90%, var(--bg-primary));
-}
-
-.callStageAudio .stagePlaceholder {
-  background: transparent;
-}
-
-.stageMeta {
-  position: absolute;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  --info-stack-gap: 0.12rem;
-  padding: 0.8rem 0.92rem 0.78rem;
-  background: color-mix(in srgb, var(--bg-primary) 62%, transparent);
-}
-
-.stageVisualBadge {
-  position: absolute;
-  top: 0.9rem;
-  left: 0.9rem;
-  z-index: var(--z-2);
-}
-
-.stageActionRail {
-  position: absolute;
-  top: 0.9rem;
-  right: 0.9rem;
-  z-index: var(--z-2);
-  display: flex;
-  align-items: center;
-  gap: 0.45rem;
-  flex-wrap: wrap;
-  justify-content: flex-end;
-}
-
-/* Reusable: lift later. Stage action shells overlap with compact call-control language. */
-.stageActionBtn {
-  min-height: 34px;
-  padding: 0 0.7rem;
-  border-radius: 999px;
-  border: 1px solid color-mix(in srgb, var(--panel-border-soft) 88%, transparent);
-  background: color-mix(in srgb, var(--panel-header-bg) 82%, transparent);
-  color: var(--text-primary);
-  font-size: 0.74rem;
-  font-weight: 700;
-  transition: background-color 0.12s ease, border-color 0.12s ease;
-}
-
-.stageActionBtn:hover {
-  border-color: color-mix(in srgb, var(--accent) 28%, var(--panel-border-soft));
-}
-
-.stageActionIconBtn {
-  --icon-button-size: 34px;
-  --icon-button-border: color-mix(in srgb, var(--panel-border-soft) 88%, transparent);
-  --icon-button-border-hover: color-mix(in srgb, var(--accent) 28%, var(--panel-border-soft));
-  --icon-button-bg: color-mix(in srgb, var(--panel-header-bg) 82%, transparent);
-  --icon-button-bg-hover: color-mix(in srgb, var(--panel-header-bg) 68%, transparent);
-  --icon-button-bg-active: color-mix(in srgb, var(--panel-header-bg) 62%, transparent);
-  --icon-button-color: var(--text-primary);
-  --icon-button-color-hover: var(--text-primary);
-  --icon-button-shadow: none;
-  --icon-button-shadow-hover: none;
-  --icon-button-transform-hover: none;
-  --icon-button-blur: 0;
-}
-
-.audioAvatar {
-  --avatar-size: var(--direct-call-avatar-size);
-  --avatar-font-size: var(--direct-call-avatar-font-size);
-  --avatar-shadow: none;
-  position: relative;
-  font-weight: 700;
-  letter-spacing: 0.02em;
-}
-
-.stageAudioPulse {
-  position: absolute;
-  width: var(--direct-call-audio-ring-size);
-  aspect-ratio: 1 / 1;
-  border-radius: 999px;
-  /* Functional exception: active-audio ring is a real speaking-state cue, not decorative glow. */
-  border: 2px solid color-mix(in srgb, var(--accent) 58%, transparent);
-  background: transparent;
-  opacity: 1;
-  transition: border-color 0.14s ease, background-color 0.14s ease;
-  pointer-events: none;
-  z-index: var(--z-0);
-}
-
-.stageAudioPulseActive {
-  border-color: color-mix(in srgb, var(--accent) 58%, transparent);
-  background: transparent;
-}
-
-/* Feature-local exception: primary stage text must stay high-contrast over live media. */
-.peerName {
-  color: var(--text-primary);
-  font-weight: 700;
-  font-size: clamp(0.94rem, 1.6vw, 1.12rem);
-  letter-spacing: -0.008em;
-  text-align: left;
-  line-height: 1.2;
-}
-
-.callState {
-  color: var(--text-secondary);
-  font-size: 0.78rem;
-  font-variant-numeric: tabular-nums;
-}
-
-:global(:root[data-theme="light"]) .callStage {
-  border-color: var(--border-subtle);
-  background: color-mix(in srgb, var(--panel-header-bg) 72%, white);
-}
-
-:global(:root[data-theme="light"]) .stageMeta {
-  background: color-mix(in srgb, var(--panel-header-bg) 18%, transparent);
-}
-
-:global(:root[data-theme="light"]) .peerName {
-  color: var(--text-primary);
-}
-
-:global(:root[data-theme="light"]) .callState {
-  color: var(--text-primary-muted);
-}
-
-.securityPanel {
-  width: 100%;
-  max-width: none;
-  display: flex;
-  flex-direction: column;
-  align-items: stretch;
-  gap: 0.42rem;
-}
-
-.securityPanelShell {
-  width: 100%;
-  display: flex;
-  flex-direction: column;
-  gap: 0.46rem;
-}
-
-.securitySummaryRow {
-  width: 100%;
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 0.6rem;
-}
-
-.securityHeaderText {
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 0.32rem;
-}
-
-.securityBadgeGroup {
-  min-width: 0;
-  display: flex;
-  align-items: center;
-  gap: 0.45rem;
-  flex-wrap: wrap;
-}
-
-.securityToggleInlineBtn {
-  flex-shrink: 0;
-  align-self: flex-start;
-}
-
-.securitySummaryHint {
-  margin: 0;
-  color: var(--text-secondary);
-  font-size: 0.74rem;
-  line-height: 1.4;
-}
-
-.securityDetailsSlot {
-  width: 100%;
-}
-
-.securityCard {
-  width: 100%;
-  display: flex;
-  flex-direction: column;
-  align-items: stretch;
-  gap: 0.38rem;
-  padding: 0.45rem;
-  --surface-panel-bg-start: color-mix(in srgb, var(--panel-header-bg) 72%, var(--bg-secondary));
-  --surface-panel-bg-end: color-mix(in srgb, var(--panel-header-bg) 66%, var(--bg-secondary));
-  --surface-panel-border: color-mix(in srgb, var(--panel-border-soft) 88%, transparent);
-  --surface-panel-shadow: none;
-  animation: callContentIn var(--motion-duration-slow) cubic-bezier(0.18, 0.9, 0.2, 1) 70ms both;
-}
-
-.callCenterVideo .securityCard {
-  --surface-panel-bg-start: color-mix(in srgb, var(--panel-header-bg) 84%, var(--bg-secondary));
-  --surface-panel-bg-end: color-mix(in srgb, var(--panel-header-bg) 78%, var(--bg-secondary));
-}
-
-.securityCardModeRow {
-  display: flex;
-  flex-direction: column;
-  gap: 0.18rem;
-}
-
-.securityCardModeText {
-  color: var(--text-secondary);
-  font-size: 0.69rem;
-  line-height: 1.35;
-}
-
-.securityCardLabel {
-  font-size: 0.625rem;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  color: var(--text-secondary);
-  font-weight: 600;
-  padding-left: 0.12rem;
-}
-
-.securityCardCodeGrid {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 0.32rem;
-}
-
-.securityCardCodeCell {
-  text-align: center;
-  font-variant-numeric: tabular-nums;
-  font-family: "SF Mono", "Fira Mono", "Consolas", monospace;
-  font-size: 0.845rem;
-  font-weight: 700;
-  letter-spacing: 0.02em;
-  color: var(--text-primary);
-  background: color-mix(in srgb, var(--bg-secondary) 84%, var(--panel-header-bg));
-  border: 1px solid color-mix(in srgb, var(--panel-border-soft) 86%, transparent);
-  border-radius: 8px;
-  padding: 0.32rem 0.12rem;
-}
-
-.securityCardHint {
-  font-size: 0.69rem;
-  color: var(--text-secondary);
-  text-align: center;
-}
-
-.securityCardHash {
-  font-size: 0.65rem;
-  color: var(--text-muted);
-  text-align: center;
-  font-variant-numeric: tabular-nums;
-}
-
-.securityCardPendingText {
-  color: var(--text-secondary);
-  font-size: 0.75rem;
-  text-align: center;
-  background: color-mix(in srgb, var(--bg-secondary) 82%, var(--panel-header-bg));
-  border: 1px solid color-mix(in srgb, var(--panel-border-soft) 84%, transparent);
-  border-radius: 10px;
-  padding: 0.35rem 0.45rem;
-}
-
-/* ── Floating previews + local preview actions ──────────────────────────── */
-
-/* Feature-local: draggable local previews and companion media windows. */
-.remoteCompanionPreview,
+/* Outer positioned shells rendered by DirectCallActiveOverlay.
+   Inner visual content is owned by DirectCallFloatingPreview.module.css. */
 .localPreview,
 .localScreenPreview {
   position: absolute;
@@ -573,38 +160,9 @@
   animation: callContentIn var(--motion-duration-slow) cubic-bezier(0.18, 0.9, 0.2, 1) 80ms both;
 }
 
-.remoteCompanionPreview {
-  top: 0.72rem;
-  right: 0.72rem;
-  width: clamp(116px, 18vw, 188px);
-  aspect-ratio: 4 / 3;
-  z-index: var(--z-4);
-  cursor: pointer;
-  touch-action: manipulation;
-}
-
-.remoteCompanionPreview:focus-visible {
-  outline: 2px solid var(--accent);
-  outline-offset: 2px;
-}
-
-.remoteCompanionPreviewCamera {
-  aspect-ratio: 3 / 4;
-  width: clamp(112px, 16vw, 156px);
-}
-
-.remoteCompanionPreviewDocked {
-  width: clamp(104px, 13vw, 134px);
-}
-
-.remoteCompanionPreviewScreen video {
-  object-fit: contain;
-  background: color-mix(in srgb, var(--bg-primary) 92%, var(--surface-shell-strong));
-}
-
 .localPreview {
-  right: max(1rem, env(safe-area-inset-right, 0px));
-  bottom: calc(env(safe-area-inset-bottom, 0px) + 110px);
+  right: max(1rem, var(--safe-right));
+  bottom: calc(var(--safe-bottom) + 110px);
   width: clamp(104px, 22vw, 156px);
   aspect-ratio: 3 / 4;
   cursor: grab;
@@ -613,9 +171,9 @@
 }
 
 .localScreenPreview {
-  left: max(1rem, env(safe-area-inset-left, 0px));
+  left: max(1rem, var(--safe-left));
   right: auto;
-  bottom: calc(env(safe-area-inset-bottom, 0px) + 110px);
+  bottom: calc(var(--safe-bottom) + 110px);
   width: clamp(164px, 28vw, 280px);
   aspect-ratio: 16 / 10;
   cursor: grab;
@@ -623,25 +181,6 @@
   user-select: none;
 }
 
-.localPreviewDragging {
-  cursor: grabbing;
-}
-
-.localPreviewResizing {
-  cursor: nwse-resize;
-}
-
-.localPreviewRaised,
-.localScreenPreviewRaised {
-  bottom: calc(env(safe-area-inset-bottom, 0px) + 372px);
-}
-
-.floatingPreviewSurface {
-  width: 100%;
-  height: 100%;
-}
-
-.remoteCompanionPreview video,
 .localPreview video,
 .localScreenPreview video {
   width: 100%;
@@ -649,301 +188,47 @@
   object-fit: cover;
 }
 
-.localPreviewOff::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  background: color-mix(in srgb, var(--bg-primary) 38%, transparent);
-}
-
-.localMeta {
-  position: absolute;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  padding: 0.25rem 0.4rem;
-  font-size: 0.6875rem;
-  color: var(--text-primary);
-  text-align: center;
-  background: color-mix(in srgb, var(--bg-primary) 58%, transparent);
-  z-index: var(--z-1);
-}
-
-/* Reusable: lift later. Preview action shells are still direct-call-specific. */
-.localPreviewAction {
-  position: absolute;
-  top: 0.38rem;
-  right: 0.38rem;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 34px;
-  height: 34px;
-  border-radius: 999px;
-  border: 1px solid color-mix(in srgb, var(--panel-border-soft) 88%, transparent);
-  background: color-mix(in srgb, var(--panel-header-bg) 84%, transparent);
-  color: var(--text-primary);
-  z-index: var(--z-2);
-  transition: background-color var(--motion-duration-fast) ease, border-color var(--motion-duration-fast) ease, opacity var(--motion-duration-fast) ease;
-}
-
-.localPreviewAction:hover:not(:disabled) {
-  border-color: color-mix(in srgb, var(--accent) 34%, var(--panel-border-soft));
-}
-
-.localPreviewAction:disabled {
-  opacity: 0.62;
-}
-
-.localPreviewAction:focus-visible {
-  outline: 2px solid var(--accent);
-  outline-offset: 2px;
-}
-
-.localPreviewResizeHandle {
-  position: absolute;
-  right: 0.34rem;
-  bottom: 0.34rem;
-  width: 30px;
-  height: 30px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 999px;
-  border: 1px solid color-mix(in srgb, var(--panel-border-soft) 88%, transparent);
-  background: color-mix(in srgb, var(--panel-header-bg) 84%, transparent);
-  color: var(--text-primary);
-  z-index: var(--z-2);
-  touch-action: none;
-  cursor: nwse-resize;
-  transition: background-color var(--motion-duration-fast) ease, border-color var(--motion-duration-fast) ease;
-}
-
-.localPreviewResizeHandle:hover {
-  border-color: color-mix(in srgb, var(--accent) 34%, var(--panel-border-soft));
-}
-
-.localPreviewResizeHandle:focus-visible {
-  outline: 2px solid var(--accent);
-  outline-offset: 2px;
-}
-
-
-.remoteCompanionMeta {
-  position: absolute;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 0.18rem;
-  padding: 0.38rem 0.46rem;
-  font-size: 0.6875rem;
-  color: var(--text-primary);
-  text-align: left;
-  background: color-mix(in srgb, var(--bg-primary) 64%, transparent);
-  z-index: var(--z-1);
-}
-
-.remoteCompanionName {
-  max-width: 100%;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  font-weight: 600;
-}
-
-.remoteCompanionBadge {
-  align-self: flex-start;
-}
-
-/* ── Controls dock + output strip ───────────────────────────────────────── */
-
-.audioOutputStrip {
-  position: relative;
-  z-index: var(--z-2);
-  width: 100%;
-  padding: 0.35rem;
-  border-radius: 22px;
-  border: 1px solid color-mix(in srgb, var(--panel-border-soft) 78%, transparent);
-  background: color-mix(in srgb, var(--surface-shell) 88%, transparent);
-  animation: callContentIn var(--motion-duration-slow) cubic-bezier(0.18, 0.9, 0.2, 1) 80ms both;
+/* Camera-switch fade: old frame fades down while camera changes, new frame fades back up. */
+.localPreview video {
+  transition: opacity 220ms ease;
 }
 
 /* ── Responsive + reduced motion ────────────────────────────────────────── */
 
-/* Feature-local: viewport-specific stage, preview, and dock compaction. */
 @media (max-width: 760px) {
-  .incomingPrompt {
-    font-size: 0.6875rem;
-  }
-
   .callOverlay {
-    padding-left: 0.75rem;
-    padding-right: 0.75rem;
+    padding-left: var(--space-3);
+    padding-right: var(--space-3);
   }
 
   .minimizeBtn {
     --icon-button-size: 32px;
   }
 
-  .securityCard {
-    width: 100%;
-    max-width: 370px;
-    align-self: center;
-    padding: 0.4rem;
-    gap: 0.32rem;
-  }
-
-  .securitySummaryRow {
-    align-items: stretch;
-    gap: 0.42rem;
-    flex-direction: column;
-  }
-
-  .securityBadgeGroup {
-    gap: 0.35rem;
-  }
-
-  .securityToggleInlineBtn {
-    align-self: flex-start;
-  }
-
-  .securityCardCodeCell {
-    font-size: 0.8rem;
-  }
-
-  .audioOutputStrip {
-    width: 100%;
-  }
-
   .localPreview {
     width: 104px;
-    bottom: calc(env(safe-area-inset-bottom, 0px) + 92px);
+    bottom: calc(var(--safe-bottom) + 92px);
   }
 
   .localScreenPreview {
-    left: max(0.75rem, env(safe-area-inset-left, 0px));
+    left: max(0.75rem, var(--safe-left));
     width: 136px;
-    bottom: calc(env(safe-area-inset-bottom, 0px) + 92px);
-  }
-
-  .localPreviewRaised,
-  .localScreenPreviewRaised {
-    bottom: calc(env(safe-area-inset-bottom, 0px) + 148px);
-  }
-
-  .remoteCompanionPreview {
-    top: 0.75rem;
-    width: 104px;
-  }
-
-  .callSurfaceScreenFocused {
-    align-items: stretch;
-  }
-
-  .remoteCompanionPreviewDocked {
-    position: static;
-    inset: auto;
-    width: min(132px, 36vw);
-    margin-top: 0.58rem;
-    margin-left: auto;
-    margin-right: 0;
-    z-index: var(--z-2);
-  }
-
-  .callStageCamera {
-    height: min(54dvh, calc(100dvh - 300px));
-    min-height: 240px;
-  }
-
-  .callStageScreen {
-    max-height: min(50dvh, calc(100dvh - 320px));
-  }
-
-  .callStageCompact {
-    --direct-call-avatar-size: clamp(78px, 20vw, 106px);
-    --direct-call-avatar-font-size: clamp(1.2rem, 5.3vw, 1.62rem);
-    --direct-call-audio-ring-size: calc(var(--direct-call-avatar-size) + 20px);
-    width: min(100%, 320px);
-    max-height: 240px;
-  }
-
-  .callStageAudio.callStageCompact {
-    width: 100%;
-    max-height: none;
-    --direct-call-avatar-size: clamp(94px, 22vw, 140px);
-    --direct-call-avatar-font-size: clamp(1.45rem, 5.5vw, 2.1rem);
-    --direct-call-audio-ring-size: calc(var(--direct-call-avatar-size) + 24px);
-  }
-
-  .callSecuritySection {
-    max-width: 100%;
+    bottom: calc(var(--safe-bottom) + 92px);
   }
 }
 
 @media (orientation: portrait) {
-  .callStageCamera {
-    height: min(68vh, calc(100vh - 284px));
-    height: min(68dvh, calc(100dvh - 284px));
-    min-height: clamp(300px, 44dvh, 420px);
-  }
-
-  .callStageScreen {
-    max-height: min(52vh, calc(100vh - 340px));
-    max-height: min(52dvh, calc(100dvh - 340px));
-  }
-
   .localPreview {
     width: clamp(92px, 26vw, 136px);
   }
-
-  .callCenterSecurityOpen .callStageCamera {
-    height: min(54vh, calc(100vh - 372px));
-    height: min(54dvh, calc(100dvh - 372px));
-    min-height: clamp(232px, 36dvh, 320px);
-  }
-
-  .callCenterSecurityOpen .callStageScreen {
-    max-height: min(42vh, calc(100vh - 388px));
-    max-height: min(42dvh, calc(100dvh - 388px));
-  }
-}
-
-/* Feature-local: motion reduction for direct-call-only entrance and preview transitions. */
-@media (prefers-reduced-motion: reduce) {
-  .notice,
-  .callOverlay,
-  .callHeader,
-  .callCenter,
-  .securityCard,
-  .audioOutputStrip,
-  .remoteCompanionPreview,
-  .localPreview,
-  .localScreenPreview,
-  .minimizeBtn,
-  .minimizedDragHandle {
-    animation: none !important;
-    transition: none !important;
-  }
-}
-
-.callStageAudio {
-  border-color: transparent;
-  background: transparent;
 }
 
 @media (max-width: 720px) {
   .callOverlay {
     padding:
-      calc(env(safe-area-inset-top, 0px) + 14px)
+      calc(var(--safe-top) + 14px)
       0.85rem
-      calc(env(safe-area-inset-bottom, 0px) + 16px);
-  }
-
-  .callStage {
-    border-radius: 18px;
+      calc(var(--safe-bottom) + 16px);
   }
 }
 
@@ -954,9 +239,9 @@
     overflow: hidden;
     gap: 0.48rem;
     padding:
-      calc(env(safe-area-inset-top, 0px) + 8px)
+      calc(var(--safe-top) + 8px)
       0.72rem
-      calc(env(safe-area-inset-bottom, 0px) + 8px);
+      calc(var(--safe-bottom) + 8px);
   }
 
   .callCenter {
@@ -965,60 +250,29 @@
     flex: 1 1 0;
   }
 
-  /* Camera stage: fill callCenter instead of using a fixed dvh height. */
-  .callSurface {
-    flex: 1 1 0;
-    min-height: 0;
-  }
-
-  .callSurface:has(.callStageCompact) {
-    flex: 1 1 0;
-  }
-
-  .callStageCamera {
-    height: 100%;
-    min-height: 0;
-    /* Keep the dvh fallback for very narrow-height orientations */
-    min-height: max(180px, 30dvh);
-  }
-
   /* Bring local PiP above stacked controls dock (~80px) + dialog bottom padding (8px) + gap.
      Dock occupies ~88px from bottom → use 96px so PiP is visibly above the dock. */
   .localPreview {
     width: 86px;
-    bottom: calc(env(safe-area-inset-bottom, 0px) + 96px);
+    bottom: calc(var(--safe-bottom) + 96px);
   }
 
   .localScreenPreview {
-    left: max(0.72rem, env(safe-area-inset-left, 0px));
+    left: max(0.72rem, var(--safe-left));
     width: 120px;
-    bottom: calc(env(safe-area-inset-bottom, 0px) + 96px);
-  }
-
-  .localPreviewRaised,
-  .localScreenPreviewRaised {
-    bottom: calc(env(safe-area-inset-bottom, 0px) + 112px);
-  }
-
-  /* Scale down the PiP action/resize buttons — at 86px wide a 34px button is too dominant. */
-  .localPreviewAction {
-    width: 28px;
-    height: 28px;
-  }
-
-  .localPreviewResizeHandle {
-    width: 24px;
-    height: 24px;
-    right: 0.24rem;
-    bottom: 0.24rem;
+    bottom: calc(var(--safe-bottom) + 96px);
   }
 }
 
-/* Camera-switch fade: old frame fades down while camera changes, new frame fades back up. */
-.localPreview video {
-  transition: opacity 220ms ease;
-}
-
-.localPreviewTransitioning video {
-  opacity: 0.25;
+/* Feature-local: motion reduction for direct-call entrance and preview transitions. */
+@media (prefers-reduced-motion: reduce) {
+  .callOverlay,
+  .callHeader,
+  .callCenter,
+  .localPreview,
+  .localScreenPreview,
+  .minimizeBtn {
+    animation: none !important;
+    transition: none !important;
+  }
 }

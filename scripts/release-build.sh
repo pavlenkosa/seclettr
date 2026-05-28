@@ -11,6 +11,11 @@ IMAGE_TAG="release"
 SKIP_BUILD=false
 SKIP_VERIFY=false
 
+# Read version from root package.json
+SECLETTR_VERSION="$(node -e "console.log(require('$ROOT_DIR/package.json').version)")"
+GIT_REVISION="$(git -C "$ROOT_DIR" rev-parse HEAD 2>/dev/null || true)"
+BUILD_TIMESTAMP="$(date -u +'%Y-%m-%dT%H:%M:%SZ')"
+
 API_IMAGE="seclettr/api"
 WEB_IMAGE="seclettr/web"
 SFU_IMAGE="seclettr/sfu"
@@ -95,8 +100,12 @@ build_image() {
   local image_name="$1"
   local dockerfile_path="$2"
 
-  log_step "Building $image_name:$IMAGE_TAG"
-  run_with_retries 3 5 docker_cli build -f "$dockerfile_path" -t "$image_name:$IMAGE_TAG" "$ROOT_DIR" \
+  log_step "Building $image_name:$IMAGE_TAG (version: $SECLETTR_VERSION)"
+  run_with_retries 3 5 docker_cli build \
+    --build-arg "SECLETTR_VERSION=$SECLETTR_VERSION" \
+    --build-arg "GIT_REVISION=$GIT_REVISION" \
+    --build-arg "BUILD_TIMESTAMP=$BUILD_TIMESTAMP" \
+    -f "$dockerfile_path" -t "$image_name:$IMAGE_TAG" "$ROOT_DIR" \
     || die "Failed to build $image_name:$IMAGE_TAG after repeated attempts"
 }
 
@@ -152,7 +161,9 @@ mkdir -p "$STAGE_DIR/nginx/certs"
 cp -R "$MIGRATIONS_SRC_DIR" "$STAGE_DIR/migrations"
 
 cat >"$STAGE_DIR/RELEASE_INFO.txt" <<EOF
-created_at=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+version=${SECLETTR_VERSION}
+created_at=${BUILD_TIMESTAMP}
+git_revision=${GIT_REVISION}
 bundle_name=${BUNDLE_NAME}-${STAMP}
 image_archive=$(basename "$IMAGE_ARCHIVE")
 images=${API_IMAGE}:${IMAGE_TAG},${WEB_IMAGE}:${IMAGE_TAG},${SFU_IMAGE}:${IMAGE_TAG}

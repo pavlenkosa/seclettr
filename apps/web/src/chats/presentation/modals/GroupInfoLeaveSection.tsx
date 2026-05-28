@@ -1,3 +1,4 @@
+import { PillButton } from "@/components/ui";
 import styles from "./GroupInfoModal.module.css";
 import type { GroupInfoMember } from "./group-info-modal-shared";
 
@@ -21,14 +22,17 @@ export function GroupInfoLeaveSection({
   return (
     <>
       {myMembership ? (
-        <button
+        <PillButton
           type="button"
-          className={styles.leaveBtn}
+          tone="danger"
+          appearance="soft"
+          size="md"
+          fullWidth
           onClick={onLeave}
           disabled={busyMemberId === myUserId}
         >
           {busyMemberId === myUserId ? t("group.members.leaving") : t("group.members.leave")}
-        </button>
+        </PillButton>
       ) : null}
       {error ? <div className={styles.error} role="alert">{error}</div> : null}
     </>

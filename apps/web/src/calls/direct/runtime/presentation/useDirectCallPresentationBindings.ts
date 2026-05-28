@@ -219,6 +219,7 @@ export function useDirectCallPresentationBindings({
     surface,
     incoming: incoming ? { callType: incoming.callType } : null,
     active: active ? {
+      callType: active.callType,
       muted: active.muted,
       videoOff: active.videoOff,
       screenSharing: active.screenSharing,

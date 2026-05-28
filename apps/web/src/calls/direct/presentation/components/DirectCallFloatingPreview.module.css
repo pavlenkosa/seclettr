@@ -1,0 +1,137 @@
+/*
+ * DirectCallFloatingPreview — draggable local video preview shell internals.
+ *
+ * Owns:
+ * - floatingPreviewSurface (fills the positioned preview container)
+ * - localMeta bar (name/source overlay at the bottom)
+ * - localPreviewAction button (overlay action)
+ * - localPreviewResizeHandle (drag-resize corner)
+ * - drag/resize/transition cursor state modifiers
+ *
+ * Does not own the outer positioned container (.localPreview / .localScreenPreview)
+ * — those live in DirectCallPanel.module.css to remain co-located with the
+ * overlay shell that positions them.
+ *
+ * Banned-pattern check: clean.
+ */
+
+.floatingPreviewSurface {
+  width: 100%;
+  height: 100%;
+}
+
+.localMeta {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  padding: var(--space-1) 0.4rem;
+  font-size: 0.6875rem;
+  color: var(--text-primary);
+  text-align: center;
+  background: color-mix(in srgb, var(--bg-primary) 58%, transparent);
+  z-index: var(--z-1);
+}
+
+/* Reusable: lift later. Preview action shells are still direct-call-specific. */
+.localPreviewAction {
+  position: absolute;
+  top: 0.38rem;
+  right: 0.38rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 999px;
+  border: 1px solid color-mix(in srgb, var(--panel-border-soft) 88%, transparent);
+  background: color-mix(in srgb, var(--panel-header-bg) 84%, transparent);
+  color: var(--text-primary);
+  z-index: var(--z-2);
+  transition: background-color var(--motion-duration-fast) ease, border-color var(--motion-duration-fast) ease, opacity var(--motion-duration-fast) ease;
+}
+
+.localPreviewAction:hover:not(:disabled) {
+  border-color: color-mix(in srgb, var(--accent) 34%, var(--panel-border-soft));
+}
+
+.localPreviewAction:disabled {
+  opacity: 0.62;
+}
+
+.localPreviewAction:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* Explicit SVG dimensions prevent "block-width expansion" on Capacitor/Android WebView:
+   global `button svg { display: block }` causes the SVG to stretch to button width
+   while keeping its intrinsic height, distorting the icon. Explicit px values via CSS
+   take precedence over both the HTML presentation attribute and browser defaults. */
+.localPreviewAction svg {
+  width: 18px;
+  height: 18px;
+}
+
+.localPreviewResizeHandle {
+  position: absolute;
+  right: 0.34rem;
+  bottom: 0.34rem;
+  width: 30px;
+  height: 30px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  border: 1px solid color-mix(in srgb, var(--panel-border-soft) 88%, transparent);
+  background: color-mix(in srgb, var(--panel-header-bg) 84%, transparent);
+  color: var(--text-primary);
+  z-index: var(--z-2);
+  touch-action: none;
+  cursor: nwse-resize;
+  transition: background-color var(--motion-duration-fast) ease, border-color var(--motion-duration-fast) ease;
+}
+
+.localPreviewResizeHandle:hover {
+  border-color: color-mix(in srgb, var(--accent) 34%, var(--panel-border-soft));
+}
+
+.localPreviewResizeHandle:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* Same block-expansion guard as localPreviewAction above. */
+.localPreviewResizeHandle svg {
+  width: 12px;
+  height: 12px;
+}
+
+.localPreviewDragging {
+  cursor: grabbing;
+}
+
+.localPreviewResizing {
+  cursor: nwse-resize;
+}
+
+.localPreviewTransitioning video {
+  opacity: 0.25;
+}
+
+/* === responsive === */
+
+@media (max-width: 640px) {
+  /* Scale down the PiP action/resize buttons — at 86px wide a 34px button is too dominant. */
+  .localPreviewAction {
+    width: 28px;
+    height: 28px;
+  }
+
+  .localPreviewResizeHandle {
+    width: 24px;
+    height: 24px;
+    right: 0.24rem;
+    bottom: 0.24rem;
+  }
+}

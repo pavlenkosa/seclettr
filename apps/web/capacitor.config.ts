@@ -12,6 +12,10 @@ const config: CapacitorConfig = {
     Camera: {
       resultType: "uri",
     },
+    Keyboard: {
+      resize: "body",
+      resizeOnFullScreen: true,
+    },
     BackgroundRunner: {
       label: "com.seclettr.app.background",
       src: "runners/background.js",

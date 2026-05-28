@@ -51,6 +51,8 @@ export interface ModalShellProps {
   readonly footerClassName?: string;
   readonly style?: CSSProperties;
   readonly closeButtonRef?: Ref<HTMLButtonElement>;
+  /** Optional id of an element inside the modal that describes its purpose (aria-describedby). */
+  readonly ariaDescribedBy?: string;
 }
 
 function ModalShellInner(
@@ -58,6 +60,7 @@ function ModalShellInner(
     isClosing,
     onClose,
     ariaLabel,
+    ariaDescribedBy,
     closeAriaLabel,
     title,
     headerStart,
@@ -102,6 +105,7 @@ function ModalShellInner(
         role={role}
         aria-modal="true"
         aria-label={ariaLabel}
+        aria-describedby={ariaDescribedBy}
         tabIndex={-1}
         style={style}
       >

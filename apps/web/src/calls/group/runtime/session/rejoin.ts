@@ -25,6 +25,7 @@ import {
 import { withSetupStageTimeout } from "@/calls/shared/model/call-setup-timeout";
 import type { GroupCallStatusAction } from "@/calls/group/model/group-call-types";
 import type { CreateSfuClientWithRetryContext } from "./sfu-client";
+import { logger } from "@/lib/logger.js";
 
 function readApiErrorStatus(error: unknown): number | null {
   if (typeof error !== "object" || error === null) {
@@ -165,7 +166,12 @@ export async function runSfuRejoinAttempt(
     }
     ctx.sfuClientRef.current = nextSfuClient;
     ctx.dispatchStatus({ type: "SESSION_READY" });
-  } catch {
+  } catch (error) {
+    logger.warn("[group-call] SFU rejoin attempt failed — scheduling retry", {
+      groupId: ctx.groupId,
+      callId: ctx.callIdRef.current,
+      error,
+    });
     if (ctx.isCurrentSessionRun()) {
       attemptSfuRejoin();
     }
@@ -180,6 +186,11 @@ export function buildAttemptSfuRejoin(
   const attemptSfuRejoin = (): void => {
     if (!ctx.isCurrentSessionRun()) return;
     if (state.rejoinAttempts >= maxRejoinAttempts) {
+      logger.error("[group-call] SFU rejoin exhausted — giving up", {
+        groupId: ctx.groupId,
+        callId: ctx.callIdRef.current,
+        maxRejoinAttempts,
+      });
       ctx.failSessionStart(true);
       return;
     }

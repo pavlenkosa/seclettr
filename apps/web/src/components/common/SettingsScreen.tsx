@@ -18,7 +18,9 @@ import {
   lazy,
   Suspense,
   useEffect,
+  useLayoutEffect,
   useMemo,
+  useRef,
   useState,
 } from "react";
 import { useI18n } from "@/i18n";
@@ -113,6 +115,8 @@ export function SettingsScreen({
   const pushSettings = usePushSettings();
   const [activeSection, setActiveSection] = useState<SettingsSectionId>("profile");
   const [mobileDetailOpen, setMobileDetailOpen] = useState(false);
+  const rootRef = useRef<HTMLElement>(null);
+  const prevFocusRef = useRef<Element | null>(null);
 
   useEffect(() => {
     void loadProfileSettingsSection();
@@ -195,6 +199,18 @@ export function SettingsScreen({
 
   useNativeBackAction(handleBack);
 
+  // Move focus into the settings panel on mount so keyboard users don't have
+  // to Tab through the entire main layout. Restore focus on unmount.
+  useLayoutEffect(() => {
+    prevFocusRef.current = document.activeElement;
+    rootRef.current?.querySelector<HTMLElement>("button:not([disabled])")?.focus();
+    return () => {
+      if (prevFocusRef.current instanceof HTMLElement) {
+        prevFocusRef.current.focus();
+      }
+    };
+  }, []);
+
   const sectionContent = (
     <Suspense fallback={<SettingsSectionFallback label={t("app.loading")} />}>
       {activeSection === "profile" ? (
@@ -238,7 +254,7 @@ export function SettingsScreen({
   );
 
   return (
-    <section className={styles.root} aria-label={t("settings.title")}>
+    <section ref={rootRef} className={styles.root} aria-label={t("settings.title")}>
       <SettingsScreenHeader
         title={isMobileViewport && mobileDetailOpen ? active.title : t("settings.title")}
         isMobileViewport={isMobileViewport}
@@ -251,7 +267,7 @@ export function SettingsScreen({
 
       <div className={styles.layout} data-detail-open={isMobileViewport && mobileDetailOpen ? "true" : "false"}>
         <aside className={styles.menuPane}>
-          <SettingsAccountSummary username={username} />
+          <SettingsAccountSummary username={username} onClick={() => handleSectionClick("profile")} />
           <SettingsSectionNav
             sections={sectionEntries}
             activeSection={activeSection}
@@ -264,7 +280,6 @@ export function SettingsScreen({
         <SettingsMobileDetailFrame
           title={active.title}
           description={active.description}
-          summary={active.summary}
         >
           {sectionContent}
         </SettingsMobileDetailFrame>

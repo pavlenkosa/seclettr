@@ -33,7 +33,8 @@ export interface InboundPlaintextMessageMeta {
 export interface HandleSenderKeyDistributionParams {
   message: InboundPlaintextMessageMeta;
   rawBody: unknown;
-  shared: MessagesRuntimeShared;
+  /** Only `getStorageKey` is used — narrowed so callers can pass a partial shared object. */
+  shared: Pick<MessagesRuntimeShared, "getStorageKey">;
   schedulePendingMessageSync: (reason: string) => void;
   handleInboundFailure: InboundFailureHandler;
   commitTerminalAndFlushAck: (messageId: string) => Promise<void>;

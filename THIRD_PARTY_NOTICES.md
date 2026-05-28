@@ -3,19 +3,20 @@
 This file is auto-generated from workspace production dependencies.
 Source: `pnpm licenses list --prod --json`.
 
-- Total production packages: 316
-- Packages without detected local license file: 33
+- Total production packages: 432
+- Packages without detected local license file: 57
 
 ## License Summary
 
 | License | Packages |
 | --- | ---: |
 | 0BSD | 1 |
-| Apache-2.0 | 100 |
+| Apache-2.0 | 129 |
 | BlueOak-1.0.0 | 7 |
-| BSD-3-Clause | 4 |
-| ISC | 27 |
-| MIT | 176 |
+| BSD-2-Clause | 1 |
+| BSD-3-Clause | 15 |
+| ISC | 31 |
+| MIT | 247 |
 | MPL-2.0 | 1 |
 
 ## Package Inventory
@@ -91,16 +92,44 @@ Source: `pnpm licenses list --prod --json`.
 | @fastify/send | 2.1.0 | MIT | https://github.com/fastify/send#readme | node_modules/.pnpm/@fastify+send@2.1.0/node_modules/@fastify/send/LICENSE | TJ Holowaychuk |
 | @fastify/static | 7.0.4 | MIT | https://github.com/fastify/fastify-static | node_modules/.pnpm/@fastify+static@7.0.4/node_modules/@fastify/static/LICENSE | Tommaso Allevi - @allevo |
 | @fastify/websocket | 10.0.1 | MIT | https://github.com/fastify/fastify-websocket#readme | node_modules/.pnpm/@fastify+websocket@10.0.1/node_modules/@fastify/websocket/LICENSE | Matteo Collina |
+| @firebase/app-check-interop-types | 0.3.4 | Apache-2.0 | https://github.com/firebase/firebase-js-sdk#readme | - | Firebase |
+| @firebase/app-types | 0.9.5 | Apache-2.0 | https://github.com/firebase/firebase-js-sdk#readme | - | Firebase |
+| @firebase/auth-interop-types | 0.2.5 | Apache-2.0 | https://github.com/firebase/firebase-js-sdk#readme | - | Firebase |
+| @firebase/component | 0.7.3 | Apache-2.0 | https://github.com/firebase/firebase-js-sdk#readme | - | Firebase |
+| @firebase/database | 1.1.3 | Apache-2.0 | https://github.com/firebase/firebase-js-sdk#readme | - | Firebase |
+| @firebase/database-compat | 2.1.4 | Apache-2.0 | https://github.com/firebase/firebase-js-sdk#readme | - | Firebase |
+| @firebase/database-types | 1.0.20 | Apache-2.0 | https://github.com/firebase/firebase-js-sdk#readme | - | Firebase |
+| @firebase/logger | 0.5.1 | Apache-2.0 | https://github.com/firebase/firebase-js-sdk#readme | - | Firebase |
+| @firebase/util | 1.15.1 | Apache-2.0 | https://github.com/firebase/firebase-js-sdk#readme | - | Firebase |
+| @google-cloud/firestore | 7.11.6 | Apache-2.0 | https://github.com/googleapis/nodejs-firestore#readme | node_modules/.pnpm/@google-cloud+firestore@7.11.6/node_modules/@google-cloud/firestore/LICENSE | Google Inc. |
+| @google-cloud/paginator | 5.0.2 | Apache-2.0 | https://github.com/googleapis/nodejs-paginator#readme | node_modules/.pnpm/@google-cloud+paginator@5.0.2/node_modules/@google-cloud/paginator/LICENSE | Google Inc. |
+| @google-cloud/projectify | 4.0.0 | Apache-2.0 | https://github.com/googleapis/nodejs-projectify#readme | node_modules/.pnpm/@google-cloud+projectify@4.0.0/node_modules/@google-cloud/projectify/LICENSE | Google Inc. |
+| @google-cloud/promisify | 4.0.0 | Apache-2.0 | https://github.com/googleapis/nodejs-promisify#readme | node_modules/.pnpm/@google-cloud+promisify@4.0.0/node_modules/@google-cloud/promisify/LICENSE | Google Inc. |
+| @google-cloud/storage | 7.19.0 | Apache-2.0 | https://github.com/googleapis/nodejs-storage#readme | node_modules/.pnpm/@google-cloud+storage@7.19.0/node_modules/@google-cloud/storage/LICENSE | Google Inc. |
+| @grpc/grpc-js | 1.14.4 | Apache-2.0 | https://grpc.io/ | node_modules/.pnpm/@grpc+grpc-js@1.14.4/node_modules/@grpc/grpc-js/LICENSE | Google Inc. |
+| @grpc/proto-loader | 0.8.1 | Apache-2.0 | https://grpc.io/ | node_modules/.pnpm/@grpc+proto-loader@0.8.1/node_modules/@grpc/proto-loader/LICENSE | Google Inc. |
 | @ioredis/commands | 1.5.0 | MIT | https://github.com/ioredis/commands | node_modules/.pnpm/@ioredis+commands@1.5.0/node_modules/@ioredis/commands/LICENSE | Zihua Li |
 | @isaacs/cliui | 8.0.2 | ISC | https://github.com/yargs/cliui#readme | node_modules/.pnpm/@isaacs+cliui@8.0.2/node_modules/@isaacs/cliui/LICENSE.txt | Ben Coe |
 | @isaacs/fs-minipass | 4.0.1 | ISC | https://github.com/npm/fs-minipass#readme | node_modules/.pnpm/@isaacs+fs-minipass@4.0.1/node_modules/@isaacs/fs-minipass/LICENSE | Isaac Z. Schlueter |
+| @js-sdsl/ordered-map | 4.4.2 | MIT | https://js-sdsl.org | node_modules/.pnpm/@js-sdsl+ordered-map@4.4.2/node_modules/@js-sdsl/ordered-map/LICENSE | ZLY201 |
 | @lukeed/csprng | 1.1.0 | MIT | https://github.com/lukeed/csprng#readme | - | Luke Edwards |
 | @lukeed/ms | 2.0.2 | MIT | https://github.com/lukeed/ms#readme | - | Luke Edwards |
 | @lukeed/uuid | 2.0.1 | MIT | https://github.com/lukeed/uuid#readme | - | Luke Edwards |
 | @nodable/entities | 2.1.0 | MIT | https://github.com/nodable/val-parsers#readme | - | Amit Gupta |
+| @opentelemetry/api | 1.9.1 | Apache-2.0 | https://github.com/open-telemetry/opentelemetry-js/tree/main/api | node_modules/.pnpm/@opentelemetry+api@1.9.1/node_modules/@opentelemetry/api/LICENSE | OpenTelemetry Authors |
 | @phc/format | 1.0.0 | MIT | https://github.com/simonepri/phc-format#readme | - | Simone Primarosa |
 | @pinojs/redact | 0.4.0 | MIT | https://github.com/pinojs/redact#readme | node_modules/.pnpm/@pinojs+redact@0.4.0/node_modules/@pinojs/redact/LICENSE | Matteo Collina |
 | @pkgjs/parseargs | 0.11.0 | MIT | https://github.com/pkgjs/parseargs#readme | node_modules/.pnpm/@pkgjs+parseargs@0.11.0/node_modules/@pkgjs/parseargs/LICENSE | - |
+| @protobufjs/aspromise | 1.1.2 | BSD-3-Clause | https://github.com/dcodeIO/protobuf.js#readme | node_modules/.pnpm/@protobufjs+aspromise@1.1.2/node_modules/@protobufjs/aspromise/LICENSE | Daniel Wirtz |
+| @protobufjs/base64 | 1.1.2 | BSD-3-Clause | https://github.com/dcodeIO/protobuf.js#readme | node_modules/.pnpm/@protobufjs+base64@1.1.2/node_modules/@protobufjs/base64/LICENSE | Daniel Wirtz |
+| @protobufjs/codegen | 2.0.5 | BSD-3-Clause | https://github.com/dcodeIO/protobuf.js#readme | node_modules/.pnpm/@protobufjs+codegen@2.0.5/node_modules/@protobufjs/codegen/LICENSE | Daniel Wirtz |
+| @protobufjs/eventemitter | 1.1.1 | BSD-3-Clause | https://github.com/dcodeIO/protobuf.js#readme | node_modules/.pnpm/@protobufjs+eventemitter@1.1.1/node_modules/@protobufjs/eventemitter/LICENSE | Daniel Wirtz |
+| @protobufjs/fetch | 1.1.1 | BSD-3-Clause | https://github.com/dcodeIO/protobuf.js#readme | node_modules/.pnpm/@protobufjs+fetch@1.1.1/node_modules/@protobufjs/fetch/LICENSE | Daniel Wirtz |
+| @protobufjs/float | 1.0.2 | BSD-3-Clause | https://github.com/dcodeIO/protobuf.js#readme | node_modules/.pnpm/@protobufjs+float@1.0.2/node_modules/@protobufjs/float/LICENSE | Daniel Wirtz |
+| @protobufjs/inquire | 1.1.2 | BSD-3-Clause | https://github.com/dcodeIO/protobuf.js#readme | node_modules/.pnpm/@protobufjs+inquire@1.1.2/node_modules/@protobufjs/inquire/LICENSE | Daniel Wirtz |
+| @protobufjs/path | 1.1.2 | BSD-3-Clause | https://github.com/dcodeIO/protobuf.js#readme | node_modules/.pnpm/@protobufjs+path@1.1.2/node_modules/@protobufjs/path/LICENSE | Daniel Wirtz |
+| @protobufjs/pool | 1.1.0 | BSD-3-Clause | https://github.com/dcodeIO/protobuf.js#readme | node_modules/.pnpm/@protobufjs+pool@1.1.0/node_modules/@protobufjs/pool/LICENSE | Daniel Wirtz |
+| @protobufjs/utf8 | 1.1.1 | BSD-3-Clause | https://github.com/dcodeIO/protobuf.js#readme | node_modules/.pnpm/@protobufjs+utf8@1.1.1/node_modules/@protobufjs/utf8/LICENSE | Daniel Wirtz |
 | @remix-run/router | 1.23.2 | MIT | https://github.com/remix-run/react-router#readme | node_modules/.pnpm/@remix-run+router@1.23.2/node_modules/@remix-run/router/LICENSE.md | Remix Software |
 | @smithy/abort-controller | 4.2.8 | Apache-2.0 | https://github.com/smithy-lang/smithy-typescript/tree/main/packages/abort-controller | node_modules/.pnpm/@smithy+abort-controller@4.2.8/node_modules/@smithy/abort-controller/LICENSE | AWS SDK for JavaScript Team |
 | @smithy/chunked-blob-reader | 5.2.0 | Apache-2.0 | https://github.com/smithy-lang/smithy-typescript/tree/main/packages/chunked-blob-reader | node_modules/.pnpm/@smithy+chunked-blob-reader@5.2.0/node_modules/@smithy/chunked-blob-reader/LICENSE | AWS SDK for JavaScript Team |
@@ -155,11 +184,19 @@ Source: `pnpm licenses list --prod --json`.
 | @smithy/uuid | 1.1.0 | Apache-2.0 | https://github.com/smithy-lang/smithy-typescript/tree/main/packages/uuid | node_modules/.pnpm/@smithy+uuid@1.1.0/node_modules/@smithy/uuid/LICENSE | AWS SDK for JavaScript Team |
 | @tanstack/react-virtual | 3.13.22 | MIT | https://tanstack.com/virtual | node_modules/.pnpm/@tanstack+react-virtual@3.13.22_react-dom@18.3.1_react@18.3.1/node_modules/@tanstack/react-virtual/LICENSE | Tanner Linsley |
 | @tanstack/virtual-core | 3.13.22 | MIT | https://tanstack.com/virtual | node_modules/.pnpm/@tanstack+virtual-core@3.13.22/node_modules/@tanstack/virtual-core/LICENSE | Tanner Linsley |
+| @tootallnate/once | 2.0.1 | MIT | https://github.com/TooTallNate/once#readme | node_modules/.pnpm/@tootallnate+once@2.0.1/node_modules/@tootallnate/once/LICENSE | Nathan Rajlich |
+| @types/caseless | 0.12.5 | MIT | https://github.com/DefinitelyTyped/DefinitelyTyped/tree/master/types/caseless | node_modules/.pnpm/@types+caseless@0.12.5/node_modules/@types/caseless/LICENSE | - |
 | @types/debug | 4.1.12 | MIT | https://github.com/DefinitelyTyped/DefinitelyTyped/tree/master/types/debug | node_modules/.pnpm/@types+debug@4.1.12/node_modules/@types/debug/LICENSE | - |
 | @types/events | 3.0.3 | MIT | https://github.com/DefinitelyTyped/DefinitelyTyped/tree/master/types/events | node_modules/.pnpm/@types+events@3.0.3/node_modules/@types/events/LICENSE | - |
+| @types/jsonwebtoken | 9.0.10 | MIT | https://github.com/DefinitelyTyped/DefinitelyTyped/tree/master/types/jsonwebtoken | node_modules/.pnpm/@types+jsonwebtoken@9.0.10/node_modules/@types/jsonwebtoken/LICENSE | - |
+| @types/long | 4.0.2 | MIT | https://github.com/DefinitelyTyped/DefinitelyTyped/tree/master/types/long | node_modules/.pnpm/@types+long@4.0.2/node_modules/@types/long/LICENSE | - |
 | @types/ms | 2.1.0 | MIT | https://github.com/DefinitelyTyped/DefinitelyTyped/tree/master/types/ms | node_modules/.pnpm/@types+ms@2.1.0/node_modules/@types/ms/LICENSE | - |
+| @types/node | 20.19.33 | MIT | https://github.com/DefinitelyTyped/DefinitelyTyped/tree/master/types/node | node_modules/.pnpm/@types+node@20.19.33/node_modules/@types/node/LICENSE | - |
 | @types/prop-types | 15.7.15 | MIT | https://github.com/DefinitelyTyped/DefinitelyTyped/tree/master/types/prop-types | node_modules/.pnpm/@types+prop-types@15.7.15/node_modules/@types/prop-types/LICENSE | - |
 | @types/react | 18.3.28 | MIT | https://github.com/DefinitelyTyped/DefinitelyTyped/tree/master/types/react | node_modules/.pnpm/@types+react@18.3.28/node_modules/@types/react/LICENSE | - |
+| @types/request | 2.48.13 | MIT | https://github.com/DefinitelyTyped/DefinitelyTyped/tree/master/types/request | node_modules/.pnpm/@types+request@2.48.13/node_modules/@types/request/LICENSE | - |
+| @types/tough-cookie | 4.0.5 | MIT | https://github.com/DefinitelyTyped/DefinitelyTyped/tree/master/types/tough-cookie | node_modules/.pnpm/@types+tough-cookie@4.0.5/node_modules/@types/tough-cookie/LICENSE | - |
+| abort-controller | 3.0.0 | MIT | https://github.com/mysticatea/abort-controller#readme | node_modules/.pnpm/abort-controller@3.0.0/node_modules/abort-controller/LICENSE | Toru Nagashima |
 | abstract-logging | 2.0.1 | MIT | https://github.com/jsumners/abstract-logging#readme | - | James Sumners |
 | agent-base | 7.1.4 | MIT | https://github.com/TooTallNate/proxy-agents#readme | node_modules/.pnpm/agent-base@7.1.4/node_modules/agent-base/LICENSE | Nathan Rajlich |
 | ajv | 8.18.0 | MIT | https://ajv.js.org | node_modules/.pnpm/ajv@8.18.0/node_modules/ajv/LICENSE | Evgeny Poberezkin |
@@ -167,20 +204,28 @@ Source: `pnpm licenses list --prod --json`.
 | ansi-regex | 5.0.1 | MIT | https://github.com/chalk/ansi-regex#readme | - | Sindre Sorhus |
 | ansi-styles | 4.3.0 | MIT | https://github.com/chalk/ansi-styles#readme | - | Sindre Sorhus |
 | argon2 | 0.44.0 | MIT | https://github.com/ranisalt/node-argon2#readme | node_modules/.pnpm/argon2@0.44.0/node_modules/argon2/LICENSE | Ranieri Althoff |
+| arrify | 2.0.1 | MIT | https://github.com/sindresorhus/arrify#readme | - | Sindre Sorhus |
 | asn1.js | 5.4.1 | MIT | https://github.com/indutny/asn1.js | node_modules/.pnpm/asn1.js@5.4.1/node_modules/asn1.js/LICENSE | Fedor Indutny |
+| async-retry | 1.3.3 | MIT | https://github.com/vercel/async-retry#readme | node_modules/.pnpm/async-retry@1.3.3/node_modules/async-retry/LICENSE.md | - |
+| asynckit | 0.4.0 | MIT | https://github.com/alexindigo/asynckit#readme | node_modules/.pnpm/asynckit@0.4.0/node_modules/asynckit/LICENSE | Alex Indigo |
 | atomic-sleep | 1.0.0 | MIT | https://github.com/davidmarkclements/atomic-sleep#readme | node_modules/.pnpm/atomic-sleep@1.0.0/node_modules/atomic-sleep/LICENSE | David Mark Clements |
 | avvio | 8.4.0 | MIT | https://github.com/fastify/avvio#readme | node_modules/.pnpm/avvio@8.4.0/node_modules/avvio/LICENSE | Matteo Collina |
 | awaitqueue | 3.3.0 | ISC | https://github.com/versatica/awaitqueue#readme | node_modules/.pnpm/awaitqueue@3.3.0_supports-color@10.2.2/node_modules/awaitqueue/LICENSE | Iñaki Baz Castillo |
 | balanced-match | 4.0.3 | MIT | https://github.com/juliangruber/balanced-match#readme | node_modules/.pnpm/balanced-match@4.0.3/node_modules/balanced-match/LICENSE.md | - |
+| base64-js | 1.5.1 | MIT | https://github.com/beatgammit/base64-js | node_modules/.pnpm/base64-js@1.5.1/node_modules/base64-js/LICENSE | T. Jameson Little |
+| bignumber.js | 9.3.1 | MIT | https://github.com/MikeMcl/bignumber.js#readme | node_modules/.pnpm/bignumber.js@9.3.1/node_modules/bignumber.js/LICENCE.md | Michael Mclaughlin |
 | bn.js | 4.12.3 | MIT | https://github.com/indutny/bn.js | node_modules/.pnpm/bn.js@4.12.3/node_modules/bn.js/LICENSE | Fedor Indutny |
 | bowser | 2.14.1 | MIT | https://github.com/bowser-js/bowser | node_modules/.pnpm/bowser@2.14.1/node_modules/bowser/LICENSE | Dustin Diaz |
 | brace-expansion | 5.0.6 | MIT | https://github.com/juliangruber/brace-expansion#readme | node_modules/.pnpm/brace-expansion@5.0.6/node_modules/brace-expansion/LICENSE | - |
 | buffer-equal-constant-time | 1.0.1 | BSD-3-Clause | https://github.com/goinstant/buffer-equal-constant-time#readme | node_modules/.pnpm/buffer-equal-constant-time@1.0.1/node_modules/buffer-equal-constant-time/LICENSE.txt | GoInstant Inc., a salesforce.com company |
+| call-bind-apply-helpers | 1.0.2 | MIT | https://github.com/ljharb/call-bind-apply-helpers#readme | node_modules/.pnpm/call-bind-apply-helpers@1.0.2/node_modules/call-bind-apply-helpers/LICENSE | Jordan Harband |
 | capacitor-native-biometric | 4.2.2 | MIT | https://github.com/epicshaggy/capacitor-native-biometric#readme | - | Jose Martinez |
 | chownr | 3.0.0 | BlueOak-1.0.0 | https://github.com/isaacs/chownr#readme | node_modules/.pnpm/chownr@3.0.0/node_modules/chownr/LICENSE.md | Isaac Z. Schlueter |
+| cliui | 8.0.1 | ISC | https://github.com/yargs/cliui#readme | node_modules/.pnpm/cliui@8.0.1/node_modules/cliui/LICENSE.txt | Ben Coe |
 | cluster-key-slot | 1.1.2 | Apache-2.0 | https://github.com/Salakar/cluster-key-slot#readme | node_modules/.pnpm/cluster-key-slot@1.1.2/node_modules/cluster-key-slot/LICENSE | Mike Diarmid |
 | color-convert | 2.0.1 | MIT | https://github.com/Qix-/color-convert#readme | node_modules/.pnpm/color-convert@2.0.1/node_modules/color-convert/LICENSE | Heather Arthur |
 | color-name | 1.1.4 | MIT | https://github.com/colorjs/color-name | node_modules/.pnpm/color-name@1.1.4/node_modules/color-name/LICENSE | DY |
+| combined-stream | 1.0.8 | MIT | https://github.com/felixge/node-combined-stream | - | Felix Geisendörfer |
 | content-disposition | 0.5.4 | MIT | https://github.com/jshttp/content-disposition#readme | node_modules/.pnpm/content-disposition@0.5.4/node_modules/content-disposition/LICENSE | Douglas Christopher Wilson |
 | cookie | 0.7.2 | MIT | https://github.com/jshttp/cookie#readme | node_modules/.pnpm/cookie@0.7.2/node_modules/cookie/LICENSE | Roman Shtylman |
 | cookie-signature | 1.2.2 | MIT | https://github.com/visionmedia/node-cookie-signature#readme | node_modules/.pnpm/cookie-signature@1.2.2/node_modules/cookie-signature/LICENSE | TJ Holowaychuk |
@@ -189,15 +234,25 @@ Source: `pnpm licenses list --prod --json`.
 | csstype | 3.2.3 | MIT | https://github.com/frenic/csstype#readme | node_modules/.pnpm/csstype@3.2.3/node_modules/csstype/LICENSE | Fredrik Nicol |
 | data-uri-to-buffer | 4.0.1 | MIT | https://github.com/TooTallNate/node-data-uri-to-buffer | - | Nathan Rajlich |
 | debug | 4.4.3 | MIT | https://github.com/debug-js/debug#readme | node_modules/.pnpm/debug@4.4.3_supports-color@10.2.2/node_modules/debug/LICENSE | Josh Junon |
+| delayed-stream | 1.0.0 | MIT | https://github.com/felixge/node-delayed-stream | - | Felix Geisendörfer |
 | denque | 2.1.0 | Apache-2.0 | https://docs.page/invertase/denque | node_modules/.pnpm/denque@2.1.0/node_modules/denque/LICENSE | Invertase |
 | depd | 2.0.0 | MIT | https://github.com/dougwilson/nodejs-depd#readme | node_modules/.pnpm/depd@2.0.0/node_modules/depd/LICENSE | Douglas Christopher Wilson |
+| dunder-proto | 1.0.1 | MIT | https://github.com/es-shims/dunder-proto#readme | node_modules/.pnpm/dunder-proto@1.0.1/node_modules/dunder-proto/LICENSE | Jordan Harband |
 | duplexify | 4.1.3 | MIT | https://github.com/mafintosh/duplexify | node_modules/.pnpm/duplexify@4.1.3/node_modules/duplexify/LICENSE | Mathias Buus |
 | ecdsa-sig-formatter | 1.0.11 | Apache-2.0 | https://github.com/Brightspace/node-ecdsa-sig-formatter#readme | node_modules/.pnpm/ecdsa-sig-formatter@1.0.11/node_modules/ecdsa-sig-formatter/LICENSE | D2L Corporation |
 | emoji-regex | 8.0.0 | MIT | https://mths.be/emoji-regex | - | Mathias Bynens |
 | end-of-stream | 1.4.5 | MIT | https://github.com/mafintosh/end-of-stream | node_modules/.pnpm/end-of-stream@1.4.5/node_modules/end-of-stream/LICENSE | Mathias Buus |
+| es-define-property | 1.0.1 | MIT | https://github.com/ljharb/es-define-property#readme | node_modules/.pnpm/es-define-property@1.0.1/node_modules/es-define-property/LICENSE | Jordan Harband |
+| es-errors | 1.3.0 | MIT | https://github.com/ljharb/es-errors#readme | node_modules/.pnpm/es-errors@1.3.0/node_modules/es-errors/LICENSE | Jordan Harband |
+| es-object-atoms | 1.1.1 | MIT | https://github.com/ljharb/es-object-atoms#readme | node_modules/.pnpm/es-object-atoms@1.1.1/node_modules/es-object-atoms/LICENSE | Jordan Harband |
+| es-set-tostringtag | 2.1.0 | MIT | https://github.com/es-shims/es-set-tostringtag#readme | node_modules/.pnpm/es-set-tostringtag@2.1.0/node_modules/es-set-tostringtag/LICENSE | Jordan Harband |
+| escalade | 3.2.0 | MIT | https://github.com/lukeed/escalade#readme | - | Luke Edwards |
 | escape-html | 1.0.3 | MIT | https://github.com/component/escape-html#readme | node_modules/.pnpm/escape-html@1.0.3/node_modules/escape-html/LICENSE | - |
+| event-target-shim | 5.0.1 | MIT | https://github.com/mysticatea/event-target-shim | node_modules/.pnpm/event-target-shim@5.0.1/node_modules/event-target-shim/LICENSE | Toru Nagashima |
 | events | 3.3.0 | MIT | https://github.com/Gozala/events#readme | node_modules/.pnpm/events@3.3.0/node_modules/events/LICENSE | Irakli Gozalishvili |
+| extend | 3.0.2 | MIT | https://github.com/justmoon/node-extend#readme | node_modules/.pnpm/extend@3.0.2/node_modules/extend/LICENSE | Stefan Thomas |
 | fake-mediastreamtrack | 2.2.1 | ISC | https://github.com/ibc/fake-mediastreamtrack#readme | node_modules/.pnpm/fake-mediastreamtrack@2.2.1/node_modules/fake-mediastreamtrack/LICENSE | Iñaki Baz Castillo |
+| farmhash-modern | 1.1.0 | MIT | https://github.com/ForbesLindesay/npm-package-template#readme | node_modules/.pnpm/farmhash-modern@1.1.0/node_modules/farmhash-modern/LICENSE | Forbes Lindesay |
 | fast-content-type-parse | 1.1.0 | MIT | https://github.com/fastify/fast-content-type-parse#readme | node_modules/.pnpm/fast-content-type-parse@1.1.0/node_modules/fast-content-type-parse/LICENSE | Aras Abbasi |
 | fast-decode-uri-component | 1.0.1 | MIT | https://github.com/delvedor/fast-decode-uri-component#readme | node_modules/.pnpm/fast-decode-uri-component@1.0.1/node_modules/fast-decode-uri-component/LICENSE | Tomas Della Vedova - @delvedor |
 | fast-deep-equal | 3.1.3 | MIT | https://github.com/epoberezkin/fast-deep-equal#readme | node_modules/.pnpm/fast-deep-equal@3.1.3/node_modules/fast-deep-equal/LICENSE | Evgeny Poberezkin |
@@ -213,39 +268,80 @@ Source: `pnpm licenses list --prod --json`.
 | fastparallel | 2.4.1 | ISC | https://github.com/mcollina/fastparallel | node_modules/.pnpm/fastparallel@2.4.1/node_modules/fastparallel/LICENSE | Matteo Collina |
 | fastq | 1.20.1 | ISC | https://github.com/mcollina/fastq#readme | node_modules/.pnpm/fastq@1.20.1/node_modules/fastq/LICENSE | Matteo Collina |
 | fastseries | 1.7.2 | ISC | https://github.com/mcollina/fastseries | node_modules/.pnpm/fastseries@1.7.2/node_modules/fastseries/LICENSE | Matteo Collina |
+| faye-websocket | 0.11.4 | Apache-2.0 | https://github.com/faye/faye-websocket-node | node_modules/.pnpm/faye-websocket@0.11.4/node_modules/faye-websocket/LICENSE.md | James Coglan |
 | fetch-blob | 3.2.0 | MIT | https://github.com/node-fetch/fetch-blob#readme | node_modules/.pnpm/fetch-blob@3.2.0/node_modules/fetch-blob/LICENSE | Jimmy Wärting |
 | find-my-way | 8.2.2 | MIT | https://github.com/delvedor/find-my-way#readme | node_modules/.pnpm/find-my-way@8.2.2/node_modules/find-my-way/LICENSE | Tomas Della Vedova - @delvedor |
+| firebase-admin | 13.10.0 | Apache-2.0 | https://firebase.google.com/ | node_modules/.pnpm/firebase-admin@13.10.0/node_modules/firebase-admin/LICENSE | Firebase |
 | flatbuffers | 25.9.23 | Apache-2.0 | https://google.github.io/flatbuffers/ | node_modules/.pnpm/flatbuffers@25.9.23/node_modules/flatbuffers/LICENSE | The FlatBuffers project |
 | foreground-child | 3.3.1 | ISC | https://github.com/tapjs/foreground-child#readme | node_modules/.pnpm/foreground-child@3.3.1/node_modules/foreground-child/LICENSE | Isaac Z. Schlueter |
+| form-data | 2.5.5 | MIT | https://github.com/form-data/form-data#readme | - | Felix Geisendörfer |
 | formdata-polyfill | 4.0.10 | MIT | https://github.com/jimmywarting/FormData#readme | node_modules/.pnpm/formdata-polyfill@4.0.10/node_modules/formdata-polyfill/LICENSE | Jimmy Wärting |
 | forwarded | 0.2.0 | MIT | https://github.com/jshttp/forwarded#readme | node_modules/.pnpm/forwarded@0.2.0/node_modules/forwarded/LICENSE | - |
+| function-bind | 1.1.2 | MIT | https://github.com/Raynos/function-bind | node_modules/.pnpm/function-bind@1.1.2/node_modules/function-bind/LICENSE | Raynos |
+| functional-red-black-tree | 1.0.1 | MIT | https://github.com/mikolalysenko/functional-red-black-tree#readme | node_modules/.pnpm/functional-red-black-tree@1.0.1/node_modules/functional-red-black-tree/LICENSE | Mikola Lysenko |
+| gaxios | 7.1.4 | Apache-2.0 | https://github.com/googleapis/google-cloud-node-core/tree/main/packages/gaxios | node_modules/.pnpm/gaxios@7.1.4/node_modules/gaxios/LICENSE | Google, LLC |
+| gcp-metadata | 8.1.2 | Apache-2.0 | https://github.com/googleapis/google-cloud-node-core/tree/main/packages/gcp-metadata | node_modules/.pnpm/gcp-metadata@8.1.2/node_modules/gcp-metadata/LICENSE | Google LLC |
+| get-caller-file | 2.0.5 | ISC | https://github.com/stefanpenner/get-caller-file#readme | node_modules/.pnpm/get-caller-file@2.0.5/node_modules/get-caller-file/LICENSE.md | Stefan Penner |
+| get-intrinsic | 1.3.0 | MIT | https://github.com/ljharb/get-intrinsic#readme | node_modules/.pnpm/get-intrinsic@1.3.0/node_modules/get-intrinsic/LICENSE | Jordan Harband |
+| get-proto | 1.0.1 | MIT | https://github.com/ljharb/get-proto#readme | node_modules/.pnpm/get-proto@1.0.1/node_modules/get-proto/LICENSE | Jordan Harband |
 | glob | 10.5.0 | ISC | https://github.com/isaacs/node-glob#readme | node_modules/.pnpm/glob@10.5.0/node_modules/glob/LICENSE | Isaac Z. Schlueter |
+| google-auth-library | 10.6.2 | Apache-2.0 | https://github.com/googleapis/google-cloud-node-core/tree/main/packages/google-auth-library-nodejs | node_modules/.pnpm/google-auth-library@10.6.2/node_modules/google-auth-library/LICENSE | Google Inc. |
+| google-gax | 4.6.1 | Apache-2.0 | https://github.com/googleapis/gax-nodejs#readme | - | Google API Authors |
+| google-logging-utils | 1.1.3 | Apache-2.0 | https://github.com/googleapis/google-cloud-node-core/tree/main/dev-packages/logging-utils | node_modules/.pnpm/google-logging-utils@1.1.3/node_modules/google-logging-utils/LICENSE | Google API Authors |
+| gopd | 1.2.0 | MIT | https://github.com/ljharb/gopd#readme | node_modules/.pnpm/gopd@1.2.0/node_modules/gopd/LICENSE | Jordan Harband |
+| gtoken | 7.1.0 | MIT | https://github.com/google/node-gtoken#readme | node_modules/.pnpm/gtoken@7.1.0/node_modules/gtoken/LICENSE | Google, LLC |
 | h264-profile-level-id | 2.3.2 | ISC | https://github.com/versatica/h264-profile-level-id#readme | node_modules/.pnpm/h264-profile-level-id@2.3.2_supports-color@10.2.2/node_modules/h264-profile-level-id/LICENSE | Iñaki Baz Castillo |
+| has-symbols | 1.1.0 | MIT | https://github.com/ljharb/has-symbols#readme | node_modules/.pnpm/has-symbols@1.1.0/node_modules/has-symbols/LICENSE | Jordan Harband |
+| has-tostringtag | 1.0.2 | MIT | https://github.com/inspect-js/has-tostringtag#readme | node_modules/.pnpm/has-tostringtag@1.0.2/node_modules/has-tostringtag/LICENSE | Jordan Harband |
+| hasown | 2.0.2 | MIT | https://github.com/inspect-js/hasOwn#readme | node_modules/.pnpm/hasown@2.0.2/node_modules/hasown/LICENSE | Jordan Harband |
 | helmet | 7.2.0 | MIT | https://helmetjs.github.io/ | node_modules/.pnpm/helmet@7.2.0/node_modules/helmet/LICENSE | Adam Baldwin |
+| html-entities | 2.6.0 | MIT | https://github.com/mdevils/html-entities#readme | node_modules/.pnpm/html-entities@2.6.0/node_modules/html-entities/LICENSE | Marat Dulin |
 | http_ece | 1.2.0 | MIT | https://github.com/martinthomson/encrypted-content-encoding | - | Martin Thomson |
 | http-errors | 2.0.0 | MIT | https://github.com/jshttp/http-errors#readme | node_modules/.pnpm/http-errors@2.0.0/node_modules/http-errors/LICENSE | Jonathan Ong |
+| http-parser-js | 0.5.10 | MIT | https://github.com/creationix/http-parser-js#readme | node_modules/.pnpm/http-parser-js@0.5.10/node_modules/http-parser-js/LICENSE.md | Tim Caswell |
+| http-proxy-agent | 5.0.0 | MIT | https://github.com/TooTallNate/node-http-proxy-agent#readme | - | Nathan Rajlich |
 | https-proxy-agent | 7.0.6 | MIT | https://github.com/TooTallNate/proxy-agents#readme | node_modules/.pnpm/https-proxy-agent@7.0.6/node_modules/https-proxy-agent/LICENSE | Nathan Rajlich |
 | inherits | 2.0.4 | ISC | https://github.com/isaacs/inherits#readme | node_modules/.pnpm/inherits@2.0.4/node_modules/inherits/LICENSE | - |
 | ioredis | 5.9.3 | MIT | https://github.com/luin/ioredis#readme | node_modules/.pnpm/ioredis@5.9.3/node_modules/ioredis/LICENSE | Zihua Li |
 | ipaddr.js | 1.9.1 | MIT | https://github.com/whitequark/ipaddr.js#readme | node_modules/.pnpm/ipaddr.js@1.9.1/node_modules/ipaddr.js/LICENSE | whitequark |
 | is-fullwidth-code-point | 3.0.0 | MIT | https://github.com/sindresorhus/is-fullwidth-code-point#readme | - | Sindre Sorhus |
+| is-stream | 2.0.1 | MIT | https://github.com/sindresorhus/is-stream#readme | - | Sindre Sorhus |
 | isexe | 2.0.0 | ISC | https://github.com/isaacs/isexe#readme | node_modules/.pnpm/isexe@2.0.0/node_modules/isexe/LICENSE | Isaac Z. Schlueter |
 | jackspeak | 3.4.3 | BlueOak-1.0.0 | https://github.com/isaacs/jackspeak#readme | node_modules/.pnpm/jackspeak@3.4.3/node_modules/jackspeak/LICENSE.md | Isaac Z. Schlueter |
+| jose | 4.15.9 | MIT | https://github.com/panva/jose | node_modules/.pnpm/jose@4.15.9/node_modules/jose/LICENSE.md | Filip Skokan |
 | js-tokens | 4.0.0 | MIT | https://github.com/lydell/js-tokens#readme | node_modules/.pnpm/js-tokens@4.0.0/node_modules/js-tokens/LICENSE | Simon Lydell |
+| json-bigint | 1.0.0 | MIT | https://github.com/sidorares/json-bigint#readme | node_modules/.pnpm/json-bigint@1.0.0/node_modules/json-bigint/LICENSE | Andrey Sidorov |
 | json-schema-ref-resolver | 1.0.1 | MIT | https://github.com/fastify/json-schema-ref-resolver#readme | node_modules/.pnpm/json-schema-ref-resolver@1.0.1/node_modules/json-schema-ref-resolver/LICENSE | Ivan Tymoshenko |
 | json-schema-traverse | 1.0.0 | MIT | https://github.com/epoberezkin/json-schema-traverse#readme | node_modules/.pnpm/json-schema-traverse@1.0.0/node_modules/json-schema-traverse/LICENSE | Evgeny Poberezkin |
+| jsonwebtoken | 9.0.3 | MIT | https://github.com/auth0/node-jsonwebtoken#readme | node_modules/.pnpm/jsonwebtoken@9.0.3/node_modules/jsonwebtoken/LICENSE | auth0 |
 | jwa | 2.0.1 | MIT | https://github.com/brianloveswords/node-jwa#readme | node_modules/.pnpm/jwa@2.0.1/node_modules/jwa/LICENSE | Brian J. Brennan |
+| jwks-rsa | 3.2.2 | MIT | https://github.com/auth0/node-jwks-rsa#readme | node_modules/.pnpm/jwks-rsa@3.2.2/node_modules/jwks-rsa/LICENSE | Auth0 |
 | jws | 4.0.1 | MIT | https://github.com/brianloveswords/node-jws#readme | node_modules/.pnpm/jws@4.0.1/node_modules/jws/LICENSE | Brian J Brennan |
 | libsodium-sumo | 0.7.16 | ISC | https://github.com/jedisct1/libsodium.js | node_modules/.pnpm/libsodium-sumo@0.7.16/node_modules/libsodium-sumo/LICENSE | Ahmad Ben Mrad |
 | libsodium-wrappers-sumo | 0.7.13 | ISC | https://github.com/jedisct1/libsodium.js | node_modules/.pnpm/libsodium-wrappers-sumo@0.7.13/node_modules/libsodium-wrappers-sumo/LICENSE | Ahmad Ben Mrad |
 | light-my-request | 5.14.0 | BSD-3-Clause | https://github.com/fastify/light-my-request/blob/master/README.md | node_modules/.pnpm/light-my-request@5.14.0/node_modules/light-my-request/LICENSE | Tomas Della Vedova - @delvedor |
+| limiter | 1.1.5 | MIT | https://github.com/jhurliman/node-rate-limiter#readme | node_modules/.pnpm/limiter@1.1.5/node_modules/limiter/LICENSE.txt | John Hurliman |
+| lodash.camelcase | 4.3.0 | MIT | https://lodash.com/ | node_modules/.pnpm/lodash.camelcase@4.3.0/node_modules/lodash.camelcase/LICENSE | John-David Dalton |
+| lodash.clonedeep | 4.5.0 | MIT | https://lodash.com/ | node_modules/.pnpm/lodash.clonedeep@4.5.0/node_modules/lodash.clonedeep/LICENSE | John-David Dalton |
 | lodash.defaults | 4.2.0 | MIT | https://lodash.com/ | node_modules/.pnpm/lodash.defaults@4.2.0/node_modules/lodash.defaults/LICENSE | John-David Dalton |
+| lodash.includes | 4.3.0 | MIT | https://lodash.com/ | node_modules/.pnpm/lodash.includes@4.3.0/node_modules/lodash.includes/LICENSE | John-David Dalton |
 | lodash.isarguments | 3.1.0 | MIT | https://lodash.com/ | node_modules/.pnpm/lodash.isarguments@3.1.0/node_modules/lodash.isarguments/LICENSE | John-David Dalton |
+| lodash.isboolean | 3.0.3 | MIT | https://lodash.com/ | node_modules/.pnpm/lodash.isboolean@3.0.3/node_modules/lodash.isboolean/LICENSE | John-David Dalton |
+| lodash.isinteger | 4.0.4 | MIT | https://lodash.com/ | node_modules/.pnpm/lodash.isinteger@4.0.4/node_modules/lodash.isinteger/LICENSE | John-David Dalton |
+| lodash.isnumber | 3.0.3 | MIT | https://lodash.com/ | node_modules/.pnpm/lodash.isnumber@3.0.3/node_modules/lodash.isnumber/LICENSE | John-David Dalton |
+| lodash.isplainobject | 4.0.6 | MIT | https://lodash.com/ | node_modules/.pnpm/lodash.isplainobject@4.0.6/node_modules/lodash.isplainobject/LICENSE | John-David Dalton |
+| lodash.isstring | 4.0.1 | MIT | https://lodash.com/ | node_modules/.pnpm/lodash.isstring@4.0.1/node_modules/lodash.isstring/LICENSE | John-David Dalton |
+| lodash.once | 4.1.1 | MIT | https://lodash.com/ | node_modules/.pnpm/lodash.once@4.1.1/node_modules/lodash.once/LICENSE | John-David Dalton |
+| long | 5.3.2 | Apache-2.0 | https://github.com/dcodeIO/long.js#readme | node_modules/.pnpm/long@5.3.2/node_modules/long/LICENSE | Daniel Wirtz |
 | loose-envify | 1.4.0 | MIT | https://github.com/zertosh/loose-envify | node_modules/.pnpm/loose-envify@1.4.0/node_modules/loose-envify/LICENSE | Andres Suarez |
 | lru-cache | 10.4.3 | ISC | https://github.com/isaacs/node-lru-cache#readme | node_modules/.pnpm/lru-cache@10.4.3/node_modules/lru-cache/LICENSE | Isaac Z. Schlueter |
+| lru-memoizer | 2.3.0 | MIT | https://github.com/jfromaniello/lru-memoizer#readme | node_modules/.pnpm/lru-memoizer@2.3.0/node_modules/lru-memoizer/LICENSE | José F. Romaniello |
+| math-intrinsics | 1.1.0 | MIT | https://github.com/es-shims/math-intrinsics#readme | node_modules/.pnpm/math-intrinsics@1.1.0/node_modules/math-intrinsics/LICENSE | Jordan Harband |
 | mediasoup | 3.19.17 | ISC | https://mediasoup.org | node_modules/.pnpm/mediasoup@3.19.17/node_modules/mediasoup/LICENSE | - |
 | mediasoup-client | 3.18.7 | ISC | https://mediasoup.org | node_modules/.pnpm/mediasoup-client@3.18.7/node_modules/mediasoup-client/LICENSE | - |
 | mime | 3.0.0 | MIT | https://github.com/broofa/mime#readme | node_modules/.pnpm/mime@3.0.0/node_modules/mime/LICENSE | Robert Kieffer |
+| mime-db | 1.52.0 | MIT | https://github.com/jshttp/mime-db#readme | node_modules/.pnpm/mime-db@1.52.0/node_modules/mime-db/LICENSE | - |
+| mime-types | 2.1.35 | MIT | https://github.com/jshttp/mime-types#readme | node_modules/.pnpm/mime-types@2.1.35/node_modules/mime-types/LICENSE | - |
 | minimalistic-assert | 1.0.1 | ISC | https://github.com/calvinmetcalf/minimalistic-assert | node_modules/.pnpm/minimalistic-assert@1.0.1/node_modules/minimalistic-assert/LICENSE | - |
 | minimatch | 9.0.7 | ISC | https://github.com/isaacs/minimatch#readme | node_modules/.pnpm/minimatch@9.0.7/node_modules/minimatch/LICENSE | Isaac Z. Schlueter |
 | minimist | 1.2.8 | MIT | https://github.com/minimistjs/minimist | node_modules/.pnpm/minimist@1.2.8/node_modules/minimist/LICENSE | James Halliday |
@@ -258,9 +354,11 @@ Source: `pnpm licenses list --prod --json`.
 | node-domexception | 1.0.0 | MIT | https://github.com/jimmywarting/node-domexception#readme | node_modules/.pnpm/node-domexception@1.0.0/node_modules/node-domexception/LICENSE | Jimmy Wärting |
 | node-fetch | 3.3.2 | MIT | https://github.com/node-fetch/node-fetch | node_modules/.pnpm/node-fetch@3.3.2/node_modules/node-fetch/LICENSE.md | David Frank |
 | node-gyp-build | 4.8.4 | MIT | https://github.com/prebuild/node-gyp-build | node_modules/.pnpm/node-gyp-build@4.8.4/node_modules/node-gyp-build/LICENSE | Mathias Buus |
+| object-hash | 3.0.0 | MIT | https://github.com/puleos/object-hash | node_modules/.pnpm/object-hash@3.0.0/node_modules/object-hash/LICENSE | Scott Puleo |
 | obliterator | 2.0.5 | MIT | https://github.com/yomguithereal/obliterator#readme | node_modules/.pnpm/obliterator@2.0.5/node_modules/obliterator/LICENSE.txt | Guillaume Plique |
 | on-exit-leak-free | 2.1.2 | MIT | https://github.com/mcollina/on-exit-or-gc#readme | node_modules/.pnpm/on-exit-leak-free@2.1.2/node_modules/on-exit-leak-free/LICENSE | Matteo Collina |
 | once | 1.4.0 | ISC | https://github.com/isaacs/once#readme | node_modules/.pnpm/once@1.4.0/node_modules/once/LICENSE | Isaac Z. Schlueter |
+| p-limit | 3.1.0 | MIT | https://github.com/sindresorhus/p-limit#readme | - | Sindre Sorhus |
 | package-json-from-dist | 1.0.1 | BlueOak-1.0.0 | https://github.com/isaacs/package-json-from-dist#readme | node_modules/.pnpm/package-json-from-dist@1.0.1/node_modules/package-json-from-dist/LICENSE.md | Isaac Z. Schlueter |
 | path-expression-matcher | 1.5.0 | MIT | https://github.com/NaturalIntelligence/path-expression-matcher#readme | node_modules/.pnpm/path-expression-matcher@1.5.0/node_modules/path-expression-matcher/LICENSE | Amit Gupta |
 | path-key | 3.1.1 | MIT | https://github.com/sindresorhus/path-key#readme | - | Sindre Sorhus |
@@ -281,6 +379,8 @@ Source: `pnpm licenses list --prod --json`.
 | postgres-date | 1.0.7 | MIT | https://github.com/bendrucker/postgres-date#readme | - | Ben Drucker |
 | postgres-interval | 1.2.0 | MIT | https://github.com/bendrucker/postgres-interval#readme | - | Ben Drucker |
 | process-warning | 5.0.0 | MIT | https://github.com/fastify/fastify-warning#readme | node_modules/.pnpm/process-warning@5.0.0/node_modules/process-warning/LICENSE | Tomas Della Vedova |
+| proto3-json-serializer | 2.0.2 | Apache-2.0 | https://github.com/googleapis/proto3-json-serializer-nodejs#readme | node_modules/.pnpm/proto3-json-serializer@2.0.2/node_modules/proto3-json-serializer/LICENSE | - |
+| protobufjs | 7.6.1 | BSD-3-Clause | https://protobufjs.github.io/protobuf.js/ | node_modules/.pnpm/protobufjs@7.6.1/node_modules/protobufjs/LICENSE | Daniel Wirtz |
 | proxy-addr | 2.0.7 | MIT | https://github.com/jshttp/proxy-addr#readme | node_modules/.pnpm/proxy-addr@2.0.7/node_modules/proxy-addr/LICENSE | Douglas Christopher Wilson |
 | quick-format-unescaped | 4.0.4 | MIT | https://github.com/davidmarkclements/quick-format#readme | node_modules/.pnpm/quick-format-unescaped@4.0.4/node_modules/quick-format-unescaped/LICENSE | David Mark Clements |
 | react | 18.3.1 | MIT | https://reactjs.org/ | node_modules/.pnpm/react@18.3.1/node_modules/react/LICENSE | - |
@@ -291,8 +391,11 @@ Source: `pnpm licenses list --prod --json`.
 | real-require | 0.2.0 | MIT | https://github.com/pinojs/real-require | node_modules/.pnpm/real-require@0.2.0/node_modules/real-require/LICENSE.md | Paolo Insogna |
 | redis-errors | 1.2.0 | MIT | https://github.com/NodeRedis/redis-errors#readme | node_modules/.pnpm/redis-errors@1.2.0/node_modules/redis-errors/LICENSE | Ruben Bridgewater |
 | redis-parser | 3.0.0 | MIT | https://github.com/NodeRedis/node-redis-parser#readme | node_modules/.pnpm/redis-parser@3.0.0/node_modules/redis-parser/LICENSE | Ruben Bridgewater |
+| require-directory | 2.1.1 | MIT | https://github.com/troygoode/node-require-directory/ | node_modules/.pnpm/require-directory@2.1.1/node_modules/require-directory/LICENSE | Troy Goode |
 | require-from-string | 2.0.2 | MIT | https://github.com/floatdrop/require-from-string#readme | - | Vsevolod Strukchinsky |
 | ret | 0.5.0 | MIT | https://github.com/fent/ret.js#readme | node_modules/.pnpm/ret@0.5.0/node_modules/ret/LICENSE | fent |
+| retry | 0.13.1 | MIT | https://github.com/tim-kos/node-retry | - | Tim Koschützki |
+| retry-request | 7.0.2 | MIT | https://github.com/stephenplusplus/retry-request#readme | - | Stephen Sawchuk |
 | reusify | 1.1.0 | MIT | https://github.com/mcollina/reusify#readme | node_modules/.pnpm/reusify@1.1.0/node_modules/reusify/LICENSE | Matteo Collina |
 | rfdc | 1.4.1 | MIT | https://github.com/davidmarkclements/rfdc#readme | node_modules/.pnpm/rfdc@1.4.1/node_modules/rfdc/LICENSE | David Mark Clements |
 | safe-buffer | 5.2.1 | MIT | https://github.com/feross/safe-buffer | node_modules/.pnpm/safe-buffer@5.2.1/node_modules/safe-buffer/LICENSE | Feross Aboukhadijeh |
@@ -313,29 +416,43 @@ Source: `pnpm licenses list --prod --json`.
 | standard-as-callback | 2.1.0 | MIT | https://github.com/luin/asCallback#readme | node_modules/.pnpm/standard-as-callback@2.1.0/node_modules/standard-as-callback/LICENSE | luin |
 | statuses | 2.0.1 | MIT | https://github.com/jshttp/statuses#readme | node_modules/.pnpm/statuses@2.0.1/node_modules/statuses/LICENSE | - |
 | steed | 1.1.3 | MIT | https://github.com/mcollina/steed#readme | node_modules/.pnpm/steed@1.1.3/node_modules/steed/LICENSE | Matteo Collina |
+| stream-events | 1.0.5 | MIT | https://github.com/stephenplusplus/stream-events | - | Stephen Sawchuk |
 | stream-shift | 1.0.3 | MIT | https://github.com/mafintosh/stream-shift | node_modules/.pnpm/stream-shift@1.0.3/node_modules/stream-shift/LICENSE | Mathias Buus |
 | stream-wormhole | 1.1.0 | MIT | https://github.com/node-modules/stream-wormhole | node_modules/.pnpm/stream-wormhole@1.1.0/node_modules/stream-wormhole/LICENSE | fengmk2 |
 | string_decoder | 1.3.0 | MIT | https://github.com/nodejs/string_decoder | node_modules/.pnpm/string_decoder@1.3.0/node_modules/string_decoder/LICENSE | - |
 | string-width | 4.2.3 | MIT | https://github.com/sindresorhus/string-width#readme | - | Sindre Sorhus |
 | strip-ansi | 6.0.1 | MIT | https://github.com/chalk/strip-ansi#readme | - | Sindre Sorhus |
 | strnum | 2.2.2 | MIT | https://github.com/NaturalIntelligence/strnum#readme | node_modules/.pnpm/strnum@2.2.2/node_modules/strnum/LICENSE | Amit Gupta |
+| stubs | 3.0.0 | MIT | https://github.com/stephenplusplus/stubs | - | Stephen Sawchuk |
 | supports-color | 10.2.2 | MIT | https://github.com/chalk/supports-color#readme | - | Sindre Sorhus |
 | tar | 7.5.11 | BlueOak-1.0.0 | https://github.com/isaacs/node-tar#readme | node_modules/.pnpm/tar@7.5.11/node_modules/tar/LICENSE.md | Isaac Z. Schlueter |
+| teeny-request | 9.0.0 | Apache-2.0 | https://github.com/googleapis/teeny-request#readme | node_modules/.pnpm/teeny-request@9.0.0/node_modules/teeny-request/LICENSE | fhinkel |
 | thread-stream | 3.1.0 | MIT | https://github.com/mcollina/thread-stream#readme | node_modules/.pnpm/thread-stream@3.1.0/node_modules/thread-stream/LICENSE | Matteo Collina |
 | toad-cache | 3.7.0 | MIT | https://github.com/kibertoad/toad-cache | node_modules/.pnpm/toad-cache@3.7.0/node_modules/toad-cache/LICENSE | Igor Savin |
 | toidentifier | 1.0.1 | MIT | https://github.com/component/toidentifier#readme | node_modules/.pnpm/toidentifier@1.0.1/node_modules/toidentifier/LICENSE | Douglas Christopher Wilson |
+| tr46 | 0.0.3 | MIT | https://github.com/Sebmaster/tr46.js#readme | - | Sebastian Mayr |
 | tslib | 2.8.1 | 0BSD | https://www.typescriptlang.org/ | node_modules/.pnpm/tslib@2.8.1/node_modules/tslib/LICENSE.txt | Microsoft Corp. |
+| undici-types | 6.21.0 | MIT | https://undici.nodejs.org | node_modules/.pnpm/undici-types@6.21.0/node_modules/undici-types/LICENSE | - |
 | use-sync-external-store | 1.6.0 | MIT | https://github.com/facebook/react#readme | node_modules/.pnpm/use-sync-external-store@1.6.0_react@18.3.1/node_modules/use-sync-external-store/LICENSE | - |
 | util-deprecate | 1.0.2 | MIT | https://github.com/TooTallNate/util-deprecate | node_modules/.pnpm/util-deprecate@1.0.2/node_modules/util-deprecate/LICENSE | Nathan Rajlich |
+| uuid | 9.0.1 | MIT | https://github.com/uuidjs/uuid#readme | node_modules/.pnpm/uuid@9.0.1/node_modules/uuid/LICENSE.md | - |
 | web-push | 3.6.7 | MPL-2.0 | https://github.com/web-push-libs/web-push#readme | node_modules/.pnpm/web-push@3.6.7/node_modules/web-push/LICENSE | Marco Castelluccio |
 | web-streams-polyfill | 3.3.3 | MIT | https://github.com/MattiasBuelens/web-streams-polyfill#readme | node_modules/.pnpm/web-streams-polyfill@3.3.3/node_modules/web-streams-polyfill/LICENSE | Mattias Buelens |
+| webidl-conversions | 3.0.1 | BSD-2-Clause | https://github.com/jsdom/webidl-conversions#readme | node_modules/.pnpm/webidl-conversions@3.0.1/node_modules/webidl-conversions/LICENSE.md | Domenic Denicola |
+| websocket-driver | 0.7.4 | Apache-2.0 | https://github.com/faye/websocket-driver-node | node_modules/.pnpm/websocket-driver@0.7.4/node_modules/websocket-driver/LICENSE.md | James Coglan |
+| websocket-extensions | 0.1.4 | Apache-2.0 | http://github.com/faye/websocket-extensions-node | node_modules/.pnpm/websocket-extensions@0.1.4/node_modules/websocket-extensions/LICENSE.md | James Coglan |
+| whatwg-url | 5.0.0 | MIT | https://github.com/jsdom/whatwg-url#readme | node_modules/.pnpm/whatwg-url@5.0.0/node_modules/whatwg-url/LICENSE.txt | Sebastian Mayr |
 | which | 2.0.2 | ISC | https://github.com/isaacs/node-which#readme | node_modules/.pnpm/which@2.0.2/node_modules/which/LICENSE | Isaac Z. Schlueter |
 | wrap-ansi | 7.0.0 | MIT | https://github.com/chalk/wrap-ansi#readme | - | Sindre Sorhus |
 | wrappy | 1.0.2 | ISC | https://github.com/npm/wrappy | node_modules/.pnpm/wrappy@1.0.2/node_modules/wrappy/LICENSE | Isaac Z. Schlueter |
 | ws | 8.20.1 | MIT | https://github.com/websockets/ws | node_modules/.pnpm/ws@8.20.1/node_modules/ws/LICENSE | Einar Otto Stangvik |
 | xml-naming | 0.1.0 | MIT | https://github.com/NaturalIntelligence/xml-naming#readme | - | Amit Gupta |
 | xtend | 4.0.2 | MIT | https://github.com/Raynos/xtend | node_modules/.pnpm/xtend@4.0.2/node_modules/xtend/LICENSE | Raynos |
+| y18n | 5.0.8 | ISC | https://github.com/yargs/y18n | node_modules/.pnpm/y18n@5.0.8/node_modules/y18n/LICENSE | Ben Coe |
 | yallist | 5.0.0 | BlueOak-1.0.0 | https://github.com/isaacs/yallist#readme | node_modules/.pnpm/yallist@5.0.0/node_modules/yallist/LICENSE.md | Isaac Z. Schlueter |
+| yargs | 17.7.2 | MIT | https://yargs.js.org/ | node_modules/.pnpm/yargs@17.7.2/node_modules/yargs/LICENSE | - |
+| yargs-parser | 21.1.1 | ISC | https://github.com/yargs/yargs-parser#readme | node_modules/.pnpm/yargs-parser@21.1.1/node_modules/yargs-parser/LICENSE.txt | Ben Coe |
+| yocto-queue | 0.1.0 | MIT | https://github.com/sindresorhus/yocto-queue#readme | - | Sindre Sorhus |
 | zod | 3.25.76 | MIT | https://zod.dev | node_modules/.pnpm/zod@3.25.76/node_modules/zod/LICENSE | Colin McDonnell |
 | zustand | 4.5.7 | MIT | https://github.com/pmndrs/zustand | node_modules/.pnpm/zustand@4.5.7_@types+react@18.3.28_react@18.3.1/node_modules/zustand/LICENSE | Paul Henschel |
 

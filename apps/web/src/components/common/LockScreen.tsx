@@ -9,6 +9,7 @@ interface Props {
   readonly username: string | null;
   readonly isUnlocking: boolean;
   readonly pinWrong?: boolean;
+  readonly errorMessage?: string;
   readonly onUnlock: (passcode: string) => void;
   readonly onLogout: () => void;
 }
@@ -32,10 +33,19 @@ const FaceIdIcon = (
 );
 
 const FingerprintIcon = (
-  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-    <path d="M12 4C8.134 4 5 7.134 5 11v3M19 11c0-2.64-1.358-4.961-3.41-6.32" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
-    <path d="M9 14c0-1.657 1.343-3 3-3s3 1.343 3 3" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
-    <path d="M12 11v4M8 17c.552 1.198 1.688 2 3 2h2" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+    {/* outer arc — top of finger */}
+    <path d="M7 9.5C7 6.46 9.24 4 12 4s5 2.46 5 5.5" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
+    {/* middle arc */}
+    <path d="M9 11c0-1.66 1.34-3 3-3s3 1.34 3 3" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
+    {/* center ridge — vertical loop */}
+    <path d="M12 10v4.5" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
+    {/* lower-left arc */}
+    <path d="M5.5 13.5C5.5 10.46 8.46 8 12 8" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
+    {/* lower-right arc */}
+    <path d="M18.5 13.5C18.5 10.46 15.54 8 12 8" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
+    {/* bottom ridge */}
+    <path d="M8.5 16c.7 1.1 1.96 1.8 3.5 1.8s2.8-.7 3.5-1.8" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
   </svg>
 );
 
@@ -47,7 +57,7 @@ function getBiometryKind(biometryType: string): BiometryKind {
   return null;
 }
 
-export function LockScreen({ username, isUnlocking, pinWrong, onUnlock, onLogout }: Props) {
+export function LockScreen({ username, isUnlocking, pinWrong, errorMessage, onUnlock, onLogout }: Props) {
   const { t } = useI18n();
   const [passcode, setPasscode] = useState("");
   const [biometryKind, setBiometryKind] = useState<BiometryKind>(null);
@@ -92,6 +102,18 @@ export function LockScreen({ username, isUnlocking, pinWrong, onUnlock, onLogout
     }
   }, [biometryKind]);
 
+  // When the biometric prompt closes (pending → not pending) without starting
+  // an unlock flow, bring focus back to the passcode input so the user does
+  // not have to tap/click manually before typing their passcode.
+  const prevBiometricPendingRef = useRef(false);
+  useEffect(() => {
+    const was = prevBiometricPendingRef.current;
+    prevBiometricPendingRef.current = biometricPending;
+    if (was && !biometricPending && !isUnlocking) {
+      inputRef.current?.focus();
+    }
+  }, [biometricPending, isUnlocking]);
+
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (passcode.length > 0 && !isUnlocking) {
@@ -122,6 +144,9 @@ export function LockScreen({ username, isUnlocking, pinWrong, onUnlock, onLogout
           />
           {pinWrong && (
             <p className={styles.error} role="alert">{t("lock.pin.error")}</p>
+          )}
+          {!pinWrong && errorMessage && (
+            <p className={styles.error} role="alert">{errorMessage}</p>
           )}
           <button
             type="submit"

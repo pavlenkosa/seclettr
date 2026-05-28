@@ -1,0 +1,1 @@
+ops/e2e-smoke.sh

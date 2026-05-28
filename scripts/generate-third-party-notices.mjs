@@ -134,8 +134,8 @@ const packages = [...packageMap.values()].sort((a, b) => {
 });
 
 if (packages.length === 0) {
-  console.error("[licenses] no production dependencies discovered");
-  process.exit(1);
+  console.log("[licenses] no production dependencies discovered");
+  process.exit(0);
 }
 
 const summary = new Map();

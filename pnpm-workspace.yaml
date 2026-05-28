@@ -21,14 +21,14 @@ overrides:
   "tar": "7.5.11"
   "serialize-javascript": ">=7.0.3"
 
-onlyBuiltDependencies:
-  - "@capacitor/background-runner"
-  - "@firebase/util"
-  - argon2
-  - esbuild
-  - mediasoup
-  - protobufjs
-  - simple-git-hooks
+allowBuilds:
+  "@capacitor/background-runner": true
+  "@firebase/util": true
+  argon2: true
+  esbuild: true
+  mediasoup: true
+  protobufjs: true
+  simple-git-hooks: true
 
 packageExtensions:
   "simple-git-hooks@*":

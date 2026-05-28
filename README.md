@@ -11,7 +11,7 @@
   <a href="https://github.com/pavlenkosa/seclettr/actions/workflows/release-bundle.yml">
     <img src="https://github.com/pavlenkosa/seclettr/actions/workflows/release-bundle.yml/badge.svg?branch=main" alt="Release Bundle" />
   </a>
-  <img src="https://img.shields.io/badge/version-1.2.0--beta-2563eb" alt="Version 1.2.0-beta" />
+  <img src="https://img.shields.io/badge/version-1.2.0--beta-2563eb" alt="Version 1.3.0-beta" />
   <img src="https://img.shields.io/badge/license-Apache%202.0-0f766e" alt="License Apache-2.0" />
   <img src="https://img.shields.io/badge/node-%3E%3D22-1f2937" alt="Node >= 22" />
   <img src="https://img.shields.io/badge/pnpm-%3E%3D8-f59e0b" alt="pnpm >= 8" />
@@ -23,7 +23,7 @@
 > Self-hostable messaging and calling stack with encrypted chats, explicit plain-chat flows, direct/group/room calls, and one deployable monorepo for web, API, and SFU services.
 
 > [!IMPORTANT]
-> Seclettr is currently `1.2.0-beta` and under active development. The encrypted messaging model is implemented in the client stack, but the server still handles the metadata and transport needed for routing, storage, presence, attachments, and calls. Call media protection depends on the selected call-security mode and on browser/runtime compatibility.
+> Seclettr is currently `1.3.0-beta` and under active development. The encrypted messaging model is implemented in the client stack, but the server still handles the metadata and transport needed for routing, storage, presence, attachments, and calls. Call media protection depends on the selected call-security mode and on browser/runtime compatibility.
 
 ## Why Seclettr
 

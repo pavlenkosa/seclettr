@@ -37,16 +37,14 @@ jobs:
         with:
           ref: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.ref || github.event.workflow_run.head_sha }}
 
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v4
-        with:
-          version: 8.15.9
-
       - name: Setup Node.js
         uses: actions/setup-node@v5
         with:
           node-version: 22
           cache: pnpm
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
 
       - name: Setup Java
         uses: actions/setup-java@v5
@@ -158,6 +156,10 @@ jobs:
               --name "${{ steps.meta.outputs.bundle_prefix }}" \
               --tag  "${{ steps.meta.outputs.image_tag }}"
           fi
+
+      - name: Build workspace packages (required for Android sync)
+        shell: bash
+        run: pnpm --filter @seclettr/protocol run build && pnpm --filter @seclettr/crypto run build
 
       - name: Build Android debug APK
         shell: bash

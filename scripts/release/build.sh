@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+_sc="$(readlink -f "${BASH_SOURCE[0]}")" && SCRIPT_DIR="$(cd -- "$(dirname -- "$_sc")/.." && pwd)"
 # shellcheck source=./common.sh
 source "$SCRIPT_DIR/common.sh"
 
@@ -87,9 +87,9 @@ RELEASE_HTTP_OVERRIDE_SRC="$ROOT_DIR/infra/docker-compose.release.http.yml"
 ENV_TEMPLATE_SRC="$ROOT_DIR/infra/.env.example"
 NGINX_SRC_DIR="$ROOT_DIR/infra/nginx"
 MIGRATIONS_SRC_DIR="$ROOT_DIR/infra/migrations"
-INSTALL_SCRIPT_SRC="$ROOT_DIR/scripts/release-install.sh"
-UNINSTALL_SCRIPT_SRC="$ROOT_DIR/scripts/release-uninstall.sh"
-SERVER_INSTALL_SCRIPT_SRC="$ROOT_DIR/scripts/server-install.sh"
+INSTALL_SCRIPT_SRC="$ROOT_DIR/scripts/release/install.sh"
+UNINSTALL_SCRIPT_SRC="$ROOT_DIR/scripts/release/uninstall.sh"
+SERVER_INSTALL_SCRIPT_SRC="$ROOT_DIR/scripts/server/install.sh"
 LICENSE_SRC="$ROOT_DIR/LICENSE"
 NOTICE_SRC="$ROOT_DIR/NOTICE"
 THIRD_PARTY_NOTICES_SRC="$ROOT_DIR/THIRD_PARTY_NOTICES.md"

@@ -7,7 +7,7 @@ set -euo pipefail
 
 echo "Running Seclettr dev environment..."
 
-SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+_sc="$(readlink -f "${BASH_SOURCE[0]}")" && SCRIPT_DIR="$(cd -- "$(dirname -- "$_sc")/.." && pwd)"
 # shellcheck source=./common.sh
 source "$SCRIPT_DIR/common.sh"
 

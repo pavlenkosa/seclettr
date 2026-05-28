@@ -43,6 +43,7 @@ services:
 
   web-dev:
     profiles: ["dev-web"]
+    restart: unless-stopped
     build:
       context: ..
       dockerfile: apps/web/Dockerfile

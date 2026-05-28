@@ -679,6 +679,7 @@ export const ruMessages: TranslationMap = {
   "call.speaker": "Громкоговоритель",
   "call.speakerAria": "Переключить динамик",
   "call.earpiece": "Наушник",
+  "call.bluetooth": "Bluetooth",
 
   "callSecurity.verified": "Сквозное шифрование",
   "callSecurity.verifiedSubtitle": "Ваш звонок приватен — никто не может прослушать.",

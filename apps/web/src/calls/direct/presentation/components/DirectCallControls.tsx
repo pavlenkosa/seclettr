@@ -1,13 +1,14 @@
-import { useEffect, useRef, useState, type RefObject } from "react";
+import { useCallback, useEffect, useRef, useState, type RefObject } from "react";
 import { useI18n } from "@/i18n";
 import { CallControlButton } from "@/calls/shared/presentation/CallControlButton";
 import { CallControlsDock } from "@/calls/shared/presentation/CallControlsDock";
 import { CallDevicePicker, type VideoResolution } from "@/calls/shared/presentation/CallDevicePicker";
 import type { InputDeviceOption } from "@/calls/shared/media/input-devices/useCallInputDevices";
-import { CameraIcon, HangupIcon, MuteIcon, PhoneIcon, ScreenShareIcon, SpeakerIcon } from "@/calls/shared/presentation/CallIcons";
+import { BluetoothIcon, CameraIcon, HangupIcon, MuteIcon, PhoneIcon, ScreenShareIcon, SpeakerIcon } from "@/calls/shared/presentation/CallIcons";
 import { AudioOutputSelector } from "@/calls/shared/media/audio-output/AudioOutputSelector";
 import { useOptionalCallAudioOutput } from "@/calls/shared/media/audio-output/CallAudioOutputProvider";
 import { useNativeSpeakerToggle } from "@/calls/shared/media/audio-output/useNativeSpeakerToggle";
+import { getNativeAudioRoutes, setNativeAudioRoute, type AudioRouteName, type AudioRoutes } from "@/lib/native-audio-route";
 import { PillButton } from "@/components/ui";
 import { useIsMobileViewport } from "@/lib/hooks/use-is-mobile-viewport";
 
@@ -107,6 +108,27 @@ export function DirectCallControls({
   // Bottom-sheet state for web audio output selection on mobile.
   const [outputSheetOpen, setOutputSheetOpen] = useState(false);
 
+  // Audio route state (Bluetooth-aware). Null until queried on first sheet open.
+  const [audioRoutes, setAudioRoutes] = useState<AudioRoutes | null>(null);
+  const [isLoadingRoutes, setIsLoadingRoutes] = useState(false);
+
+  // Query available routes and current route when the native sheet opens.
+  const loadAudioRoutes = useCallback(async () => {
+    setIsLoadingRoutes(true);
+    try {
+      const routes = await getNativeAudioRoutes();
+      if (routes) setAudioRoutes(routes);
+    } finally {
+      setIsLoadingRoutes(false);
+    }
+  }, []);
+
+  const handleSelectRoute = useCallback(async (route: AudioRouteName) => {
+    await setNativeAudioRoute(route);
+    setAudioRoutes((prev) => prev ? { ...prev, currentRoute: route } : prev);
+    setOutputSheetOpen(false);
+  }, []);
+
   // Refs for sheet focus management (CAL-03).
   // One ref per sheet variant; trigger refs to restore focus on close.
   const nativeSpeakerSheetRef = useRef<HTMLDivElement>(null);
@@ -115,20 +137,38 @@ export function DirectCallControls({
   const webOutputBtnRef = useRef<HTMLButtonElement>(null);
 
   // Move focus into the active sheet when it opens; return to trigger on close.
+  // Also query audio routes when the native sheet opens.
   useEffect(() => {
     if (outputSheetOpen) {
       const sheet = nativeSpeakerSheetRef.current ?? webOutputSheetRef.current;
       sheet?.focus();
+      if (speakerSupported) void loadAudioRoutes();
     } else {
       const btn = nativeSpeakerBtnRef.current ?? webOutputBtnRef.current;
       btn?.focus();
     }
-  }, [outputSheetOpen]);
+  }, [outputSheetOpen, speakerSupported, loadAudioRoutes]);
 
   const resolvedSpeakerLabel = speakerLabel ?? t("call.speaker");
   const resolvedSpeakerAriaLabel = speakerAriaLabel ?? t("call.speakerAria");
   const resolvedEarphoneLabel = earphoneLabel ?? t("call.earpiece");
+  const resolvedBluetoothLabel = t("call.bluetooth");
   const audioOutputLabel = t("call.audioOutput.label");
+
+  // Derive the display-facing current route from live audioRoutes state,
+  // falling back to the speakerOn boolean when routes haven't been queried yet.
+  const currentRoute: AudioRouteName = audioRoutes?.currentRoute
+    ?? (speakerOn ? "speaker" : "earpiece");
+
+  const currentRouteLabel =
+    currentRoute === "bluetooth" ? resolvedBluetoothLabel
+    : currentRoute === "speaker" ? resolvedSpeakerLabel
+    : resolvedEarphoneLabel;
+
+  const currentRouteIcon =
+    currentRoute === "bluetooth" ? <BluetoothIcon />
+    : currentRoute === "speaker" ? <SpeakerIcon speakerOn />
+    : <PhoneIcon />;
 
   // Web-audio output button is shown on mobile when native speaker toggle is unavailable
   // but the browser supports output selection (or can prompt for it).
@@ -147,16 +187,12 @@ export function DirectCallControls({
           tone={outputSheetOpen ? "accent" : "neutral"}
           appearance="soft"
           size="sm"
-          leading={speakerSupported
-            ? (speakerOn ? <SpeakerIcon speakerOn /> : <PhoneIcon />)
-            : <SpeakerIcon speakerOn />}
+          leading={speakerSupported ? currentRouteIcon : <SpeakerIcon speakerOn />}
           aria-label={audioOutputLabel}
           aria-expanded={outputSheetOpen}
           aria-haspopup="dialog"
         >
-          {speakerSupported
-            ? (speakerOn ? resolvedSpeakerLabel : resolvedEarphoneLabel)
-            : audioOutputLabel}
+          {speakerSupported ? currentRouteLabel : audioOutputLabel}
         </PillButton>
       </div>
     ) : null;
@@ -236,40 +272,52 @@ export function DirectCallControls({
               >
                 <div className={styles.audioOutputSheetHeader}>
                   <span className={styles.audioOutputSheetTitle}>{audioOutputLabel}</span>
-                  <span className={styles.audioOutputSheetHint}>
-                    {speakerOn ? resolvedSpeakerLabel : resolvedEarphoneLabel}
-                  </span>
+                  <span className={styles.audioOutputSheetHint}>{currentRouteLabel}</span>
                 </div>
-                <button
-                  type="button"
-                  className={[
-                    styles.audioSheetOption,
-                    !speakerOn ? styles.audioSheetOptionActive : "",
-                  ].filter(Boolean).join(" ")}
-                  onClick={() => {
-                    if (speakerOn) toggleSpeaker();
-                    setOutputSheetOpen(false);
-                  }}
-                >
-                  <PhoneIcon />
-                  <span>{resolvedEarphoneLabel}</span>
-                  {!speakerOn ? <span className={styles.audioSheetCheck} aria-hidden="true">✓</span> : null}
-                </button>
-                <button
-                  type="button"
-                  className={[
-                    styles.audioSheetOption,
-                    speakerOn ? styles.audioSheetOptionActive : "",
-                  ].filter(Boolean).join(" ")}
-                  onClick={() => {
-                    if (!speakerOn) toggleSpeaker();
-                    setOutputSheetOpen(false);
-                  }}
-                >
-                  <SpeakerIcon speakerOn />
-                  <span>{resolvedSpeakerLabel}</span>
-                  {speakerOn ? <span className={styles.audioSheetCheck} aria-hidden="true">✓</span> : null}
-                </button>
+                {isLoadingRoutes ? (
+                  <div className={styles.audioSheetLoading} aria-live="polite" aria-busy="true" />
+                ) : (
+                  <>
+                    <button
+                      type="button"
+                      className={[
+                        styles.audioSheetOption,
+                        currentRoute === "earpiece" ? styles.audioSheetOptionActive : "",
+                      ].filter(Boolean).join(" ")}
+                      onClick={() => { void handleSelectRoute("earpiece"); }}
+                    >
+                      <PhoneIcon />
+                      <span>{resolvedEarphoneLabel}</span>
+                      {currentRoute === "earpiece" ? <span className={styles.audioSheetCheck} aria-hidden="true">✓</span> : null}
+                    </button>
+                    {audioRoutes?.hasBluetooth ? (
+                      <button
+                        type="button"
+                        className={[
+                          styles.audioSheetOption,
+                          currentRoute === "bluetooth" ? styles.audioSheetOptionActive : "",
+                        ].filter(Boolean).join(" ")}
+                        onClick={() => { void handleSelectRoute("bluetooth"); }}
+                      >
+                        <BluetoothIcon />
+                        <span>{resolvedBluetoothLabel}</span>
+                        {currentRoute === "bluetooth" ? <span className={styles.audioSheetCheck} aria-hidden="true">✓</span> : null}
+                      </button>
+                    ) : null}
+                    <button
+                      type="button"
+                      className={[
+                        styles.audioSheetOption,
+                        currentRoute === "speaker" ? styles.audioSheetOptionActive : "",
+                      ].filter(Boolean).join(" ")}
+                      onClick={() => { void handleSelectRoute("speaker"); }}
+                    >
+                      <SpeakerIcon speakerOn />
+                      <span>{resolvedSpeakerLabel}</span>
+                      {currentRoute === "speaker" ? <span className={styles.audioSheetCheck} aria-hidden="true">✓</span> : null}
+                    </button>
+                  </>
+                )}
               </div>
             ) : null}
           </>

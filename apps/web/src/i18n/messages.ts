@@ -849,6 +849,7 @@ const enMessages: TranslationMap = {
   "call.speaker": "Speaker",
   "call.speakerAria": "Toggle loudspeaker",
   "call.earpiece": "Earpiece",
+  "call.bluetooth": "Bluetooth",
 
   "callSecurity.verified": "End-to-end encrypted",
   "callSecurity.verifiedSubtitle": "Your call is private — nobody can listen in.",

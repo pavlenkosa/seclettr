@@ -5,6 +5,7 @@
  *   - PhoneIcon, CameraIcon, SwitchCameraIcon, HangupIcon
  *   - MinimizeIcon, ExpandIcon, CloseIcon, FocusIcon
  *   - ScreenShareIcon, ShieldIcon, MuteIcon (muted/unmuted variants)
+ *   - BluetoothIcon
  *
  * Does not own any state, call logic, or interaction handling.
  * All icons are aria-hidden presentational primitives consumed across
@@ -233,6 +234,33 @@ export function MuteIcon({ muted }: { readonly muted: boolean }) {
         stroke="currentColor"
         strokeWidth="1.5"
         strokeLinecap="round"
+      />
+    </svg>
+  );
+}
+
+export function BluetoothIcon() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden="true">
+      {/* Vertical stem */}
+      <line x1="9" y1="2" x2="9" y2="16" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+      {/* Upper right arm: 9,2 → 13,5.5 */}
+      <polyline
+        points="9,2 13,5.5 9,9"
+        stroke="currentColor"
+        strokeWidth="1.5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        fill="none"
+      />
+      {/* Lower right arm: 9,9 → 13,12.5 → 9,16 */}
+      <polyline
+        points="9,9 13,12.5 9,16"
+        stroke="currentColor"
+        strokeWidth="1.5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        fill="none"
       />
     </svg>
   );

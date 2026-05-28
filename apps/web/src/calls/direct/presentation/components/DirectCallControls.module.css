@@ -203,6 +203,20 @@
   font-weight: 700;
 }
 
+/* Loading skeleton shown while querying available audio routes */
+.audioSheetLoading {
+  height: 2.75rem;
+  margin: var(--space-1) 0;
+  border-radius: var(--radius-md);
+  background: color-mix(in srgb, var(--text-primary) 8%, transparent);
+  animation: audioSheetLoadingPulse 1.2s ease-in-out infinite;
+}
+
+@keyframes audioSheetLoadingPulse {
+  0%, 100% { opacity: 0.6; }
+  50%       { opacity: 1; }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .controlsDock,
   .controlBtn {

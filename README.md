@@ -11,7 +11,7 @@
   <a href="https://github.com/pavlenkosa/seclettr/actions/workflows/release-bundle.yml">
     <img src="https://github.com/pavlenkosa/seclettr/actions/workflows/release-bundle.yml/badge.svg?branch=main" alt="Release Bundle" />
   </a>
-  <img src="https://img.shields.io/badge/version-1.2.0--beta-2563eb" alt="Version 1.3.0-beta" />
+  <img src="https://img.shields.io/badge/version-1.3.0--beta-2563eb" alt="Version 1.3.0-beta" />
   <img src="https://img.shields.io/badge/license-Apache%202.0-0f766e" alt="License Apache-2.0" />
   <img src="https://img.shields.io/badge/node-%3E%3D22-1f2937" alt="Node >= 22" />
   <img src="https://img.shields.io/badge/pnpm-%3E%3D8-f59e0b" alt="pnpm >= 8" />

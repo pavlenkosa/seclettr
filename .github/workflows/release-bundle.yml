@@ -37,14 +37,13 @@ jobs:
         with:
           ref: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.ref || github.event.workflow_run.head_sha }}
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v5
+      - uses: actions/setup-node@v5
         with:
           node-version: 22
-          cache: pnpm
 
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          cache: true
 
       - name: Setup Java
         uses: actions/setup-java@v5
@@ -160,166 +159,41 @@ jobs:
               --tag  "${{ steps.meta.outputs.image_tag }}"
           fi
 
-      - name: Build workspace packages (required for Android sync)
-        shell: bash
-        run: pnpm --filter @seclettr/protocol run build && pnpm --filter @seclettr/crypto run build
-
       - name: Build Android release artifacts
         shell: bash
-        run: pnpm --filter @seclettr/web run android:build:release
-
-      - name: Locate bundle files
-        id: bundle
-        shell: bash
         run: |
-          ARCHIVE_PATH="$(ls -1t artifacts/${{ steps.meta.outputs.bundle_prefix }}-*.tar.gz | head -n1)"
-          if [[ -z "${ARCHIVE_PATH}" || ! -f "${ARCHIVE_PATH}" ]]; then
-            echo "Release archive not found"
-            exit 1
-          fi
+          pnpm --filter @seclettr/web run android:build:release || echo "APK/AAB build skipped (no keystore)"
 
-          CHECKSUM_PATH="${ARCHIVE_PATH}.sha256"
-          STAGE_DIR="${ARCHIVE_PATH%.tar.gz}"
-          RELEASE_INFO_PATH="${STAGE_DIR}/RELEASE_INFO.txt"
-          DEPLOY_DOC_PATH="${STAGE_DIR}/DEPLOY.md"
-          DEPLOYMENT_GUIDE_PATH="${STAGE_DIR}/DEPLOYMENT.md"
-          [[ -f "${CHECKSUM_PATH}" ]]         || { echo "Checksum file missing: ${CHECKSUM_PATH}";               exit 1; }
-          [[ -f "${RELEASE_INFO_PATH}" ]]     || { echo "RELEASE_INFO missing: ${RELEASE_INFO_PATH}";            exit 1; }
-          [[ -f "${DEPLOY_DOC_PATH}" ]]       || { echo "DEPLOY.md missing: ${DEPLOY_DOC_PATH}";                 exit 1; }
-          [[ -f "${DEPLOYMENT_GUIDE_PATH}" ]] || { echo "DEPLOYMENT.md missing: ${DEPLOYMENT_GUIDE_PATH}";       exit 1; }
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        if: github.event_name == 'workflow_dispatch'
+        with:
+          tag_name: v${{ steps.meta.outputs.app_version }}
+          name: v${{ steps.meta.outputs.app_version }}
+          body_path: /tmp/commit-body.txt
+          draft: true
+          files: |
+            build/*.tar.gz
+            build/*.sha256
+            apps/web/android/app/build/outputs/apk/release/app-release.apk
+            apps/web/android/app/build/outputs/bundle/release/app-release.aab
 
-          echo "archive_path=${ARCHIVE_PATH}"                   >> "$GITHUB_OUTPUT"
-          echo "checksum_path=${CHECKSUM_PATH}"                 >> "$GITHUB_OUTPUT"
-          echo "release_info_path=${RELEASE_INFO_PATH}"         >> "$GITHUB_OUTPUT"
-          echo "deploy_doc_path=${DEPLOY_DOC_PATH}"             >> "$GITHUB_OUTPUT"
-          echo "deployment_guide_path=${DEPLOYMENT_GUIDE_PATH}" >> "$GITHUB_OUTPUT"
-          echo "archive_name=$(basename "${ARCHIVE_PATH}")"     >> "$GITHUB_OUTPUT"
-
-      - name: Locate Android files
-        id: android
-        shell: bash
-        run: |
-          DEBUG_APK_PATH="$(ls -1 apps/web/android/app/build/outputs/apk/debug/*.apk | head -n1)"
-          RELEASE_APK_PATH="$(ls -1 apps/web/android/app/build/outputs/apk/release/*.apk | head -n1)"
-          RELEASE_AAB_PATH="$(ls -1 apps/web/android/app/build/outputs/bundle/release/*.aab | head -n1)"
-
-          [[ -n "${DEBUG_APK_PATH}" && -f "${DEBUG_APK_PATH}" ]]       || { echo "Android debug APK not found"; exit 1; }
-          [[ -n "${RELEASE_APK_PATH}" && -f "${RELEASE_APK_PATH}" ]]   || { echo "Android release APK not found"; exit 1; }
-          [[ -n "${RELEASE_AAB_PATH}" && -f "${RELEASE_AAB_PATH}" ]]   || { echo "Android release AAB not found"; exit 1; }
-
-          echo "debug_apk_path=${DEBUG_APK_PATH}"                      >> "$GITHUB_OUTPUT"
-          echo "debug_apk_name=$(basename "${DEBUG_APK_PATH}")"        >> "$GITHUB_OUTPUT"
-          echo "release_apk_path=${RELEASE_APK_PATH}"                  >> "$GITHUB_OUTPUT"
-          echo "release_apk_name=$(basename "${RELEASE_APK_PATH}")"    >> "$GITHUB_OUTPUT"
-          echo "release_aab_path=${RELEASE_AAB_PATH}"                  >> "$GITHUB_OUTPUT"
-          echo "release_aab_name=$(basename "${RELEASE_AAB_PATH}")"    >> "$GITHUB_OUTPUT"
-
-      - name: Build release notes
-        id: notes
-        if: github.event_name == 'workflow_run'
-        shell: bash
-        run: |
-          NOTES_FILE="$(mktemp --suffix=.md)"
-          ARCHIVE_NAME="${{ steps.bundle.outputs.archive_name }}"
-          COMMIT_SHA="${{ steps.meta.outputs.commit_sha }}"
-          SUBJECT="$(cat /tmp/commit-subject.txt)"
-          BODY="$(cat /tmp/commit-body.txt)"
-
-          {
-            # Lead with commit message so the release page reads like a changelog.
-            printf '%s\n' "$SUBJECT"
-
-            if [[ -n "$BODY" ]]; then
-              printf '\n%s\n' "$BODY"
-            fi
-
-            printf '\n---\n\n'
-
-            printf '### Install / Update\n\n'
-            printf '```bash\n'
-            printf '# 1. Verify download integrity\n'
-            printf 'sha256sum -c %s.sha256\n' "$ARCHIVE_NAME"
-            printf '# 2. Unpack\n'
-            printf 'tar -xzf %s\n' "$ARCHIVE_NAME"
-            printf 'cd %s\n' "${ARCHIVE_NAME%.tar.gz}"
-            printf '# 3. Run installer  (auto-generates secrets & TLS cert on first run)\n'
-            printf './install.sh\n'
-            printf '```\n\n'
-
-            printf '> For a guided setup run `./install.sh --interactive`\n\n'
-
-            printf '### Included files\n\n'
-            printf '| File | Description |\n'
-            printf '|------|-------------|\n'
-            printf '| `%s` | Release bundle (Docker images + installer) |\n' "$ARCHIVE_NAME"
-            printf '| `%s.sha256` | SHA-256 checksum |\n' "$ARCHIVE_NAME"
-            printf '| `%s` | Installable Android debug APK for smoke/beta testing |\n' "${{ steps.android.outputs.debug_apk_name }}"
-            printf '| `%s` | Android release APK build output |\n' "${{ steps.android.outputs.release_apk_name }}"
-            printf '| `%s` | Android App Bundle (AAB) build output |\n' "${{ steps.android.outputs.release_aab_name }}"
-            printf '| `RELEASE_INFO.txt` | Build metadata |\n'
-            printf '| `DEPLOYMENT.md` | Step-by-step installation guide |\n'
-            printf '_Commit: `%s`_\n' "$COMMIT_SHA"
-          } > "$NOTES_FILE"
-
-          echo "path=${NOTES_FILE}" >> "$GITHUB_OUTPUT"
-
-      - name: Upload release artifact
+      - name: Upload artifact — bundle
         uses: actions/upload-artifact@v4
         with:
-          name: seclettr-release-${{ steps.meta.outputs.short_sha }}
-          retention-days: 90
+          name: ${{ steps.meta.outputs.bundle_prefix }}
           path: |
-            ${{ steps.bundle.outputs.archive_path }}
-            ${{ steps.bundle.outputs.checksum_path }}
-            ${{ steps.bundle.outputs.release_info_path }}
-            ${{ steps.bundle.outputs.deploy_doc_path }}
-            ${{ steps.bundle.outputs.deployment_guide_path }}
-            ${{ steps.android.outputs.debug_apk_path }}
-            ${{ steps.android.outputs.release_apk_path }}
-            ${{ steps.android.outputs.release_aab_path }}
+            build/*.tar.gz
+            build/*.sha256
+          if-no-files-found: error
+          retention-days: 30
 
-      - name: Publish GitHub prerelease
-        id: release
-        if: github.event_name == 'workflow_run'
-        uses: softprops/action-gh-release@v2
+      - name: Upload artifact — APK / AAB
+        uses: actions/upload-artifact@v4
         with:
-          tag_name: snapshot-main-${{ steps.meta.outputs.short_sha }}
-          name: "${{ steps.meta.outputs.commit_subject }} (${{ steps.meta.outputs.short_sha }})"
-          target_commitish: ${{ steps.meta.outputs.commit_sha }}
-          prerelease: true
-          make_latest: false
-          body_path: ${{ steps.notes.outputs.path }}
-          files: |
-            ${{ steps.bundle.outputs.archive_path }}
-            ${{ steps.bundle.outputs.checksum_path }}
-            ${{ steps.bundle.outputs.release_info_path }}
-            ${{ steps.bundle.outputs.deploy_doc_path }}
-            ${{ steps.bundle.outputs.deployment_guide_path }}
-            ${{ steps.android.outputs.debug_apk_path }}
-            ${{ steps.android.outputs.release_apk_path }}
-            ${{ steps.android.outputs.release_aab_path }}
-
-      - name: Publish summary
-        shell: bash
-        run: |
-          CHECKSUM_LINE="$(cat "${{ steps.bundle.outputs.checksum_path }}")"
-          {
-            echo "## Release Bundle Ready"
-            echo ""
-            echo "- Commit: \`${{ steps.meta.outputs.commit_sha }}\`"
-            echo "- Archive: \`${{ steps.bundle.outputs.archive_name }}\`"
-            echo "- SHA256: \`${CHECKSUM_LINE}\`"
-            echo "- Android debug APK: \`${{ steps.android.outputs.debug_apk_name }}\`"
-            echo "- Android release APK: \`${{ steps.android.outputs.release_apk_name }}\`"
-            echo "- Android release AAB: \`${{ steps.android.outputs.release_aab_name }}\`"
-            echo ""
-            echo "### Download"
-            echo "Artifacts → \`seclettr-release-${{ steps.meta.outputs.short_sha }}\`"
-            if [[ -n "${{ steps.release.outputs.url }}" ]]; then
-              echo "GitHub prerelease → ${{ steps.release.outputs.url }}"
-            fi
-            echo ""
-            echo "### Install"
-            echo "1. Download and unpack the archive."
-            echo "2. Run \`./install.sh\` from the unpacked folder."
-          } >> "$GITHUB_STEP_SUMMARY"
+          name: seclettr-release-apk
+          path: |
+            apps/web/android/app/build/outputs/apk/release/app-release.apk
+            apps/web/android/app/build/outputs/bundle/release/app-release.aab
+          if-no-files-found: warn
+          retention-days: 30

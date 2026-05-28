@@ -55,6 +55,11 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: Build workspace packages
+        run: |
+          pnpm --filter @seclettr/crypto build
+          pnpm --filter @seclettr/protocol build
+
       - name: Prepare metadata
         id: meta
         shell: bash

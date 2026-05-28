@@ -55,11 +55,6 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Build workspace packages
-        run: |
-          pnpm --filter @seclettr/crypto build
-          pnpm --filter @seclettr/protocol build
-
       - name: Prepare metadata
         id: meta
         shell: bash
@@ -163,6 +158,13 @@ jobs:
               --name "${{ steps.meta.outputs.bundle_prefix }}" \
               --tag  "${{ steps.meta.outputs.image_tag }}"
           fi
+
+      # Rebuild workspace packages immediately before the Android vite build.
+      # See dev-bundle.yml comment for rationale.
+      - name: Build workspace packages
+        run: |
+          pnpm --filter @seclettr/crypto build
+          pnpm --filter @seclettr/protocol build
 
       - name: Build Android release artifacts
         shell: bash

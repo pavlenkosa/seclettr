@@ -55,11 +55,6 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Build workspace packages
-        run: |
-          pnpm --filter @seclettr/crypto build
-          pnpm --filter @seclettr/protocol build
-
       - name: Prepare metadata
         id: meta
         shell: bash
@@ -160,6 +155,17 @@ jobs:
               --name "${{ steps.meta.outputs.bundle_prefix }}" \
               --tag  "${{ steps.meta.outputs.image_tag }}"
           fi
+
+      # Rebuild workspace packages immediately before the Android vite build so
+      # packages/protocol/dist/ and packages/crypto/dist/ are definitely present.
+      # The Docker build steps above run long operations that can leave the runner
+      # in a state where dist/ directories are missing (Docker contexts apply
+      # .dockerignore which excludes **/dist, and release-build.sh runs additional
+      # docker builds). Rebuilding here is fast (<10s) and eliminates the race.
+      - name: Build workspace packages
+        run: |
+          pnpm --filter @seclettr/crypto build
+          pnpm --filter @seclettr/protocol build
 
       - name: Build Android debug APK
         shell: bash

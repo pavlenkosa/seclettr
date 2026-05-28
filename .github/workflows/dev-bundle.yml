@@ -37,14 +37,13 @@ jobs:
         with:
           ref: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.ref || github.event.workflow_run.head_sha }}
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v5
+      - uses: actions/setup-node@v5
         with:
           node-version: 22
-          cache: pnpm
 
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          cache: true
 
       - name: Setup Java
         uses: actions/setup-java@v5
@@ -157,82 +156,34 @@ jobs:
               --tag  "${{ steps.meta.outputs.image_tag }}"
           fi
 
-      - name: Build workspace packages (required for Android sync)
-        shell: bash
-        run: pnpm --filter @seclettr/protocol run build && pnpm --filter @seclettr/crypto run build
-
       - name: Build Android debug APK
         shell: bash
         run: pnpm --filter @seclettr/web run android:build:debug
 
-      - name: Locate bundle files
-        id: bundle
-        shell: bash
-        run: |
-          ARCHIVE_PATH="$(ls -1t artifacts/${{ steps.meta.outputs.bundle_prefix }}-*.tar.gz | head -n1)"
-          if [[ -z "${ARCHIVE_PATH}" || ! -f "${ARCHIVE_PATH}" ]]; then
-            echo "Dev archive not found"
-            exit 1
-          fi
-
-          CHECKSUM_PATH="${ARCHIVE_PATH}.sha256"
-          STAGE_DIR="${ARCHIVE_PATH%.tar.gz}"
-          RELEASE_INFO_PATH="${STAGE_DIR}/RELEASE_INFO.txt"
-          DEPLOY_DOC_PATH="${STAGE_DIR}/DEPLOY.md"
-          DEPLOYMENT_GUIDE_PATH="${STAGE_DIR}/DEPLOYMENT.md"
-          [[ -f "${CHECKSUM_PATH}" ]]             || { echo "Checksum file missing: ${CHECKSUM_PATH}";               exit 1; }
-          [[ -f "${RELEASE_INFO_PATH}" ]]         || { echo "RELEASE_INFO missing: ${RELEASE_INFO_PATH}";            exit 1; }
-          [[ -f "${DEPLOY_DOC_PATH}" ]]           || { echo "DEPLOY.md missing: ${DEPLOY_DOC_PATH}";                 exit 1; }
-          [[ -f "${DEPLOYMENT_GUIDE_PATH}" ]]     || { echo "DEPLOYMENT.md missing: ${DEPLOYMENT_GUIDE_PATH}";       exit 1; }
-
-          echo "archive_path=${ARCHIVE_PATH}"                        >> "$GITHUB_OUTPUT"
-          echo "checksum_path=${CHECKSUM_PATH}"                      >> "$GITHUB_OUTPUT"
-          echo "release_info_path=${RELEASE_INFO_PATH}"              >> "$GITHUB_OUTPUT"
-          echo "deploy_doc_path=${DEPLOY_DOC_PATH}"                  >> "$GITHUB_OUTPUT"
-          echo "deployment_guide_path=${DEPLOYMENT_GUIDE_PATH}"      >> "$GITHUB_OUTPUT"
-          echo "archive_name=$(basename "${ARCHIVE_PATH}")"          >> "$GITHUB_OUTPUT"
-
-      - name: Locate Android files
-        id: android
-        shell: bash
-        run: |
-          DEBUG_APK_PATH="$(ls -1 apps/web/android/app/build/outputs/apk/debug/*.apk | head -n1)"
-          if [[ -z "${DEBUG_APK_PATH}" || ! -f "${DEBUG_APK_PATH}" ]]; then
-            echo "Android debug APK not found"
-            exit 1
-          fi
-
-          echo "debug_apk_path=${DEBUG_APK_PATH}"           >> "$GITHUB_OUTPUT"
-          echo "debug_apk_name=$(basename "${DEBUG_APK_PATH}")" >> "$GITHUB_OUTPUT"
-
-      - name: Upload dev artifact
+      - name: Upload artifact — Android APK
         uses: actions/upload-artifact@v4
         with:
-          name: seclettr-dev-${{ steps.meta.outputs.short_sha }}
-          retention-days: 14
-          path: |
-            ${{ steps.bundle.outputs.archive_path }}
-            ${{ steps.bundle.outputs.checksum_path }}
-            ${{ steps.bundle.outputs.release_info_path }}
-            ${{ steps.bundle.outputs.deploy_doc_path }}
-            ${{ steps.bundle.outputs.deployment_guide_path }}
-            ${{ steps.android.outputs.debug_apk_path }}
+          name: seclettr-dev-debug-apk
+          path: apps/web/android/app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
+          retention-days: 30
 
-      - name: Publish summary
+      - name: Upload artifact — dev bundle
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ steps.meta.outputs.bundle_prefix }}
+          path: |
+            build/*.tar.gz
+            build/*.sha256
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Send deployment dispatch
+        if: github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success'
         shell: bash
         run: |
-          CHECKSUM_LINE="$(cat "${{ steps.bundle.outputs.checksum_path }}")"
-          {
-            echo "## Dev Bundle Ready"
-            echo ""
-            echo "- Branch: \`dev/main\`"
-            echo "- Commit: \`${{ steps.meta.outputs.commit_sha }}\`"
-            echo "- Archive: \`${{ steps.bundle.outputs.archive_name }}\`"
-            echo "- SHA256: \`${CHECKSUM_LINE}\`"
-            echo "- Android debug APK: \`${{ steps.android.outputs.debug_apk_name }}\`"
-            echo ""
-            echo "### Download"
-            echo "Artifacts → \`seclettr-dev-${{ steps.meta.outputs.short_sha }}\`"
-            echo ""
-            echo "> Dev builds are kept for 14 days."
-          } >> "$GITHUB_STEP_SUMMARY"
+          echo "Dev bundle ready: ${BUNDLE_PREFIX}-${IMAGE_TAG}.tar.gz"
+          echo "GHCR images:"
+          echo "  ghcr.io/${{ github.repository }}/api:${IMAGE_TAG}"
+          echo "  ghcr.io/${{ github.repository }}/web:${IMAGE_TAG}"
+          echo "  ghcr.io/${{ github.repository }}/sfu:${IMAGE_TAG}"

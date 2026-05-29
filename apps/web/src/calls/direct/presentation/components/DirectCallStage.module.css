@@ -244,7 +244,6 @@
   overflow: hidden;
   border: 1px solid color-mix(in srgb, var(--panel-border-soft) 90%, transparent);
   background: color-mix(in srgb, var(--panel-header-bg) 84%, var(--bg-secondary));
-  z-index: var(--z-3);
   animation: callContentIn var(--motion-duration-slow) cubic-bezier(0.18, 0.9, 0.2, 1) 80ms both;
   top: 0.72rem;
   right: 0.72rem;

@@ -1,4 +1,5 @@
 import type { StoreApi } from "zustand";
+import type { WsServerMessage } from "@seclettr/protocol";
 import { wsClient } from "@/lib/websocket";
 import { showNativeDmNotification } from "@/lib/native-notifications";
 import { logger } from "@/lib/logger";
@@ -26,14 +27,14 @@ export interface PlainMessagesLiveDeps {
 }
 
 export interface PlainMessagesLiveRuntime {
-  handleIncomingWsEvent: (message: { type: string; [k: string]: unknown }) => void;
+  handleIncomingWsEvent: (message: WsServerMessage) => void;
   subscribe: () => () => void;
 }
 
 export function createPlainMessagesLiveRuntime(deps: PlainMessagesLiveDeps): PlainMessagesLiveRuntime {
   const { set, get, getMyUserId } = deps;
 
-  function handleIncomingWsEvent(message: { type: string; [k: string]: unknown }): void {
+  function handleIncomingWsEvent(message: WsServerMessage): void {
     const myUserId = getMyUserId();
     if (!myUserId) return;
 
@@ -79,13 +80,8 @@ export function createPlainMessagesLiveRuntime(deps: PlainMessagesLiveDeps): Pla
     }
 
     if (message.type === "plain_message.edited") {
-      const { messageId, content, editedAt, threadKey, threadKind } = message as unknown as {
-        messageId: string;
-        content: string;
-        editedAt: string;
-        threadKey: string;
-        threadKind: string;
-      };
+      // TypeScript narrows message to the exact schema shape — no cast needed.
+      const { messageId, content, editedAt, threadKey, threadKind } = message;
       if (threadKind !== "dm") return;
       const editedAtMs = new Date(editedAt).getTime();
       set((state) => {
@@ -107,11 +103,7 @@ export function createPlainMessagesLiveRuntime(deps: PlainMessagesLiveDeps): Pla
     }
 
     if (message.type === "plain_message.deleted") {
-      const { messageId, threadKey, threadKind } = message as unknown as {
-        messageId: string;
-        threadKey: string;
-        threadKind: string;
-      };
+      const { messageId, threadKey, threadKind } = message;
       if (threadKind !== "dm") return;
       set((state) => {
         const conv = state.conversations[threadKey];
@@ -131,10 +123,7 @@ export function createPlainMessagesLiveRuntime(deps: PlainMessagesLiveDeps): Pla
 
     if (message.type === "plain_message.read") {
       // Peer read our messages — update status to "read" for the affected thread
-      const { messageIds, threadKey } = message as unknown as {
-        messageIds: string[];
-        threadKey: string;
-      };
+      const { messageIds, threadKey } = message;
       const idSet = new Set(messageIds);
       set((state) => {
         const conv = state.conversations[threadKey];
@@ -160,7 +149,8 @@ export function createPlainMessagesLiveRuntime(deps: PlainMessagesLiveDeps): Pla
         message.type === "plain_message.deleted" ||
         message.type === "plain_message.read"
       ) {
-        handleIncomingWsEvent(message as unknown as { type: string; [k: string]: unknown });
+        // message is already WsServerMessage — pass directly, no cast needed.
+        handleIncomingWsEvent(message);
       }
     });
 

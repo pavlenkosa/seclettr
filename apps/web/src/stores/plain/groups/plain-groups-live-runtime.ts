@@ -1,4 +1,5 @@
 import type { StoreApi } from "zustand";
+import type { WsServerMessage } from "@seclettr/protocol";
 import { wsClient } from "@/lib/websocket";
 import { showNativeGroupNotification } from "@/lib/native-notifications";
 import { logger } from "@/lib/logger";
@@ -23,7 +24,7 @@ export interface PlainGroupsLiveDeps {
 }
 
 export interface PlainGroupsLiveRuntime {
-  handleIncomingWsEvent: (message: { type: string; [k: string]: unknown }) => void;
+  handleIncomingWsEvent: (message: WsServerMessage) => void;
   subscribe: () => () => void;
 }
 
@@ -32,7 +33,7 @@ export function createPlainGroupsLiveRuntime(
 ): PlainGroupsLiveRuntime {
   const { set, getMyUserId } = deps;
 
-  function handleIncomingWsEvent(message: { type: string; [k: string]: unknown }): void {
+  function handleIncomingWsEvent(message: WsServerMessage): void {
     const myUserId = getMyUserId();
     if (!myUserId) return;
 
@@ -68,13 +69,8 @@ export function createPlainGroupsLiveRuntime(
     }
 
     if (message.type === "plain_message.edited") {
-      const { messageId, content, editedAt, threadKey, threadKind } = message as unknown as {
-        messageId: string;
-        content: string;
-        editedAt: string;
-        threadKey: string;
-        threadKind: string;
-      };
+      // TypeScript narrows message to the exact schema shape — no cast needed.
+      const { messageId, content, editedAt, threadKey, threadKind } = message;
       if (threadKind !== "group") return;
       const editedAtMs = new Date(editedAt).getTime();
       set((state) => {
@@ -96,11 +92,7 @@ export function createPlainGroupsLiveRuntime(
     }
 
     if (message.type === "plain_message.deleted") {
-      const { messageId, threadKey, threadKind } = message as unknown as {
-        messageId: string;
-        threadKey: string;
-        threadKind: string;
-      };
+      const { messageId, threadKey, threadKind } = message;
       if (threadKind !== "group") return;
       set((state) => {
         const g = state.groups[threadKey];
@@ -125,7 +117,8 @@ export function createPlainGroupsLiveRuntime(
         message.type === "plain_message.edited" ||
         message.type === "plain_message.deleted"
       ) {
-        handleIncomingWsEvent(message as unknown as { type: string; [k: string]: unknown });
+        // message is already WsServerMessage — pass directly, no cast needed.
+        handleIncomingWsEvent(message);
       }
     });
 

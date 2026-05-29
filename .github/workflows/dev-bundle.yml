@@ -37,13 +37,13 @@ jobs:
         with:
           ref: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.ref || github.event.workflow_run.head_sha }}
 
-      - uses: pnpm/action-setup@v6
-
       - uses: actions/setup-node@v5
         with:
           node-version: 22
           cache: pnpm
           package-manager-cache: false
+
+      - uses: pnpm/action-setup@v6
 
       - name: Setup Java
         uses: actions/setup-java@v5

@@ -65,6 +65,8 @@ export function GroupInfoMemberActionSheet({
   return (
     <div
       className={styles.sheetOverlay}
+      role="button"
+      aria-label="Close"
       onClick={onClose}
       onKeyDown={handleOverlayKeyDown}
       tabIndex={0}

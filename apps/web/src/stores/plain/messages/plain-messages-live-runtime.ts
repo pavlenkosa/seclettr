@@ -34,110 +34,110 @@ export interface PlainMessagesLiveRuntime {
 export function createPlainMessagesLiveRuntime(deps: PlainMessagesLiveDeps): PlainMessagesLiveRuntime {
   const { set, get, getMyUserId } = deps;
 
-  function handleIncomingWsEvent(message: WsServerMessage): void {
+  function handleMessageNew(message: WsServerMessage & { type: "plain_message.new" }): void {
     const myUserId = getMyUserId();
     if (!myUserId) return;
+    const wire = message.message as WirePlainMessage;
+    if (wire.groupId) return;
+    const conversationKey = wire.senderUserId === myUserId
+      ? (wire.recipientUserId ?? "")
+      : wire.senderUserId;
+    if (!conversationKey) return;
 
+    const msg = wireToPlainMessage(wire, myUserId);
+    const peerUsername = wire.senderUserId === myUserId
+      ? (get().conversations[conversationKey]?.username ?? wire.recipientUsername ?? conversationKey)
+      : wire.senderUsername;
+
+    set((state) => ({
+      conversations: mergeIncomingMessage(
+        state.conversations,
+        conversationKey,
+        msg,
+        peerUsername
+      ),
+    }));
+
+    if (!msg.isOwn) {
+      void showNativeDmNotification({
+        senderUserId: wire.senderUserId,
+        senderUsername: wire.senderUsername ?? wire.senderUserId,
+        content: wire.content ?? "",
+        messageType: wire.messageType ?? "text",
+      });
+    }
+
+    void cacheAppendMessages(`dm:${conversationKey}` as ConvKey, [msg], peerUsername).catch(() => {
+      logger.warn("[PlainMsg] failed to cache incoming message");
+    });
+  }
+
+  function handleMessageEdited(message: WsServerMessage & { type: "plain_message.edited" }): void {
+    const { messageId, content, editedAt, threadKey, threadKind } = message;
+    if (threadKind !== "dm") return;
+    const editedAtMs = new Date(editedAt).getTime();
+    set((state) => {
+      const conv = state.conversations[threadKey];
+      if (!conv) return state;
+      return {
+        conversations: {
+          ...state.conversations,
+          [threadKey]: {
+            ...conv,
+            messages: conv.messages.map((m) =>
+              m.id === messageId ? { ...m, content, editedAt: editedAtMs } : m
+            ),
+          },
+        },
+      };
+    });
+  }
+
+  function handleMessageDeleted(message: WsServerMessage & { type: "plain_message.deleted" }): void {
+    const { messageId, threadKey, threadKind } = message;
+    if (threadKind !== "dm") return;
+    set((state) => {
+      const conv = state.conversations[threadKey];
+      if (!conv) return state;
+      return {
+        conversations: {
+          ...state.conversations,
+          [threadKey]: {
+            ...conv,
+            messages: conv.messages.filter((m) => m.id !== messageId),
+          },
+        },
+      };
+    });
+  }
+
+  function handleMessageRead(message: WsServerMessage & { type: "plain_message.read" }): void {
+    const { messageIds, threadKey } = message;
+    const idSet = new Set(messageIds);
+    set((state) => {
+      const conv = state.conversations[threadKey];
+      if (!conv) return state;
+      const messages: PlainMessage[] = conv.messages.map((m) =>
+        m.isOwn && idSet.has(m.id) ? { ...m, status: "read" as PlainMessage["status"] } : m
+      );
+      return {
+        conversations: {
+          ...state.conversations,
+          [threadKey]: { ...conv, messages },
+        },
+      };
+    });
+  }
+
+  function handleIncomingWsEvent(message: WsServerMessage): void {
     if (message.type === "plain_message.new") {
-      const wire = message.message as WirePlainMessage;
-      // Group messages are routed through the same plain_message.new event but
-      // owned by plain-groups-store. Skip them here so the same message doesn't
-      // also land in the sender's DM thread.
-      if (wire.groupId) return;
-      const conversationKey = wire.senderUserId === myUserId
-        ? (wire.recipientUserId ?? "")
-        : wire.senderUserId;
-      if (!conversationKey) return;
-
-      const msg = wireToPlainMessage(wire, myUserId);
-      const peerUsername = wire.senderUserId === myUserId
-        ? (get().conversations[conversationKey]?.username ?? wire.recipientUsername ?? conversationKey)
-        : wire.senderUsername;
-
-      set((state) => ({
-        conversations: mergeIncomingMessage(
-          state.conversations,
-          conversationKey,
-          msg,
-          peerUsername
-        ),
-      }));
-
-      if (!msg.isOwn) {
-        void showNativeDmNotification({
-          senderUserId: wire.senderUserId,
-          senderUsername: wire.senderUsername ?? wire.senderUserId,
-          content: wire.content ?? "",
-          messageType: wire.messageType ?? "text",
-        });
-      }
-
-      // Write to cache
-      void cacheAppendMessages(`dm:${conversationKey}` as ConvKey, [msg], peerUsername).catch(() => {
-        logger.warn("[PlainMsg] failed to cache incoming message");
-      });
-      return;
-    }
-
-    if (message.type === "plain_message.edited") {
-      // TypeScript narrows message to the exact schema shape — no cast needed.
-      const { messageId, content, editedAt, threadKey, threadKind } = message;
-      if (threadKind !== "dm") return;
-      const editedAtMs = new Date(editedAt).getTime();
-      set((state) => {
-        const conv = state.conversations[threadKey];
-        if (!conv) return state;
-        return {
-          conversations: {
-            ...state.conversations,
-            [threadKey]: {
-              ...conv,
-              messages: conv.messages.map((m) =>
-                m.id === messageId ? { ...m, content, editedAt: editedAtMs } : m
-              ),
-            },
-          },
-        };
-      });
-      return;
-    }
-
-    if (message.type === "plain_message.deleted") {
-      const { messageId, threadKey, threadKind } = message;
-      if (threadKind !== "dm") return;
-      set((state) => {
-        const conv = state.conversations[threadKey];
-        if (!conv) return state;
-        return {
-          conversations: {
-            ...state.conversations,
-            [threadKey]: {
-              ...conv,
-              messages: conv.messages.filter((m) => m.id !== messageId),
-            },
-          },
-        };
-      });
-      return;
-    }
-
-    if (message.type === "plain_message.read") {
-      // Peer read our messages — update status to "read" for the affected thread
-      const { messageIds, threadKey } = message;
-      const idSet = new Set(messageIds);
-      set((state) => {
-        const conv = state.conversations[threadKey];
-        if (!conv) return state;
-        const messages: PlainMessage[] = conv.messages.map((m) =>
-          m.isOwn && idSet.has(m.id) ? { ...m, status: "read" as PlainMessage["status"] } : m
-        );
-        return {
-          conversations: {
-            ...state.conversations,
-            [threadKey]: { ...conv, messages },
-          },
-        };
-      });
+      handleMessageNew(message);
+    } else if (message.type === "plain_message.edited") {
+      handleMessageEdited(message);
+    } else if (message.type === "plain_message.deleted") {
+      handleMessageDeleted(message);
+    } else if (message.type === "plain_message.read") {
+      handleMessageRead(message);
     }
   }
 

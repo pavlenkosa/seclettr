@@ -39,7 +39,7 @@ export function useAppForegroundResync(isReady: boolean): void {
         App.addListener("appStateChange", ({ isActive }) => {
           if (isActive) handleResync();
         }).then((listener) => {
-          capRemove = () => listener.remove();
+          capRemove = () => { void listener.remove(); };
         }).catch(() => {
           // Capacitor not available (web/SSR)
         });

@@ -107,6 +107,22 @@
   --z-floating-dock:  260;
   --z-call-controls:    5;
   --z-call-alert:     390;  /* incoming/missed call banners — above call panel, below chat notice */
+
+  /* Avatar initials palette — 12 hue-spread bg/fg pairs used by Avatar.tsx.
+     Override here or in a theme block to adapt to a specific color scheme.
+     Count must stay in sync with AVATAR_PALETTE_COUNT in Avatar.tsx. */
+  --avatar-palette-0-bg: #7c3aed;  --avatar-palette-0-fg: #ffffff;
+  --avatar-palette-1-bg: #2563eb;  --avatar-palette-1-fg: #ffffff;
+  --avatar-palette-2-bg: #0891b2;  --avatar-palette-2-fg: #ffffff;
+  --avatar-palette-3-bg: #059669;  --avatar-palette-3-fg: #ffffff;
+  --avatar-palette-4-bg: #65a30d;  --avatar-palette-4-fg: #ffffff;
+  --avatar-palette-5-bg: #ca8a04;  --avatar-palette-5-fg: #111827;
+  --avatar-palette-6-bg: #ea580c;  --avatar-palette-6-fg: #ffffff;
+  --avatar-palette-7-bg: #dc2626;  --avatar-palette-7-fg: #ffffff;
+  --avatar-palette-8-bg: #db2777;  --avatar-palette-8-fg: #ffffff;
+  --avatar-palette-9-bg: #9333ea;  --avatar-palette-9-fg: #ffffff;
+  --avatar-palette-10-bg: #4f46e5; --avatar-palette-10-fg: #ffffff;
+  --avatar-palette-11-bg: #0f766e; --avatar-palette-11-fg: #ffffff;
 }
 
 :root,

@@ -7,8 +7,8 @@
  *   3. Starts createSfuProducerRuntime (local media → SFU)
  *   4. Starts createSfuConsumerRuntime (SFU → remote tracks; WS-authoritative + 30s HTTP poll)
  *
- * Module-level singleton: sfuHttpClient is created once per SFU session and
- * shared by producer/consumer runtimes. It is not retained across sessions.
+ * sfuHttpClient is created once per session start and shared by producer/consumer
+ * runtimes within that session. A fresh instance is created for every call.
  *
  * Returns a GroupSfuClient handle with remote media access and a close() method.
  */
@@ -68,14 +68,11 @@ export interface GroupSfuClient {
   close: () => void;
 }
 
-const defaultSfuHttpClient = createSfuHttpClient({
-  sfuBaseUrl: SFU_BASE_URL,
-});
-
 export async function startGroupSfuClient(options: GroupSfuClientOptions): Promise<GroupSfuClient> {
-  const sfuHttpClient = (options.sfuBaseUrl || options.staticToken)
-    ? createSfuHttpClient({ sfuBaseUrl: options.sfuBaseUrl ?? SFU_BASE_URL, staticToken: options.staticToken })
-    : defaultSfuHttpClient;
+  const sfuHttpClient = createSfuHttpClient({
+    sfuBaseUrl: options.sfuBaseUrl ?? SFU_BASE_URL,
+    staticToken: options.staticToken,
+  });
 
   const device = new MediasoupDevice();
   const routerRtpCapabilities = await sfuHttpClient.getRouterRtpCapabilities(options.roomId);

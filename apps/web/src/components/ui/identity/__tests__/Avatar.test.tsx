@@ -45,7 +45,7 @@ describe("Avatar", () => {
     expect(getRoot().textContent).toBe("ZZ");
   });
 
-  it("resolves a stable palette colour for the same label", () => {
+  it("resolves a stable palette CSS variable reference for the same label", () => {
     act(() => {
       root.render(<Avatar label="Alice" />);
     });
@@ -54,7 +54,7 @@ describe("Avatar", () => {
       root.render(<Avatar label="Alice" />);
     });
     expect(getRoot().style.getPropertyValue("--avatar-bg")).toBe(first);
-    expect(first).toMatch(/^#[0-9a-f]{6}$/i);
+    expect(first).toMatch(/^var\(--avatar-palette-\d+-bg\)$/);
   });
 
   it("maps a numeric size to the --avatar-size custom property", () => {

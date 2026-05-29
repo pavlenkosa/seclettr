@@ -37,11 +37,14 @@ jobs:
         with:
           ref: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.ref || github.event.workflow_run.head_sha }}
 
-      - uses: actions/setup-node@v5
+      - name: Setup Node
+        uses: actions/setup-node@v5
         with:
           node-version: 22
+          package-manager-cache: false
 
-      - uses: pnpm/action-setup@v6
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v6
 
       - name: Setup Java
         uses: actions/setup-java@v5
@@ -50,8 +53,20 @@ jobs:
           java-version: "21"
           cache: gradle
 
+      - name: Print toolchain
+        run: |
+          node --version
+          npm --version
+          pnpm --version
+          java -version
+
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
+
+      - name: Build workspace packages
+        run: |
+          pnpm --filter @seclettr/crypto build
+          pnpm --filter @seclettr/protocol build
 
       - name: Prepare metadata
         id: meta
@@ -163,17 +178,14 @@ jobs:
               --tag  "${{ steps.meta.outputs.image_tag }}"
           fi
 
-      # Rebuild workspace packages immediately before the Android vite build.
-      # See dev-bundle.yml comment for rationale.
-      - name: Build workspace packages
+      - name: Rebuild workspace packages before Android
         run: |
           pnpm --filter @seclettr/crypto build
           pnpm --filter @seclettr/protocol build
 
       - name: Build Android release artifacts
         shell: bash
-        run: |
-          pnpm --filter @seclettr/web run android:build:release
+        run: pnpm --filter @seclettr/web run android:build:release
 
       - name: Create Release
         uses: softprops/action-gh-release@v2
@@ -184,8 +196,8 @@ jobs:
           body_path: /tmp/commit-body.txt
           draft: true
           files: |
-            build/*.tar.gz
-            build/*.sha256
+            artifacts/*.tar.gz
+            artifacts/*.sha256
             apps/web/android/app/build/outputs/apk/release/app-release.apk
             apps/web/android/app/build/outputs/bundle/release/app-release.aab
 
@@ -194,8 +206,8 @@ jobs:
         with:
           name: ${{ steps.meta.outputs.bundle_prefix }}
           path: |
-            build/*.tar.gz
-            build/*.sha256
+            artifacts/*.tar.gz
+            artifacts/*.sha256
           if-no-files-found: error
           retention-days: 30
 

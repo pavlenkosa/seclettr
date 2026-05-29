@@ -32,6 +32,11 @@ case "${MODE}" in
     ;;
 esac
 
+echo "[android] toolchain"
+node --version
+pnpm --version
+java -version
+
 echo "[android] syncing web assets into Capacitor shell"
 (cd "${APP_DIR}" && pnpm run android:sync)
 
@@ -44,6 +49,7 @@ fi
 
 echo "[android] building ${MODE} artifacts"
 cd "${ANDROID_DIR}"
+chmod +x ./gradlew
 
 if [[ "${MODE}" == "debug" ]]; then
   ./gradlew --no-daemon assembleDebug

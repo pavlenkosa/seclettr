@@ -1,5 +1,6 @@
-import React, { type MouseEvent, type RefObject } from "react";
+import React, { useRef, type MouseEvent, type RefObject } from "react";
 import { useI18n } from "@/i18n";
+import { useModalSurfaceA11y } from "@/lib/hooks";
 import { IconButton } from "@/components/ui";
 
 import {
@@ -284,6 +285,14 @@ export function MessageComposerEmojiPicker({
   onSendGif,
 }: MessageComposerEmojiPickerProps) {
   const { t } = useI18n();
+  const searchInputRef = useRef<HTMLInputElement>(null);
+
+  useModalSurfaceA11y({
+    containerRef: pickerRef as RefObject<HTMLElement>,
+    isActive: isOpen,
+    onClose: onToggleOpen,
+    initialFocusRef: searchInputRef,
+  });
 
   const currentSearchQuery = isGifMode ? gifQuery : searchQuery;
   const handleSearchChange = (value: string) => {
@@ -375,11 +384,13 @@ export function MessageComposerEmojiPicker({
           ref={pickerRef as React.RefObject<HTMLDivElement>}
           className={styles.emojiPicker}
           role="dialog"
+          aria-modal="true"
           aria-label={t("composer.aria.emojiPicker")}
         >
           {/* Search bar */}
           <div className={styles.emojiSearchWrap}>
             <input
+              ref={searchInputRef}
               type="search"
               value={currentSearchQuery}
               onChange={(e) => handleSearchChange(e.currentTarget.value)}
@@ -396,7 +407,7 @@ export function MessageComposerEmojiPicker({
           <div
             ref={viewportRef}
             className={styles.emojiViewport}
-            aria-label={isGifMode ? "GIF results" : t("composer.aria.emojiResults")}
+            aria-label={isGifMode ? t("composer.aria.gifResults") : t("composer.aria.emojiResults")}
           >
             {renderContent()}
           </div>

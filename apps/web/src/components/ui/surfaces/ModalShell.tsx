@@ -12,13 +12,15 @@
  */
 import {
   forwardRef,
+  useRef,
   type CSSProperties,
-  type KeyboardEvent,
   type MouseEvent,
   type ReactNode,
   type Ref,
+  type RefObject,
 } from "react";
 import { createPortal } from "react-dom";
+import { useModalSurfaceA11y } from "@/lib/hooks";
 import { IconClose } from "../icons";
 import motionStyles from "@/components/ui/motion/Motion.module.css";
 import styles from "./ModalShell.module.css";
@@ -80,27 +82,36 @@ function ModalShellInner(
   }: ModalShellProps,
   ref: Ref<HTMLElement>
 ) {
+  const containerRef = useRef<HTMLElement | null>(null);
+  const effectiveInitialFocus = closeButtonRef != null && typeof closeButtonRef !== "function"
+    ? (closeButtonRef as RefObject<HTMLElement>)
+    : undefined;
+
+  useModalSurfaceA11y({
+    containerRef,
+    onClose,
+    initialFocusRef: effectiveInitialFocus,
+    isActive: !isClosing,
+  });
+
   const handleOverlayClick = (event: MouseEvent<HTMLDivElement>) => {
     if (event.target === event.currentTarget) {
       onClose();
     }
   };
 
-  const handleOverlayKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
-    if (event.key !== "Escape") return;
-    event.preventDefault();
-    onClose();
-  };
-
   return createPortal(
     <div
       className={`${styles.overlay} ${isClosing ? motionStyles.fadeOut : motionStyles.fadeIn} ${overlayClassName}`.trim()}
       onClick={handleOverlayClick}
-      onKeyDown={handleOverlayKeyDown}
       aria-hidden={isClosing ? "true" : undefined}
     >
       <section
-        ref={ref}
+        ref={(node) => {
+          containerRef.current = node;
+          if (typeof ref === "function") ref(node);
+          else if (ref != null) ((ref as unknown) as { current: HTMLElement | null }).current = node;
+        }}
         className={`${styles.surface} ${isClosing ? motionStyles.surfaceOut : motionStyles.surfaceIn} ${surfaceClassName}`.trim()}
         role={role}
         aria-modal="true"

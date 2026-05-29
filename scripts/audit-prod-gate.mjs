@@ -2,6 +2,18 @@
 
 import { spawnSync } from "node:child_process";
 
+// Explicitly accepted risks with documented rationale.
+// Each entry must include: advisory ID, affected package, reason for deferral,
+// and a revisit trigger (next major dep upgrade or fixed version).
+//
+// GHSA-jx2c-rxcm-jvmq — HIGH — fastify <=4.x Content-Type tab character
+// allows body-validation bypass (schema check skipped if Content-Type header
+// contains a tab). Fixed in fastify >=5.7.2.
+// Rationale: upgrade from 4.x to 5.x is a breaking API change requiring
+// migration of all routes and plugins. Deferred until fastify 5 migration.
+// Mitigations: (1) all request bodies are additionally validated with Zod
+// schemas inside route handlers; (2) the API is not exposed without TLS
+// in production configs. Revisit: fastify 5.x migration task.
 const ALLOWLISTED_HIGH_OR_CRITICAL_GHSAS = new Set([
   "GHSA-jx2c-rxcm-jvmq",
 ]);

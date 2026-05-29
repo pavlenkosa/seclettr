@@ -63,6 +63,129 @@ const resolveStatusTone = ({
   return security.securityStatus === "reverify_required" ? "attention" : security.securityStatus;
 };
 
+function SavedThreadHeader({
+  t, handleBack, threadChromeActions,
+}: {
+  t: TranslateFn;
+  handleBack: WorkspaceEntryState["handleBack"];
+  threadChromeActions: ReactNode;
+}) {
+  return (
+    <ChatThreadChrome
+      title={t("saved.title")}
+      subtitle={t("saved.subtitle")}
+      statusLabel={null} statusAriaLabel={null} statusTone={null}
+      onStatusClick={null}
+      avatarLabel={t("saved.title")}
+      avatarSlot={<SavedMessagesAvatar size={38} />}
+      backAriaLabel={t("chat.back")}
+      onBack={handleBack}
+      actions={threadChromeActions}
+      callNotice={null}
+    />
+  );
+}
+
+function PlainThreadHeader({
+  kind, plainConversation, plainGroup, avatarImageUrl,
+  plainDirectPresenceLabel, t, handleBack, threadChromeActions, handleOpenGroupMembers, onOpenProfile,
+}: {
+  kind: "plain-direct" | "plain-group";
+  plainConversation: WorkspaceEntryState["activePlainConversation"];
+  plainGroup: WorkspaceEntryState["activePlainGroup"];
+  avatarImageUrl: string | null;
+  plainDirectPresenceLabel: string;
+  t: TranslateFn;
+  handleBack: WorkspaceEntryState["handleBack"];
+  threadChromeActions: ReactNode;
+  handleOpenGroupMembers: WorkspaceInteractions["handleOpenGroupMembers"];
+  onOpenProfile?: (username: string) => void;
+}) {
+  const isDirect = kind === "plain-direct";
+  const title = isDirect ? plainConversation?.username ?? "" : plainGroup?.name ?? "";
+  const subtitle = isDirect
+    ? plainDirectPresenceLabel
+    : t("group.header.memberCount", { count: plainGroup?.members.length ?? 0 });
+  const username = isDirect ? (plainConversation?.username ?? null) : null;
+  const handleAvatarClick = username && onOpenProfile ? () => onOpenProfile(username) : null;
+  return (
+    <ChatThreadChrome
+      title={title}
+      subtitle={subtitle}
+      statusLabel={null} statusAriaLabel={null} statusTone={null}
+      onStatusClick={isDirect ? null : handleOpenGroupMembers}
+      avatarLabel={title}
+      onAvatarClick={handleAvatarClick}
+      avatarImageUrl={isDirect ? avatarImageUrl : null}
+      backAriaLabel={t("chat.back")}
+      onBack={handleBack}
+      actions={threadChromeActions}
+      callNotice={null}
+    />
+  );
+}
+
+function E2eeThreadHeader({
+  kind, conversation, group, avatarImageUrl,
+  directPresenceLabel, security, t, handleBack, threadChromeActions,
+  handleOpenGroupMembers,
+  activeGroupCall, showGroupCallNotice, activeGroupCallCallerLabel,
+  activeGroupCallParticipantIds, handleJoinActiveGroupCall, onOpenProfile,
+}: {
+  kind: "direct" | "group";
+  conversation: WorkspaceEntryState["activeConversation"];
+  group: WorkspaceEntryState["activeGroup"];
+  avatarImageUrl: string | null;
+  directPresenceLabel: string;
+  security: SecurityWorkspaceState;
+  t: TranslateFn;
+  handleBack: WorkspaceEntryState["handleBack"];
+  threadChromeActions: ReactNode;
+  handleOpenGroupMembers: WorkspaceInteractions["handleOpenGroupMembers"];
+  activeGroupCall: WorkspaceEntryState["activeGroupCall"];
+  showGroupCallNotice: boolean;
+  activeGroupCallCallerLabel: string;
+  activeGroupCallParticipantIds: WorkspaceEntryState["activeGroupCallParticipantIds"];
+  handleJoinActiveGroupCall: WorkspaceEntryState["handleJoinActiveGroupCall"];
+  onOpenProfile?: (username: string) => void;
+}) {
+  const isDirectThread = kind === "direct";
+  const title = isDirectThread ? conversation?.username ?? "" : group?.name ?? "";
+  const subtitle = isDirectThread
+    ? directPresenceLabel
+    : t("group.header.memberCount", { count: group?.members.length ?? 0 });
+  const statusLabel = resolveStatusLabel({ isDirectThread, security, t });
+  const statusAriaLabel = resolveStatusAriaLabel({ isDirectThread, security, t });
+  const statusTone = resolveStatusTone({ isDirectThread, security });
+  const handleStatusClick = isDirectThread ? security.openSecurity : handleOpenGroupMembers;
+  const callNotice = showGroupCallNotice && activeGroupCall
+    ? {
+        callType: activeGroupCall.callType,
+        status: activeGroupCall.status,
+        callerLabel: activeGroupCallCallerLabel,
+        participantCount: activeGroupCallParticipantIds.length,
+        onJoin: handleJoinActiveGroupCall,
+      }
+    : null;
+  const username = isDirectThread ? (conversation?.username ?? null) : null;
+  const handleAvatarClick = username && onOpenProfile ? () => onOpenProfile(username) : null;
+  return (
+    <ChatThreadChrome
+      title={title}
+      subtitle={subtitle}
+      statusLabel={statusLabel} statusAriaLabel={statusAriaLabel} statusTone={statusTone}
+      onStatusClick={handleStatusClick}
+      avatarLabel={title}
+      onAvatarClick={handleAvatarClick}
+      avatarImageUrl={isDirectThread ? avatarImageUrl : null}
+      backAriaLabel={t("chat.back")}
+      onBack={handleBack}
+      actions={threadChromeActions}
+      callNotice={callNotice}
+    />
+  );
+}
+
 export const ChatThreadHeader = memo(function ChatThreadHeader({
   activeThreadKind,
   activeConversation,
@@ -102,8 +225,6 @@ export const ChatThreadHeader = memo(function ChatThreadHeader({
   handleJoinActiveGroupCall: WorkspaceEntryState["handleJoinActiveGroupCall"];
   onOpenProfile?: (username: string) => void;
 }) {
-  // Determine the peer's userId and avatarKey for DM threads so we can show
-  // their profile photo. Must be called unconditionally (before any early return).
   const peerUserId = activeThreadKind === "plain-direct"
     ? (activePlainConversation?.userId ?? null)
     : activeThreadKind === "direct"
@@ -111,105 +232,50 @@ export const ChatThreadHeader = memo(function ChatThreadHeader({
       : null;
   const peerAvatarKey = activeThreadKind === "plain-direct"
     ? (activePlainConversation?.avatarKey ?? null)
-    : null; // E2EE Conversation doesn't carry avatarKey yet
+    : null;
   const avatarImageUrl = useAvatarUrl(peerUserId, peerAvatarKey);
 
   if (!activeThreadKind) return null;
 
   if (activeThreadKind === "saved") {
+    return <SavedThreadHeader t={t} handleBack={handleBack} threadChromeActions={threadChromeActions} />;
+  }
+
+  if (activeThreadKind === "plain-direct" || activeThreadKind === "plain-group") {
     return (
-      <ChatThreadChrome
-        title={t("saved.title")}
-        subtitle={t("saved.subtitle")}
-        statusLabel={null}
-        statusAriaLabel={null}
-        statusTone={null}
-        onStatusClick={null}
-        avatarLabel={t("saved.title")}
-        avatarSlot={<SavedMessagesAvatar size={38} />}
-        backAriaLabel={t("chat.back")}
-        onBack={handleBack}
-        actions={threadChromeActions}
-        callNotice={null}
+      <PlainThreadHeader
+        kind={activeThreadKind}
+        plainConversation={activePlainConversation}
+        plainGroup={activePlainGroup}
+        avatarImageUrl={avatarImageUrl}
+        plainDirectPresenceLabel={plainDirectPresenceLabel}
+        t={t}
+        handleBack={handleBack}
+        threadChromeActions={threadChromeActions}
+        handleOpenGroupMembers={handleOpenGroupMembers}
+        onOpenProfile={onOpenProfile}
       />
     );
   }
-
-  const isPlainDirect = activeThreadKind === "plain-direct";
-  const isPlainGroup = activeThreadKind === "plain-group";
-
-  if (isPlainDirect || isPlainGroup) {
-    const plainTitle = isPlainDirect
-      ? activePlainConversation?.username ?? ""
-      : activePlainGroup?.name ?? "";
-    const plainSubtitle = isPlainGroup
-      ? t("group.header.memberCount", { count: activePlainGroup?.members.length ?? 0 })
-      : plainDirectPresenceLabel;
-    const plainDirectUsername = isPlainDirect ? (activePlainConversation?.username ?? null) : null;
-    const handlePlainAvatarClick = plainDirectUsername && onOpenProfile
-      ? () => onOpenProfile(plainDirectUsername)
-      : null;
-    return (
-      <ChatThreadChrome
-        title={plainTitle}
-        subtitle={plainSubtitle}
-        statusLabel={null}
-        statusAriaLabel={null}
-        statusTone={null}
-        // Plain groups open the same Telegram-style info modal on title/sub tap;
-        // plain DMs open the contact's profile sheet.
-        onStatusClick={isPlainGroup ? handleOpenGroupMembers : null}
-        avatarLabel={plainTitle}
-        onAvatarClick={handlePlainAvatarClick}
-        avatarImageUrl={isPlainDirect ? avatarImageUrl : null}
-        backAriaLabel={t("chat.back")}
-        onBack={handleBack}
-        actions={threadChromeActions}
-        callNotice={null}
-      />
-    );
-  }
-
-  const isDirectThread = activeThreadKind === "direct";
-  const title = isDirectThread ? activeConversation?.username ?? "" : activeGroup?.name ?? "";
-  const subtitle = isDirectThread
-    ? directPresenceLabel
-    : t("group.header.memberCount", { count: activeGroup?.members.length ?? 0 });
-  const statusLabel = resolveStatusLabel({ isDirectThread, security, t });
-  const statusAriaLabel = resolveStatusAriaLabel({ isDirectThread, security, t });
-  const statusTone = resolveStatusTone({ isDirectThread, security });
-  const handleStatusClick = isDirectThread ? security.openSecurity : handleOpenGroupMembers;
-  const callNotice = showGroupCallNotice && activeGroupCall
-    ? {
-        callType: activeGroupCall.callType,
-        status: activeGroupCall.status,
-        callerLabel: activeGroupCallCallerLabel,
-        participantCount: activeGroupCallParticipantIds.length,
-        onJoin: handleJoinActiveGroupCall,
-      }
-    : null;
-
-  // For direct threads, clicking the avatar opens the contact's profile sheet.
-  const directUsername = isDirectThread ? (activeConversation?.username ?? null) : null;
-  const handleAvatarClick = directUsername && onOpenProfile
-    ? () => onOpenProfile(directUsername)
-    : null;
 
   return (
-    <ChatThreadChrome
-      title={title}
-      subtitle={subtitle}
-      statusLabel={statusLabel}
-      statusAriaLabel={statusAriaLabel}
-      statusTone={statusTone}
-      onStatusClick={handleStatusClick}
-      avatarLabel={title}
-      onAvatarClick={handleAvatarClick}
-      avatarImageUrl={isDirectThread ? avatarImageUrl : null}
-      backAriaLabel={t("chat.back")}
-      onBack={handleBack}
-      actions={threadChromeActions}
-      callNotice={callNotice}
+    <E2eeThreadHeader
+      kind={activeThreadKind}
+      conversation={activeConversation}
+      group={activeGroup}
+      avatarImageUrl={avatarImageUrl}
+      directPresenceLabel={directPresenceLabel}
+      security={security}
+      t={t}
+      handleBack={handleBack}
+      threadChromeActions={threadChromeActions}
+      handleOpenGroupMembers={handleOpenGroupMembers}
+      activeGroupCall={activeGroupCall}
+      showGroupCallNotice={showGroupCallNotice}
+      activeGroupCallCallerLabel={activeGroupCallCallerLabel}
+      activeGroupCallParticipantIds={activeGroupCallParticipantIds}
+      handleJoinActiveGroupCall={handleJoinActiveGroupCall}
+      onOpenProfile={onOpenProfile}
     />
   );
 });

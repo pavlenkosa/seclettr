@@ -58,6 +58,114 @@ const canScreenShare =
   typeof navigator !== "undefined" &&
   typeof navigator.mediaDevices?.getDisplayMedia === "function";
 
+function NativeAudioOutputSheet({
+  sheetRef, outputSheetOpen, audioOutputLabel, currentRouteLabel,
+  isLoadingRoutes, currentRoute, audioRoutes, resolvedEarphoneLabel,
+  resolvedBluetoothLabel, resolvedSpeakerLabel, handleSelectRoute, onClose,
+}: {
+  sheetRef: RefObject<HTMLDivElement>;
+  outputSheetOpen: boolean;
+  audioOutputLabel: string;
+  currentRouteLabel: string;
+  isLoadingRoutes: boolean;
+  currentRoute: AudioRouteName;
+  audioRoutes: AudioRoutes | null;
+  resolvedEarphoneLabel: string;
+  resolvedBluetoothLabel: string;
+  resolvedSpeakerLabel: string;
+  handleSelectRoute: (route: AudioRouteName) => void;
+  onClose: () => void;
+}) {
+  if (!outputSheetOpen) return null;
+  return (
+    <div
+      ref={sheetRef}
+      className={styles.audioOutputSheet}
+      role="dialog"
+      aria-modal="true"
+      aria-label={audioOutputLabel}
+      tabIndex={-1}
+      onKeyDown={(e) => { if (e.key === "Escape") onClose(); }}
+    >
+      <div className={styles.audioOutputSheetHeader}>
+        <span className={styles.audioOutputSheetTitle}>{audioOutputLabel}</span>
+        <span className={styles.audioOutputSheetHint}>{currentRouteLabel}</span>
+      </div>
+      {isLoadingRoutes ? (
+        <div className={styles.audioSheetLoading} aria-live="polite" aria-busy="true" />
+      ) : (
+        <>
+          <button
+            type="button"
+            className={[
+              styles.audioSheetOption,
+              currentRoute === "earpiece" ? styles.audioSheetOptionActive : "",
+            ].filter(Boolean).join(" ")}
+            onClick={() => { void handleSelectRoute("earpiece"); }}
+          >
+            <PhoneIcon />
+            <span>{resolvedEarphoneLabel}</span>
+            {currentRoute === "earpiece" ? <span className={styles.audioSheetCheck} aria-hidden="true">✓</span> : null}
+          </button>
+          {audioRoutes?.hasBluetooth ? (
+            <button
+              type="button"
+              className={[
+                styles.audioSheetOption,
+                currentRoute === "bluetooth" ? styles.audioSheetOptionActive : "",
+              ].filter(Boolean).join(" ")}
+              onClick={() => { void handleSelectRoute("bluetooth"); }}
+            >
+              <BluetoothIcon />
+              <span>{resolvedBluetoothLabel}</span>
+              {currentRoute === "bluetooth" ? <span className={styles.audioSheetCheck} aria-hidden="true">✓</span> : null}
+            </button>
+          ) : null}
+          <button
+            type="button"
+            className={[
+              styles.audioSheetOption,
+              currentRoute === "speaker" ? styles.audioSheetOptionActive : "",
+            ].filter(Boolean).join(" ")}
+            onClick={() => { void handleSelectRoute("speaker"); }}
+          >
+            <SpeakerIcon speakerOn />
+            <span>{resolvedSpeakerLabel}</span>
+            {currentRoute === "speaker" ? <span className={styles.audioSheetCheck} aria-hidden="true">✓</span> : null}
+          </button>
+        </>
+      )}
+    </div>
+  );
+}
+
+function WebAudioOutputSheet({
+  sheetRef, outputSheetOpen, audioOutputLabel, onClose,
+}: {
+  sheetRef: RefObject<HTMLDivElement>;
+  outputSheetOpen: boolean;
+  audioOutputLabel: string;
+  onClose: () => void;
+}) {
+  if (!outputSheetOpen) return null;
+  return (
+    <div
+      ref={sheetRef}
+      className={styles.audioOutputSheet}
+      role="dialog"
+      aria-modal="true"
+      aria-label={audioOutputLabel}
+      tabIndex={-1}
+      onKeyDown={(e) => { if (e.key === "Escape") onClose(); }}
+    >
+      <div className={styles.audioOutputSheetHeader}>
+        <span className={styles.audioOutputSheetTitle}>{audioOutputLabel}</span>
+      </div>
+      <AudioOutputSelector compact hideLabel />
+    </div>
+  );
+}
+
 export function DirectCallControls({
   callType,
   speakerAriaLabel,
@@ -178,28 +286,28 @@ export function DirectCallControls({
 
   if (isMobile) {
     const mobileClass = `${styles.controlBtn} ${styles.mobileToolbarBtn}`;
-    const mobileAudioOutputTrigger = speakerSupported || showWebOutputButton ? (
-      <div className={styles.mobileAudioOutputBar}>
-        <PillButton
-          ref={speakerSupported ? nativeSpeakerBtnRef : webOutputBtnRef}
-          onClick={() => { setOutputSheetOpen((prev) => !prev); }}
-          className={styles.mobileAudioOutputButton}
-          tone={outputSheetOpen ? "accent" : "neutral"}
-          appearance="soft"
-          size="sm"
-          leading={speakerSupported ? currentRouteIcon : <SpeakerIcon speakerOn />}
-          aria-label={audioOutputLabel}
-          aria-expanded={outputSheetOpen}
-          aria-haspopup="dialog"
-        >
-          {speakerSupported ? currentRouteLabel : audioOutputLabel}
-        </PillButton>
-      </div>
-    ) : null;
+    const showOutputTrigger = speakerSupported || showWebOutputButton;
 
     return (
       <>
-        {mobileAudioOutputTrigger}
+        {showOutputTrigger ? (
+          <div className={styles.mobileAudioOutputBar}>
+            <PillButton
+              ref={speakerSupported ? nativeSpeakerBtnRef : webOutputBtnRef}
+              onClick={() => { setOutputSheetOpen((prev) => !prev); }}
+              className={styles.mobileAudioOutputButton}
+              tone={outputSheetOpen ? "accent" : "neutral"}
+              appearance="soft"
+              size="sm"
+              leading={speakerSupported ? currentRouteIcon : <SpeakerIcon speakerOn />}
+              aria-label={audioOutputLabel}
+              aria-expanded={outputSheetOpen}
+              aria-haspopup="dialog"
+            >
+              {speakerSupported ? currentRouteLabel : audioOutputLabel}
+            </PillButton>
+          </div>
+        ) : null}
         <CallControlsDock className={styles.controlsDock}>
           <CallControlButton
             onClick={onToggleMute}
@@ -260,66 +368,20 @@ export function DirectCallControls({
               aria-hidden="true"
               hidden={!outputSheetOpen}
             />
-            {outputSheetOpen ? (
-              <div
-                ref={nativeSpeakerSheetRef}
-                className={styles.audioOutputSheet}
-                role="dialog"
-                aria-modal="true"
-                aria-label={audioOutputLabel}
-                tabIndex={-1}
-                onKeyDown={(e) => { if (e.key === "Escape") setOutputSheetOpen(false); }}
-              >
-                <div className={styles.audioOutputSheetHeader}>
-                  <span className={styles.audioOutputSheetTitle}>{audioOutputLabel}</span>
-                  <span className={styles.audioOutputSheetHint}>{currentRouteLabel}</span>
-                </div>
-                {isLoadingRoutes ? (
-                  <div className={styles.audioSheetLoading} aria-live="polite" aria-busy="true" />
-                ) : (
-                  <>
-                    <button
-                      type="button"
-                      className={[
-                        styles.audioSheetOption,
-                        currentRoute === "earpiece" ? styles.audioSheetOptionActive : "",
-                      ].filter(Boolean).join(" ")}
-                      onClick={() => { void handleSelectRoute("earpiece"); }}
-                    >
-                      <PhoneIcon />
-                      <span>{resolvedEarphoneLabel}</span>
-                      {currentRoute === "earpiece" ? <span className={styles.audioSheetCheck} aria-hidden="true">✓</span> : null}
-                    </button>
-                    {audioRoutes?.hasBluetooth ? (
-                      <button
-                        type="button"
-                        className={[
-                          styles.audioSheetOption,
-                          currentRoute === "bluetooth" ? styles.audioSheetOptionActive : "",
-                        ].filter(Boolean).join(" ")}
-                        onClick={() => { void handleSelectRoute("bluetooth"); }}
-                      >
-                        <BluetoothIcon />
-                        <span>{resolvedBluetoothLabel}</span>
-                        {currentRoute === "bluetooth" ? <span className={styles.audioSheetCheck} aria-hidden="true">✓</span> : null}
-                      </button>
-                    ) : null}
-                    <button
-                      type="button"
-                      className={[
-                        styles.audioSheetOption,
-                        currentRoute === "speaker" ? styles.audioSheetOptionActive : "",
-                      ].filter(Boolean).join(" ")}
-                      onClick={() => { void handleSelectRoute("speaker"); }}
-                    >
-                      <SpeakerIcon speakerOn />
-                      <span>{resolvedSpeakerLabel}</span>
-                      {currentRoute === "speaker" ? <span className={styles.audioSheetCheck} aria-hidden="true">✓</span> : null}
-                    </button>
-                  </>
-                )}
-              </div>
-            ) : null}
+            <NativeAudioOutputSheet
+              sheetRef={nativeSpeakerSheetRef}
+              outputSheetOpen={outputSheetOpen}
+              audioOutputLabel={audioOutputLabel}
+              currentRouteLabel={currentRouteLabel}
+              isLoadingRoutes={isLoadingRoutes}
+              currentRoute={currentRoute}
+              audioRoutes={audioRoutes}
+              resolvedEarphoneLabel={resolvedEarphoneLabel}
+              resolvedBluetoothLabel={resolvedBluetoothLabel}
+              resolvedSpeakerLabel={resolvedSpeakerLabel}
+              handleSelectRoute={handleSelectRoute}
+              onClose={() => { setOutputSheetOpen(false); }}
+            />
           </>
         ) : showWebOutputButton ? (
           <>
@@ -329,22 +391,12 @@ export function DirectCallControls({
               aria-hidden="true"
               hidden={!outputSheetOpen}
             />
-            {outputSheetOpen ? (
-              <div
-                ref={webOutputSheetRef}
-                className={styles.audioOutputSheet}
-                role="dialog"
-                aria-modal="true"
-                aria-label={audioOutputLabel}
-                tabIndex={-1}
-                onKeyDown={(e) => { if (e.key === "Escape") setOutputSheetOpen(false); }}
-              >
-                <div className={styles.audioOutputSheetHeader}>
-                  <span className={styles.audioOutputSheetTitle}>{audioOutputLabel}</span>
-                </div>
-                <AudioOutputSelector compact hideLabel />
-              </div>
-            ) : null}
+            <WebAudioOutputSheet
+              sheetRef={webOutputSheetRef}
+              outputSheetOpen={outputSheetOpen}
+              audioOutputLabel={audioOutputLabel}
+              onClose={() => { setOutputSheetOpen(false); }}
+            />
           </>
         ) : null}
       </>

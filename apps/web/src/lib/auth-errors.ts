@@ -8,7 +8,7 @@ const IS_DEV = import.meta.env.DEV;
 function shortHash(s: string): string {
   let h = 5381;
   for (let i = 0; i < s.length; i++) {
-    h = ((h << 5) + h) ^ s.charCodeAt(i);
+    h = ((h << 5) + h) ^ (s.codePointAt(i) ?? 0);
   }
   return (h >>> 0).toString(16).slice(0, 4).toUpperCase();
 }

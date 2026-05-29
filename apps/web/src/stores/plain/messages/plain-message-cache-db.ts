@@ -71,7 +71,7 @@ function openDb(): Promise<IDBDatabase> {
     req.onsuccess = () => resolve(req.result);
     req.onerror = () => {
       resetDb();
-      reject(req.error);
+      reject(new Error(req.error?.message ?? "Failed to open IndexedDB"));
     };
     req.onblocked = () => {
       resetDb();
@@ -123,7 +123,7 @@ export async function cacheLoadConversation(convKey: ConvKey): Promise<PlainMess
           resolve(result);
         }
       };
-      cursorReq.onerror = () => reject(cursorReq.error);
+      cursorReq.onerror = () => reject(new Error(cursorReq.error?.message ?? "IndexedDB cursor error"));
     });
   } catch (err) {
     logger.warn("[PlainCache] load failed", err);
@@ -193,7 +193,7 @@ export async function cacheSaveConversation(
 
     return new Promise((resolve, reject) => {
       tx.oncomplete = () => resolve();
-      tx.onerror = () => reject(tx.error);
+      tx.onerror = () => reject(new Error(tx.error?.message ?? "IndexedDB transaction error"));
     });
   } catch (err) {
     logger.warn("[PlainCache] save failed", err);
@@ -269,7 +269,7 @@ export async function cacheAppendMessages(
 
     return new Promise((resolve, reject) => {
       tx.oncomplete = () => resolve();
-      tx.onerror = () => reject(tx.error);
+      tx.onerror = () => reject(new Error(tx.error?.message ?? "IndexedDB transaction error"));
     });
   } catch (err) {
     logger.warn("[PlainCache] append failed", err);
@@ -299,7 +299,7 @@ export async function cacheRemoveConversation(convKey: ConvKey): Promise<void> {
 
     return new Promise((resolve, reject) => {
       tx.oncomplete = () => resolve();
-      tx.onerror = () => reject(tx.error);
+      tx.onerror = () => reject(new Error(tx.error?.message ?? "IndexedDB transaction error"));
     });
   } catch (err) {
     logger.warn("[PlainCache] remove failed", err);
@@ -315,7 +315,7 @@ export async function cacheClearAll(): Promise<void> {
     tx.objectStore("meta").clear();
     return new Promise((resolve, reject) => {
       tx.oncomplete = () => resolve();
-      tx.onerror = () => reject(tx.error);
+      tx.onerror = () => reject(new Error(tx.error?.message ?? "IndexedDB transaction error"));
     });
   } catch (err) {
     logger.warn("[PlainCache] clearAll failed", err);
@@ -353,7 +353,7 @@ export async function cacheClearOlderThan(cutoffTimestamp: number): Promise<void
 
     return new Promise((resolve, reject) => {
       tx.oncomplete = () => resolve();
-      tx.onerror = () => reject(tx.error);
+      tx.onerror = () => reject(new Error(tx.error?.message ?? "IndexedDB transaction error"));
     });
   } catch (err) {
     logger.warn("[PlainCache] clearOlderThan failed", err);
@@ -424,7 +424,7 @@ export async function cacheGetStats(): Promise<CacheStats> {
           resolve(stats);
         }
       };
-      metaCursorReq.onerror = () => reject(metaCursorReq.error);
+      metaCursorReq.onerror = () => reject(new Error(metaCursorReq.error?.message ?? "IndexedDB meta cursor error"));
     });
   } catch (err) {
     logger.warn("[PlainCache] getStats failed", err);

@@ -50,7 +50,7 @@ export function useSidebarResize() {
       // subsequent pointer drags (widthRef may be stale after keyboard steps).
       const cssVal = rootRef.current
         ? Number.parseInt(rootRef.current.style.getPropertyValue("--sidebar-width"), 10)
-        : NaN;
+        : Number.NaN;
       const startWidth = Number.isFinite(cssVal) ? cssVal : widthRef.current;
 
       function onMove(ev: globalThis.PointerEvent) {

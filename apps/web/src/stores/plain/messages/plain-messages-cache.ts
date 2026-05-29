@@ -81,7 +81,7 @@ export async function saveConversationsCache(
     const blob = new Uint8Array(iv.byteLength + ciphertext.byteLength);
     blob.set(iv, 0);
     blob.set(new Uint8Array(ciphertext), iv.byteLength);
-    localStorage.setItem(cacheStorageKey(myUserId), btoa(String.fromCharCode(...blob)));
+    localStorage.setItem(cacheStorageKey(myUserId), btoa(String.fromCodePoint(...blob)));
   } catch {
     // quota exceeded, private mode, or crypto error — ignore
   }
@@ -99,7 +99,7 @@ export async function loadConversationsCache(
   try {
     const raw = localStorage.getItem(cacheStorageKey(myUserId));
     if (!raw) return {};
-    const blob = Uint8Array.from(atob(raw), (c) => c.charCodeAt(0));
+    const blob = Uint8Array.from(atob(raw), (c) => c.codePointAt(0) ?? 0);
     const iv = blob.slice(0, 12);
     const ciphertext = blob.slice(12);
     const key = await deriveCacheKey(myUserId, deviceId);

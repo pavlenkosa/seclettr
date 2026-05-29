@@ -54,7 +54,7 @@ export const ChatMainLayout = memo(function ChatMainLayout({
     if (!el) return;
     try {
       const raw = localStorage.getItem(STORAGE_KEY);
-      const n = raw !== null ? Number.parseInt(raw, 10) : NaN;
+      const n = raw !== null ? Number.parseInt(raw, 10) : Number.NaN;
       const initial = Number.isFinite(n)
         ? Math.min(MAX_WIDTH, Math.max(MIN_WIDTH, n))
         : DEFAULT_WIDTH;

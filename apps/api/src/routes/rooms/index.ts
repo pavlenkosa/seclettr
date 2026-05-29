@@ -107,7 +107,7 @@ async function getActiveRoomParticipantCount(callId: string): Promise<number> {
     `SELECT COUNT(*) AS cnt FROM room_guest_sessions WHERE call_session_id = $1`,
     [callId]
   );
-  return parseInt(rows[0]?.cnt ?? "0", 10);
+  return Number.parseInt(rows[0]?.cnt ?? "0", 10);
 }
 
 export async function roomRoutes(fastify: FastifyInstance): Promise<void> {

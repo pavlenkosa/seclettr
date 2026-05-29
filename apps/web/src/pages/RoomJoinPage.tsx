@@ -132,10 +132,11 @@ export function RoomJoinPage() {
           {preview?.expiresAt ? ` · expires ${new Date(preview.expiresAt).toLocaleString()}` : ""}
         </p>
 
-        <label className={styles.label}>
+        <label htmlFor="guest-display-name" className={styles.label}>
           Your display name
         </label>
         <input
+          id="guest-display-name"
           type="text"
           value={guestName}
           onChange={(e) => setGuestName(e.target.value.slice(0, GUEST_NAME_MAX))}

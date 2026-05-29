@@ -88,7 +88,7 @@ function MediaGrid({
             className={styles.gridCell}
             onClick={() => onOpen(index)}
             aria-label={`${isGif ? "GIF" : isVideo ? "Видео" : "Фото"} — ${formatDate(msg.timestamp, locale)}`}
-            role="listitem"
+
           >
             {hasThumb ? (
               <img

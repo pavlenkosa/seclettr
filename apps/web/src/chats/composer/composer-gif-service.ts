@@ -61,8 +61,8 @@ function parseGiphyResult(result: GiphyResult): GifResult | null {
     url: full.url,
     sendUrl: send.url,
     previewUrl: preview.url,
-    width: parseInt(preview.width, 10) || 200,
-    height: parseInt(preview.height, 10) || 150,
+    width: Number.parseInt(preview.width, 10) || 200,
+    height: Number.parseInt(preview.height, 10) || 150,
     title: result.title,
   };
 }

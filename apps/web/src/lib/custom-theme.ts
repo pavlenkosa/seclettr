@@ -15,9 +15,9 @@ function hexToRgb(hex: string): Rgb | null {
   const clean = hex.replace(/^#/, "");
   if (!/^[0-9a-f]{6}$/i.test(clean)) return null;
   return [
-    parseInt(clean.slice(0, 2), 16),
-    parseInt(clean.slice(2, 4), 16),
-    parseInt(clean.slice(4, 6), 16),
+    Number.parseInt(clean.slice(0, 2), 16),
+    Number.parseInt(clean.slice(2, 4), 16),
+    Number.parseInt(clean.slice(4, 6), 16),
   ] as const;
 }
 

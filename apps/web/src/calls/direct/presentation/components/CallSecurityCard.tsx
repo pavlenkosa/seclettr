@@ -18,7 +18,7 @@ const VERIFY_EMOJI = [
 function deriveEmoji(groups: string[]): string[] {
   if (groups.length < 2) return [];
   return [0, 1, 2, 3].map((i) => {
-    const n = Math.abs(parseInt(groups[i % groups.length] ?? "0", 10));
+    const n = Math.abs(Number.parseInt(groups[i % groups.length] ?? "0", 10));
     return VERIFY_EMOJI[n % VERIFY_EMOJI.length] ?? "🔒";
   });
 }

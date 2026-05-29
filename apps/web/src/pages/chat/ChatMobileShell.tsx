@@ -4,6 +4,37 @@ import { MOTION_DURATION_MS } from "@/lib/motion";
 import motionStyles from "@/components/ui/motion/Motion.module.css";
 import styles from "./ChatMobileShell.module.css";
 
+function PresencePanel({
+  presence, className, children,
+}: {
+  presence: { isMounted: boolean; isClosing: boolean };
+  className?: string;
+  children: ReactNode;
+}) {
+  if (!presence.isMounted) return null;
+  const motionClass = presence.isClosing ? motionStyles.panelOut : motionStyles.panelIn;
+  return (
+    <div className={`${className} ${motionClass}`} aria-hidden={presence.isClosing ? true : undefined}>
+      {children}
+    </div>
+  );
+}
+
+function PresenceDock({
+  presence, children,
+}: {
+  presence: { isMounted: boolean; isClosing: boolean };
+  children: ReactNode;
+}) {
+  if (!presence.isMounted) return null;
+  const motionClass = presence.isClosing ? motionStyles.fadeOut : motionStyles.fadeIn;
+  return (
+    <div className={motionClass} aria-hidden={presence.isClosing ? true : undefined}>
+      {children}
+    </div>
+  );
+}
+
 /**
  * Mobile-only chat shell that keeps app navigation and thread surfaces mutually exclusive.
  * This avoids overlay conflicts between the bottom dock and the message composer.
@@ -40,53 +71,18 @@ export function ChatMobileShell({
 
   return (
     <div className={styles.shell}>
-      {sidebarPresence.isMounted ? (
-        <div
-          className={[
-            styles.sidebarView,
-            sidebarPresence.isClosing ? motionStyles.panelOut : motionStyles.panelIn,
-          ].filter(Boolean).join(" ")}
-          aria-hidden={sidebarPresence.isClosing ? true : undefined}
-        >
-          {sidebar}
-        </div>
-      ) : null}
-
-      {threadPresence.isMounted ? (
-        <div
-          className={[
-            styles.threadView,
-            threadPresence.isClosing ? motionStyles.panelOut : motionStyles.panelIn,
-          ].filter(Boolean).join(" ")}
-          aria-hidden={threadPresence.isClosing ? true : undefined}
-        >
-          <div className={styles.threadBody}>
-            {thread}
-          </div>
-        </div>
-      ) : null}
-
-      {settingsPresence.isMounted ? (
-        <div
-          className={[
-            styles.settingsView,
-            settingsPresence.isClosing ? motionStyles.panelOut : motionStyles.panelIn,
-          ].filter(Boolean).join(" ")}
-          aria-hidden={settingsPresence.isClosing ? true : undefined}
-        >
-          {settings}
-        </div>
-      ) : null}
-
-      {sidebarPresence.isMounted ? (
-        <div
-          className={sidebarPresence.isClosing ? motionStyles.fadeOut : motionStyles.fadeIn}
-          aria-hidden={sidebarPresence.isClosing ? true : undefined}
-        >
-          {sidebarDock}
-        </div>
-      ) : null}
-
+      <PresencePanel presence={sidebarPresence} className={styles.sidebarView}>
+        {sidebar}
+      </PresencePanel>
+      <PresencePanel presence={threadPresence} className={styles.threadView}>
+        <div className={styles.threadBody}>{thread}</div>
+      </PresencePanel>
+      <PresencePanel presence={settingsPresence} className={styles.settingsView}>
+        {settings}
+      </PresencePanel>
+      <PresenceDock presence={sidebarPresence}>
+        {sidebarDock}
+      </PresenceDock>
     </div>
   );
 }

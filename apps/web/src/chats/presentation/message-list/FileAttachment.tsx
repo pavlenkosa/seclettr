@@ -7,6 +7,42 @@ import type { Message } from "@/stores/messages";
 import { formatAttachmentSize, resolveAttachmentErrorMessage } from "./message-attachment-shared";
 import styles from "./MessageListAttachments.module.css";
 
+function FileDownloadActions({
+  loading, downloaded, isPlain, error, msg, decryptAndDownload,
+}: {
+  loading: boolean;
+  downloaded: boolean;
+  isPlain: boolean;
+  error: string | null;
+  msg: Message;
+  decryptAndDownload: () => void;
+}) {
+  const { t } = useI18n();
+  return (
+    <>
+      <button
+        onClick={() => void decryptAndDownload()}
+        disabled={loading || msg.status === "sending"}
+        className={`${styles.fileDecryptBtn} ${msg.isOwn ? styles.fileDecryptBtnOwn : ""}`}
+        aria-label={t(isPlain ? "message.file.downloadAria" : "message.file.decryptAria")}
+      >
+        {loading
+          ? t(isPlain ? "message.file.downloading" : "message.file.decrypting")
+          : downloaded
+            ? t("message.file.downloadAgain")
+            : isPlain
+              ? t("message.file.download")
+              : t("message.file.decryptAndDownload")}
+      </button>
+      {error ? (
+        <InlineNotice tone="error" size="sm" role="alert" className={styles.attachmentErrorNotice}>
+          {error}
+        </InlineNotice>
+      ) : null}
+    </>
+  );
+}
+
 /**
  * Generic encrypted file attachment block with decrypt-and-download action.
  */
@@ -30,8 +66,6 @@ export function FileAttachment({ msg }: { readonly msg: Message }) {
   const isPlain = !!msg.attachment?.isPlain;
   const error = resolveAttachmentErrorMessage("file", errorCause, t, isPlain);
   const isUploading = progress !== null;
-  const initialActionLabel = isPlain ? t("message.file.download") : t("message.file.decryptAndDownload");
-  const downloadedLabel = downloaded ? t("message.file.downloadAgain") : initialActionLabel;
   const fallbackName = isPlain ? t("message.file.unnamedPlain") : t("message.file.unnamed");
 
   return (
@@ -65,28 +99,14 @@ export function FileAttachment({ msg }: { readonly msg: Message }) {
           </div>
         </div>
       ) : (
-        <>
-          <button
-            onClick={() => void decryptAndDownload()}
-            disabled={loading || msg.status === "sending"}
-            className={`${styles.fileDecryptBtn} ${msg.isOwn ? styles.fileDecryptBtnOwn : ""}`}
-            aria-label={t(isPlain ? "message.file.downloadAria" : "message.file.decryptAria")}
-          >
-            {loading
-              ? t(isPlain ? "message.file.downloading" : "message.file.decrypting")
-              : downloadedLabel}
-          </button>
-          {error ? (
-            <InlineNotice
-              tone="error"
-              size="sm"
-              role="alert"
-              className={styles.attachmentErrorNotice}
-            >
-              {error}
-            </InlineNotice>
-          ) : null}
-        </>
+        <FileDownloadActions
+          loading={loading}
+          downloaded={downloaded}
+          isPlain={isPlain}
+          error={error}
+          msg={msg}
+          decryptAndDownload={decryptAndDownload}
+        />
       )}
     </div>
   );

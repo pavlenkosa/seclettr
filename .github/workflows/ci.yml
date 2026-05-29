@@ -56,23 +56,28 @@ jobs:
       - uses: actions/setup-node@v5
         with:
           node-version: 22
-          cache: pnpm
-          package-manager-cache: false
 
       - uses: pnpm/action-setup@v6
 
-      - run: pnpm install --frozen-lockfile
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
 
-      - run: pnpm --filter @seclettr/api db:migrate
+      - name: Run database migrations
+        run: pnpm --filter @seclettr/api db:migrate
 
-      - run: pnpm build
+      - name: Build
+        run: pnpm build
         env:
           NODE_ENV: production
 
-      - run: pnpm typecheck
+      - name: Typecheck
+        run: pnpm typecheck
 
-      - run: pnpm --filter @seclettr/web lint
+      - name: Lint web
+        run: pnpm --filter @seclettr/web lint
 
-      - run: pnpm audit:prod:gate
+      - name: Audit production dependencies
+        run: pnpm audit:prod:gate
 
-      - run: pnpm test
+      - name: Test
+        run: pnpm test

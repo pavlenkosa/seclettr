@@ -40,8 +40,6 @@ jobs:
       - uses: actions/setup-node@v5
         with:
           node-version: 22
-          cache: pnpm
-          package-manager-cache: false
 
       - uses: pnpm/action-setup@v6
 
@@ -66,6 +64,11 @@ jobs:
           GHCR_REGISTRY="ghcr.io"
           GHCR_NAMESPACE="${{ github.repository }}"
           APP_VERSION="$(node -e "console.log(require('./package.json').version)")"
+          if [[ "${{ github.event_name }}" == "workflow_run" ]]; then
+            BUILD_TIMESTAMP="${{ github.event.workflow_run.created_at }}"
+          else
+            BUILD_TIMESTAMP="$(date -u +'%Y-%m-%dT%H:%M:%SZ')"
+          fi
 
           echo "commit_sha=${COMMIT_SHA}" >> "$GITHUB_OUTPUT"
           echo "short_sha=${SHORT_SHA}" >> "$GITHUB_OUTPUT"
@@ -77,6 +80,7 @@ jobs:
           echo "web_image=${GHCR_REGISTRY}/${GHCR_NAMESPACE}/web" >> "$GITHUB_OUTPUT"
           echo "sfu_image=${GHCR_REGISTRY}/${GHCR_NAMESPACE}/sfu" >> "$GITHUB_OUTPUT"
           echo "app_version=${APP_VERSION}" >> "$GITHUB_OUTPUT"
+          echo "build_timestamp=${BUILD_TIMESTAMP}" >> "$GITHUB_OUTPUT"
 
           git log -1 --format='%s' HEAD > /tmp/commit-subject.txt
           git log -1 --format='%b' HEAD > /tmp/commit-body.txt
@@ -108,7 +112,7 @@ jobs:
           build-args: |
             SECLETTR_VERSION=${{ steps.meta.outputs.app_version }}
             GIT_REVISION=${{ steps.meta.outputs.commit_sha }}
-            BUILD_TIMESTAMP=${{ github.event.workflow_run.created_at || github.event.head_commit.timestamp }}
+            BUILD_TIMESTAMP=${{ steps.meta.outputs.build_timestamp }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
@@ -123,7 +127,7 @@ jobs:
           build-args: |
             SECLETTR_VERSION=${{ steps.meta.outputs.app_version }}
             GIT_REVISION=${{ steps.meta.outputs.commit_sha }}
-            BUILD_TIMESTAMP=${{ github.event.workflow_run.created_at || github.event.head_commit.timestamp }}
+            BUILD_TIMESTAMP=${{ steps.meta.outputs.build_timestamp }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
@@ -138,7 +142,7 @@ jobs:
           build-args: |
             SECLETTR_VERSION=${{ steps.meta.outputs.app_version }}
             GIT_REVISION=${{ steps.meta.outputs.commit_sha }}
-            BUILD_TIMESTAMP=${{ github.event.workflow_run.created_at || github.event.head_commit.timestamp }}
+            BUILD_TIMESTAMP=${{ steps.meta.outputs.build_timestamp }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
@@ -193,8 +197,8 @@ jobs:
         if: github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success'
         shell: bash
         run: |
-          echo "Dev bundle ready: ${BUNDLE_PREFIX}-${IMAGE_TAG}.tar.gz"
+          echo "Dev bundle ready: ${{ steps.meta.outputs.bundle_prefix }}-${{ steps.meta.outputs.image_tag }}.tar.gz"
           echo "GHCR images:"
-          echo "  ghcr.io/${{ github.repository }}/api:${IMAGE_TAG}"
-          echo "  ghcr.io/${{ github.repository }}/web:${IMAGE_TAG}"
-          echo "  ghcr.io/${{ github.repository }}/sfu:${IMAGE_TAG}"
+          echo "  ghcr.io/${{ github.repository }}/api:${{ steps.meta.outputs.image_tag }}"
+          echo "  ghcr.io/${{ github.repository }}/web:${{ steps.meta.outputs.image_tag }}"
+          echo "  ghcr.io/${{ github.repository }}/sfu:${{ steps.meta.outputs.image_tag }}"

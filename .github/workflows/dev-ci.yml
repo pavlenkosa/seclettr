@@ -12,23 +12,66 @@ concurrency:
 jobs:
   verify:
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_DB: seclettr
+          POSTGRES_USER: seclettr
+          POSTGRES_PASSWORD: ${{ github.run_id }}-${{ github.run_attempt }}
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U seclettr -d seclettr"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 20
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 20
+
+    env:
+      DATABASE_URL: postgresql://seclettr:${{ github.run_id }}-${{ github.run_attempt }}@127.0.0.1:5432/seclettr
+      REDIS_URL: redis://127.0.0.1:6379
+      JWT_SECRET: "ci-jwt-secret-for-testing-only-1234567890"
+      NODE_ENV: test
+      ALLOW_PUBLIC_REGISTRATION: true
+      TURN_SECRET: ci-turn-secret-0123456789
+      TURN_DOMAIN: localhost
+      S3_ENDPOINT: http://127.0.0.1:9000
+      S3_BUCKET: seclettr-attachments
+      S3_ACCESS_KEY: minioadmin
+      S3_SECRET_KEY: minioadmin
+
     steps:
       - uses: actions/checkout@v5
 
       - uses: actions/setup-node@v5
         with:
           node-version: 22
-          cache: pnpm
-          package-manager-cache: false
 
       - uses: pnpm/action-setup@v6
 
-      - run: pnpm install --frozen-lockfile
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
 
-      - run: pnpm typecheck
+      - name: Run database migrations
+        run: pnpm --filter @seclettr/api db:migrate
 
-      - run: pnpm --filter @seclettr/web lint
+      - name: Typecheck
+        run: pnpm typecheck
 
-      - run: pnpm audit:prod:gate
+      - name: Lint web
+        run: pnpm --filter @seclettr/web lint
 
-      - run: pnpm test
+      - name: Audit production dependencies
+        run: pnpm audit:prod:gate
+
+      - name: Test
+        run: pnpm test

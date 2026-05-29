@@ -32,6 +32,125 @@ export interface GroupCallDetailsDrawerProps {
   readonly onHostAction?: () => void;
 }
 
+function RoomIdCard({ roomCode, statusLabel }: { readonly roomCode: string; readonly statusLabel: string }) {
+  return (
+    <SurfacePanel className={styles.detailsCard} padding="md">
+      <div className={styles.roomIdCode}>{roomCode}</div>
+      <div className={styles.roomIdHint}>{statusLabel}</div>
+    </SurfacePanel>
+  );
+}
+
+function MediaKeyStatusCard({
+  mediaKeyStatusLabel,
+  mediaKeyModeLabel,
+  mediaModeDowngraded,
+  effectiveFrameEncryptionEnabled,
+  sharedMediaKeyDeviceCount,
+  receivedMediaKeyCount,
+  t,
+}: {
+  readonly mediaKeyStatusLabel: string;
+  readonly mediaKeyModeLabel: string;
+  readonly mediaModeDowngraded: boolean;
+  readonly effectiveFrameEncryptionEnabled: boolean;
+  readonly sharedMediaKeyDeviceCount: number;
+  readonly receivedMediaKeyCount: number;
+  readonly t: (key: string, params?: Record<string, string | number>) => string;
+}) {
+  return (
+    <SurfacePanel className={styles.detailsCard} padding="md">
+      <div className={styles.metaPrimary}>{mediaKeyStatusLabel}</div>
+      <div className={styles.metaSecondary}>{t("group.call.mediaKeyMode", { mode: mediaKeyModeLabel })}</div>
+      {mediaModeDowngraded ? (
+        <InlineNotice tone="warning" size="sm" className={styles.metaNotice}>
+          {t("group.call.mediaModeDowngraded", { mode: mediaKeyModeLabel })}
+        </InlineNotice>
+      ) : null}
+      {effectiveFrameEncryptionEnabled ? (
+        <>
+          <div className={styles.metaSecondary}>
+            {t("group.call.mediaKeyShared", { count: sharedMediaKeyDeviceCount })}
+          </div>
+          <div className={styles.metaSecondary}>
+            {t("group.call.mediaKeyReceived", { count: receivedMediaKeyCount })}
+          </div>
+        </>
+      ) : null}
+    </SurfacePanel>
+  );
+}
+
+function AudioOutputSection({
+  speakerSupported,
+  speakerOn,
+  toggleSpeaker,
+  t,
+}: {
+  readonly speakerSupported: boolean;
+  readonly speakerOn: boolean;
+  readonly toggleSpeaker: () => void;
+  readonly t: (key: string, params?: Record<string, string | number>) => string;
+}) {
+  if (speakerSupported) {
+    return (
+      <div className={styles.nativeSpeakerOptions}>
+        <button
+          type="button"
+          className={[
+            styles.nativeSpeakerOption,
+            !speakerOn ? styles.nativeSpeakerOptionActive : "",
+          ].filter(Boolean).join(" ")}
+          onClick={() => { if (speakerOn) toggleSpeaker(); }}
+          aria-pressed={!speakerOn}
+        >
+          <PhoneIcon />
+          <span>{t("call.earpiece")}</span>
+          {!speakerOn ? <span className={styles.nativeSpeakerCheck} aria-hidden="true">✓</span> : null}
+        </button>
+        <button
+          type="button"
+          className={[
+            styles.nativeSpeakerOption,
+            speakerOn ? styles.nativeSpeakerOptionActive : "",
+          ].filter(Boolean).join(" ")}
+          onClick={() => { if (!speakerOn) toggleSpeaker(); }}
+          aria-pressed={speakerOn}
+        >
+          <SpeakerIcon speakerOn={speakerOn} />
+          <span>{t("call.speaker")}</span>
+          {speakerOn ? <span className={styles.nativeSpeakerCheck} aria-hidden="true">✓</span> : null}
+        </button>
+      </div>
+    );
+  }
+
+  return <AudioOutputSelector className={styles.audioOutputSelector} />;
+}
+
+function HostActionCard({
+  hostActionLabel,
+  hostActionHint,
+  onHostAction,
+  t,
+}: {
+  readonly hostActionLabel: string;
+  readonly hostActionHint?: string;
+  readonly onHostAction: () => void;
+  readonly t: (key: string, params?: Record<string, string | number>) => string;
+}) {
+  return (
+    <FieldSection className={panelStyles.section} label={t("group.call.hostActions")}>
+      <SurfacePanel className={styles.hostActionCard} padding="md">
+        {hostActionHint ? <p className={styles.hostActionHint}>{hostActionHint}</p> : null}
+        <PillButton type="button" tone="danger" appearance="soft" size="md" onClick={onHostAction}>
+          {hostActionLabel}
+        </PillButton>
+      </SurfacePanel>
+    </FieldSection>
+  );
+}
+
 export function GroupCallDetailsDrawer({
   isOpen,
   inline = false,
@@ -69,32 +188,19 @@ export function GroupCallDetailsDrawer({
       aria-hidden={inline ? undefined : !isOpen}
     >
       <FieldSection className={panelStyles.section} label={t("group.call.roomId")}>
-        <SurfacePanel className={styles.detailsCard} padding="md">
-          <div className={styles.roomIdCode}>{roomCode}</div>
-          <div className={styles.roomIdHint}>{statusLabel}</div>
-        </SurfacePanel>
+        <RoomIdCard roomCode={roomCode} statusLabel={statusLabel} />
       </FieldSection>
 
       <FieldSection className={panelStyles.section} label={t("group.call.mediaKeySection")}>
-        <SurfacePanel className={styles.detailsCard} padding="md">
-          <div className={styles.metaPrimary}>{mediaKeyStatusLabel}</div>
-          <div className={styles.metaSecondary}>{t("group.call.mediaKeyMode", { mode: mediaKeyModeLabel })}</div>
-          {mediaModeDowngraded ? (
-            <InlineNotice tone="warning" size="sm" className={styles.metaNotice}>
-              {t("group.call.mediaModeDowngraded", { mode: mediaKeyModeLabel })}
-            </InlineNotice>
-          ) : null}
-          {effectiveFrameEncryptionEnabled ? (
-            <>
-              <div className={styles.metaSecondary}>
-                {t("group.call.mediaKeyShared", { count: sharedMediaKeyDeviceCount })}
-              </div>
-              <div className={styles.metaSecondary}>
-                {t("group.call.mediaKeyReceived", { count: receivedMediaKeyCount })}
-              </div>
-            </>
-          ) : null}
-        </SurfacePanel>
+        <MediaKeyStatusCard
+          mediaKeyStatusLabel={mediaKeyStatusLabel}
+          mediaKeyModeLabel={mediaKeyModeLabel}
+          mediaModeDowngraded={mediaModeDowngraded}
+          effectiveFrameEncryptionEnabled={effectiveFrameEncryptionEnabled}
+          sharedMediaKeyDeviceCount={sharedMediaKeyDeviceCount}
+          receivedMediaKeyCount={receivedMediaKeyCount}
+          t={t}
+        />
       </FieldSection>
 
       <FieldSection className={panelStyles.section} label={t("group.call.members")}>
@@ -136,41 +242,12 @@ export function GroupCallDetailsDrawer({
 
       <FieldSection className={panelStyles.section} label={t("call.audioOutput.label")}>
         <SurfacePanel className={styles.detailsCard} padding="md">
-          {speakerSupported ? (
-            /* Native Android: earpiece / speaker options with multi-attempt
-               backoff earpiece default applied by useNativeSpeakerToggle. */
-            <div className={styles.nativeSpeakerOptions}>
-              <button
-                type="button"
-                className={[
-                  styles.nativeSpeakerOption,
-                  !speakerOn ? styles.nativeSpeakerOptionActive : "",
-                ].filter(Boolean).join(" ")}
-                onClick={() => { if (speakerOn) toggleSpeaker(); }}
-                aria-pressed={!speakerOn}
-              >
-                <PhoneIcon />
-                <span>{t("call.earpiece")}</span>
-                {!speakerOn ? <span className={styles.nativeSpeakerCheck} aria-hidden="true">✓</span> : null}
-              </button>
-              <button
-                type="button"
-                className={[
-                  styles.nativeSpeakerOption,
-                  speakerOn ? styles.nativeSpeakerOptionActive : "",
-                ].filter(Boolean).join(" ")}
-                onClick={() => { if (!speakerOn) toggleSpeaker(); }}
-                aria-pressed={speakerOn}
-              >
-                <SpeakerIcon speakerOn={speakerOn} />
-                <span>{t("call.speaker")}</span>
-                {speakerOn ? <span className={styles.nativeSpeakerCheck} aria-hidden="true">✓</span> : null}
-              </button>
-            </div>
-          ) : (
-            /* Web / desktop: standard AudioOutputSelector (setSinkId). */
-            <AudioOutputSelector className={styles.audioOutputSelector} />
-          )}
+          <AudioOutputSection
+            speakerSupported={speakerSupported}
+            speakerOn={speakerOn}
+            toggleSpeaker={toggleSpeaker}
+            t={t}
+          />
         </SurfacePanel>
       </FieldSection>
 
@@ -181,20 +258,12 @@ export function GroupCallDetailsDrawer({
       ) : null}
 
       {showHostAction ? (
-        <FieldSection className={panelStyles.section} label={t("group.call.hostActions")}>
-          <SurfacePanel className={styles.hostActionCard} padding="md">
-            {hostActionHint ? <p className={styles.hostActionHint}>{hostActionHint}</p> : null}
-            <PillButton
-              type="button"
-              tone="danger"
-              appearance="soft"
-              size="md"
-              onClick={onHostAction}
-            >
-              {hostActionLabel}
-            </PillButton>
-          </SurfacePanel>
-        </FieldSection>
+        <HostActionCard
+          hostActionLabel={hostActionLabel!}
+          hostActionHint={hostActionHint}
+          onHostAction={onHostAction!}
+          t={t}
+        />
       ) : null}
 
       <SurfacePanel className={styles.contractHint} padding="sm">

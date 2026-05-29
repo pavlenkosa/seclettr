@@ -19,6 +19,9 @@ import type {
   StoredDeviceCallAuthKeys,
 } from "./call-auth-material";
 
+// LRU size cap: prevents unbounded growth in long sessions with many distinct peers.
+// Public keys are cached to avoid repeated directory fetches within a single call.
+const MAX_PEER_DEVICE_PUBLIC_KEY_CACHE_ENTRIES = 100;
 const peerDevicePublicKeyCache = new Map<string, CachedPeerDevicePublicKeys>();
 
 export function loadAuthStoreState() {
@@ -114,6 +117,9 @@ async function loadPeerDevicePublicKeys(
   const cacheKey = `${userId}:${deviceId}`;
   const cached = peerDevicePublicKeyCache.get(cacheKey);
   if (cached) {
+    // Refresh recency: move to end of Map insertion order (LRU touch).
+    peerDevicePublicKeyCache.delete(cacheKey);
+    peerDevicePublicKeyCache.set(cacheKey, cached);
     return cached;
   }
 
@@ -128,6 +134,13 @@ async function loadPeerDevicePublicKeys(
     signingPublicKey: device.signingKeyPublic ? fromBase64Url(device.signingKeyPublic) : null,
   };
   peerDevicePublicKeyCache.set(cacheKey, keys);
+  // Evict oldest entries while the cache exceeds the size cap.
+  while (peerDevicePublicKeyCache.size > MAX_PEER_DEVICE_PUBLIC_KEY_CACHE_ENTRIES) {
+    const oldest = peerDevicePublicKeyCache.keys().next().value;
+    if (oldest !== undefined) {
+      peerDevicePublicKeyCache.delete(oldest);
+    }
+  }
   return keys;
 }
 
@@ -150,4 +163,9 @@ export async function loadPeerIdentityPublicKey(
 export function clearCallAuthCache(): void {
   peerDevicePublicKeyCache.clear();
   clearCurrentDeviceCryptoMaterialSyncCache();
+}
+
+/** @internal Exposed for tests only — do not use in production code. */
+export function getPeerDevicePublicKeyCacheSize(): number {
+  return peerDevicePublicKeyCache.size;
 }

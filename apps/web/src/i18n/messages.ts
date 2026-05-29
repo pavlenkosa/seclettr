@@ -456,6 +456,7 @@ const enMessages: TranslationMap = {
   "composer.aria.searchGif": "Search GIFs",
   "composer.aria.emojiCategories": "Emoji categories",
   "composer.aria.emojiResults": "Emoji results",
+  "composer.aria.gifResults": "GIF results",
   "composer.aria.selectEmojiSubgroup": "Select emoji category section",
   "composer.gifSearch.placeholder": "Search GIFs…",
   "composer.gifSearch.empty": "No GIFs found",

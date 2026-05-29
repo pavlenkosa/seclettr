@@ -108,7 +108,7 @@ describe("message session runtime", () => {
     );
   });
 
-  it("commits inbound bootstrap state only after the caller confirms success", async () => {
+  it("eagerly commits session and OTK inside bootstrapInboundSession; commit() is a no-op", async () => {
     loadDecryptedMock.mockImplementation(async <T,>(_: CryptoKey, key: string): Promise<T | null> => {
       if (key === "device:device-self:keys") {
         return {
@@ -150,10 +150,6 @@ describe("message session runtime", () => {
       associatedData: new Uint8Array([8, 8, 8]),
     });
 
-    // TOFU record may be stored during bootstrapInboundSession, but session and OTK must wait for commit()
-    const priorCalls = (storeEncryptedMock.mock.calls as Array<[CryptoKey, string, unknown]>).map((c) => c[1]);
-    expect(priorCalls).not.toContain("session:device-peer");
-    expect(priorCalls).not.toContain("device:device-self:keys");
     expect(bootstrapReceiverSessionMock).toHaveBeenCalledTimes(1);
     expect(
       bootstrapReceiverSessionMock.mock.calls[0]?.[0]?.receiverSignedPreKeyPair.publicKey
@@ -162,8 +158,9 @@ describe("message session runtime", () => {
       bootstrapReceiverSessionMock.mock.calls[0]?.[0]?.receiverOneTimePreKeyPair.publicKey
     ).not.toEqual(new Uint8Array(32));
 
-    await bootstrap.commit();
-
+    // Session and OTK removal must be persisted eagerly inside bootstrapInboundSession,
+    // not deferred to commit() — a crash between return and commit() would leave the OTK
+    // in storage and create a replay window.
     const storeCalls = storeEncryptedMock.mock.calls as Array<[CryptoKey, string, unknown]>;
     const sessionCommitIndex = storeCalls.findIndex((call) => call[1] === "session:device-peer");
     const otkCommitIndex = storeCalls.findIndex((call) => call[1] === "device:device-self:keys");
@@ -175,6 +172,11 @@ describe("message session runtime", () => {
       signedPreKeyId: 77,
       otkPrivateKeys: {},
     });
+
+    // commit() is now a no-op — calling it must not store additional data.
+    const callCountBeforeCommit = storeEncryptedMock.mock.calls.length;
+    await bootstrap.commit();
+    expect(storeEncryptedMock.mock.calls.length).toBe(callCountBeforeCommit);
   });
 
   it("creates and persists a new outbound session from the current prekey bundle", async () => {

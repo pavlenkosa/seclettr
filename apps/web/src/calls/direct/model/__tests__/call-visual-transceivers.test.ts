@@ -73,6 +73,30 @@ describe("call visual transceivers", () => {
     });
   });
 
+  it("creates both transceivers when none exist in the peer connection", () => {
+    const newCameraTransceiver = createVideoTransceiver(null);
+    const newScreenTransceiver = createVideoTransceiver(null);
+    const addTransceiver = vi.fn()
+      .mockReturnValueOnce(newCameraTransceiver)
+      .mockReturnValueOnce(newScreenTransceiver);
+    const peerConnection = {
+      getTransceivers: () => [],
+      addTransceiver,
+    } as unknown as RTCPeerConnection;
+
+    expect(ensureDedicatedVideoTransceivers({
+      pc: peerConnection,
+      currentCameraTransceiver: null,
+      currentScreenTransceiver: null,
+    })).toEqual({
+      cameraTransceiver: newCameraTransceiver,
+      screenTransceiver: newScreenTransceiver,
+    });
+    expect(addTransceiver).toHaveBeenCalledTimes(2);
+    expect(addTransceiver).toHaveBeenNthCalledWith(1, "video", { direction: "recvonly" });
+    expect(addTransceiver).toHaveBeenNthCalledWith(2, "video", { direction: "recvonly" });
+  });
+
   it("creates a missing reserved screen transceiver without reallocating the camera transceiver", () => {
     const cameraTransceiver = createVideoTransceiver("1");
     const newScreenTransceiver = createVideoTransceiver(null);

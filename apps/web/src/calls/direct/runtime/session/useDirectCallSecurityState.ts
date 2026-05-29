@@ -25,13 +25,12 @@ export function useDirectCallSecurityState({
     callId: string,
     result: CallSignalVerificationResult
   ) => {
-    setActive((prev) => {
-      const next = prev?.callId === callId
-        ? applySignalVerificationToActiveCall(prev, result, t("call.error.unableVerifyCode"))
-        : prev;
-      activeRef.current = next;
-      return next;
-    });
+    const current = activeRef.current;
+    const next = current?.callId === callId
+      ? applySignalVerificationToActiveCall(current, result, t("call.error.unableVerifyCode"))
+      : current;
+    activeRef.current = next;
+    setActive(next);
   }, [activeRef, setActive, t]);
 
   const applyCallSecurityState = useCallback(async (callId: string, pc: RTCPeerConnection): Promise<void> => {
@@ -41,23 +40,21 @@ export function useDirectCallSecurityState({
 
     const codes = await computeCallSecurityCodes(localSdp, remoteSdp);
     if (!codes) {
-      setActive((prev) => {
-        const next = prev?.callId === callId
-          ? applyMissingSecurityCodesToActiveCall(prev, t("call.error.unableVerifyCode"))
-          : prev;
-        activeRef.current = next;
-        return next;
-      });
+      const current = activeRef.current;
+      const next = current?.callId === callId
+        ? applyMissingSecurityCodesToActiveCall(current, t("call.error.unableVerifyCode"))
+        : current;
+      activeRef.current = next;
+      setActive(next);
       return;
     }
 
-    setActive((prev) => {
-      const next = prev?.callId === callId
-        ? applyComputedSecurityCodesToActiveCall(prev, codes)
-        : prev;
-      activeRef.current = next;
-      return next;
-    });
+    const current = activeRef.current;
+    const next = current?.callId === callId
+      ? applyComputedSecurityCodesToActiveCall(current, codes)
+      : current;
+    activeRef.current = next;
+    setActive(next);
   }, [activeRef, setActive, t]);
 
   return {

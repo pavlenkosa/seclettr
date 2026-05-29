@@ -316,32 +316,33 @@ export function createMessageSessionRuntime(
       associatedData: params.associatedData,
     });
 
-    const commit = async (): Promise<void> => {
-      await saveSession(params.senderDeviceId, bootstrap.session);
+    // Eagerly commit: save the new session and wipe the consumed OTK from storage
+    // before returning plaintext. Deferring this creates a replay window — if the
+    // app crashes after returning plaintext but before the caller's commit(), the
+    // OTK stays in storage and can be reused in a future X3DH exchange.
+    await saveSession(params.senderDeviceId, bootstrap.session);
 
-      if (
-        bootstrap.consumedOneTimePreKeyId === undefined ||
-        !storageKey ||
-        deviceKeys.otkPrivateKeys?.[bootstrap.consumedOneTimePreKeyId] === undefined
-      ) {
-        return;
-      }
-
+    if (
+      bootstrap.consumedOneTimePreKeyId !== undefined &&
+      storageKey &&
+      deviceKeys.otkPrivateKeys?.[bootstrap.consumedOneTimePreKeyId] !== undefined
+    ) {
       const nextDeviceKeys: StoredDeviceKeys = {
         ...deviceKeys,
-        otkPrivateKeys: {
-          ...deviceKeys.otkPrivateKeys,
-        },
+        otkPrivateKeys: { ...deviceKeys.otkPrivateKeys },
       };
-      delete nextDeviceKeys.otkPrivateKeys?.[bootstrap.consumedOneTimePreKeyId];
+      delete nextDeviceKeys.otkPrivateKeys![bootstrap.consumedOneTimePreKeyId];
       await storeEncrypted(storageKey, `device:${params.localDeviceId}:keys`, nextDeviceKeys);
-    };
+    }
+
+    // Wipe the OTK private key bytes from memory after use.
+    receiverOneTimePreKeyPair?.privateKey.fill(0);
 
     return {
       session: bootstrap.session,
       plaintext: bootstrap.plaintext,
       consumedOneTimePreKeyId: bootstrap.consumedOneTimePreKeyId,
-      commit,
+      commit: async () => {},
     };
   };
 

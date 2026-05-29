@@ -50,6 +50,7 @@ describe("messages-inbound-decrypt-runtime", () => {
 
     const runtime = createMessagesInboundDecryptRuntime({
       shared: {
+        getStorageKey: vi.fn(() => ({} as CryptoKey)),
         messageSessionRuntime: {
           loadSession,
           saveSession,
@@ -91,6 +92,7 @@ describe("messages-inbound-decrypt-runtime", () => {
 
     const runtime = createMessagesInboundDecryptRuntime({
       shared: {
+        getStorageKey: vi.fn(() => ({} as CryptoKey)),
         messageSessionRuntime: {
           loadSession: vi.fn(async () => null),
           saveSession,

@@ -21,6 +21,133 @@ import {
 const LONG_PRESS_MS = 450;
 const LONG_PRESS_MOVE_TOLERANCE_PX = 6;
 
+function useConversationLongPress(canOpenMenu: boolean, openMenu: () => void) {
+  const pressStateRef = useRef<{ id: ReturnType<typeof setTimeout>; x: number; y: number } | null>(null);
+
+  const cancelPress = useCallback(() => {
+    if (pressStateRef.current) {
+      clearTimeout(pressStateRef.current.id);
+      pressStateRef.current = null;
+    }
+  }, []);
+
+  const startPress = (event: ReactPointerEvent<HTMLButtonElement>) => {
+    if (!canOpenMenu || event.pointerType !== "touch") return;
+    cancelPress();
+    pressStateRef.current = {
+      id: setTimeout(() => {
+        openMenu();
+        pressStateRef.current = null;
+        hapticSelection();
+      }, LONG_PRESS_MS),
+      x: event.clientX,
+      y: event.clientY,
+    };
+  };
+
+  const movePress = (event: ReactPointerEvent<HTMLButtonElement>) => {
+    const press = pressStateRef.current;
+    if (!press) return;
+    if (
+      Math.abs(event.clientX - press.x) > LONG_PRESS_MOVE_TOLERANCE_PX ||
+      Math.abs(event.clientY - press.y) > LONG_PRESS_MOVE_TOLERANCE_PX
+    ) {
+      cancelPress();
+    }
+  };
+
+  useEffect(() => () => cancelPress(), [cancelPress]);
+
+  return { startPress, movePress, cancelPress };
+}
+
+function useConversationMenu(rowId: string, canOpenMenu: boolean, rowButtonRef: React.RefObject<HTMLButtonElement | null>) {
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [menuFlipped, setMenuFlipped] = useState(false);
+  const menuNodeRef = useRef<HTMLDivElement>(null);
+  const keyboardOpenedRef = useRef(false);
+
+  const openMenu = useCallback((viaKeyboard = false) => {
+    document.dispatchEvent(
+      new CustomEvent("seclettr:context-menu-open", { detail: { id: rowId } }),
+    );
+    keyboardOpenedRef.current = viaKeyboard;
+    setMenuFlipped(false);
+    setMenuOpen(true);
+  }, [rowId]);
+
+  const closeMenu = useCallback(() => {
+    if (keyboardOpenedRef.current) {
+      keyboardOpenedRef.current = false;
+      rowButtonRef.current?.focus();
+    }
+    setMenuOpen(false);
+  }, [rowButtonRef]);
+
+  useEffect(() => {
+    const handler = (e: Event) => {
+      if ((e as CustomEvent<{ id: string }>).detail.id !== rowId) closeMenu();
+    };
+    document.addEventListener("seclettr:context-menu-open", handler);
+    return () => document.removeEventListener("seclettr:context-menu-open", handler);
+  }, [rowId, closeMenu]);
+
+  useEffect(() => {
+    if (!menuOpen) return;
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === "Escape") closeMenu();
+    };
+    const onOutsideMouseDown = (event: MouseEvent) => {
+      if (!menuNodeRef.current?.contains(event.target as Node)) closeMenu();
+    };
+    document.addEventListener("mousedown", onOutsideMouseDown);
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("mousedown", onOutsideMouseDown);
+      document.removeEventListener("keydown", onKey);
+    };
+  }, [menuOpen, closeMenu]);
+
+  useLayoutEffect(() => {
+    if (!menuOpen || !menuNodeRef.current) return;
+    const rect = menuNodeRef.current.getBoundingClientRect();
+    const viewportHeight = globalThis.innerHeight ?? document.documentElement.clientHeight;
+    if (rect.bottom > viewportHeight - 8) {
+      setMenuFlipped(true);
+    }
+  }, [menuOpen]);
+
+  useLayoutEffect(() => {
+    if (!menuOpen || !menuNodeRef.current || !keyboardOpenedRef.current) return;
+    const firstItem = menuNodeRef.current.querySelector<HTMLButtonElement>('button[role="menuitem"]');
+    firstItem?.focus();
+  }, [menuOpen]);
+
+  const handleContextMenu = useCallback((event: ReactMouseEvent<HTMLButtonElement>) => {
+    event.preventDefault();
+    if (!canOpenMenu) return;
+    openMenu();
+  }, [canOpenMenu, openMenu]);
+
+  const handleRowKeyDown = useCallback((event: ReactKeyboardEvent<HTMLButtonElement>) => {
+    if (!canOpenMenu) return;
+    if (event.key === "ContextMenu" || (event.key === "F10" && event.shiftKey)) {
+      event.preventDefault();
+      openMenu(true);
+    }
+  }, [canOpenMenu, openMenu]);
+
+  return {
+    menuOpen,
+    menuFlipped,
+    menuNodeRef,
+    openMenu,
+    closeMenu,
+    handleContextMenu,
+    handleRowKeyDown,
+  };
+}
+
 interface ConversationListRowProps {
   readonly entry: ConversationEntry;
   readonly isActive: boolean;
@@ -68,127 +195,19 @@ export const ConversationListRow = memo(function ConversationListRow({
     "--conversation-enter-delay": `${enterDelayMs}ms`,
   } as CSSProperties;
   const rowId = useId();
-  const [menuOpen, setMenuOpen] = useState(false);
-  const [menuFlipped, setMenuFlipped] = useState(false);
-  const menuNodeRef = useRef<HTMLDivElement>(null);
   const rowButtonRef = useRef<HTMLButtonElement>(null);
-  /** True when the menu was opened via keyboard — used to return focus on close. */
-  const keyboardOpenedRef = useRef(false);
   const isPlainChat = entry.kind === "plain-direct" || entry.kind === "plain-group";
   const canOpenMenu = !!entry.pinKind || isPlainChat;
-  const pressStateRef = useRef<{ id: ReturnType<typeof setTimeout>; x: number; y: number } | null>(null);
-
-  const cancelPress = useCallback(() => {
-    if (pressStateRef.current) {
-      clearTimeout(pressStateRef.current.id);
-      pressStateRef.current = null;
-    }
-  }, []);
-
-  const openMenu = useCallback((viaKeyboard = false) => {
-    // Broadcast so any other open menu (same type or MessageContextMenu) closes first.
-    document.dispatchEvent(
-      new CustomEvent("seclettr:context-menu-open", { detail: { id: rowId } }),
-    );
-    keyboardOpenedRef.current = viaKeyboard;
-    setMenuFlipped(false);
-    setMenuOpen(true);
-  }, [rowId]);
-
-  const closeMenu = useCallback(() => {
-    if (keyboardOpenedRef.current) {
-      keyboardOpenedRef.current = false;
-      rowButtonRef.current?.focus();
-    }
-    setMenuOpen(false);
-  }, []);
-
-  const startPress = (event: ReactPointerEvent<HTMLButtonElement>) => {
-    if (!canOpenMenu || event.pointerType !== "touch") return;
-    cancelPress();
-    pressStateRef.current = {
-      id: setTimeout(() => {
-        openMenu();
-        pressStateRef.current = null;
-        hapticSelection();
-      }, LONG_PRESS_MS),
-      x: event.clientX,
-      y: event.clientY,
-    };
-  };
-
-  const movePress = (event: ReactPointerEvent<HTMLButtonElement>) => {
-    const press = pressStateRef.current;
-    if (!press) return;
-    if (
-      Math.abs(event.clientX - press.x) > LONG_PRESS_MOVE_TOLERANCE_PX ||
-      Math.abs(event.clientY - press.y) > LONG_PRESS_MOVE_TOLERANCE_PX
-    ) {
-      cancelPress();
-    }
-  };
-
-  useEffect(() => () => cancelPress(), [cancelPress]);
-
-  const handleContextMenu = (event: ReactMouseEvent<HTMLButtonElement>) => {
-    event.preventDefault();
-    if (!canOpenMenu) return;
-    openMenu();
-  };
-
-  // Close when another context menu opens (right-click elsewhere doesn't fire "click",
-  // so we use the custom broadcast event instead of relying on click propagation).
-  useEffect(() => {
-    const handler = (e: Event) => {
-      if ((e as CustomEvent<{ id: string }>).detail.id !== rowId) closeMenu();
-    };
-    document.addEventListener("seclettr:context-menu-open", handler);
-    return () => document.removeEventListener("seclettr:context-menu-open", handler);
-  }, [rowId, closeMenu]);
-
-  useEffect(() => {
-    if (!menuOpen) return;
-    const onKey = (event: KeyboardEvent) => {
-      if (event.key === "Escape") closeMenu();
-    };
-    // Use mousedown (fires on right-click too) instead of click so the menu closes
-    // when the user presses any mouse button outside it.
-    const onOutsideMouseDown = (event: MouseEvent) => {
-      if (!menuNodeRef.current?.contains(event.target as Node)) closeMenu();
-    };
-    document.addEventListener("mousedown", onOutsideMouseDown);
-    document.addEventListener("keydown", onKey);
-    return () => {
-      document.removeEventListener("mousedown", onOutsideMouseDown);
-      document.removeEventListener("keydown", onKey);
-    };
-  }, [menuOpen, closeMenu]);
-
-  // Clamp the menu to the viewport — flip above the row if it would clip the bottom edge.
-  useLayoutEffect(() => {
-    if (!menuOpen || !menuNodeRef.current) return;
-    const rect = menuNodeRef.current.getBoundingClientRect();
-    const viewportHeight = globalThis.innerHeight ?? document.documentElement.clientHeight;
-    if (rect.bottom > viewportHeight - 8) {
-      setMenuFlipped(true);
-    }
-  }, [menuOpen]);
-
-  // Focus the first menu item when the menu was opened via keyboard.
-  useLayoutEffect(() => {
-    if (!menuOpen || !menuNodeRef.current || !keyboardOpenedRef.current) return;
-    const firstItem = menuNodeRef.current.querySelector<HTMLButtonElement>('button[role="menuitem"]');
-    firstItem?.focus();
-  }, [menuOpen]);
-
-  const handleRowKeyDown = (event: ReactKeyboardEvent<HTMLButtonElement>) => {
-    if (!canOpenMenu) return;
-    // ContextMenu key or Shift+F10 — standard keyboard context-menu shortcut.
-    if (event.key === "ContextMenu" || (event.key === "F10" && event.shiftKey)) {
-      event.preventDefault();
-      openMenu(true);
-    }
-  };
+  const {
+    menuOpen,
+    menuFlipped,
+    menuNodeRef,
+    openMenu,
+    closeMenu,
+    handleContextMenu,
+    handleRowKeyDown,
+  } = useConversationMenu(rowId, canOpenMenu, rowButtonRef);
+  const { startPress, movePress, cancelPress } = useConversationLongPress(canOpenMenu, openMenu);
 
   return (
     <li className={styles.itemWrap}>

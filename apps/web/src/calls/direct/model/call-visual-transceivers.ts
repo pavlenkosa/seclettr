@@ -115,7 +115,6 @@ export function ensureDedicatedVideoTransceivers({
     cameraTransceiver = pickVideoTransceiver(videoTransceivers, screenTransceiver);
     if (!cameraTransceiver) {
       cameraTransceiver = pc.addTransceiver("video", { direction: "recvonly" });
-      videoTransceivers.push(cameraTransceiver);
     }
   }
 
@@ -123,7 +122,6 @@ export function ensureDedicatedVideoTransceivers({
     screenTransceiver = pickVideoTransceiver(videoTransceivers, cameraTransceiver);
     if (!screenTransceiver) {
       screenTransceiver = pc.addTransceiver("video", { direction: "recvonly" });
-      videoTransceivers.push(screenTransceiver);
     }
   }
 

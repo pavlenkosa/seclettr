@@ -15,6 +15,76 @@ interface Props {
   readonly onClose: () => void;
 }
 
+function categorizeMessages(messages: Message[]) {
+  const media: Message[] = [];
+  const voice: Message[] = [];
+  const video: Message[] = [];
+  const files: Message[] = [];
+  for (const msg of messages) {
+    if (!msg.attachment) continue;
+    if (isMediaAttachment(msg)) media.push(msg);
+    else if (isVoiceAttachment(msg)) voice.push(msg);
+    else if (isVideoNoteAttachment(msg)) video.push(msg);
+    else files.push(msg);
+  }
+  return { mediaMessages: media, voiceMessages: voice, videoMessages: video, fileMessages: files };
+}
+
+function ImageIcon({ size = 32 }: { readonly size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <rect x="3" y="3" width="18" height="18" rx="3" stroke="currentColor" strokeWidth="1.5" />
+      <circle cx="8.5" cy="8.5" r="1.5" fill="currentColor" />
+      <path d="M21 15l-5-5-4 4-2-2-5 5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+function VideoPlayIcon({ size = 28 }: { readonly size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 28 28" fill="none">
+      <circle cx="14" cy="14" r="14" fill="rgb(0 0 0 / 0.42)" />
+      <path d="M11 9.5l9 4.5-9 4.5V9.5Z" fill="white" />
+    </svg>
+  );
+}
+
+function MicIcon({ size = 18 }: { readonly size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <rect x="9" y="2" width="6" height="13" rx="3" stroke="currentColor" strokeWidth="1.5" />
+      <path d="M5 10v2a7 7 0 0 0 14 0v-2" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+      <path d="M12 19v3" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+function VideoCircleIcon({ size = 18 }: { readonly size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="1.5" />
+      <path d="M10 8.5l6 3.5-6 3.5V8.5Z" fill="currentColor" />
+    </svg>
+  );
+}
+
+function FileDocumentIcon({ size = 18 }: { readonly size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6Z" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round" />
+      <path d="M14 2v6h6" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+function ArrowRightIcon({ size = 14 }: { readonly size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 16 16" fill="none" aria-hidden="true">
+      <path d="M3 8h10M9 4l4 4-4 4" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
 function formatSize(bytes: number): string {
   if (bytes < 1024) return `${bytes} B`;
   if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(0)} KB`;
@@ -61,13 +131,9 @@ function MediaGrid({
   if (messages.length === 0) {
     return (
       <div className={styles.empty}>
-        <span className={styles.emptyIcon} aria-hidden="true">
-          <svg width="32" height="32" viewBox="0 0 24 24" fill="none">
-            <rect x="3" y="3" width="18" height="18" rx="3" stroke="currentColor" strokeWidth="1.5" />
-            <circle cx="8.5" cy="8.5" r="1.5" fill="currentColor" />
-            <path d="M21 15l-5-5-4 4-2-2-5 5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-          </svg>
-        </span>
+          <span className={styles.emptyIcon} aria-hidden="true">
+            <ImageIcon size={32} />
+          </span>
         <span>{t("chat.media.empty")}</span>
       </div>
     );
@@ -100,11 +166,7 @@ function MediaGrid({
               />
             ) : (
               <span className={styles.gridPlaceholder} aria-hidden="true">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-                  <rect x="3" y="3" width="18" height="18" rx="3" stroke="currentColor" strokeWidth="1.5" />
-                  <circle cx="8.5" cy="8.5" r="1.5" fill="currentColor" />
-                  <path d="M21 15l-5-5-4 4-2-2-5 5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-                </svg>
+                <ImageIcon size={20} />
               </span>
             )}
             {isGif ? (
@@ -112,10 +174,7 @@ function MediaGrid({
             ) : null}
             {isVideo ? (
               <span className={styles.gridPlayIcon} aria-hidden="true">
-                <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
-                  <circle cx="14" cy="14" r="14" fill="rgb(0 0 0 / 0.42)" />
-                  <path d="M11 9.5l9 4.5-9 4.5V9.5Z" fill="white" />
-                </svg>
+                <VideoPlayIcon />
               </span>
             ) : null}
           </button>
@@ -154,21 +213,11 @@ function MediaListItem({
     <li className={styles.item}>
       <span className={styles.itemIcon} aria-hidden="true">
         {isVoice ? (
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-            <rect x="9" y="2" width="6" height="13" rx="3" stroke="currentColor" strokeWidth="1.5" />
-            <path d="M5 10v2a7 7 0 0 0 14 0v-2" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
-            <path d="M12 19v3" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
-          </svg>
+          <MicIcon size={18} />
         ) : isVideo ? (
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-            <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="1.5" />
-            <path d="M10 8.5l6 3.5-6 3.5V8.5Z" fill="currentColor" />
-          </svg>
+          <VideoCircleIcon size={18} />
         ) : (
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6Z" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round" />
-            <path d="M14 2v6h6" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round" />
-          </svg>
+          <FileDocumentIcon size={18} />
         )}
       </span>
       <div className={styles.itemBody}>
@@ -185,11 +234,58 @@ function MediaListItem({
         aria-label={t("chat.media.goTo")}
         title={t("chat.media.goTo")}
       >
-        <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-          <path d="M3 8h10M9 4l4 4-4 4" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
-        </svg>
+        <ArrowRightIcon />
       </button>
     </li>
+  );
+}
+
+function TabBar({
+  tabs,
+  activeTab,
+  onSetTab,
+}: {
+  readonly tabs: { id: MediaTab; labelKey: string; count: number }[];
+  readonly activeTab: MediaTab;
+  readonly onSetTab: (id: MediaTab) => void;
+}) {
+  const { t } = useI18n();
+  return (
+    <div className={styles.tabs} role="tablist">
+      {tabs.map((tab) => (
+        <button
+          key={tab.id}
+          type="button"
+          role="tab"
+          aria-selected={activeTab === tab.id}
+          className={`${styles.tab} ${activeTab === tab.id ? styles.tabActive : ""}`}
+          onClick={() => onSetTab(tab.id)}
+        >
+          {t(tab.labelKey)}
+          {tab.count > 0 ? (
+            <span className={styles.tabCount}>{tab.count}</span>
+          ) : null}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+function EmptyTabState({ activeTab }: { readonly activeTab: MediaTab }) {
+  const { t } = useI18n();
+  return (
+    <div className={styles.empty}>
+      <span className={styles.emptyIcon} aria-hidden="true">
+        {activeTab === "voice" ? (
+          <MicIcon size={32} />
+        ) : activeTab === "video" ? (
+          <VideoCircleIcon size={32} />
+        ) : (
+          <FileDocumentIcon size={32} />
+        )}
+      </span>
+      <span>{t("chat.media.empty")}</span>
+    </div>
   );
 }
 
@@ -202,20 +298,10 @@ export const SharedMediaPanel = memo(function SharedMediaPanel({
   const [activeTab, setActiveTab] = useState<MediaTab>("media");
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
 
-  const { mediaMessages, voiceMessages, videoMessages, fileMessages } = useMemo(() => {
-    const media: Message[] = [];
-    const voice: Message[] = [];
-    const video: Message[] = [];
-    const files: Message[] = [];
-    for (const msg of messages) {
-      if (!msg.attachment) continue;
-      if (isMediaAttachment(msg)) media.push(msg);
-      else if (isVoiceAttachment(msg)) voice.push(msg);
-      else if (isVideoNoteAttachment(msg)) video.push(msg);
-      else files.push(msg);
-    }
-    return { mediaMessages: media, voiceMessages: voice, videoMessages: video, fileMessages: files };
-  }, [messages]);
+  const { mediaMessages, voiceMessages, videoMessages, fileMessages } = useMemo(
+    () => categorizeMessages(messages),
+    [messages],
+  );
 
   const tabs: { id: MediaTab; labelKey: string; count: number }[] = [
     { id: "media", labelKey: "chat.media.tab.media", count: mediaMessages.length },
@@ -269,23 +355,7 @@ export const SharedMediaPanel = memo(function SharedMediaPanel({
         </IconButton>
       </div>
 
-      <div className={styles.tabs} role="tablist">
-        {tabs.map((tab) => (
-          <button
-            key={tab.id}
-            type="button"
-            role="tab"
-            aria-selected={activeTab === tab.id}
-            className={`${styles.tab} ${activeTab === tab.id ? styles.tabActive : ""}`}
-            onClick={() => setActiveTab(tab.id)}
-          >
-            {t(tab.labelKey)}
-            {tab.count > 0 ? (
-              <span className={styles.tabCount}>{tab.count}</span>
-            ) : null}
-          </button>
-        ))}
-      </div>
+      <TabBar tabs={tabs} activeTab={activeTab} onSetTab={setActiveTab} />
 
       <div className={styles.content} role="tabpanel">
         {activeTab === "media" ? (
@@ -295,28 +365,7 @@ export const SharedMediaPanel = memo(function SharedMediaPanel({
             locale={locale}
           />
         ) : activeListMessages.length === 0 ? (
-          <div className={styles.empty}>
-            <span className={styles.emptyIcon} aria-hidden="true">
-              {activeTab === "voice" ? (
-                <svg width="32" height="32" viewBox="0 0 24 24" fill="none">
-                  <rect x="9" y="2" width="6" height="13" rx="3" stroke="currentColor" strokeWidth="1.5" />
-                  <path d="M5 10v2a7 7 0 0 0 14 0v-2" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
-                  <path d="M12 19v3" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
-                </svg>
-              ) : activeTab === "video" ? (
-                <svg width="32" height="32" viewBox="0 0 24 24" fill="none">
-                  <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="1.5" />
-                  <path d="M10 8.5l6 3.5-6 3.5V8.5Z" fill="currentColor" />
-                </svg>
-              ) : (
-                <svg width="32" height="32" viewBox="0 0 24 24" fill="none">
-                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6Z" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round" />
-                  <path d="M14 2v6h6" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round" />
-                </svg>
-              )}
-            </span>
-            <span>{t("chat.media.empty")}</span>
-          </div>
+          <EmptyTabState activeTab={activeTab} />
         ) : (
           <ul className={styles.list}>
             {activeListMessages.map((msg) => (

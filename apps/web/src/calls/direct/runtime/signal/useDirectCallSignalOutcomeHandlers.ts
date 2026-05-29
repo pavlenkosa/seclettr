@@ -222,13 +222,10 @@ export function useDirectCallSignalOutcomeHandlers({
     if (message.code === "CALL_RENEGOTIATION_UNSUPPORTED") {
       renegotiationUnsupportedRef.current = true;
       supportsPeerRenegotiationV1Ref.current = false;
-      setActive((prev) => {
-        const next = prev
-          ? { ...prev, peerSupportsRenegotiationV1: false }
-          : prev;
-        activeRef.current = next;
-        return next;
-      });
+      const current = activeRef.current;
+      const next = current ? { ...current, peerSupportsRenegotiationV1: false } : current;
+      activeRef.current = next;
+      setActive(next);
       pushNotice({
         kind: "info",
         message: UNSUPPORTED_RENEGOTIATION_MESSAGE,

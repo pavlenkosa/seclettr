@@ -333,6 +333,7 @@ export const ruMessages: TranslationMap = {
   "composer.aria.searchGif": "Поиск GIF",
   "composer.aria.emojiCategories": "Категории emoji",
   "composer.aria.emojiResults": "Результаты emoji",
+  "composer.aria.gifResults": "Результаты GIF",
   "composer.aria.selectEmojiSubgroup": "Выбрать раздел категории emoji",
   "composer.gifSearch.placeholder": "Поиск GIF…",
   "composer.gifSearch.empty": "GIF не найдены",

@@ -116,6 +116,22 @@ export function createMessagesInboundDecryptRuntime(
     myDeviceId,
     handleInboundFailure,
   }: DecryptIncomingPlaintextParams): Promise<Uint8Array | null> {
+    // Guard: if storage key is unavailable we cannot persist the ratchet session
+    // or a sender-key distribution. Advancing the ratchet here would silently
+    // drop the distribution and leave group messages permanently undecryptable
+    // on re-delivery. Return a retryable failure to keep the ratchet intact.
+    if (!shared.getStorageKey()) {
+      await handleInboundFailure(
+        {
+          disposition: "retry",
+          failureClass: "transient_local_crypto_state",
+          errorKind: "session_missing",
+        },
+        new Error("Storage key unavailable; deferring inbound decrypt to preserve ratchet state")
+      );
+      return null;
+    }
+
     const decodedEnvelope = await decodeIncomingEnvelope(
       message,
       handleInboundFailure

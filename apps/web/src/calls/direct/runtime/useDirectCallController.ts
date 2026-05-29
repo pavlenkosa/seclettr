@@ -756,6 +756,7 @@ export function useDirectCallController() {
     remoteScreenCompanionRef,
     localStream: localStreamRef.current,
     cameraSenderRef,
+    peerConnectionRef,
     canSwitchCamera,
     isSwitchingCamera,
     selectedScreenResolution,

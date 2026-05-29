@@ -111,6 +111,7 @@ interface DirectCallActiveOverlayProps {
   readonly onHangup: () => void;
   readonly localStream: MediaStream | null;
   readonly cameraSenderRef: RefObject<RTCRtpSender | null>;
+  readonly peerConnectionRef: RefObject<RTCPeerConnection | null>;
   readonly micSectionLabel?: string;
   readonly cameraSectionLabel?: string;
   readonly videoQualityLabel?: string;
@@ -207,6 +208,7 @@ export function DirectCallActiveOverlay({
   onHangup,
   localStream,
   cameraSenderRef,
+  peerConnectionRef,
   micSectionLabel,
   cameraSectionLabel,
   videoQualityLabel,
@@ -248,7 +250,7 @@ export function DirectCallActiveOverlay({
   const handleSelectMic = useCallback(async (deviceId: string) => {
     if (!localStream) return;
     await selectMic(deviceId, localStream);
-    const pc = (cameraSenderRef.current as RTCRtpSender & { _pc?: RTCPeerConnection })?._pc;
+    const pc = peerConnectionRef.current;
     if (!pc) return;
     const newTrack = localStream.getAudioTracks()[0];
     if (!newTrack) return;
@@ -256,7 +258,7 @@ export function DirectCallActiveOverlay({
     if (sender) {
       await sender.replaceTrack(newTrack).catch(() => {});
     }
-  }, [cameraSenderRef, localStream, selectMic]);
+  }, [peerConnectionRef, localStream, selectMic]);
 
   const handleSelectCamera = useCallback(async (deviceId: string) => {
     if (!localStream || !cameraSenderRef.current) return;

@@ -162,6 +162,7 @@ interface DirectCallSurfaceRendererProps {
   readonly onSelectScreenResolution: (res: VideoResolution) => void;
   readonly localStream?: MediaStream | null;
   readonly cameraSenderRef?: RefObject<RTCRtpSender | null>;
+  readonly peerConnectionRef?: RefObject<RTCPeerConnection | null>;
 }
 
 export function DirectCallSurfaceRenderer({
@@ -269,6 +270,7 @@ export function DirectCallSurfaceRenderer({
   onSelectScreenResolution,
   localStream,
   cameraSenderRef,
+  peerConnectionRef,
 }: DirectCallSurfaceRendererProps) {
   if (surface === "hidden" && !notice) {
     return null;
@@ -447,6 +449,7 @@ export function DirectCallSurfaceRenderer({
             onHangup={onHangup}
             localStream={localStream ?? null}
             cameraSenderRef={cameraSenderRef ?? { current: null }}
+            peerConnectionRef={peerConnectionRef ?? { current: null }}
           />
         </Suspense>
       );

@@ -126,7 +126,7 @@ export function useDirectCallStagePresentation({
     setPreferredSource("screen");
   }, [hasRenderableRemoteScreen]);
 
-  const canOpenScreenViewer = stageLayout.stageSource === "screen" && hasRenderableRemoteScreen;
+  const canOpenScreenViewer = stageLayout.stageSource === "screen" && hasRenderableRemoteScreen && !isRemoteScreenSuppressed;
   const canStopWatchingScreen = stageLayout.stageSource === "screen" && hasRenderableRemoteScreen;
   const canRestoreScreenShare = isRemoteScreenSuppressed && hasRenderableRemoteScreen;
 

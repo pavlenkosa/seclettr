@@ -85,6 +85,7 @@ interface UseDirectCallPresentationBindingsOptions {
   onSelectScreenResolution: (res: VideoResolution) => void;
   localStream: MediaStream | null;
   cameraSenderRef: RefObject<RTCRtpSender | null>;
+  peerConnectionRef: RefObject<RTCPeerConnection | null>;
 }
 
 export function useDirectCallPresentationBindings({
@@ -157,6 +158,7 @@ export function useDirectCallPresentationBindings({
   onSelectScreenResolution,
   localStream,
   cameraSenderRef,
+  peerConnectionRef,
 }: UseDirectCallPresentationBindingsOptions) {
   const stageScene = useDirectCallStagePresentation({
     hasRenderableRemoteCamera,
@@ -335,6 +337,7 @@ export function useDirectCallPresentationBindings({
     onSelectScreenResolution,
     localStream,
     cameraSenderRef,
+    peerConnectionRef,
   };
 
   return {

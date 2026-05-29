@@ -1,4 +1,4 @@
-import { memo, useMemo, useState } from "react";
+import { memo, useId, useMemo, useState } from "react";
 import type { Message } from "@/stores/messages";
 import { useI18n } from "@/i18n";
 import { IconButton } from "@/components/ui";
@@ -244,20 +244,28 @@ function TabBar({
   tabs,
   activeTab,
   onSetTab,
+  tabIdPrefix,
+  tabPanelId,
+  label,
 }: {
   readonly tabs: { id: MediaTab; labelKey: string; count: number }[];
   readonly activeTab: MediaTab;
   readonly onSetTab: (id: MediaTab) => void;
+  readonly tabIdPrefix: string;
+  readonly tabPanelId: string;
+  readonly label: string;
 }) {
   const { t } = useI18n();
   return (
-    <div className={styles.tabs} role="tablist">
+    <div className={styles.tabs} role="tablist" aria-label={label}>
       {tabs.map((tab) => (
         <button
           key={tab.id}
+          id={`${tabIdPrefix}-tab-${tab.id}`}
           type="button"
           role="tab"
           aria-selected={activeTab === tab.id}
+          aria-controls={tabPanelId}
           className={`${styles.tab} ${activeTab === tab.id ? styles.tabActive : ""}`}
           onClick={() => onSetTab(tab.id)}
         >
@@ -294,6 +302,8 @@ export const SharedMediaPanel = memo(function SharedMediaPanel({
   onScrollToMessage,
   onClose,
 }: Props) {
+  const id = useId();
+  const tabPanelId = `${id}-panel`;
   const { t, locale } = useI18n();
   const [activeTab, setActiveTab] = useState<MediaTab>("media");
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
@@ -355,9 +365,21 @@ export const SharedMediaPanel = memo(function SharedMediaPanel({
         </IconButton>
       </div>
 
-      <TabBar tabs={tabs} activeTab={activeTab} onSetTab={setActiveTab} />
+      <TabBar
+        tabs={tabs}
+        activeTab={activeTab}
+        onSetTab={setActiveTab}
+        tabIdPrefix={id}
+        tabPanelId={tabPanelId}
+        label={t("chat.media.title")}
+      />
 
-      <div className={styles.content} role="tabpanel">
+      <div
+        className={styles.content}
+        role="tabpanel"
+        id={tabPanelId}
+        aria-labelledby={`${id}-tab-${activeTab}`}
+      >
         {activeTab === "media" ? (
           <MediaGrid
             messages={mediaMessages}

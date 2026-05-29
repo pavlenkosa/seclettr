@@ -37,6 +37,12 @@ type OutboundQueueStore = Record<string, OutboundQueueItem>;
 
 let persistChain: Promise<void> = Promise.resolve();
 
+/** Reset the serial write chain on logout so in-flight writes from a previous
+ *  session cannot complete using a new session's storage key. */
+export function resetOutboundPersistChain(): void {
+  persistChain = Promise.resolve();
+}
+
 function enqueueWrite(task: () => Promise<void>): Promise<void> {
   const run = persistChain.then(task, task);
   persistChain = run.catch(() => undefined);

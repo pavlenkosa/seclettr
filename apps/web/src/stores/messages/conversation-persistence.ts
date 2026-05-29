@@ -14,6 +14,12 @@ const PENDING_READ_RECEIPT_MESSAGE_IDS_STORAGE_PREFIX =
   "pending-read-receipt-message-ids:v1:";
 let conversationPersistQueue: Promise<void> = Promise.resolve();
 
+/** Reset the serial persist queue on logout so in-flight writes from a previous
+ *  session cannot complete using a new session's storage key. */
+export function resetConversationPersistQueue(): void {
+  conversationPersistQueue = Promise.resolve();
+}
+
 function enqueueConversationPersist(task: () => Promise<void>): Promise<void> {
   const run = conversationPersistQueue.then(task, task);
   conversationPersistQueue = run.catch(() => undefined);

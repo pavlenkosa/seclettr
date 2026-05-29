@@ -7,6 +7,8 @@ import { createMessagesInboundRuntime } from "./createMessagesInboundRuntime";
 import { createMessagesLiveSyncRuntime } from "./createMessagesLiveSyncRuntime";
 import { createMessagesOutboundRuntime } from "./createMessagesOutboundRuntime";
 import { createMessagesRuntimeShared } from "./messages-runtime-shared";
+import { resetOutboundPersistChain } from "./outbound-queue";
+import { resetConversationPersistQueue } from "./conversation-persistence";
 import type {
   Conversation,
   MessagesState,
@@ -123,6 +125,10 @@ export const useMessagesStore = create<MessagesState>((set, get) => {
     startListening: liveSyncRuntime.startListening,
 
     reset: () => {
+      // Reset module-level serial write chains so in-flight writes from the
+      // previous session cannot complete and write to a new session's storage.
+      resetOutboundPersistChain();
+      resetConversationPersistQueue();
       shared.resetRuntimeState();
       set({
         conversations: {},

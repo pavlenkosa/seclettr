@@ -154,10 +154,7 @@ async function requireSfuAuth(
   try {
     await request.jwtVerify();
     request.auth = request.user as SfuAuthPayload;
-    if (
-      request.auth.tokenUse !== undefined &&
-      request.auth.tokenUse !== "access"
-    ) {
+    if (request.auth.tokenUse !== "access") {
       await reply.code(401).send({ error: "Unauthorized" });
     }
   } catch {

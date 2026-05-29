@@ -105,7 +105,17 @@ const MessageComposerView = forwardRef<MessageComposerHandle, Props>(function Me
 
   const handleSendGif = useCallback(async (gifUrl: string, filename: string) => {
     if (!onSendFile) return;
-    const response = await fetch(gifUrl);
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 15_000);
+    let response: Response;
+    try {
+      response = await fetch(gifUrl, { signal: controller.signal });
+    } finally {
+      clearTimeout(timeout);
+    }
+    if (!response.ok) {
+      throw new Error(`GIF fetch failed: ${response.status}`);
+    }
     const blob = await response.blob();
     const file = new File([blob], filename, { type: blob.type || "image/gif" });
     await onSendFile(file);

@@ -290,7 +290,12 @@ export function useDirectCallRenegotiationHandlers({
       return;
     }
 
-    lastAppliedRemoteRenegotiationRevisionRef.current = message.revision;
+    // Clear outbound state: the inbound offer supersedes any pending local offer.
+    // Mirroring the answer handler: these are cleared in a try/finally so that
+    // a failed SDP operation leaves the machine in a recoverable (cleared) state
+    // rather than with lastAppliedRemoteRenegotiationRevisionRef pointing to a
+    // revision we never actually applied.
+    const prevLastApplied = lastAppliedRemoteRenegotiationRevisionRef.current;
     pendingLocalRenegotiationRevisionRef.current = null;
     pendingRenegotiationReasonRef.current = null;
     pendingOutboundRenegotiationOfferRef.current = null;
@@ -303,17 +308,35 @@ export function useDirectCallRenegotiationHandlers({
       senderUserId: message.senderUserId,
       senderDeviceId: message.senderDeviceId,
     });
-    await pc.setRemoteDescription({ type: "offer", sdp: message.sdp });
-    refreshRemoteVideoTracksFromPeer(message.callId, "renegotiation-offer");
-    debugCallMedia("remote-description-set", {
-      callId: message.callId,
-      kind: "renegotiation-offer",
-      revision: message.revision,
-    });
-    syncVisualTransceiverDirections(message.callId);
-    syncVisualTransceiverBindings();
-    const answer = await pc.createAnswer();
-    await pc.setLocalDescription(answer);
+    // answer is guaranteed to be set if the try block completes without throwing
+    // or returning early (the staleness guard inside returns the function).
+    let answer: RTCSessionDescriptionInit | undefined;
+    try {
+      lastAppliedRemoteRenegotiationRevisionRef.current = message.revision;
+      await pc.setRemoteDescription({ type: "offer", sdp: message.sdp });
+      // Guard: if the call was torn down during setRemoteDescription, bail before
+      // createAnswer to avoid an InvalidStateError on a closed RTCPeerConnection.
+      if (!isCurrentActiveCallContext(message.callId, pc)) {
+        return;
+      }
+      refreshRemoteVideoTracksFromPeer(message.callId, "renegotiation-offer");
+      debugCallMedia("remote-description-set", {
+        callId: message.callId,
+        kind: "renegotiation-offer",
+        revision: message.revision,
+      });
+      syncVisualTransceiverDirections(message.callId);
+      syncVisualTransceiverBindings();
+      answer = await pc.createAnswer();
+      await pc.setLocalDescription(answer);
+    } catch (err) {
+      // Restore the previous revision marker so the negotiation machine doesn't
+      // consider this revision applied when the SDP operations failed.
+      lastAppliedRemoteRenegotiationRevisionRef.current = prevLastApplied;
+      throw err;
+    }
+    // answer is set by the try block above; if not set we would have returned or thrown.
+    if (!answer) return;
     syncOutgoingVisualMediaStateTrackBindings(message.callId);
     refreshRemoteVideoTracksFromPeer(message.callId, "renegotiation-answer-local-description");
     recordLastRenegotiationAttempt({

@@ -5,7 +5,7 @@
  * sheet with Camera, Gallery, and File options.
  * On web the hidden <input type="file"> is clicked directly — no sheet.
  */
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { isNativePlatform } from "@/lib/native-platform";
 import { capturePhoto, pickPhotos } from "@/lib/native-camera";
 import { pickFiles } from "@/lib/native-file-picker";
@@ -43,6 +43,10 @@ export function useAttachmentPicker({
   const [isSheetOpen, setIsSheetOpen] = useState(false);
   const [isSheetExiting, setIsSheetExiting] = useState(false);
   const exitTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => () => {
+    if (exitTimerRef.current) clearTimeout(exitTimerRef.current);
+  }, []);
 
   const closeSheet = useCallback(() => {
     setIsSheetExiting(true);

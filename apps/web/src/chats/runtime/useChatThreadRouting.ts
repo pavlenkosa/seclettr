@@ -5,6 +5,7 @@ import {
   type Dispatch,
   type SetStateAction,
 } from "react";
+import { logger } from "@/lib/logger";
 import { useLocation, useNavigate } from "react-router-dom";
 import {
   buildSearchWithConversation,
@@ -216,7 +217,7 @@ export function useChatThreadRouting(options: UseChatThreadRoutingOptions) {
     if (activePlainConversationId !== null) setActivePlainConversation(null);
     if (activePlainGroupId !== routePlainGroupId) setActivePlainGroup(routePlainGroupId);
     setMobileShowConversation(true);
-    loadPlainGroupMessages(routePlainGroupId).catch(() => {});
+    loadPlainGroupMessages(routePlainGroupId).catch((err) => { logger.warn("[CHAT] loadPlainGroupMessages failed", err); });
   }, [
     routeGroupId,
     routeConversationId,
@@ -406,7 +407,7 @@ export function useChatThreadRouting(options: UseChatThreadRoutingOptions) {
         if (activePlainConversationId !== null) setActivePlainConversation(null);
         if (activePlainGroupId !== null) setActivePlainGroup(null);
         if (activeGroupId !== selection.id) setActiveGroup(selection.id);
-        loadGroupMessages(selection.id).catch(() => {});
+        loadGroupMessages(selection.id).catch((err) => { logger.warn("[CHAT] loadGroupMessages failed", err); });
         updateGroupRoute(selection.id);
         return;
       }
@@ -426,7 +427,7 @@ export function useChatThreadRouting(options: UseChatThreadRoutingOptions) {
         if (activePlainConversationId !== null) setActivePlainConversation(null);
         if (activePlainGroupId !== selection.id) setActivePlainGroup(selection.id);
         if (savedThreadActive) setSavedThreadActive(false);
-        loadPlainGroupMessages(selection.id).catch(() => {});
+        loadPlainGroupMessages(selection.id).catch((err) => { logger.warn("[CHAT] loadPlainGroupMessages failed", err); });
         updatePlainGroupRoute(selection.id);
         return;
       }

@@ -175,6 +175,10 @@ export async function finalizeAcceptedIncomingCallAnswer({
 
   syncVisualTransceiverBindings();
   const answer = await pc.createAnswer();
+  if (!answer.sdp) {
+    debugCallMedia("initial-answer-aborted-no-sdp", { callId });
+    throw new Error(t("call.error.unableStart"));
+  }
   await pc.setLocalDescription(answer);
   syncOutgoingVisualMediaStateTrackBindings(callId);
   refreshRemoteVideoTracksFromPeer(callId, "initial-answer-local-description");
@@ -183,7 +187,7 @@ export async function finalizeAcceptedIncomingCallAnswer({
   const answerAuth = await createSignedCallAnswerAuth({
     callId,
     recipientUserId: callerUserId,
-    sdp: answer.sdp!,
+    sdp: answer.sdp,
     mediaEncryption: mediaEncryptionAnswer,
   });
   ensureCurrentLifecycle(() => {
@@ -192,7 +196,7 @@ export async function finalizeAcceptedIncomingCallAnswer({
   const answerDispatch = wsClient.send({
     type: "call.answer",
     callId,
-    sdp: answer.sdp!,
+    sdp: answer.sdp,
     mediaEncryption: mediaEncryptionAnswer,
     features: DIRECT_CALL_FEATURES,
     auth: answerAuth ?? undefined,

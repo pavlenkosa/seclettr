@@ -27,4 +27,8 @@ jobs:
 
       - run: pnpm typecheck
 
+      - run: pnpm --filter @seclettr/web lint
+
+      - run: pnpm audit:prod:gate
+
       - run: pnpm test

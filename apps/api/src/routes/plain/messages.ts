@@ -311,7 +311,13 @@ export async function plainMessageRoutes(fastify: FastifyInstance): Promise<void
       const { recipientUserId } = request.params as { recipientUserId: string };
       const { before, limit } = request.query as { before?: string; limit?: string };
 
-      const pageLimit = Math.min(Number(limit ?? PAGE_LIMIT), PAGE_LIMIT);
+      const parsedLimit = Number(limit);
+      const pageLimit = Number.isFinite(parsedLimit) && parsedLimit > 0
+        ? Math.min(Math.floor(parsedLimit), PAGE_LIMIT)
+        : PAGE_LIMIT;
+      if (before !== undefined && (typeof before !== "string" || Number.isNaN(Date.parse(before)))) {
+        return reply.code(400).send({ error: "Invalid cursor" });
+      }
       const cursorClause = before ? `AND pm.created_at < $3` : "";
       const params: unknown[] = [userId, recipientUserId];
       if (before) params.push(before);

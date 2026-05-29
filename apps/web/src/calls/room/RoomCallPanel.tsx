@@ -17,6 +17,7 @@ import { CallControlsDock } from "@/calls/shared/presentation/CallControlsDock";
 import { CallPanelShell } from "@/calls/shared/presentation/CallPanelShell";
 import { getMemberInitials, resolveGroupCallDockInlineStyle } from "@/calls/group/presentation/display";
 
+import { logger } from "@/lib/logger";
 import { RoomCallInviteCard } from "./components/RoomCallInviteCard";
 import { RoomCallMediaGrid, type RoomCallTile } from "./components/RoomCallMediaGrid";
 import { RoomCallMinimizedDock } from "./components/RoomCallMinimizedDock";
@@ -120,7 +121,7 @@ export function RoomCallPanel({ session, onLeave }: Props) {
     sfuClientRef.current = null;
     stopLocalStream();
     resetMinimizedDock();
-    void api.closeRoom(session.callId).catch(() => {});
+    void api.closeRoom(session.callId).catch((err) => { logger.warn("[ROOM] closeRoom failed", err); });
     onLeave();
   }, [session.isHost, session.callId, onLeave, stopLocalStream, resetMinimizedDock]);
 
@@ -130,7 +131,7 @@ export function RoomCallPanel({ session, onLeave }: Props) {
     try {
       await api.kickRoomGuest(session.callId, guestId);
       setParticipants((prev) => prev.filter((p) => p.id !== guestId));
-    } catch { /* best-effort */ }
+    } catch (err) { logger.warn("[ROOM] kickRoomGuest failed", err); }
     finally { setKickingId(null); }
   }, [session.isHost, session.callId, kickingId]);
 
@@ -163,7 +164,7 @@ export function RoomCallPanel({ session, onLeave }: Props) {
         stream.removeTrack(currentTrack);
         currentTrack.stop();
         setIsVideoEnabled(false);
-      } catch { /* ignore */ }
+      } catch (err) { logger.warn("[ROOM] video track disable failed", err); }
       finally { setIsVideoSwitching(false); }
       return;
     }
@@ -179,7 +180,7 @@ export function RoomCallPanel({ session, onLeave }: Props) {
       await client.setVideoTrack(nextTrack, "camera");
       stream.addTrack(nextTrack);
       setIsVideoEnabled(true);
-    } catch { nextTrack?.stop(); }
+    } catch (err) { logger.warn("[ROOM] video enable failed", err); nextTrack?.stop(); }
     finally { setIsVideoSwitching(false); }
   }, [isVideoSwitching, isScreenSwitching, status]);
 
@@ -195,7 +196,7 @@ export function RoomCallPanel({ session, onLeave }: Props) {
         await client.setVideoTrack(null, "screen");
         if (screenTrack) { stream.removeTrack(screenTrack); screenTrack.stop(); }
         setIsScreenSharing(false);
-      } catch { /* ignore */ }
+      } catch (err) { logger.warn("[ROOM] screen share disable failed", err); }
       finally { setIsScreenSwitching(false); }
       return;
     }
@@ -209,7 +210,7 @@ export function RoomCallPanel({ session, onLeave }: Props) {
       stream.addTrack(nextTrack);
       setIsScreenSharing(true);
       nextTrack.addEventListener("ended", () => void handleToggleScreenShare(), { once: true });
-    } catch { nextTrack?.stop(); }
+    } catch (err) { logger.warn("[ROOM] screen share enable failed", err); nextTrack?.stop(); }
     finally { setIsScreenSwitching(false); }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isScreenSwitching, isVideoSwitching, isScreenSharing, status]);
@@ -229,7 +230,7 @@ export function RoomCallPanel({ session, onLeave }: Props) {
       if (old) { stream.removeTrack(old); old.stop(); }
       stream.addTrack(nextTrack);
       if (client) await client.setAudioTrack(nextTrack);
-    } catch { nextTrack?.stop(); }
+    } catch (err) { logger.warn("[ROOM] mic switch failed", err); nextTrack?.stop(); }
   }, [status]);
 
   const handleSwitchCamera = useCallback(async (deviceId: string) => {
@@ -245,7 +246,7 @@ export function RoomCallPanel({ session, onLeave }: Props) {
       if (old) { stream.removeTrack(old); old.stop(); }
       stream.addTrack(nextTrack);
       await client.setVideoTrack(nextTrack, "camera");
-    } catch { nextTrack?.stop(); }
+    } catch (err) { logger.warn("[ROOM] camera switch failed", err); nextTrack?.stop(); }
   }, [status]);
 
   useEffect(() => {
@@ -303,7 +304,7 @@ export function RoomCallPanel({ session, onLeave }: Props) {
       try {
         const res = await api.getRoomParticipants(session.callId, session.guestToken ?? undefined);
         if (active) setParticipants(res.participants);
-      } catch { /* best-effort */ }
+      } catch (err) { logger.warn("[ROOM] participant poll failed", err); }
     };
     void fetch();
     const id = setInterval(() => void fetch(), 10_000);

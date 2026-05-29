@@ -914,7 +914,13 @@ export async function plainGroupRoutes(fastify: FastifyInstance): Promise<void> 
       if (!membership) return reply.code(403).send({ error: "Not a member" });
 
       const { before, limit } = request.query as { before?: string; limit?: string };
-      const pageLimit = Math.min(Number(limit ?? PAGE_LIMIT), PAGE_LIMIT);
+      const parsedLimit = Number(limit);
+      const pageLimit = Number.isFinite(parsedLimit) && parsedLimit > 0
+        ? Math.min(Math.floor(parsedLimit), PAGE_LIMIT)
+        : PAGE_LIMIT;
+      if (before !== undefined && (typeof before !== "string" || Number.isNaN(Date.parse(before)))) {
+        return reply.code(400).send({ error: "Invalid cursor" });
+      }
       const cursorClause = before ? `AND pm.created_at < $2` : "";
       const params: unknown[] = [groupId];
       if (before) params.push(before);

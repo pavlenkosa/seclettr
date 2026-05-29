@@ -5,7 +5,7 @@ import { AvatarCropDialog } from "@/components/common/settings/AvatarCropDialog"
 
 import styles from "./GroupInfoModal.module.css";
 
-const GROUP_AVATAR_MAX_BYTES = 4 * 1024 * 1024; // 4 MB
+const GROUP_AVATAR_MAX_BYTES = 4 * 1024 * 1024;
 
 interface GroupInfoHeroSectionProps {
   readonly groupId: string;
@@ -31,6 +31,262 @@ interface GroupInfoHeroSectionProps {
   readonly t: (key: string, params?: Record<string, string | number>) => string;
 }
 
+interface AvatarSectionProps {
+  groupName: string;
+  groupId: string;
+  avatarKey: string | null;
+  canEditAvatar: boolean;
+  canDeleteAvatar: boolean;
+  avatarBusy: boolean;
+  avatarError: string | null;
+  fileInputRef: React.RefObject<HTMLInputElement>;
+  onAvatarUpload?: (file: File) => Promise<void>;
+  onAvatarDelete?: () => Promise<void>;
+  onFileChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  cropFile: File | null;
+  handleCropConfirm: (blob: Blob) => Promise<void>;
+  handleCropCancel: () => void;
+  handleAvatarDelete: () => Promise<void>;
+  t: (key: string, params?: Record<string, string | number>) => string;
+}
+
+function AvatarSection({
+  groupName,
+  groupId,
+  avatarKey,
+  canEditAvatar,
+  canDeleteAvatar,
+  avatarBusy,
+  avatarError,
+  fileInputRef,
+  onAvatarUpload,
+  onAvatarDelete,
+  onFileChange,
+  cropFile,
+  handleCropConfirm,
+  handleCropCancel,
+  handleAvatarDelete,
+  t,
+}: AvatarSectionProps) {
+  const avatarImageUrl = useGroupAvatarUrl(groupId, avatarKey);
+
+  return (
+    <div className={styles.heroAvatarWrap}>
+      {canEditAvatar && onAvatarUpload ? (
+        <button
+          type="button"
+          className={styles.heroAvatarBtn}
+          onClick={() => fileInputRef.current?.click()}
+          disabled={avatarBusy}
+          aria-label={t("group.info.changeAvatarAria")}
+        >
+          <Avatar label={groupName} size={88} fontSize="1.4rem" ariaHidden imageUrl={avatarImageUrl ?? undefined} />
+          <div className={styles.heroAvatarOverlay} aria-hidden="true">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+              <path d="M12 20h9M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+          </div>
+        </button>
+      ) : (
+        <Avatar label={groupName} size={88} fontSize="1.4rem" ariaHidden imageUrl={avatarImageUrl ?? undefined} />
+      )}
+      {canDeleteAvatar && avatarKey && onAvatarDelete ? (
+        <button
+          type="button"
+          className={styles.heroAvatarDeleteBtn}
+          onClick={() => void handleAvatarDelete()}
+          disabled={avatarBusy}
+          aria-label={t("group.info.deleteAvatarAria")}
+        >
+          ×
+        </button>
+      ) : null}
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/jpeg,image/png,image/webp"
+        style={{ display: "none" }}
+        onChange={onFileChange}
+      />
+      {avatarError ? <p className={styles.heroAvatarError}>{avatarError}</p> : null}
+      {cropFile ? (
+        <AvatarCropDialog
+          file={cropFile}
+          onConfirm={(blob) => void handleCropConfirm(blob)}
+          onCancel={handleCropCancel}
+        />
+      ) : null}
+    </div>
+  );
+}
+
+interface NameSectionProps {
+  groupName: string;
+  renaming: boolean;
+  canRename: boolean;
+  renameBusy: boolean;
+  nameDraft: string;
+  renameInputRef: React.RefObject<HTMLInputElement>;
+  onRenameDraftChange: (value: string) => void;
+  onRenameStart: () => void;
+  onRenameCancel: () => void;
+  onRenameSubmit: () => void;
+  t: (key: string, params?: Record<string, string | number>) => string;
+}
+
+function NameSection({
+  groupName,
+  renaming,
+  canRename,
+  renameBusy,
+  nameDraft,
+  renameInputRef,
+  onRenameDraftChange,
+  onRenameStart,
+  onRenameCancel,
+  onRenameSubmit,
+  t,
+}: NameSectionProps) {
+  if (renaming) {
+    return (
+      <form
+        className={styles.renameForm}
+        onSubmit={(event) => {
+          event.preventDefault();
+          onRenameSubmit();
+        }}
+      >
+        <InputField
+          ref={renameInputRef}
+          value={nameDraft}
+          onChange={(event) => onRenameDraftChange(event.currentTarget.value)}
+          maxLength={128}
+          wrapperClassName={styles.renameInput}
+          aria-label={t("group.info.renameAria")}
+          disabled={renameBusy}
+        />
+        <div className={styles.renameActions}>
+          <PillButton type="button" tone="neutral" appearance="soft" size="sm" onClick={onRenameCancel} disabled={renameBusy}>
+            {t("group.info.cancel")}
+          </PillButton>
+          <PillButton type="submit" tone="accent" appearance="strong" size="sm" disabled={renameBusy || nameDraft.trim().length === 0}>
+            {renameBusy ? t("group.info.saving") : t("group.info.save")}
+          </PillButton>
+        </div>
+      </form>
+    );
+  }
+
+  return (
+    <h2 className={styles.heroName}>
+      <span>{groupName}</span>
+      {canRename ? (
+        <button
+          type="button"
+          className={styles.renamePencil}
+          onClick={onRenameStart}
+          aria-label={t("group.info.renameAria")}
+          title={t("group.info.renameAria")}
+        >
+          <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+            <path d="M11.5 2.5l2 2L5 13l-2.5.5.5-2.5L11.5 2.5z" stroke="currentColor" strokeWidth="1.4" strokeLinejoin="round" />
+          </svg>
+        </button>
+      ) : null}
+    </h2>
+  );
+}
+
+function MetaRow({
+  memberCount,
+  groupKind,
+  t,
+}: {
+  memberCount: number;
+  groupKind: "e2ee" | "plain";
+  t: (key: string, params?: Record<string, string | number>) => string;
+}) {
+  return (
+    <p className={styles.heroMeta}>
+      {t("group.info.memberCount", { count: memberCount })}
+      <span className={styles.heroDot} aria-hidden="true">·</span>
+      <span className={styles.heroKind}>
+        {t(groupKind === "plain" ? "group.info.kind.plain" : "group.info.kind.e2ee")}
+      </span>
+    </p>
+  );
+}
+
+interface DescriptionSectionProps {
+  description: string | null;
+  canEditDescription: boolean;
+  descDraft: string;
+  setDescDraft: (v: string) => void;
+  editingDesc: boolean;
+  descBusy: boolean;
+  setEditingDesc: (v: boolean) => void;
+  handleDescSave: () => Promise<void>;
+  handleDescCancel: () => void;
+  t: (key: string, params?: Record<string, string | number>) => string;
+}
+
+function DescriptionSection({
+  description,
+  canEditDescription,
+  descDraft,
+  setDescDraft,
+  editingDesc,
+  setEditingDesc,
+  descBusy,
+  handleDescSave,
+  handleDescCancel,
+  t,
+}: DescriptionSectionProps) {
+  if (!canEditDescription && !description) return null;
+
+  return (
+    <div className={styles.heroDescription}>
+      {editingDesc ? (
+        <form
+          className={styles.descForm}
+          onSubmit={(e) => { e.preventDefault(); void handleDescSave(); }}
+        >
+          <InputField
+            value={descDraft}
+            onChange={(e) => setDescDraft(e.currentTarget.value)}
+            maxLength={500}
+            placeholder={t("group.info.descriptionPlaceholder")}
+            aria-label={t("group.info.descriptionAria")}
+            disabled={descBusy}
+          />
+          <div className={styles.renameActions}>
+            <PillButton type="button" tone="neutral" appearance="soft" size="sm" onClick={handleDescCancel} disabled={descBusy}>
+              {t("group.info.cancel")}
+            </PillButton>
+            <PillButton type="submit" tone="accent" appearance="strong" size="sm" disabled={descBusy}>
+              {descBusy ? t("group.info.saving") : t("group.info.save")}
+            </PillButton>
+          </div>
+        </form>
+      ) : (
+        <button
+          type="button"
+          className={`${styles.descText} ${!description ? styles.descTextEmpty : ""}`}
+          onClick={canEditDescription ? () => { setDescDraft(description ?? ""); setEditingDesc(true); } : undefined}
+          disabled={!canEditDescription}
+        >
+          {description ?? (canEditDescription ? t("group.info.descriptionAdd") : null)}
+          {canEditDescription ? (
+            <svg className={styles.descPencil} width="12" height="12" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+              <path d="M11.5 2.5l2 2L5 13l-2.5.5.5-2.5L11.5 2.5z" stroke="currentColor" strokeWidth="1.4" strokeLinejoin="round" />
+            </svg>
+          ) : null}
+        </button>
+      )}
+    </div>
+  );
+}
+
 export function GroupInfoHeroSection({
   groupId,
   groupName,
@@ -54,13 +310,10 @@ export function GroupInfoHeroSection({
   onDescriptionSave,
   t,
 }: GroupInfoHeroSectionProps) {
-  const avatarImageUrl = useGroupAvatarUrl(groupId, avatarKey);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [cropFile, setCropFile] = useState<File | null>(null);
   const [avatarError, setAvatarError] = useState<string | null>(null);
   const [avatarBusy, setAvatarBusy] = useState(false);
-
-  // Description editing state
   const [editingDesc, setEditingDesc] = useState(false);
   const [descDraft, setDescDraft] = useState(description ?? "");
   const [descBusy, setDescBusy] = useState(false);
@@ -126,177 +379,53 @@ export function GroupInfoHeroSection({
 
   return (
     <section className={styles.hero}>
-      {/* Avatar */}
-      <div className={styles.heroAvatarWrap}>
-        {canEditAvatar && onAvatarUpload ? (
-          <button
-            type="button"
-            className={styles.heroAvatarBtn}
-            onClick={() => fileInputRef.current?.click()}
-            disabled={avatarBusy}
-            aria-label={t("group.info.changeAvatarAria")}
-          >
-            <Avatar label={groupName} size={88} fontSize="1.4rem" ariaHidden imageUrl={avatarImageUrl ?? undefined} />
-            <div className={styles.heroAvatarOverlay} aria-hidden="true">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-                <path d="M12 20h9M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-              </svg>
-            </div>
-          </button>
-        ) : (
-          <Avatar label={groupName} size={88} fontSize="1.4rem" ariaHidden imageUrl={avatarImageUrl ?? undefined} />
-        )}
-        {canEditAvatar && avatarKey && onAvatarDelete ? (
-          <button
-            type="button"
-            className={styles.heroAvatarDeleteBtn}
-            onClick={() => void handleAvatarDelete()}
-            disabled={avatarBusy}
-            aria-label={t("group.info.deleteAvatarAria")}
-          >
-            ×
-          </button>
-        ) : null}
-        <input
-          ref={fileInputRef}
-          type="file"
-          accept="image/jpeg,image/png,image/webp"
-          style={{ display: "none" }}
-          onChange={handleAvatarFileChange}
-        />
-        {avatarError ? <p className={styles.heroAvatarError}>{avatarError}</p> : null}
-      </div>
+      <AvatarSection
+        groupName={groupName}
+        groupId={groupId}
+        avatarKey={avatarKey}
+        canEditAvatar={canEditAvatar}
+        canDeleteAvatar={canEditAvatar}
+        avatarBusy={avatarBusy}
+        avatarError={avatarError}
+        fileInputRef={fileInputRef}
+        onAvatarUpload={onAvatarUpload}
+        onAvatarDelete={onAvatarDelete}
+        onFileChange={handleAvatarFileChange}
+        cropFile={cropFile}
+        handleCropConfirm={handleCropConfirm}
+        handleCropCancel={() => setCropFile(null)}
+        handleAvatarDelete={handleAvatarDelete}
+        t={t}
+      />
 
-      {/* Name / rename */}
-      {renaming ? (
-        <form
-          className={styles.renameForm}
-          onSubmit={(event) => {
-            event.preventDefault();
-            onRenameSubmit();
-          }}
-        >
-          <InputField
-            ref={renameInputRef}
-            value={nameDraft}
-            onChange={(event) => onRenameDraftChange(event.currentTarget.value)}
-            maxLength={128}
-            wrapperClassName={styles.renameInput}
-            aria-label={t("group.info.renameAria")}
-            disabled={renameBusy}
-          />
-          <div className={styles.renameActions}>
-            <PillButton
-              type="button"
-              tone="neutral"
-              appearance="soft"
-              size="sm"
-              onClick={onRenameCancel}
-              disabled={renameBusy}
-            >
-              {t("group.info.cancel")}
-            </PillButton>
-            <PillButton
-              type="submit"
-              tone="accent"
-              appearance="strong"
-              size="sm"
-              disabled={renameBusy || nameDraft.trim().length === 0}
-            >
-              {renameBusy ? t("group.info.saving") : t("group.info.save")}
-            </PillButton>
-          </div>
-        </form>
-      ) : (
-        <h2 className={styles.heroName}>
-          <span>{groupName}</span>
-          {canRename ? (
-            <button
-              type="button"
-              className={styles.renamePencil}
-              onClick={onRenameStart}
-              aria-label={t("group.info.renameAria")}
-              title={t("group.info.renameAria")}
-            >
-              <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-                <path d="M11.5 2.5l2 2L5 13l-2.5.5.5-2.5L11.5 2.5z" stroke="currentColor" strokeWidth="1.4" strokeLinejoin="round" />
-              </svg>
-            </button>
-          ) : null}
-        </h2>
-      )}
+      <NameSection
+        groupName={groupName}
+        renaming={renaming}
+        canRename={canRename}
+        renameBusy={renameBusy}
+        nameDraft={nameDraft}
+        renameInputRef={renameInputRef}
+        onRenameDraftChange={onRenameDraftChange}
+        onRenameStart={onRenameStart}
+        onRenameCancel={onRenameCancel}
+        onRenameSubmit={onRenameSubmit}
+        t={t}
+      />
 
-      <p className={styles.heroMeta}>
-        {t("group.info.memberCount", { count: memberCount })}
-        <span className={styles.heroDot} aria-hidden="true">·</span>
-        <span className={styles.heroKind}>
-          {t(groupKind === "plain" ? "group.info.kind.plain" : "group.info.kind.e2ee")}
-        </span>
-      </p>
+      <MetaRow memberCount={memberCount} groupKind={groupKind} t={t} />
 
-      {/* Description */}
-      {(canEditDescription || description) ? (
-        <div className={styles.heroDescription}>
-          {editingDesc ? (
-            <form
-              className={styles.descForm}
-              onSubmit={(e) => { e.preventDefault(); void handleDescSave(); }}
-            >
-              <InputField
-                value={descDraft}
-                onChange={(e) => setDescDraft(e.currentTarget.value)}
-                maxLength={500}
-                placeholder={t("group.info.descriptionPlaceholder")}
-                aria-label={t("group.info.descriptionAria")}
-                disabled={descBusy}
-              />
-              <div className={styles.renameActions}>
-                <PillButton
-                  type="button"
-                  tone="neutral"
-                  appearance="soft"
-                  size="sm"
-                  onClick={handleDescCancel}
-                  disabled={descBusy}
-                >
-                  {t("group.info.cancel")}
-                </PillButton>
-                <PillButton
-                  type="submit"
-                  tone="accent"
-                  appearance="strong"
-                  size="sm"
-                  disabled={descBusy}
-                >
-                  {descBusy ? t("group.info.saving") : t("group.info.save")}
-                </PillButton>
-              </div>
-            </form>
-          ) : (
-            <button
-              type="button"
-              className={`${styles.descText} ${!description ? styles.descTextEmpty : ""}`}
-              onClick={canEditDescription ? () => { setDescDraft(description ?? ""); setEditingDesc(true); } : undefined}
-              disabled={!canEditDescription}
-            >
-              {description ?? (canEditDescription ? t("group.info.descriptionAdd") : null)}
-              {canEditDescription ? (
-                <svg className={styles.descPencil} width="12" height="12" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-                  <path d="M11.5 2.5l2 2L5 13l-2.5.5.5-2.5L11.5 2.5z" stroke="currentColor" strokeWidth="1.4" strokeLinejoin="round" />
-                </svg>
-              ) : null}
-            </button>
-          )}
-        </div>
-      ) : null}
-
-      {cropFile ? (
-        <AvatarCropDialog
-          file={cropFile}
-          onConfirm={(blob) => void handleCropConfirm(blob)}
-          onCancel={() => setCropFile(null)}
-        />
-      ) : null}
+      <DescriptionSection
+        description={description}
+        canEditDescription={canEditDescription}
+        descDraft={descDraft}
+        setDescDraft={setDescDraft}
+        editingDesc={editingDesc}
+        descBusy={descBusy}
+        setEditingDesc={setEditingDesc}
+        handleDescSave={handleDescSave}
+        handleDescCancel={handleDescCancel}
+        t={t}
+      />
     </section>
   );
 }

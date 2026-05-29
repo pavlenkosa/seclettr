@@ -5,6 +5,7 @@
  */
 import pg from "pg";
 import argon2 from "argon2";
+import crypto from "node:crypto";
 
 const connectionString = process.env["DATABASE_URL"];
 if (!connectionString) {
@@ -52,7 +53,7 @@ async function seed() {
          (user_id, name, identity_key_public, signing_key_public, registration_id)
        VALUES ($1, $2, $3, $4, $5)
        RETURNING id`,
-      [userId, "Dev Device", SEED_KEY, SEED_KEY, Math.floor(Math.random() * 16382) + 1]
+      [userId, "Dev Device", SEED_KEY, SEED_KEY, crypto.randomInt(1, 16383)]
     );
     const deviceId = deviceResult.rows[0]!.id;
 

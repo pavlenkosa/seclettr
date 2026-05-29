@@ -94,7 +94,7 @@ async function listIdbStore(
         let size = 0;
         const val = cursor.value;
         if (val instanceof Uint8Array || val instanceof ArrayBuffer) {
-          size = val instanceof Uint8Array ? val.byteLength : val.byteLength;
+          size = val.byteLength;
         } else if (val !== null && val !== undefined) {
           try { size = JSON.stringify(val).length; } catch { size = 0; }
         }

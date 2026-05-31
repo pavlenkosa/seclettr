@@ -7,7 +7,14 @@
  * Does not own:
  *   - interactive semantics or feature runtime meaning
  */
+export * from "./IconChevronLeft";
 export * from "./IconChevronRight";
+export * from "./IconImage";
+export * from "./IconVideoPlay";
+export * from "./IconMic";
+export * from "./IconVideoCircle";
+export * from "./IconFileDocument";
+export * from "./IconArrowRight";
 export * from "./IconClose";
 export * from "./IconNewGroup";
 export * from "./IconPlus";

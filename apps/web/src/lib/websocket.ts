@@ -1,4 +1,13 @@
 /**
+ * @ownedBy auth-runtime / WS message routing
+ *
+ * `wsClient` is a module-level singleton shared across: auth store (connect/disconnect
+ * on sign-in/sign-out), direct-call signal layer (send offer/answer/ICE), group-call
+ * signal layer (same), and all stores that subscribe to server push events.
+ * The singleton is intentional — one persistent connection per tab.
+ * Tests import `SeclettrWebSocket` directly and create fresh instances; `wsClient`
+ * is never used in tests and does not need a reset export.
+ *
  * WebSocket client with auto-reconnect and message routing.
  */
 import {

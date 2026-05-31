@@ -1,4 +1,12 @@
 /**
+ * @ownedBy avatar-and-media-attachment blob URL lifecycle
+ *
+ * `cache` is module-level LRU state shared by all `useBlobUrl` call sites.
+ * Entries persist for the page lifetime up to MAX_ENTRIES (60), after which
+ * the LRU entry is evicted and its blob URL is revoked. The sole write path
+ * is `cacheSet`. Use `__blobUrlCacheTestUtils.reset()` in `beforeEach` to
+ * prevent cross-test blob URL leakage.
+ *
  * useBlobUrl — generic hook that fetches an authenticated image URL and
  * returns a blob: URL safe for use as <img src>.
  *
@@ -41,6 +49,17 @@ function cacheSet(key: string, blobUrl: string): void {
   }
   cache.set(key, blobUrl);
 }
+
+function resetBlobUrlCache(): void {
+  for (const url of cache.values()) {
+    URL.revokeObjectURL(url);
+  }
+  cache.clear();
+}
+
+export const __blobUrlCacheTestUtils = {
+  reset: resetBlobUrlCache,
+} as const;
 
 export function useBlobUrl(
   /** Stable cache key that changes when the underlying resource changes. */

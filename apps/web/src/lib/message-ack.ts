@@ -1,3 +1,11 @@
+/**
+ * @ownedBy message-delivery-ack pipeline
+ *
+ * `ackMetrics` is module-level mutable state shared across all `postMessageAck`
+ * call sites. Counters persist across WS reconnects for the lifetime of the page.
+ * The sole write path is `postMessageAck`. Use `__messageAckTestUtils.resetAckMetrics()`
+ * in `beforeEach` to prevent cross-test counter leakage.
+ */
 import { ApiError, api } from "./api";
 
 const ACK_RETRY_DELAYS_MS = [250, 750, 1500] as const;
@@ -26,6 +34,7 @@ interface AckMetrics {
   failed: number;
 }
 
+// Module-level shared counters — reset via __messageAckTestUtils.resetAckMetrics() in tests.
 const ackMetrics: AckMetrics = {
   attempts: 0,
   retries: 0,

@@ -1,6 +1,12 @@
 /**
- * Lightweight module-level registry for tracking in-flight attachment uploads
- * and local sender-side attachment blobs. Keyed by optimistic message ID.
+ * @ownedBy attachment-upload-pipeline
+ *
+ * `registry` tracks in-flight XHR/fetch uploads keyed by optimistic message ID.
+ * Written by the message store on upload start; cleared on complete, cancel, or error.
+ * `localSourceRegistry` holds sender-side Blob references for 15 minutes (TTL via
+ * setTimeout), enabling re-renders to read the local source without re-fetching.
+ * Both Maps are module-level and shared across all call sites on the page.
+ * Use `__uploadProgressTestUtils.reset()` in `beforeEach` to prevent cross-test leakage.
  */
 
 type ProgressListener = (progress: number | null) => void;
@@ -88,6 +94,18 @@ export function clearUploadLocalSource(messageId: string): void {
   clearTimeout(entry.cleanupTimer);
   localSourceRegistry.delete(messageId);
 }
+
+function resetUploadProgress(): void {
+  registry.clear();
+  for (const entry of localSourceRegistry.values()) {
+    clearTimeout(entry.cleanupTimer);
+  }
+  localSourceRegistry.clear();
+}
+
+export const __uploadProgressTestUtils = {
+  reset: resetUploadProgress,
+} as const;
 
 export function shouldSkipDirectUploadForMixedContent(
   uploadUrl: string,

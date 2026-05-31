@@ -1,3 +1,13 @@
+/**
+ * @ownedBy user-search / contact-grant header injection
+ *
+ * Three module-level Maps share state across all `searchUsers` and
+ * `getUserContactGrantHeaders` call sites: `searchCache` (query results, max 128
+ * entries, 30 s TTL), `contactGrantCache` (userId→grant, TTL-pruned on access),
+ * and `inFlightSearches` (self-clearing on resolve/reject). Use
+ * `__userSearchTestUtils.reset()` in `beforeEach` to clear all caches between
+ * tests instead of relying on `vi.resetModules()`.
+ */
 import { api } from "./api";
 import {
   type UserSearchResponse,
@@ -129,3 +139,13 @@ export async function searchUsers(query: string): Promise<UserSearchResult[]> {
   inFlightSearches.set(normalizedQuery, searchPromise);
   return searchPromise;
 }
+
+function resetUserSearch(): void {
+  searchCache.clear();
+  contactGrantCache.clear();
+  inFlightSearches.clear();
+}
+
+export const __userSearchTestUtils = {
+  reset: resetUserSearch,
+} as const;

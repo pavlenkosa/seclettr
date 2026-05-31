@@ -1,4 +1,13 @@
 /**
+ * @ownedBy client-error-reporting pipeline
+ *
+ * `seenMessages` (Set) deduplicates error keys for the page lifetime — unbounded
+ * by design, grows at most once per unique error+context pair.
+ * `queue` buffers reports between 2-second flush cycles (drained 10 at a time).
+ * `flushTimer` is a single pending setTimeout handle, or null when idle.
+ * All three are module-level state. Use `__errorReporterTestUtils.reset()` in
+ * `beforeEach` to prevent cross-test dedup/queue leakage.
+ *
  * Client-side error reporter.
  *
  * Collects JS errors that occur in production and ships them to the
@@ -129,3 +138,18 @@ export function reportError(
 
   scheduleFlush();
 }
+
+function resetErrorReporter(): void {
+  seenMessages.clear();
+  queue.splice(0);
+  if (flushTimer !== null) {
+    clearTimeout(flushTimer);
+    flushTimer = null;
+  }
+}
+
+export const __errorReporterTestUtils = {
+  reset: resetErrorReporter,
+  redactText,
+  sanitizePathname,
+} as const;

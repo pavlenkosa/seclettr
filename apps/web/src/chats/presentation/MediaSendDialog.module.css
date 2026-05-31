@@ -182,9 +182,9 @@
   --icon-button-color-base: var(--text-muted);
   --icon-button-bg-base: transparent;
   --icon-button-border-base: transparent;
-  --icon-button-bg-hover-base: color-mix(in srgb, var(--danger, #ef4444) 14%, transparent);
+  --icon-button-bg-hover-base: color-mix(in srgb, var(--danger) 14%, transparent);
   --icon-button-border-hover-base: transparent;
-  --icon-button-color-hover-base: var(--danger, #ef4444);
+  --icon-button-color-hover-base: var(--danger);
 }
 
 /* ─── Caption ────────────────────────────────────────────────────────────── */

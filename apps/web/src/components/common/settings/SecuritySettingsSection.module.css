@@ -65,8 +65,8 @@
 }
 
 .pinFeedbackError {
-  color: var(--danger, #e5534b);
-  background: color-mix(in srgb, var(--danger, #e5534b) 10%, transparent);
+  color: var(--danger);
+  background: color-mix(in srgb, var(--danger) 10%, transparent);
 }
 
 .pinFeedbackSuccess {

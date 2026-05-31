@@ -68,7 +68,7 @@
 }
 
 .itemDanger {
-  color: var(--danger, #ef4444);
+  color: var(--danger);
 }
 
 .itemDanger svg {
@@ -76,7 +76,7 @@
 }
 
 .itemDanger:hover {
-  background: color-mix(in srgb, var(--danger, #ef4444) 12%, transparent);
+  background: color-mix(in srgb, var(--danger) 12%, transparent);
 }
 
 .item:focus-visible {

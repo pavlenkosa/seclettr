@@ -71,8 +71,8 @@
   margin: 0;
   padding: 0.6rem 0.85rem;
   border-radius: 10px;
-  background: color-mix(in srgb, var(--danger, #ef4444) 12%, transparent);
-  color: var(--danger, #ef4444);
+  background: color-mix(in srgb, var(--danger) 12%, transparent);
+  color: var(--danger);
   font-size: 0.8rem;
   line-height: 1.4;
 }

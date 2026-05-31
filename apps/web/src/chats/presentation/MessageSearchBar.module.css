@@ -45,7 +45,7 @@
 }
 
 .counterEmpty {
-  color: var(--danger, #e74c3c);
+  color: var(--danger);
 }
 
 .nav {

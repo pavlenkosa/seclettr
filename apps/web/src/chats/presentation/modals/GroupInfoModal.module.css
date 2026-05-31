@@ -81,7 +81,7 @@
   height: 22px;
   border-radius: 50%;
   border: 2px solid var(--surface-float, var(--surface-shell-strong));
-  background: color-mix(in srgb, var(--danger, #ef4444) 80%, transparent);
+  background: color-mix(in srgb, var(--danger) 80%, transparent);
   color: #fff;
   font-size: 14px;
   line-height: 1;
@@ -94,12 +94,12 @@
 }
 
 .heroAvatarDeleteBtn:hover {
-  background: var(--danger, #ef4444);
+  background: var(--danger);
 }
 
 .heroAvatarError {
   font-size: 0.74rem;
-  color: var(--danger, #ef4444);
+  color: var(--danger);
   text-align: center;
   margin: 0;
 }
@@ -467,8 +467,8 @@
   padding: 0.7rem;
   border: none;
   border-radius: 14px;
-  background: color-mix(in srgb, var(--danger, #ef4444) 14%, transparent);
-  color: var(--danger, #ef4444);
+  background: color-mix(in srgb, var(--danger) 14%, transparent);
+  color: var(--danger);
   font-size: 0.92rem;
   font-weight: 600;
   cursor: pointer;
@@ -476,7 +476,7 @@
 }
 
 .leaveBtn:hover:not(:disabled) {
-  background: color-mix(in srgb, var(--danger, #ef4444) 22%, transparent);
+  background: color-mix(in srgb, var(--danger) 22%, transparent);
 }
 
 .leaveBtn:disabled {
@@ -488,8 +488,8 @@
   margin-top: 0.2rem;
   padding: 0.5rem 0.7rem;
   border-radius: 12px;
-  background: color-mix(in srgb, var(--danger, #ef4444) 14%, transparent);
-  color: var(--danger, #ef4444);
+  background: color-mix(in srgb, var(--danger) 14%, transparent);
+  color: var(--danger);
   font-size: 0.82rem;
 }
 
@@ -591,11 +591,11 @@
 }
 
 .sheetActionDanger {
-  color: var(--danger, #ef4444);
+  color: var(--danger);
 }
 
 .sheetActionDanger:hover:not(:disabled) {
-  background: color-mix(in srgb, var(--danger, #ef4444) 16%, transparent);
+  background: color-mix(in srgb, var(--danger) 16%, transparent);
 }
 
 @media (max-width: 640px) {

@@ -37,30 +37,10 @@
   flex-direction: column;
 }
 
-.threadDockOverlay {
-  position: absolute;
-  inset: 0;
-  z-index: var(--z-20);
-  pointer-events: none;
-  opacity: 1;
-  transform-origin: center bottom;
-  transition: opacity var(--motion-duration-base) var(--motion-ease-standard);
-}
-
-.threadDockOverlay > * {
-  pointer-events: auto;
-}
-
-.threadDockOverlayHidden {
-  opacity: 0;
-  pointer-events: none;
-}
-
 @media (prefers-reduced-motion: reduce) {
   .sidebarView,
   .settingsView,
-  .threadView,
-  .threadDockOverlay {
+  .threadView {
     transition: none !important;
   }
 }

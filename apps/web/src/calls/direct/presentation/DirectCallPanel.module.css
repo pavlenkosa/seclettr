@@ -76,7 +76,7 @@
     calc(var(--safe-top) + 14px)
     clamp(0.9rem, 1.5vw, 1.4rem)
     calc(var(--safe-bottom) + 14px);
-  background: color-mix(in srgb, var(--bg-primary) 48%, #05080f);
+  background: color-mix(in srgb, var(--bg-primary) 48%, var(--overlay-dark));
   animation: callSurfaceIn var(--motion-duration-base) cubic-bezier(0.18, 0.9, 0.2, 1) both;
 }
 

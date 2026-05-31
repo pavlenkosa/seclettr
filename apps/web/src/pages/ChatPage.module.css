@@ -189,7 +189,7 @@
   flex-direction: column;
   align-items: flex-start;
   gap: 0.72rem;
-  border: 1px solid color-mix(in srgb, var(--danger, #ef4444) 28%, var(--panel-border));
+  border: 1px solid color-mix(in srgb, var(--danger) 28%, var(--panel-border));
 }
 
 .trustNoticeHeader {
@@ -229,9 +229,9 @@
   align-items: center;
   justify-content: center;
   padding: 0.38rem var(--space-4);
-  background: color-mix(in srgb, var(--danger, #ef4444) 16%, var(--bg-primary));
-  border-bottom: 1px solid color-mix(in srgb, var(--danger, #ef4444) 40%, transparent);
-  color: var(--danger, #ef4444);
+  background: color-mix(in srgb, var(--danger) 16%, var(--bg-primary));
+  border-bottom: 1px solid color-mix(in srgb, var(--danger) 40%, transparent);
+  color: var(--danger);
   font-size: 0.8rem;
   font-weight: var(--weight-semibold);
   letter-spacing: 0.01em;
@@ -272,7 +272,7 @@
 }
 
 .callAlertBannerMissed {
-  border-color: color-mix(in srgb, var(--danger, #ef4444) 40%, transparent);
+  border-color: color-mix(in srgb, var(--danger) 40%, transparent);
 }
 
 .callAlertBannerText {

@@ -70,6 +70,7 @@
   --border-subtle: color-mix(in srgb, var(--panel-border-soft) 92%, transparent);
   --text-primary-muted: color-mix(in srgb, var(--text-primary) 72%, var(--text-secondary));
   --text-primary-muted-soft: color-mix(in srgb, var(--text-primary) 68%, var(--text-secondary));
+  --overlay-dark: #05080f;   /* near-black overlay used for dark call backdrops */
   --panel-header-height: 76px;
 
   /* Z-index scale */

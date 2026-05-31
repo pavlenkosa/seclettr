@@ -37,7 +37,7 @@
 
 .error {
   margin: 0 0 0.5rem;
-  color: var(--danger, #d14343);
+  color: var(--danger);
   font-size: 0.82rem;
   line-height: 1.4;
 }

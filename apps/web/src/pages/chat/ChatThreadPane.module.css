@@ -73,12 +73,12 @@
 }
 
 .bulkBtnDanger {
-  color: var(--danger, #ef4444);
-  background: color-mix(in srgb, var(--danger, #ef4444) 11%, transparent);
+  color: var(--danger);
+  background: color-mix(in srgb, var(--danger) 11%, transparent);
 }
 
 .bulkBtnDanger:hover {
-  background: color-mix(in srgb, var(--danger, #ef4444) 20%, transparent);
+  background: color-mix(in srgb, var(--danger) 20%, transparent);
 }
 
 .bulkBtnCancel {

@@ -20,6 +20,7 @@ import { useI18n } from "@/i18n";
 import { SeclettrMark } from "@/components/common/SeclettrMark";
 
 import styles from "./ConversationList.module.css";
+import { ExclusiveMenuProvider } from "./exclusive-menu-context";
 import { ConversationListRow } from "./conversation-list/ConversationListRow";
 import { ConversationFolderTabs } from "./conversation-list/ConversationFolderTabs";
 import { FolderNameDialog } from "./conversation-list/FolderNameDialog";
@@ -144,7 +145,7 @@ export function ConversationList({
 
   if (filteredEntries.length === 0 && loading) {
     return (
-      <>
+      <ExclusiveMenuProvider>
         {folderTabs}
         <ul className={styles.list} aria-busy="true" aria-label={t("conversation.loading")} data-testid="chat-thread-list">
           {shouldShowSavedEntry ? renderConversationRow(savedEntry, activeId === savedEntry.key, 0) : null}
@@ -160,13 +161,13 @@ export function ConversationList({
         </ul>
         {folderDialogEl}
         {deleteChatDialogEl}
-      </>
+      </ExclusiveMenuProvider>
     );
   }
 
   if (filteredEntries.length === 0) {
     return (
-      <>
+      <ExclusiveMenuProvider>
         {folderTabs}
         <ul className={styles.list} aria-label={t("conversation.listLabel")} data-testid="chat-thread-list">
           {shouldShowSavedEntry ? renderConversationRow(savedEntry, activeId === savedEntry.key, 0) : null}
@@ -180,12 +181,12 @@ export function ConversationList({
         </ul>
         {folderDialogEl}
         {deleteChatDialogEl}
-      </>
+      </ExclusiveMenuProvider>
     );
   }
 
   return (
-    <>
+    <ExclusiveMenuProvider>
       {folderTabs}
       <ul className={styles.list} aria-label={t("conversation.listLabel")} data-testid="chat-thread-list">
         {shouldShowSavedEntry ? renderConversationRow(savedEntry, activeId === savedEntry.key, 0) : null}
@@ -195,6 +196,6 @@ export function ConversationList({
       </ul>
       {folderDialogEl}
       {deleteChatDialogEl}
-    </>
+    </ExclusiveMenuProvider>
   );
 }

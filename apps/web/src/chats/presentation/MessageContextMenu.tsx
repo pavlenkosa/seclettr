@@ -11,6 +11,7 @@ import {
 } from "react";
 import { useI18n } from "@/i18n";
 import { hapticSelection } from "@/lib/native-haptics";
+import { useExclusiveMenu } from "./exclusive-menu-context";
 import { useAnimatedPresence } from "@/lib/hooks";
 import { MOTION_DURATION_MS } from "@/lib/motion";
 import motionStyles from "@/components/ui/motion/Motion.module.css";
@@ -66,6 +67,7 @@ export const MessageContextMenu = memo(function MessageContextMenu({
 }: Props) {
   const menuId = useId();
   const { t } = useI18n();
+  const { notifyOpen, subscribe } = useExclusiveMenu(menuId);
   const [menuPos, setMenuPos] = useState<MenuPosition | null>(null);
   const [mountedMenuPos, setMountedMenuPos] = useState<MenuPosition | null>(null);
   const [copied, setCopied] = useState(false);
@@ -88,10 +90,7 @@ export const MessageContextMenu = memo(function MessageContextMenu({
   });
 
   const openMenu = useCallback((x: number, y: number) => {
-    // Notify other instances to close before we open (synchronous dispatch).
-    document.dispatchEvent(
-      new CustomEvent("seclettr:context-menu-open", { detail: { id: menuId } }),
-    );
+    notifyOpen();
     previousFocusRef.current = document.activeElement instanceof HTMLElement
       ? document.activeElement
       : null;
@@ -99,7 +98,7 @@ export const MessageContextMenu = memo(function MessageContextMenu({
     const nextPosition = { x, y };
     setMountedMenuPos(nextPosition);
     setMenuPos(nextPosition);
-  }, [menuId]);
+  }, [notifyOpen]);
 
   const clearCopyResetTimer = useCallback(() => {
     if (copyResetTimerRef.current !== null) {
@@ -114,14 +113,8 @@ export const MessageContextMenu = memo(function MessageContextMenu({
     setMenuPos(null);
   }, [clearCopyResetTimer]);
 
-  // Close this instance when another context menu opens elsewhere.
-  useEffect(() => {
-    const handler = (e: Event) => {
-      if ((e as CustomEvent<{ id: string }>).detail.id !== menuId) closeMenu();
-    };
-    document.addEventListener("seclettr:context-menu-open", handler);
-    return () => document.removeEventListener("seclettr:context-menu-open", handler);
-  }, [menuId, closeMenu]);
+  // Close this instance when another context menu opens in the same provider scope.
+  useEffect(() => subscribe(closeMenu), [subscribe, closeMenu]);
 
   // Close when the message list scrolls (menu stays fixed while content moves).
   useEffect(() => {

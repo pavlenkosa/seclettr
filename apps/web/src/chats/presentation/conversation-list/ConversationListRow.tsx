@@ -7,6 +7,7 @@ import { useAvatarUrl } from "@/lib/hooks";
 import type { PlainFolder } from "@/stores/plain";
 
 import styles from "../ConversationList.module.css";
+import { useExclusiveMenu } from "../exclusive-menu-context";
 import { SavedMessagesAvatar } from "../SavedMessagesAvatar";
 import { ConversationListPinMenu } from "./ConversationListPinMenu";
 import {
@@ -67,14 +68,14 @@ function useConversationMenu(rowId: string, canOpenMenu: boolean, rowButtonRef: 
   const menuNodeRef = useRef<HTMLDivElement>(null);
   const keyboardOpenedRef = useRef(false);
 
+  const { notifyOpen, subscribe } = useExclusiveMenu(rowId);
+
   const openMenu = useCallback((viaKeyboard = false) => {
-    document.dispatchEvent(
-      new CustomEvent("seclettr:context-menu-open", { detail: { id: rowId } }),
-    );
+    notifyOpen();
     keyboardOpenedRef.current = viaKeyboard;
     setMenuFlipped(false);
     setMenuOpen(true);
-  }, [rowId]);
+  }, [notifyOpen]);
 
   const closeMenu = useCallback(() => {
     if (keyboardOpenedRef.current) {
@@ -84,13 +85,7 @@ function useConversationMenu(rowId: string, canOpenMenu: boolean, rowButtonRef: 
     setMenuOpen(false);
   }, [rowButtonRef]);
 
-  useEffect(() => {
-    const handler = (e: Event) => {
-      if ((e as CustomEvent<{ id: string }>).detail.id !== rowId) closeMenu();
-    };
-    document.addEventListener("seclettr:context-menu-open", handler);
-    return () => document.removeEventListener("seclettr:context-menu-open", handler);
-  }, [rowId, closeMenu]);
+  useEffect(() => subscribe(closeMenu), [subscribe, closeMenu]);
 
   useEffect(() => {
     if (!menuOpen) return;

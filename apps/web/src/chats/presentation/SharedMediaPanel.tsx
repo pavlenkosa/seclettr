@@ -2,7 +2,15 @@ import { memo, useId, useMemo, useState } from "react";
 import type { Message } from "@/stores/messages";
 import { useI18n } from "@/i18n";
 import { IconButton } from "@/components/ui";
-import { IconClose } from "@/components/ui/icons";
+import {
+  IconArrowRight,
+  IconClose,
+  IconFileDocument,
+  IconImage,
+  IconMic,
+  IconVideoCircle,
+  IconVideoPlay,
+} from "@/components/ui/icons";
 import { MediaLightbox } from "@/components/common/MediaLightbox";
 import { formatClock } from "./message-list/message-list-presentation";
 import styles from "./SharedMediaPanel.module.css";
@@ -30,60 +38,6 @@ function categorizeMessages(messages: Message[]) {
   return { mediaMessages: media, voiceMessages: voice, videoMessages: video, fileMessages: files };
 }
 
-function ImageIcon({ size = 32 }: { readonly size?: number }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
-      <rect x="3" y="3" width="18" height="18" rx="3" stroke="currentColor" strokeWidth="1.5" />
-      <circle cx="8.5" cy="8.5" r="1.5" fill="currentColor" />
-      <path d="M21 15l-5-5-4 4-2-2-5 5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-  );
-}
-
-function VideoPlayIcon({ size = 28 }: { readonly size?: number }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 28 28" fill="none">
-      <circle cx="14" cy="14" r="14" fill="rgb(0 0 0 / 0.42)" />
-      <path d="M11 9.5l9 4.5-9 4.5V9.5Z" fill="white" />
-    </svg>
-  );
-}
-
-function MicIcon({ size = 18 }: { readonly size?: number }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
-      <rect x="9" y="2" width="6" height="13" rx="3" stroke="currentColor" strokeWidth="1.5" />
-      <path d="M5 10v2a7 7 0 0 0 14 0v-2" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
-      <path d="M12 19v3" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
-    </svg>
-  );
-}
-
-function VideoCircleIcon({ size = 18 }: { readonly size?: number }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
-      <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="1.5" />
-      <path d="M10 8.5l6 3.5-6 3.5V8.5Z" fill="currentColor" />
-    </svg>
-  );
-}
-
-function FileDocumentIcon({ size = 18 }: { readonly size?: number }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
-      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6Z" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round" />
-      <path d="M14 2v6h6" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round" />
-    </svg>
-  );
-}
-
-function ArrowRightIcon({ size = 14 }: { readonly size?: number }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 16 16" fill="none" aria-hidden="true">
-      <path d="M3 8h10M9 4l4 4-4 4" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-  );
-}
 
 function formatSize(bytes: number): string {
   if (bytes < 1024) return `${bytes} B`;
@@ -132,7 +86,7 @@ function MediaGrid({
     return (
       <div className={styles.empty}>
           <span className={styles.emptyIcon} aria-hidden="true">
-            <ImageIcon size={32} />
+            <IconImage size={32} />
           </span>
         <span>{t("chat.media.empty")}</span>
       </div>
@@ -166,7 +120,7 @@ function MediaGrid({
               />
             ) : (
               <span className={styles.gridPlaceholder} aria-hidden="true">
-                <ImageIcon size={20} />
+                <IconImage size={20} />
               </span>
             )}
             {isGif ? (
@@ -174,7 +128,7 @@ function MediaGrid({
             ) : null}
             {isVideo ? (
               <span className={styles.gridPlayIcon} aria-hidden="true">
-                <VideoPlayIcon />
+                <IconVideoPlay />
               </span>
             ) : null}
           </button>
@@ -213,11 +167,11 @@ function MediaListItem({
     <li className={styles.item}>
       <span className={styles.itemIcon} aria-hidden="true">
         {isVoice ? (
-          <MicIcon size={18} />
+          <IconMic size={18} />
         ) : isVideo ? (
-          <VideoCircleIcon size={18} />
+          <IconVideoCircle size={18} />
         ) : (
-          <FileDocumentIcon size={18} />
+          <IconFileDocument size={18} />
         )}
       </span>
       <div className={styles.itemBody}>
@@ -234,7 +188,7 @@ function MediaListItem({
         aria-label={t("chat.media.goTo")}
         title={t("chat.media.goTo")}
       >
-        <ArrowRightIcon />
+        <IconArrowRight />
       </button>
     </li>
   );
@@ -285,11 +239,11 @@ function EmptyTabState({ activeTab }: { readonly activeTab: MediaTab }) {
     <div className={styles.empty}>
       <span className={styles.emptyIcon} aria-hidden="true">
         {activeTab === "voice" ? (
-          <MicIcon size={32} />
+          <IconMic size={32} />
         ) : activeTab === "video" ? (
-          <VideoCircleIcon size={32} />
+          <IconVideoCircle size={32} />
         ) : (
-          <FileDocumentIcon size={32} />
+          <IconFileDocument size={32} />
         )}
       </span>
       <span>{t("chat.media.empty")}</span>

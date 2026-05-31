@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import { GroupCallNotice } from "@/calls/group/presentation/GroupCallNotice";
 import { Avatar, IconButton, SurfacePanel } from "@/components/ui";
+import { IconChevronLeft } from "@/components/ui/icons";
 import { SecurityStatusIndicator } from "./security/SecurityStatusIndicator";
 
 import styles from "./ChatThreadChrome.module.css";
@@ -88,9 +89,7 @@ export function ChatThreadChrome({
             variant="ghost"
             aria-label={backAriaLabel}
           >
-            <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-              <path d="M12.5 15L7.5 10l5-5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-            </svg>
+            <IconChevronLeft size={20} strokeWidth={2} />
           </IconButton>
 
           {avatarSlot ?? (

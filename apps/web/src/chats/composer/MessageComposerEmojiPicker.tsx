@@ -1,4 +1,4 @@
-import React, { useRef, type MouseEvent, type RefObject } from "react";
+import React, { useRef, type KeyboardEvent, type MouseEvent, type RefObject } from "react";
 import { useI18n } from "@/i18n";
 import { useModalSurfaceA11y } from "@/lib/hooks";
 import { IconButton } from "@/components/ui";
@@ -197,11 +197,47 @@ function EmojiTabBar({
   onSetGifMode,
   t,
 }: EmojiTabBarProps) {
+  const tablistRef = useRef<HTMLDivElement>(null);
+
+  function handleKeyDown(e: KeyboardEvent<HTMLDivElement>) {
+    const { key } = e;
+    if (key !== "ArrowRight" && key !== "ArrowLeft" && key !== "ArrowDown" && key !== "ArrowUp" && key !== "Home" && key !== "End") return;
+
+    e.preventDefault();
+
+    const tablist = tablistRef.current;
+    if (!tablist) return;
+
+    const tabs = Array.from(tablist.querySelectorAll<HTMLButtonElement>('[role="tab"]'));
+    if (tabs.length === 0) return;
+
+    const currentIndex = tabs.findIndex(btn => btn.getAttribute("aria-selected") === "true");
+    const start = currentIndex === -1 ? 0 : currentIndex;
+
+    let nextIndex: number;
+    if (key === "ArrowRight" || key === "ArrowDown") {
+      nextIndex = (start + 1) % tabs.length;
+    } else if (key === "ArrowLeft" || key === "ArrowUp") {
+      nextIndex = (start - 1 + tabs.length) % tabs.length;
+    } else if (key === "Home") {
+      nextIndex = 0;
+    } else {
+      nextIndex = tabs.length - 1;
+    }
+
+    const next = tabs[nextIndex];
+    if (!next) return;
+    next.focus();
+    next.click();
+  }
+
   return (
     <div
+      ref={tablistRef}
       className={styles.emojiTabBar}
       role="tablist"
       aria-label={t("composer.aria.emojiCategories")}
+      onKeyDown={handleKeyDown}
     >
       {hasRecentEmojis && (
         <button

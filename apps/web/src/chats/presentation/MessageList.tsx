@@ -17,6 +17,7 @@ import {
   type MessageRowPresentationCache,
 } from "./message-list/message-list-presentation";
 import { useMessageListTimelineState } from "./message-list/useMessageListTimelineState";
+import { ExclusiveMenuProvider } from "./exclusive-menu-context";
 import styles from "./MessageList.module.css";
 
 /**
@@ -232,6 +233,7 @@ export const MessageList = forwardRef<MessageListHandle, Props>(function Message
   }
 
   return (
+    <ExclusiveMenuProvider>
     <div
       ref={timelineState.containerRef}
       className={styles.container}
@@ -342,5 +344,6 @@ export const MessageList = forwardRef<MessageListHandle, Props>(function Message
         </div>
       )}
     </div>
+    </ExclusiveMenuProvider>
   );
 });

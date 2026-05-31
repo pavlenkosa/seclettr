@@ -1,7 +1,11 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import type * as UserSearch from "@/lib/user-search";
+import {
+  searchUsers,
+  getUserContactGrantHeaders,
+  __userSearchTestUtils,
+} from "@/lib/user-search";
 
-const apiGetMock = vi.fn();
+const { apiGetMock } = vi.hoisted(() => ({ apiGetMock: vi.fn() }));
 
 vi.mock("@/lib/api", () => ({
   api: {
@@ -9,15 +13,11 @@ vi.mock("@/lib/api", () => ({
   },
 }));
 
-let searchUsers: typeof UserSearch.searchUsers;
-let getUserContactGrantHeaders: typeof UserSearch.getUserContactGrantHeaders;
-
 describe("user-search contact grant cache", () => {
-  beforeEach(async () => {
+  beforeEach(() => {
     apiGetMock.mockReset();
-    vi.resetModules();
+    __userSearchTestUtils.reset();
     vi.useRealTimers();
-    ({ searchUsers, getUserContactGrantHeaders } = await import("@/lib/user-search"));
   });
 
   it("stores short-lived contact grants from exact-match search results", async () => {

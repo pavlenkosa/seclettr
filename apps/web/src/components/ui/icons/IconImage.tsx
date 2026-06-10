@@ -1,3 +1,4 @@
+/** IconImage — inline SVG image/photo glyph for media and attachment affordances. */
 interface IconImageProps {
   readonly size?: number;
   readonly className?: string;

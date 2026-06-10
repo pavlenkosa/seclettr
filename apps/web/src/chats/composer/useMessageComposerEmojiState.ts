@@ -25,6 +25,7 @@ import {
   searchGifs,
   type GifResult,
 } from "./composer-gif-service";
+import { createRequestSequence } from "@/lib/request-sequence";
 
 interface UseMessageComposerEmojiStateOptions {
   sending: boolean;
@@ -111,6 +112,7 @@ export function useMessageComposerEmojiState({
   const [isGifLoading, setIsGifLoading] = useState(false);
   const [isSendingGif, setIsSendingGif] = useState(false);
   const gifSearchTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const gifRequestSequenceRef = useRef(createRequestSequence());
 
   const emojiToggleButtonRef = useRef<HTMLButtonElement>(null);
   const emojiPickerRef = useRef<HTMLElement>(null);
@@ -147,26 +149,32 @@ export function useMessageComposerEmojiState({
 
   // Load GIFs when entering GIF mode or query changes
   useEffect(() => {
-    if (!isGifMode || !isEmojiPickerOpen || !isGifTabAvailable) return;
+    const gifRequestSequence = gifRequestSequenceRef.current;
+    if (!isGifMode || !isEmojiPickerOpen || !isGifTabAvailable) {
+      gifRequestSequence.invalidate();
+      if (gifSearchTimerRef.current) clearTimeout(gifSearchTimerRef.current);
+      setIsGifLoading(false);
+      return;
+    }
 
     if (gifSearchTimerRef.current) clearTimeout(gifSearchTimerRef.current);
 
     const delay = gifQuery.trim() ? 400 : 0;
     gifSearchTimerRef.current = setTimeout(() => {
-      let cancelled = false;
+      const token = gifRequestSequence.begin();
       setIsGifLoading(true);
       searchGifs(gifQuery).then((results) => {
-        if (cancelled) return;
+        if (!gifRequestSequence.isCurrent(token)) return;
         setGifResults(results);
         setIsGifLoading(false);
       }).catch(() => {
-        if (!cancelled) setIsGifLoading(false);
+        if (gifRequestSequence.isCurrent(token)) setIsGifLoading(false);
       });
-      return () => { cancelled = true; };
     }, delay);
 
     return () => {
       if (gifSearchTimerRef.current) clearTimeout(gifSearchTimerRef.current);
+      gifRequestSequence.invalidate();
     };
   }, [gifQuery, isGifMode, isEmojiPickerOpen, isGifTabAvailable]);
 

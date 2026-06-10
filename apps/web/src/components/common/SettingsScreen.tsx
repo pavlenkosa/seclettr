@@ -274,6 +274,7 @@ export function SettingsScreen({
             onSelect={handleSectionClick}
             ariaLabel={t("settings.sections.ariaLabel")}
             note={t("settings.appliedInstantly")}
+            showActive={!isMobileViewport || mobileDetailOpen}
           />
         </aside>
 

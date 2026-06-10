@@ -104,28 +104,6 @@
   align-items: flex-start;
 }
 
-.bodyWithSidePanel {
-  align-items: stretch;
-  justify-content: center;
-  overflow: visible;
-}
-
-@media (min-width: 1360px) {
-  .bodyWithSidePanel .mainColumn {
-    flex: 1 1 min(0, 1040px);
-    max-width: 1040px;
-    padding-right: 0;
-  }
-}
-
-.bodyWithSidePanel > .detailsDrawerInline {
-  flex: 0 0 clamp(340px, 25vw, 420px);
-  width: clamp(340px, 25vw, 420px);
-  max-height: calc(100dvh - 9.25rem);
-  align-self: flex-start;
-  overflow: auto;
-}
-
 .bodyCompact {
   flex: 0 0 auto;
   overflow: visible;
@@ -140,106 +118,22 @@
   width: min(100%, 760px);
 }
 
-.mainColumn,
-.sidePanel {
+.mainColumn {
+  flex: 1;
+  min-width: 0;
+  width: 100%;
   min-height: 0;
   display: flex;
   flex-direction: column;
   gap: 0.9rem;
   overflow: auto;
   padding-right: 0.12rem;
-}
-
-.mainColumn {
-  flex: 1;
-  min-width: 0;
-  width: 100%;
   align-items: stretch;
-  padding-right: 0.12rem;
 }
 
 .mainColumn > .section {
   width: min(100%, 1560px);
   margin-inline: auto;
-}
-
-.sidePanel {
-  position: absolute;
-  top: 0.45rem;
-  right: 0;
-  bottom: auto;
-  width: clamp(420px, 32vw, 520px);
-  min-width: 0;
-  min-height: 340px;
-  height: auto;
-  max-height: calc(100% - 0.45rem);
-  display: flex;
-  flex-direction: column;
-  gap: 0;
-  padding: 0.82rem 0.86rem 0.86rem;
-  border-radius: 24px;
-  border: 1px solid color-mix(in srgb, var(--panel-border-soft) 76%, transparent);
-  background: color-mix(in srgb, var(--surface-shell) 98%, var(--surface-float));
-  overflow: hidden;
-  resize: vertical;
-  z-index: var(--z-5);
-  animation: groupCallSidePanelIn var(--motion-duration-base) cubic-bezier(0.22, 1, 0.36, 1) both;
-}
-
-.sidePanelChatMode {
-  height: clamp(380px, 52vh, 540px);
-}
-
-.sidePanelDetailsMode {
-  height: clamp(460px, 66vh, 760px);
-}
-
-.sidePanelHeader {
-  flex-shrink: 0;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.7rem;
-  padding: 0.02rem 0.08rem 0.74rem;
-  border-bottom: 1px solid color-mix(in srgb, var(--panel-border-soft) 68%, transparent);
-}
-
-.sidePanelTitle {
-  min-width: 0;
-  color: var(--text-secondary);
-  font-size: 0.75rem;
-  font-weight: 800;
-  letter-spacing: 0.02em;
-}
-
-.sidePanelCloseBtn {
-  --icon-button-size: 34px;
-  flex-shrink: 0;
-}
-
-.sidePanelContent {
-  flex: 1;
-  min-height: 0;
-  display: flex;
-  flex-direction: column;
-  overflow: auto;
-  padding-top: 0.82rem;
-  padding-right: 0.08rem;
-}
-
-/* ── Details drawer + section scaffolding ────────────────────────────────── */
-.detailsDrawerInline {
-  position: relative;
-  top: auto;
-  right: auto;
-  z-index: auto;
-  width: 100%;
-  max-height: none;
-  gap: 0.9rem;
-  overflow: visible;
-  opacity: 1;
-  pointer-events: auto;
-  transition: none;
 }
 
 .section {
@@ -305,29 +199,6 @@
   align-items: center;
   justify-content: space-between;
   gap: var(--space-3);
-}
-
-.stageMeta {
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 0.12rem;
-}
-
-.stageEyebrow {
-  color: var(--text-secondary);
-  font-size: 0.68rem;
-  font-weight: 700;
-  letter-spacing: 0.01em;
-}
-
-.stageTitle {
-  color: var(--text-primary);
-  font-size: 0.92rem;
-  font-weight: 700;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
 
 .stageActionRail {
@@ -638,10 +509,6 @@
   min-height: 170px;
 }
 
-.mediaTileAudioPresent {
-  border-color: color-mix(in srgb, var(--panel-border-soft) 88%, transparent);
-}
-
 .mediaTileAudioActive {
   border-color: color-mix(in srgb, var(--success) 58%, var(--panel-border-soft));
   outline: 1px solid color-mix(in srgb, var(--success) 18%, transparent);
@@ -693,10 +560,6 @@
   width: min(100%, 980px);
   margin-inline: auto;
   text-align: center;
-}
-
-.sidePanel .detailsDrawerInline {
-  gap: 0.82rem;
 }
 
 .hiddenAudio {
@@ -758,36 +621,6 @@
 
   .body {
     gap: 0.9rem;
-  }
-
-  .sidePanel {
-    top: 0.35rem;
-    left: 0.7rem;
-    right: 0.7rem;
-    bottom: auto;
-    width: auto;
-    max-height: calc(100% - 0.35rem);
-    padding: 0.82rem 0.84rem 0.84rem;
-    border-radius: 26px;
-    border: 1px solid color-mix(in srgb, var(--panel-border-soft) 74%, transparent);
-    animation-name: groupCallSideSheetIn;
-    resize: none;
-  }
-
-  .sidePanelChatMode {
-    height: clamp(340px, 48vh, 430px);
-  }
-
-  .sidePanelDetailsMode {
-    height: clamp(420px, 58vh, 620px);
-  }
-
-  .sidePanelHeader {
-    padding-bottom: 0.68rem;
-  }
-
-  .sidePanelContent {
-    padding-top: 0.72rem;
   }
 
   .mediaGrid {
@@ -901,96 +734,6 @@
     min-height: 188px;
   }
 
-  .callChatSection {
-    height: auto;
-    margin-top: 0.15rem;
-  }
-
-  .callChatList {
-    width: 100%;
-    min-height: 0;
-    max-height: min(30vh, 220px);
-    padding: 0.58rem;
-    border-radius: 14px;
-  }
-
-  .callChatMessage {
-    max-width: min(100%, 92%);
-    padding: 0.52rem 0.58rem 0.5rem;
-    border-radius: 12px;
-  }
-
-  .callChatText {
-    font-size: 0.8rem;
-  }
-
-  .callChatComposer {
-    width: 100%;
-    gap: 0.34rem;
-  }
-
-  .callChatComposerLabel {
-    font-size: 0.72rem;
-  }
-
-  .callChatComposerRow {
-    grid-template-columns: 1fr;
-    gap: 0.45rem;
-  }
-
-  .callChatComposerInput {
-    min-height: 42px;
-    max-height: 120px;
-    border-radius: 12px;
-    padding: 0.58rem 0.66rem;
-    font-size: 0.82rem;
-  }
-
-  .callChatComposerBtn {
-    min-height: 40px;
-    width: 100%;
-    border-radius: 12px;
-    font-size: 0.78rem;
-  }
-
-  .sidePanel {
-    left: 0.55rem;
-    right: 0.55rem;
-    top: 0.3rem;
-    bottom: auto;
-    max-height: calc(100% - 0.3rem);
-    padding:
-      0.78rem
-      0.8rem
-      0.8rem;
-    border-radius: 26px;
-  }
-
-  .sidePanelChatMode {
-    height: clamp(320px, 44vh, 400px);
-  }
-
-  .sidePanelDetailsMode {
-    height: clamp(400px, 56vh, 560px);
-  }
-
-  .sidePanelHeader {
-    padding: 0.02rem 0.04rem 0.62rem;
-  }
-
-  .sidePanelTitle {
-    font-size: 0.72rem;
-  }
-
-  .sidePanelContent {
-    padding-top: 0.66rem;
-  }
-
-  .sidePanel .callChatComposerBtn {
-    width: 100%;
-    min-width: 0;
-  }
-
   .sectionHeader {
     width: 100%;
   }
@@ -1063,8 +806,7 @@
 }
 
 :global(:root[data-theme="light"]) .mediaToolbarHint,
-:global(:root[data-theme="light"]) .sectionLabel,
-:global(:root[data-theme="light"]) .stageEyebrow {
+:global(:root[data-theme="light"]) .sectionLabel {
   color: color-mix(in srgb, var(--text-primary) 78%, var(--text-secondary));
 }
 

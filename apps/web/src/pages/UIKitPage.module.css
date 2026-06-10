@@ -635,17 +635,6 @@
   color: var(--text-primary);
 }
 
-.typographyGroup {
-  display: grid;
-  gap: 0.4rem;
-}
-
-.typographyGroupLabel {
-  font-size: 0.72rem;
-  color: var(--text-secondary);
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-}
 
 .weightGrid {
   display: grid;

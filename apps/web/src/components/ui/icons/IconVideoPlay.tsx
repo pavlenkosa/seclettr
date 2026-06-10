@@ -1,3 +1,4 @@
+/** IconVideoPlay — inline SVG play-button overlay glyph for video thumbnail affordances. */
 interface IconVideoPlayProps {
   readonly size?: number;
   readonly className?: string;

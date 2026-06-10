@@ -70,22 +70,6 @@
   margin: 0;
 }
 
-.description {
-  font-size: 0.82rem;
-  color: var(--text-secondary);
-  line-height: 1.5;
-  margin: 0.2rem 0 0;
-  max-width: 26ch;
-}
-
-.notice {
-  font-size: 0.76rem;
-  color: color-mix(in srgb, var(--text-secondary) 86%, transparent);
-  line-height: 1.45;
-  margin: 0 0 0.6rem;
-  max-width: 28ch;
-}
-
 .error {
   font-size: 0.8rem;
   color: var(--danger);

@@ -9,7 +9,6 @@ import { AudioOutputSelector } from "@/calls/shared/media/audio-output/AudioOutp
 import { useOptionalCallAudioOutput } from "@/calls/shared/media/audio-output/CallAudioOutputProvider";
 import { useNativeSpeakerToggle } from "@/calls/shared/media/audio-output/useNativeSpeakerToggle";
 import { getNativeAudioRoutes, setNativeAudioRoute, type AudioRouteName, type AudioRoutes } from "@/lib/native-audio-route";
-import { PillButton } from "@/components/ui";
 import { useIsMobileViewport } from "@/lib/hooks/use-is-mobile-viewport";
 
 import styles from "./DirectCallControls.module.css";
@@ -206,7 +205,7 @@ export function DirectCallControls({
   onSelectScreenResolution,
 }: DirectCallControlsProps) {
   const { t } = useI18n();
-  const { supported: speakerSupported, speakerOn, toggle: toggleSpeaker } = useNativeSpeakerToggle({
+  const { supported: speakerSupported, speakerOn, toggle: toggleSpeaker, setTarget: setSpeakerTarget } = useNativeSpeakerToggle({
     preferredSpeakerOn: callType === "video",
   });
   const audioOutput = useOptionalCallAudioOutput();
@@ -232,10 +231,12 @@ export function DirectCallControls({
   }, []);
 
   const handleSelectRoute = useCallback(async (route: AudioRouteName) => {
+    // Update hook target first so the 2s enforcer won't revert this selection.
+    setSpeakerTarget(route === "speaker");
     await setNativeAudioRoute(route);
     setAudioRoutes((prev) => prev ? { ...prev, currentRoute: route } : prev);
     setOutputSheetOpen(false);
-  }, []);
+  }, [setSpeakerTarget]);
 
   // Refs for sheet focus management (CAL-03).
   // One ref per sheet variant; trigger refs to restore focus on close.
@@ -290,25 +291,23 @@ export function DirectCallControls({
 
     return (
       <>
-        {showOutputTrigger ? (
-          <div className={styles.mobileAudioOutputBar}>
-            <PillButton
+        <CallControlsDock className={styles.controlsDock}>
+          {showOutputTrigger ? (
+            <CallControlButton
               ref={speakerSupported ? nativeSpeakerBtnRef : webOutputBtnRef}
               onClick={() => { setOutputSheetOpen((prev) => !prev); }}
-              className={styles.mobileAudioOutputButton}
-              tone={outputSheetOpen ? "accent" : "neutral"}
-              appearance="soft"
-              size="sm"
-              leading={speakerSupported ? currentRouteIcon : <SpeakerIcon speakerOn />}
+              layout="inline"
+              className={mobileClass}
+              active={outputSheetOpen}
+              icon={speakerSupported ? currentRouteIcon : <SpeakerIcon speakerOn />}
+              label={speakerSupported ? currentRouteLabel : audioOutputLabel}
+              collapseLabelOnNarrow
+              compactOnNarrow
               aria-label={audioOutputLabel}
               aria-expanded={outputSheetOpen}
               aria-haspopup="dialog"
-            >
-              {speakerSupported ? currentRouteLabel : audioOutputLabel}
-            </PillButton>
-          </div>
-        ) : null}
-        <CallControlsDock className={styles.controlsDock}>
+            />
+          ) : null}
           <CallControlButton
             onClick={onToggleMute}
             layout="inline"

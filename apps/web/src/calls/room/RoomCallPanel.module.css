@@ -70,21 +70,6 @@
 }
 
 
-.roomSidePanelOverlay {
-  position: absolute;
-  top: calc(var(--safe-top) + 6.2rem);
-  right: max(
-    clamp(0.85rem, 1.6vw, 1.35rem),
-    calc((100% - 1560px) / 2 + clamp(0.85rem, 1.6vw, 1.35rem))
-  );
-  bottom: calc(var(--safe-bottom) + 5.8rem);
-  z-index: var(--z-8);
-  width: clamp(330px, 24vw, 400px);
-  max-height: none;
-  margin: 0;
-  animation: groupCallSidePanelIn var(--motion-duration-base) cubic-bezier(0.22, 1, 0.36, 1) both;
-}
-
 .roomSidePanel .inviteCard {
   width: 100%;
   margin-inline: 0;
@@ -247,17 +232,6 @@
   flex-shrink: 0;
 }
 
-@media (max-width: 960px) {
-  .roomSidePanelOverlay {
-    top: calc(var(--safe-top) + 6.8rem);
-    left: max(0.75rem, var(--safe-left));
-    right: max(0.75rem, var(--safe-right));
-    bottom: calc(var(--safe-bottom) + 5.95rem);
-    width: auto;
-    max-height: none;
-  }
-}
-
 @media (max-width: 760px) {
   .inviteCard {
     flex-direction: column;
@@ -267,11 +241,6 @@
 
   .roomSidePanel {
     width: 100%;
-  }
-
-  .roomSidePanelOverlay {
-    left: max(0.7rem, var(--safe-left));
-    right: max(0.7rem, var(--safe-right));
   }
 
   .roomMediaGridSolo {

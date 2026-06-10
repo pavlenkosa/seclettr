@@ -76,8 +76,26 @@
     calc(var(--safe-top) + 14px)
     clamp(0.9rem, 1.5vw, 1.4rem)
     calc(var(--safe-bottom) + 14px);
-  background: color-mix(in srgb, var(--bg-primary) 48%, var(--overlay-dark));
+  /* Call overlay is always dark: live media and security UI require a dark
+     backdrop regardless of the active app theme. Keep theme hue tint but
+     crush lightness down to 10% so even a white bg-primary stays dark. */
+  background: color-mix(in srgb, var(--bg-primary, #0b1526) 10%, var(--overlay-dark, #05080f) 90%);
   animation: callSurfaceIn var(--motion-duration-base) cubic-bezier(0.18, 0.9, 0.2, 1) both;
+  /* Scope dark surface/text tokens so header text, duration pill, security
+     badge, and icon buttons are readable on the dark backdrop in any theme.
+     Accent/danger are intentionally NOT overridden — user's chosen colour applies. */
+  --surface-shell: #152236;
+  --panel-header-bg: #1a2d42;
+  --panel-border-soft: rgb(61 92 127 / 0.34);
+  --icon-btn-bg: rgb(22 38 59 / 0.82);
+  --icon-btn-border: rgb(85 115 149 / 0.28);
+  --icon-btn-color: #c8d8ee;
+  --icon-btn-hover-bg: rgb(37 58 87 / 0.82);
+  --icon-btn-hover-color: #f8fbff;
+  --text-primary: #edf4ff;
+  --text-secondary: #91a5bf;
+  --text-muted: #7188a3;
+  --border: rgb(61 92 127 / 0.42);
 }
 
 .remoteAudio {

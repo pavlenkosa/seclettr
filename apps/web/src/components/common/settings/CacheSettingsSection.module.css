@@ -1,14 +1,195 @@
-.statValue {
-  font-weight: 600;
-  white-space: nowrap;
+/* ── Storage overview card ────────────────────────────────────────── */
+
+.storageCard {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 2px 0 6px;
 }
+
+.totalSize {
+  font-size: 28px;
+  font-weight: 700;
+  color: var(--text-primary);
+  letter-spacing: -0.5px;
+  line-height: 1.1;
+}
+
+.statsLine {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  color: var(--text-secondary);
+  flex-wrap: wrap;
+}
+
+.statsDot {
+  color: var(--text-muted);
+}
+
+.emptyState {
+  font-size: 14px;
+  color: var(--text-muted);
+  padding: 4px 0 2px;
+  margin: 0;
+}
+
+/* ── Storage bar ─────────────────────────────────────────────────── */
+
+.storageBarTrack {
+  height: 8px;
+  border-radius: 999px;
+  background: var(--bg-tertiary);
+  overflow: hidden;
+}
+
+.storageBarFill {
+  height: 100%;
+  border-radius: 999px;
+  background: var(--accent);
+  transition: width 0.4s ease;
+}
+
+/* ── Skeleton animation ──────────────────────────────────────────── */
+
+@keyframes cacheShimmer {
+  from { opacity: 0.45; }
+  to   { opacity: 0.85; }
+}
+
+.skeleton {
+  display: inline-block;
+  height: 13px;
+  border-radius: 7px;
+  background: var(--bg-tertiary);
+  animation: cacheShimmer 0.9s ease-in-out infinite alternate;
+}
+
+.skeletonBar {
+  width: 100%;
+  height: 100%;
+  border-radius: 999px;
+  background: var(--bg-tertiary);
+  animation: cacheShimmer 0.9s ease-in-out infinite alternate;
+}
+
+/* ── Conversation rows ───────────────────────────────────────────── */
+
+.convItem {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 9px 0;
+  border-top: 1px solid var(--border);
+}
+
+.convItem:first-child {
+  border-top: none;
+  padding-top: 4px;
+}
+
+.convName {
+  flex: 1;
+  min-width: 0;
+  font-size: 14px;
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.convItemMeta {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+}
+
+.convItemRight {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+  width: 130px;
+}
+
+.convBarTrack {
+  flex: 1;
+  height: 6px;
+  border-radius: 999px;
+  background: var(--bg-tertiary);
+  overflow: hidden;
+}
+
+.convBarFill {
+  height: 100%;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--accent) 68%, transparent);
+  transition: width 0.4s ease;
+}
+
+.convSize {
+  font-size: 12px;
+  color: var(--text-secondary);
+  font-weight: 500;
+  white-space: nowrap;
+  min-width: 44px;
+  text-align: right;
+}
+
+/* ── Action rows ─────────────────────────────────────────────────── */
+
+.actionRow {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 0;
+  border-top: 1px solid var(--border);
+}
+
+.actionRow:first-child {
+  border-top: none;
+  padding-top: 4px;
+}
+
+.actionLabel {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.actionLabel > span:first-child {
+  font-size: 14px;
+  color: var(--text-primary);
+  font-weight: 500;
+}
+
+.actionDesc {
+  font-size: 12px;
+  color: var(--text-muted);
+  line-height: 1.4;
+}
+
+/* ── Confirm / refresh ───────────────────────────────────────────── */
 
 .confirmRow {
   display: flex;
   gap: 8px;
   align-items: center;
+  flex-shrink: 0;
 }
 
 .refreshButton {
   align-self: flex-start;
+}
+
+/* ── Legacy compat ───────────────────────────────────────────────── */
+
+.statValue {
+  font-weight: 600;
+  white-space: nowrap;
 }

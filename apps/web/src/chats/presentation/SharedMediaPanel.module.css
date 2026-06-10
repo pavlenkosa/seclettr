@@ -26,29 +26,6 @@
   color: var(--text-primary);
 }
 
-.closeBtn {
-  all: unset;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 44px;
-  height: 44px;
-  border-radius: 8px;
-  color: var(--text-secondary);
-  cursor: pointer;
-  transition: background var(--motion-duration-fast) ease, color var(--motion-duration-fast) ease;
-}
-
-.closeBtn:hover {
-  background: color-mix(in srgb, var(--accent) 12%, transparent);
-  color: var(--text-primary);
-}
-
-.closeBtn:focus-visible {
-  outline: 2px solid var(--accent);
-  outline-offset: -1px;
-}
-
 .tabs {
   display: flex;
   gap: 0.2rem;

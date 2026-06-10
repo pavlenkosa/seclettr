@@ -437,7 +437,7 @@ export function useDirectCallDevDebug({
     if (!import.meta.env.DEV) return;
 
     window.__scGetCallDebugSnapshot = buildDirectCallDebugSnapshot;
-    window.__scDumpCallDebug = async () => {
+    const dumpCallDebug = async () => {
       const snapshot = await buildDirectCallDebugSnapshot();
       if (!snapshot) {
         logger.warn("[CALL][debug] snapshot unavailable");
@@ -447,18 +447,29 @@ export function useDirectCallDevDebug({
       logger.debug("[CALL][debug] direct-call snapshot", snapshot);
       console.groupEnd();
     };
-    window.__scSetCallDebugEnabled = (enabled: boolean) => {
+    window.__scDumpCallDebug = dumpCallDebug;
+    const setCallDebugEnabled = (enabled: boolean) => {
       callMediaDebugEnabledRef.current = enabled;
       writeCallMediaDebugEnabled(enabled);
       logger.info(`[CALL][debug] media logging ${enabled ? "enabled" : "disabled"}`);
     };
-    window.__scIsCallDebugEnabled = () => callMediaDebugEnabledRef.current;
+    window.__scSetCallDebugEnabled = setCallDebugEnabled;
+    const isCallDebugEnabled = () => callMediaDebugEnabledRef.current;
+    window.__scIsCallDebugEnabled = isCallDebugEnabled;
 
     return () => {
-      delete window.__scGetCallDebugSnapshot;
-      delete window.__scDumpCallDebug;
-      delete window.__scSetCallDebugEnabled;
-      delete window.__scIsCallDebugEnabled;
+      if (window.__scGetCallDebugSnapshot === buildDirectCallDebugSnapshot) {
+        delete window.__scGetCallDebugSnapshot;
+      }
+      if (window.__scDumpCallDebug === dumpCallDebug) {
+        delete window.__scDumpCallDebug;
+      }
+      if (window.__scSetCallDebugEnabled === setCallDebugEnabled) {
+        delete window.__scSetCallDebugEnabled;
+      }
+      if (window.__scIsCallDebugEnabled === isCallDebugEnabled) {
+        delete window.__scIsCallDebugEnabled;
+      }
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, import.meta.env.DEV ? [buildDirectCallDebugSnapshot, callMediaDebugEnabledRef] : []);

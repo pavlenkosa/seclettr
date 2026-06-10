@@ -31,6 +31,13 @@ const CALL_SECURITY_MODE_VALUES: ReadonlySet<CallSecurityMode> = new Set(["compa
 const AUTO_DECRYPT_MEDIA_VALUES: ReadonlySet<AutoDecryptMedia> = new Set(["on", "off"]);
 const VIBRATION_VALUES: ReadonlySet<VibrationEnabled> = new Set(["on", "off"]);
 
+function resolveDomTheme(themeMode: ThemeMode, customThemeBg: string): "light" | "dark" {
+  if (themeMode === "custom") {
+    return isCustomBgDark(customThemeBg) ? "dark" : "light";
+  }
+  return themeMode;
+}
+
 function readStorageValue(key: string): string | null {
   try {
     return localStorage.getItem(key);
@@ -149,7 +156,7 @@ export const useUiSettingsStore = create<UiSettingsState>()(
 // ── DOM side-effects ──────────────────────────────────────────────────────────
 // Apply current values immediately, then keep in sync on every change.
 const _s = useUiSettingsStore.getState();
-document.documentElement.dataset.theme = _s.themeMode;
+document.documentElement.dataset.theme = resolveDomTheme(_s.themeMode, _s.customThemeBg);
 document.documentElement.dataset.accent = _s.accentColor;
 document.documentElement.dataset.fontSize = _s.fontSize;
 document.documentElement.dataset.callSecurityMode = _s.callSecurityMode;
@@ -161,10 +168,11 @@ if (_s.themeMode === "custom") {
 useUiSettingsStore.subscribe(
   (s) => s.themeMode,
   (v) => {
-    document.documentElement.dataset.theme = v;
+    const { customThemeBg } = useUiSettingsStore.getState();
+    document.documentElement.dataset.theme = resolveDomTheme(v, customThemeBg);
     writeStorageValue(THEME_STORAGE_KEY, v);
     if (v === "custom") {
-      const { customThemeBg, customThemeAccent } = useUiSettingsStore.getState();
+      const { customThemeAccent } = useUiSettingsStore.getState();
       applyCustomThemeVars(customThemeBg, customThemeAccent);
     } else {
       removeCustomThemeVars();
@@ -184,6 +192,7 @@ useUiSettingsStore.subscribe(
   (v) => {
     writeStorageValue(CUSTOM_BG_STORAGE_KEY, v);
     if (useUiSettingsStore.getState().themeMode !== "custom") return;
+    document.documentElement.dataset.theme = resolveDomTheme("custom", v);
     const { customThemeAccent } = useUiSettingsStore.getState();
     applyCustomThemeVars(v, customThemeAccent);
     writeStorageValue(CUSTOM_COLOR_SCHEME_STORAGE_KEY, isCustomBgDark(v) ? "dark" : "light");

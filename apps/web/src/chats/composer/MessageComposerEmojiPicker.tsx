@@ -236,6 +236,7 @@ function EmojiTabBar({
       ref={tablistRef}
       className={styles.emojiTabBar}
       role="tablist"
+      tabIndex={-1}
       aria-label={t("composer.aria.emojiCategories")}
       onKeyDown={handleKeyDown}
     >

@@ -60,11 +60,12 @@
   position: absolute;
   inset: 0;
   border-radius: 50%;
-  background: rgb(0 0 0 / 0.34);
+  background: color-mix(in srgb, var(--surface-float) 82%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--panel-border-soft) 72%, transparent);
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #fff;
+  color: var(--text-primary);
   opacity: 0;
   transition: opacity var(--motion-duration-fast) var(--motion-ease-standard);
 }
@@ -349,140 +350,7 @@
   color: var(--accent);
 }
 
-/* ─── Member list ─────────────────────────────────────────────────────────── */
-
-.memberList {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  display: flex;
-  flex-direction: column;
-  border-radius: 14px;
-  background: color-mix(in srgb, var(--surface-shell-strong) 88%, transparent);
-  overflow: hidden;
-}
-
-.memberList li + li {
-  border-top: 1px solid color-mix(in srgb, var(--panel-border-soft) 60%, transparent);
-}
-
-.memberRow {
-  display: flex;
-  align-items: center;
-  gap: 0.7rem;
-  width: 100%;
-  padding: 0.62rem 0.74rem;
-  border: none;
-  background: transparent;
-  color: var(--text-primary);
-  cursor: pointer;
-  text-align: left;
-  transition: background var(--motion-duration-fast) var(--motion-ease-standard);
-}
-
-/* Round the first/last rows so the hover highlight fills cleanly inside the
-   container's border-radius instead of being clipped at the edges. */
-.memberList li:first-child .memberRow {
-  border-top-left-radius: 13px;
-  border-top-right-radius: 13px;
-}
-
-.memberList li:last-child .memberRow {
-  border-bottom-left-radius: 13px;
-  border-bottom-right-radius: 13px;
-}
-
-.memberList li:only-child .memberRow {
-  border-radius: 13px;
-}
-
-.memberRow:hover:not(:disabled),
-.memberRow:focus-visible {
-  background: color-mix(in srgb, var(--accent) 10%, transparent);
-  outline: none;
-}
-
-.memberRow:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
-
-.memberMain {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  gap: 0.16rem;
-  min-width: 0;
-}
-
-.memberName {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.42rem;
-  font-size: 0.92rem;
-  font-weight: 600;
-  color: var(--text-primary);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.youTag {
-  font-size: 0.7rem;
-  font-weight: 500;
-  color: var(--text-secondary);
-}
-
-.roleBadge {
-  display: inline-flex;
-  align-items: center;
-  padding: 0.14rem 0.48rem;
-  border-radius: 999px;
-  font-size: 0.66rem;
-  font-weight: 700;
-  letter-spacing: 0.02em;
-  text-transform: uppercase;
-  width: fit-content;
-}
-
-.roleOwner {
-  background: color-mix(in srgb, var(--accent) 22%, transparent);
-  color: color-mix(in srgb, var(--accent) 80%, white 20%);
-}
-
-.roleAdmin {
-  background: color-mix(in srgb, var(--text-secondary) 22%, transparent);
-  color: var(--text-secondary);
-}
-
-.memberChevron {
-  color: var(--text-secondary);
-  flex-shrink: 0;
-}
-
-/* ─── Leave / Error ───────────────────────────────────────────────────────── */
-
-.leaveBtn {
-  margin-top: 0.4rem;
-  padding: 0.7rem;
-  border: none;
-  border-radius: 14px;
-  background: color-mix(in srgb, var(--danger) 14%, transparent);
-  color: var(--danger);
-  font-size: 0.92rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: background var(--motion-duration-fast) var(--motion-ease-standard);
-}
-
-.leaveBtn:hover:not(:disabled) {
-  background: color-mix(in srgb, var(--danger) 22%, transparent);
-}
-
-.leaveBtn:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
+/* ─── Error ──────────────────────────────────────────────────────────── */
 
 .error {
   margin-top: 0.2rem;
@@ -502,7 +370,7 @@
   display: flex;
   align-items: flex-end;
   justify-content: center;
-  background: rgb(0 0 0 / 0.36);
+  background: color-mix(in srgb, var(--text-primary) 28%, transparent);
   padding: 0.8rem;
 }
 
@@ -565,37 +433,6 @@
   display: flex;
   flex-direction: column;
   gap: 0.18rem;
-}
-
-.sheetAction {
-  width: 100%;
-  padding: 0.78rem 0.8rem;
-  border: none;
-  border-radius: 12px;
-  background: transparent;
-  color: var(--text-primary);
-  font-size: 0.92rem;
-  font-weight: 500;
-  text-align: center;
-  cursor: pointer;
-  transition: background var(--motion-duration-fast) var(--motion-ease-standard);
-}
-
-.sheetAction:hover:not(:disabled) {
-  background: color-mix(in srgb, var(--accent) 14%, transparent);
-}
-
-.sheetAction:disabled {
-  opacity: 0.55;
-  cursor: not-allowed;
-}
-
-.sheetActionDanger {
-  color: var(--danger);
-}
-
-.sheetActionDanger:hover:not(:disabled) {
-  background: color-mix(in srgb, var(--danger) 16%, transparent);
 }
 
 @media (max-width: 640px) {

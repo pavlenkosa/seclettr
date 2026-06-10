@@ -16,6 +16,7 @@ interface SettingsSectionNavProps {
   readonly onSelect: (section: SettingsSectionEntry["id"]) => void;
   readonly ariaLabel: string;
   readonly note?: string;
+  readonly showActive?: boolean;
 }
 
 export function SettingsSectionNav({
@@ -24,6 +25,7 @@ export function SettingsSectionNav({
   onSelect,
   ariaLabel,
   note,
+  showActive = true,
 }: Readonly<SettingsSectionNavProps>) {
   const navRef = useRef<HTMLElement | null>(null);
   const activeIndex = useMemo(
@@ -63,7 +65,7 @@ export function SettingsSectionNav({
     <>
       <nav ref={navRef} className={styles.sectionList} aria-label={ariaLabel}>
         {sections.map((section, index) => {
-          const isActive = section.id === activeSection;
+          const isActive = showActive && section.id === activeSection;
           return (
             <EntityRow
               key={section.id}

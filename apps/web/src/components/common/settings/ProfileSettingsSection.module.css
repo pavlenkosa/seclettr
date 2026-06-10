@@ -193,17 +193,17 @@
 /* ── Light theme ─────────────────────────────────────────────────────────── */
 
 :global(:root[data-theme="light"]) .input {
-  background: var(--bg-primary);
+  background: var(--surface-float);
   border-color: color-mix(in srgb, var(--panel-border) 80%, transparent);
 }
 
 :global(:root[data-theme="light"]) .input:focus {
   border-color: var(--accent);
-  background: var(--bg-primary);
+  background: var(--surface-float);
 }
 
 :global(:root[data-theme="light"]) .readonlyValue {
-  background: color-mix(in srgb, var(--bg-secondary) 60%, transparent);
+  background: color-mix(in srgb, var(--surface-float) 70%, transparent);
 }
 
 /* ── Reduced motion ──────────────────────────────────────────────────────── */

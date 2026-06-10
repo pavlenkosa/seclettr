@@ -10,6 +10,10 @@
   padding: 1.5rem;
 }
 
+:global(:root[data-theme="light"]) .overlay {
+  background: color-mix(in srgb, var(--text-primary) 30%, transparent);
+}
+
 .dialog {
   display: flex;
   flex-direction: column;
@@ -49,6 +53,10 @@
   flex-shrink: 0;
   border: 2px solid color-mix(in srgb, var(--accent) 50%, transparent);
   box-shadow: 0 0 0 1000px rgba(0, 0, 0, 0.55);
+}
+
+:global(:root[data-theme="light"]) .viewport {
+  box-shadow: 0 0 0 1000px color-mix(in srgb, var(--text-primary) 22%, transparent);
 }
 
 .canvas {

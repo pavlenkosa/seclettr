@@ -3,7 +3,7 @@ import { useI18n } from "@/i18n";
 import type { Locale } from "@/i18n/messages";
 import type { AccentColor, FontSize, ThemeMode } from "@/ui-settings";
 import { SegmentedControl } from "@/components/ui";
-import { hexToOklch, oklchToHex } from "@/lib/custom-theme";
+import { hexToOklch, isCustomBgDark, oklchToHex } from "@/lib/custom-theme";
 import { SettingsGroup, SettingsRow } from "./SettingsSectionPrimitives";
 import sharedStyles from "../SettingsSections.module.css";
 import styles from "./AppearanceSettingsSection.module.css";
@@ -90,6 +90,10 @@ interface OklchColorPickerProps {
 function OklchColorPicker({ pickerId, label, value, presets, onChange }: OklchColorPickerProps) {
   const okl = hexToOklch(value) ?? { l: 0.30, c: 0.15, h: 240 };
   const { l, c, h } = okl;
+  const previewTone = isCustomBgDark(value) ? "dark" : "light";
+  const pickerVars = {
+    "--oklch-thumb-ring": previewTone === "dark" ? "#fff" : "rgb(15 23 42 / 0.82)",
+  } as CSSProperties;
 
   const setH = (v: number) => onChange(oklchToHex({ l, c, h: v }));
   const setC = (v: number) => onChange(oklchToHex({ l, c: v, h }));
@@ -101,10 +105,14 @@ function OklchColorPicker({ pickerId, label, value, presets, onChange }: OklchCo
   const lightnessTrack = `linear-gradient(to right, #000, ${oklchToHex({ l: 0.5, c, h })}, #fff)`;
 
   return (
-    <div className={styles.colorPickerGroup}>
+    <div className={styles.colorPickerGroup} style={pickerVars} data-picker-color={value}>
       <span className={styles.colorPickerLabel}>{label}</span>
 
-      <div className={styles.colorPreview} style={{ background: value }}>
+      <div
+        className={styles.colorPreview}
+        style={{ background: value }}
+        data-preview-tone={previewTone}
+      >
         <span className={styles.colorHex}>{value}</span>
       </div>
 

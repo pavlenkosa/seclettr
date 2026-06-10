@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useI18n } from "@/i18n";
 import { PillButton } from "@/components/ui";
 import {
@@ -9,11 +9,39 @@ import {
   type CacheConversationInfo,
   type CacheStats,
 } from "@/stores/plain/messages/plain-message-cache-db";
-import { SettingsGroup, SettingsRow } from "./SettingsSectionPrimitives";
+import { SettingsGroup } from "./SettingsSectionPrimitives";
 import styles from "./CacheSettingsSection.module.css";
 import sharedStyles from "../SettingsSections.module.css";
 
 type ClearMode = "idle" | "confirm" | "busy" | "done";
+
+function SkeletonLine({ width }: { readonly width: string }) {
+  return <span className={styles.skeleton} style={{ width }} aria-hidden="true" />;
+}
+
+function StorageBarFill({ usedBytes, totalBytes }: { readonly usedBytes: number; readonly totalBytes: number }) {
+  const pct = totalBytes > 0 ? Math.min((usedBytes / totalBytes) * 100, 100) : 0;
+  return (
+    <div
+      className={styles.storageBarTrack}
+      role="meter"
+      aria-valuenow={Math.round(pct)}
+      aria-valuemin={0}
+      aria-valuemax={100}
+    >
+      <div className={styles.storageBarFill} style={{ width: `${pct}%` }} />
+    </div>
+  );
+}
+
+function ConvBarFill({ bytes, maxBytes }: { readonly bytes: number; readonly maxBytes: number }) {
+  const pct = maxBytes > 0 ? Math.min((bytes / maxBytes) * 100, 100) : 0;
+  return (
+    <div className={styles.convBarTrack}>
+      <div className={styles.convBarFill} style={{ width: `${pct}%` }} />
+    </div>
+  );
+}
 
 export function CacheSettingsSection() {
   const { t } = useI18n();
@@ -21,16 +49,24 @@ export function CacheSettingsSection() {
   const [loading, setLoading] = useState(true);
   const [clearMode, setClearMode] = useState<ClearMode>("idle");
   const [clearOldMode, setClearOldMode] = useState<ClearMode>("idle");
+  const mountedRef = useRef(true);
+
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+    };
+  }, []);
 
   const refresh = useCallback(async () => {
     setLoading(true);
     try {
       const s = await cacheGetStats();
-      setStats(s);
+      if (mountedRef.current) setStats(s);
     } catch {
-      // best-effort; keep stale stats visible
+      // keep stale stats visible
     } finally {
-      setLoading(false);
+      if (mountedRef.current) setLoading(false);
     }
   }, []);
 
@@ -42,11 +78,14 @@ export function CacheSettingsSection() {
     setClearMode("busy");
     try {
       await cacheClearAll();
+      if (!mountedRef.current) return;
       setClearMode("done");
       await refresh();
-      setTimeout(() => setClearMode("idle"), 2000);
+      setTimeout(() => {
+        if (mountedRef.current) setClearMode("idle");
+      }, 2000);
     } catch {
-      setClearMode("idle");
+      if (mountedRef.current) setClearMode("idle");
     }
   };
 
@@ -55,69 +94,101 @@ export function CacheSettingsSection() {
     try {
       const oneWeekAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
       await cacheClearOlderThan(oneWeekAgo);
+      if (!mountedRef.current) return;
       setClearOldMode("done");
       await refresh();
-      setTimeout(() => setClearOldMode("idle"), 2000);
+      setTimeout(() => {
+        if (mountedRef.current) setClearOldMode("idle");
+      }, 2000);
     } catch {
-      setClearOldMode("idle");
+      if (mountedRef.current) setClearOldMode("idle");
     }
   };
 
+  const sortedConvs = stats
+    ? [...stats.conversations].sort((a, b) => b.estimatedBytes - a.estimatedBytes)
+    : [];
+  const maxConvBytes = sortedConvs[0]?.estimatedBytes ?? 1;
+  const isEmpty = !loading && stats !== null && stats.conversationCount === 0;
+
   return (
     <div className={sharedStyles.groupStack}>
+      {/* ── Storage overview ─────────────────────────────── */}
       <SettingsGroup
         eyebrow={t("settings.cache.storage")}
         title={t("settings.cache.storage.title")}
-        description={t("settings.cache.storage.description")}
       >
-        {loading ? (
-          <SettingsRow label={t("app.loading")}>
-            <span className={styles.statValue}>—</span>
-          </SettingsRow>
-        ) : stats ? (
-          <>
-            <SettingsRow label={t("settings.cache.totalSize")}>
-              <span className={styles.statValue}>{formatCacheSize(stats.estimatedBytes)}</span>
-            </SettingsRow>
-            <SettingsRow label={t("settings.cache.cachedConversations")}>
-              <span className={styles.statValue}>{stats.conversationCount}</span>
-            </SettingsRow>
-            <SettingsRow label={t("settings.cache.cachedMessages")}>
-              <span className={styles.statValue}>{stats.totalMessages}</span>
-            </SettingsRow>
-          </>
-        ) : (
-          <SettingsRow label={t("settings.cache.unavailable")}>
-            <span className={styles.statValue}>—</span>
-          </SettingsRow>
-        )}
+        <div className={styles.storageCard}>
+          {loading ? (
+            <>
+              <SkeletonLine width="36%" />
+              <div className={styles.storageBarTrack}>
+                <div className={styles.skeletonBar} />
+              </div>
+              <SkeletonLine width="62%" />
+            </>
+          ) : isEmpty ? (
+            <p className={styles.emptyState}>{t("settings.cache.empty")}</p>
+          ) : (
+            <>
+              <div className={styles.totalSize}>{formatCacheSize(stats!.estimatedBytes)}</div>
+              <StorageBarFill usedBytes={stats!.estimatedBytes} totalBytes={stats!.estimatedBytes} />
+              <div className={styles.statsLine}>
+                <span>{stats!.conversationCount} {t("settings.cache.cachedConversations").toLowerCase()}</span>
+                <span className={styles.statsDot}>·</span>
+                <span>{stats!.totalMessages} {t("settings.cache.cachedMessages").toLowerCase()}</span>
+              </div>
+            </>
+          )}
+        </div>
       </SettingsGroup>
 
-      {stats && stats.conversations.length > 0 ? (
+      {/* ── Per-conversation breakdown ───────────────────── */}
+      {(loading || sortedConvs.length > 0) ? (
         <SettingsGroup
           eyebrow={t("settings.cache.conversations")}
           title={t("settings.cache.conversations.title")}
         >
-          {stats.conversations.map((conv: CacheConversationInfo) => (
-            <SettingsRow key={conv.convKey} label={conv.peerName}>
-              <span className={styles.statValue}>
-                {conv.messageCount} msg · {formatCacheSize(conv.estimatedBytes)}
-              </span>
-            </SettingsRow>
-          ))}
+          {loading ? (
+            [0, 1, 2].map((i) => (
+              <div key={i} className={styles.convItem}>
+                <div className={styles.convItemMeta}>
+                  <SkeletonLine width={`${38 + i * 14}%`} />
+                </div>
+                <div className={styles.convItemRight}>
+                  <div className={styles.convBarTrack}>
+                    <div className={styles.skeletonBar} />
+                  </div>
+                  <SkeletonLine width="44px" />
+                </div>
+              </div>
+            ))
+          ) : (
+            sortedConvs.map((conv: CacheConversationInfo) => (
+              <div key={conv.convKey} className={styles.convItem}>
+                <div className={styles.convName}>{conv.peerName}</div>
+                <div className={styles.convItemRight}>
+                  <ConvBarFill bytes={conv.estimatedBytes} maxBytes={maxConvBytes} />
+                  <span className={styles.convSize}>{formatCacheSize(conv.estimatedBytes)}</span>
+                </div>
+              </div>
+            ))
+          )}
         </SettingsGroup>
       ) : null}
 
+      {/* ── Actions ──────────────────────────────────────── */}
       <SettingsGroup
         eyebrow={t("settings.cache.actions")}
         title={t("settings.cache.actions.title")}
         description={t("settings.cache.actions.description")}
         tone="accent"
       >
-        <SettingsRow
-          label={t("settings.cache.clearOld")}
-          description={t("settings.cache.clearOld.description")}
-        >
+        <div className={styles.actionRow}>
+          <div className={styles.actionLabel}>
+            <span>{t("settings.cache.clearOld")}</span>
+            <span className={styles.actionDesc}>{t("settings.cache.clearOld.description")}</span>
+          </div>
           <PillButton
             type="button"
             tone="danger"
@@ -132,12 +203,13 @@ export function CacheSettingsSection() {
                 ? t("app.done")
                 : t("settings.cache.clearOld.button")}
           </PillButton>
-        </SettingsRow>
+        </div>
 
-        <SettingsRow
-          label={t("settings.cache.clearAll")}
-          description={t("settings.cache.clearAll.description")}
-        >
+        <div className={styles.actionRow}>
+          <div className={styles.actionLabel}>
+            <span>{t("settings.cache.clearAll")}</span>
+            <span className={styles.actionDesc}>{t("settings.cache.clearAll.description")}</span>
+          </div>
           {clearMode === "confirm" ? (
             <div className={styles.confirmRow}>
               <PillButton
@@ -175,7 +247,7 @@ export function CacheSettingsSection() {
                   : t("settings.cache.clearAll.button")}
             </PillButton>
           )}
-        </SettingsRow>
+        </div>
       </SettingsGroup>
 
       <PillButton
@@ -185,8 +257,9 @@ export function CacheSettingsSection() {
         size="sm"
         onClick={() => { void refresh(); }}
         className={styles.refreshButton}
+        disabled={loading}
       >
-        {t("settings.cache.refresh")}
+        {loading ? t("app.loading") : t("settings.cache.refresh")}
       </PillButton>
     </div>
   );

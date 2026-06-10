@@ -120,11 +120,6 @@
   pointer-events: auto;
 }
 
-.jumpToBottomHidden {
-  opacity: 0;
-  pointer-events: none;
-}
-
 .jumpToBottomBadge {
   position: absolute;
   top: -0.14rem;

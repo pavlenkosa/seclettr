@@ -620,13 +620,27 @@ input, textarea, select {
 :root[data-theme="light"] input,
 :root[data-theme="light"] textarea,
 :root[data-theme="light"] select {
-  background: color-mix(in srgb, var(--surface-shell-strong) 88%, white);
+  background: var(--surface-float);
+  border-color: color-mix(in srgb, var(--panel-border-soft) 92%, transparent);
+  box-shadow: none;
+}
+
+/* Custom theme: use panel-modal-bg (white for light custom, elevated surface for
+   dark custom) instead of bg-tertiary or surface-float. bg-tertiary follows the
+   bg-primary hue, so on a pink/green/etc background inputs would be tinted.
+   panel-modal-bg is #ffffff in light custom and shellBg in dark custom — neutral. */
+:root[data-theme="custom"] input,
+:root[data-theme="custom"] textarea,
+:root[data-theme="custom"] select {
+  background: var(--panel-modal-bg);
   border-color: color-mix(in srgb, var(--panel-border-soft) 92%, transparent);
   box-shadow: none;
 }
 
 :root[data-theme="light"] input::placeholder,
-:root[data-theme="light"] textarea::placeholder {
+:root[data-theme="light"] textarea::placeholder,
+:root[data-theme="custom"] input::placeholder,
+:root[data-theme="custom"] textarea::placeholder {
   color: color-mix(in srgb, var(--text-secondary) 84%, var(--text-muted));
 }
 

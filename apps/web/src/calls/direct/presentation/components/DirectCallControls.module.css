@@ -88,25 +88,11 @@
     --call-control-inline-compact-padding: 0;
   }
 
-  .mobileAudioOutputBar {
-    display: flex;
-    justify-content: center;
-    /* 0.8rem gap between pill and the controls dock below it */
-    margin: 0 auto 0.8rem;
-    width: fit-content;
-    max-width: calc(100% - 1rem);
-  }
-
-  .mobileAudioOutputButton {
-    min-height: 44px;
-    max-width: 100%;
-  }
-
-  /* Sheet must clear: safe-bottom + dock-height (~64px) + pill-height (~44px) + gaps (~24px) */
+  /* Sheet must clear safe-bottom + dock-height (~73px) + gap */
   .audioOutputSheet {
     left: 0.72rem;
     right: 0.72rem;
-    bottom: calc(var(--safe-bottom) + 148px);
+    bottom: calc(var(--safe-bottom) + 96px);
     border-radius: 22px;
   }
 }

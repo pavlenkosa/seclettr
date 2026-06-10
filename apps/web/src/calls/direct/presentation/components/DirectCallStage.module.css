@@ -323,6 +323,15 @@
   color: var(--text-primary);
 }
 
+/* Audio-only stage must remain fully transparent in any theme so the dark
+   overlay backdrop shows through. These rules re-assert transparency at the
+   same specificity level, placed after the per-theme overrides, to win. */
+:global(:root[data-theme="light"]) .callStageAudio,
+:global(:root[data-theme="custom"]) .callStageAudio {
+  border-color: transparent;
+  background: transparent;
+}
+
 /* === responsive === */
 
 @media (max-width: 760px) {

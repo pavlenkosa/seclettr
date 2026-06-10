@@ -1,3 +1,4 @@
+/** IconMic — inline SVG microphone glyph for voice and audio affordances. */
 interface IconMicProps {
   readonly size?: number;
   readonly className?: string;

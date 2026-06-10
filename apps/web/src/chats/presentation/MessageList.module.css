@@ -137,17 +137,6 @@
   letter-spacing: 0.02em;
 }
 
-.timestamp {
-  width: fit-content;
-  margin: 0.4rem auto 0;
-  padding: 0.28rem 0.62rem;
-  font-size: 0.6875rem;
-  color: var(--text-secondary);
-  background: var(--timestamp-bg);
-  border: 1px solid var(--timestamp-border);
-  border-radius: var(--radius-full);
-}
-
 /* ── Typing indicator ─────────────────────────────────────────────────────── */
 
 .typingBubble {
@@ -600,10 +589,6 @@ button.quotedBubble {
   border: 1px solid color-mix(in srgb, var(--voice-decrypt-border) 92%, transparent);
   color: var(--voice-decrypt-icon, var(--text-primary));
   flex-shrink: 0;
-}
-
-:global(:root[data-theme="light"]) .timestamp {
-  color: var(--text-primary-muted);
 }
 
 :global(:root[data-theme="light"]) .callEventCard {
@@ -1148,95 +1133,6 @@ button.quotedBubble {
   height: 14px;
 }
 
-.videoDecryptBtn {
-  min-width: clamp(150px, 38vw, 220px);
-  min-height: auto;
-  border-radius: 26px;
-  flex-direction: column;
-  gap: 0.5rem;
-  padding: 0.48rem 0.46rem 0.62rem;
-  background: color-mix(in srgb, var(--voice-decrypt-bg) 88%, transparent);
-  border-color: color-mix(in srgb, var(--voice-decrypt-border) 90%, transparent);
-}
-
-.videoDecryptBtn:hover:not(:disabled) {
-  background: color-mix(in srgb, var(--voice-decrypt-hover-bg) 92%, transparent);
-  border-color: color-mix(in srgb, var(--voice-decrypt-border) 90%, transparent);
-}
-
-.bubbleOwn .videoDecryptBtn {
-  background: rgb(255 255 255 / 0.08);
-  border-color: var(--message-out-ui-soft);
-  color: var(--message-out-ui);
-}
-
-.bubbleOwn .videoDecryptBtn:hover:not(:disabled) {
-  background: rgb(255 255 255 / 0.14);
-  border-color: var(--message-out-ui-strong);
-}
-
-.videoDecryptCircle {
-  position: relative;
-  width: clamp(120px, 32vw, 172px);
-  aspect-ratio: 1 / 1;
-  border-radius: 50%;
-  overflow: hidden;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  border: 1px solid color-mix(in srgb, var(--message-ui-accent) 30%, transparent);
-  background: color-mix(in srgb, var(--voice-decrypt-bg) 92%, var(--bg-secondary));
-}
-
-.bubbleOwn .videoDecryptCircle {
-  border-color: rgb(255 255 255 / 0.14);
-  background: rgb(255 255 255 / 0.08);
-}
-
-.videoDecryptBlur {
-  position: absolute;
-  inset: 18%;
-  border-radius: 50%;
-  display: none;
-}
-
-.bubbleOwn .videoDecryptBlur {
-  display: none;
-}
-
-.videoDecryptLock {
-  position: relative;
-  z-index: var(--z-1);
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  background: rgb(9 23 38 / 0.48);
-  border: 1px solid color-mix(in srgb, var(--voice-decrypt-border) 90%, transparent);
-  color: #eff7ff;
-}
-
-.bubbleOwn .videoDecryptLock {
-  background: rgb(4 17 33 / 0.24);
-  border-color: rgb(255 255 255 / 0.18);
-  color: #ffffff;
-}
-
-.videoDecryptLock :global(svg) {
-  width: 18px;
-  height: 18px;
-}
-
-.videoDecryptLabel {
-  font-size: 0.74rem;
-  line-height: 1.2;
-  font-weight: 700;
-  text-align: center;
-  max-width: min(150px, 100%);
-}
-
 .voiceUploadControl {
   width: 52px;
   display: inline-flex;
@@ -1267,12 +1163,6 @@ button.quotedBubble {
 .voiceUploadPercent {
   font-variant-numeric: tabular-nums;
   color: color-mix(in srgb, currentColor 86%, transparent);
-}
-
-.videoUploadPlaceholder {
-  position: absolute;
-  inset: 0;
-  background: color-mix(in srgb, var(--message-ui-accent) 12%, var(--bg-secondary));
 }
 
 .videoUploadOverlay {
@@ -1443,28 +1333,9 @@ button.quotedBubble {
     width: clamp(128px, 42vw, 180px);
   }
 
-  .videoDecryptBtn {
-    min-width: clamp(128px, 42vw, 180px);
-    gap: 0.42rem;
-    padding: 0.42rem 0.38rem 0.54rem;
-  }
-
-  .videoDecryptCircle {
-    width: clamp(104px, 38vw, 148px);
-  }
-
-  .videoDecryptLock {
-    width: 34px;
-    height: 34px;
-  }
-
-  .videoDecryptLabel {
-    font-size: 0.7rem;
-  }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .timestamp,
   .callEventRow,
   .messageRow,
   .statusSending,

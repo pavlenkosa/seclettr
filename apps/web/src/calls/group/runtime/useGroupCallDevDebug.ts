@@ -161,7 +161,7 @@ function useGroupCallDevDebugImpl(options: UseGroupCallDevDebugOptions): void {
 
   useEffect(() => {
     window.__scGetCallDebugSnapshot = buildGroupCallDebugSnapshot;
-    window.__scDumpCallDebug = async () => {
+    const dumpCallDebug = async () => {
       const snapshot = await buildGroupCallDebugSnapshot();
       if (!snapshot) {
         logger.warn("[CALL][debug] group-call snapshot unavailable");
@@ -171,18 +171,29 @@ function useGroupCallDevDebugImpl(options: UseGroupCallDevDebugOptions): void {
       logger.debug("[CALL][debug] group-call snapshot", snapshot);
       console.groupEnd();
     };
-    window.__scSetCallDebugEnabled = (enabled: boolean) => {
+    window.__scDumpCallDebug = dumpCallDebug;
+    const setCallDebugEnabled = (enabled: boolean) => {
       callMediaDebugEnabledRef.current = enabled;
       writeCallMediaDebugEnabled(enabled);
       logger.info(`[CALL][debug] media logging ${enabled ? "enabled" : "disabled"}`);
     };
-    window.__scIsCallDebugEnabled = () => callMediaDebugEnabledRef.current;
+    window.__scSetCallDebugEnabled = setCallDebugEnabled;
+    const isCallDebugEnabled = () => callMediaDebugEnabledRef.current;
+    window.__scIsCallDebugEnabled = isCallDebugEnabled;
 
     return () => {
-      delete window.__scGetCallDebugSnapshot;
-      delete window.__scDumpCallDebug;
-      delete window.__scSetCallDebugEnabled;
-      delete window.__scIsCallDebugEnabled;
+      if (window.__scGetCallDebugSnapshot === buildGroupCallDebugSnapshot) {
+        delete window.__scGetCallDebugSnapshot;
+      }
+      if (window.__scDumpCallDebug === dumpCallDebug) {
+        delete window.__scDumpCallDebug;
+      }
+      if (window.__scSetCallDebugEnabled === setCallDebugEnabled) {
+        delete window.__scSetCallDebugEnabled;
+      }
+      if (window.__scIsCallDebugEnabled === isCallDebugEnabled) {
+        delete window.__scIsCallDebugEnabled;
+      }
     };
   }, [buildGroupCallDebugSnapshot]);
 }

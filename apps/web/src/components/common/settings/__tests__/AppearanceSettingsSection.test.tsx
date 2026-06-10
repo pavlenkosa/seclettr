@@ -80,4 +80,35 @@ describe("AppearanceSettingsSection", () => {
     expect(setThemeMode).toHaveBeenCalledWith("light");
     expect(setAccentColor).toHaveBeenCalledWith("emerald");
   });
+
+  it("adapts custom color preview contrast for light selections", () => {
+    act(() => {
+      root.render(
+        <AppearanceSettingsSection
+          locale="en"
+          setLocale={vi.fn()}
+          themeMode="custom"
+          accentColor="blue"
+          fontSize="md"
+          customThemeBg="#eef3fa"
+          customThemeAccent="#f59e0b"
+          setThemeMode={vi.fn()}
+          setAccentColor={vi.fn()}
+          setFontSize={vi.fn()}
+          setCustomThemeBg={vi.fn()}
+          setCustomThemeAccent={vi.fn()}
+        />
+      );
+    });
+
+    const previews = Array.from(document.body.querySelectorAll<HTMLElement>('[data-preview-tone]'));
+    const pickers = Array.from(document.body.querySelectorAll<HTMLElement>('[data-picker-color]'));
+    const bgPreview = previews.find((node) => node.textContent?.includes("#eef3fa"));
+    const accentPreview = previews.find((node) => node.textContent?.includes("#f59e0b"));
+    const bgPicker = pickers.find((node) => node.dataset.pickerColor === "#eef3fa");
+
+    expect(bgPreview?.dataset.previewTone).toBe("light");
+    expect(bgPicker?.style.getPropertyValue("--oklch-thumb-ring")).toBe("rgb(15 23 42 / 0.82)");
+    expect(accentPreview?.dataset.previewTone).toBe("light");
+  });
 });

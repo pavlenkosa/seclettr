@@ -1,3 +1,4 @@
+/** IconFileDocument — inline SVG file/document glyph for attachment and file affordances. */
 interface IconFileDocumentProps {
   readonly size?: number;
   readonly className?: string;

@@ -107,6 +107,17 @@
   background: color-mix(in srgb, var(--surface-float) 88%, transparent);
 }
 
+/* Custom themes: surface-float is hue-tinted relative to bg-primary — on saturated
+   backgrounds the search field turns visibly coloured. Use panel-modal-bg instead
+   (#ffffff for light custom, neutral shell for dark custom). */
+:global(:root[data-theme="custom"]) .searchField {
+  background: color-mix(in srgb, var(--panel-modal-bg) 64%, transparent);
+}
+
+:global(:root[data-theme="custom"]) .searchField:focus-within {
+  background: color-mix(in srgb, var(--panel-modal-bg) 88%, transparent);
+}
+
 .searchInput {
   font-size: 0.8rem;
   line-height: 1;

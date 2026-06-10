@@ -1,3 +1,4 @@
+/** IconVideoCircle — inline SVG video-in-circle glyph for call and media affordances. */
 interface IconVideoCircleProps {
   readonly size?: number;
   readonly className?: string;

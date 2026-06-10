@@ -1,3 +1,4 @@
+/** IconArrowRight — inline SVG right-arrow glyph for navigation and directional affordances. */
 interface IconArrowRightProps {
   readonly size?: number;
   readonly className?: string;

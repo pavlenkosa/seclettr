@@ -1,3 +1,4 @@
+/** IconChevronLeft — inline SVG left-pointing chevron glyph for navigation and back affordances. */
 interface IconChevronLeftProps {
   readonly size?: number;
   readonly strokeWidth?: number;

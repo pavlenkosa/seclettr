@@ -7,8 +7,12 @@
   display: flex;
   align-items: flex-end;
   justify-content: center;
-  background: rgb(0 0 0 / 0.44);
+  background: color-mix(in srgb, var(--bg-primary) 42%, var(--overlay-dark));
   /* No backdrop-filter — flat overlay is the Seclettr design system standard */
+}
+
+:global(:root[data-theme="light"]) .overlay {
+  background: color-mix(in srgb, var(--text-primary) 28%, transparent);
 }
 
 .sheet {

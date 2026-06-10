@@ -115,10 +115,6 @@
   text-align: right;
 }
 
-.lsValue {
-  color: var(--text-primary);
-}
-
 .lsValueOk {
   color: var(--success);
 }

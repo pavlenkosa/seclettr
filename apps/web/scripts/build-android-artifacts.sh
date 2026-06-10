@@ -8,16 +8,19 @@ MODE="${1:-debug}"
 
 usage() {
   cat <<'USAGE'
-Usage: ./scripts/build-android-artifacts.sh [debug|release]
+Usage: ./scripts/build-android-artifacts.sh [debug|diagnostic|release]
 
 Modes:
   debug    Build an installable debug APK after syncing web assets
+  diagnostic Build a production-like debug APK with safe boot/auth diagnostics enabled
   release  Build debug APK + release APK + release AAB after syncing web assets
 USAGE
 }
 
 case "${MODE}" in
   debug)
+    ;;
+  diagnostic)
     ;;
   release)
     ;;
@@ -38,7 +41,11 @@ pnpm --version
 java -version
 
 echo "[android] syncing web assets into Capacitor shell"
-(cd "${APP_DIR}" && pnpm run android:sync)
+if [[ "${MODE}" == "diagnostic" ]]; then
+  (cd "${APP_DIR}" && pnpm run android:sync:diagnostic)
+else
+  (cd "${APP_DIR}" && pnpm run android:sync)
+fi
 
 BACKGROUND_RUNNER_AAR="${APP_DIR}/node_modules/@capacitor/background-runner/android/src/main/libs/android-js-engine-release.aar"
 if [[ ! -f "${BACKGROUND_RUNNER_AAR}" ]]; then
@@ -51,8 +58,15 @@ echo "[android] building ${MODE} artifacts"
 cd "${ANDROID_DIR}"
 chmod +x ./gradlew
 
-if [[ "${MODE}" == "debug" ]]; then
+if [[ "${MODE}" == "debug" || "${MODE}" == "diagnostic" ]]; then
   ./gradlew --no-daemon assembleDebug
 else
   ./gradlew --no-daemon assembleDebug assembleRelease bundleRelease
+fi
+
+if [[ "${MODE}" == "diagnostic" ]]; then
+  DEBUG_APK="${ANDROID_DIR}/app/build/outputs/apk/debug/app-debug.apk"
+  if [[ -f "${DEBUG_APK}" ]]; then
+    cp "${DEBUG_APK}" "${ANDROID_DIR}/app/build/outputs/apk/debug/app-diagnostic.apk"
+  fi
 fi

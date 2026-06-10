@@ -344,15 +344,14 @@ export async function cacheClearOlderThan(cutoffTimestamp: number): Promise<void
       }
     };
 
-    // Recalculate meta for affected conversations
-    tx.oncomplete = () => {
-      for (const convKey of deletedKeys) {
-        recalcConversationMeta(convKey).catch(() => {});
-      }
-    };
-
     return new Promise((resolve, reject) => {
-      tx.oncomplete = () => resolve();
+      tx.oncomplete = () => {
+        // Recalculate meta for conversations that had messages deleted
+        for (const convKey of deletedKeys) {
+          recalcConversationMeta(convKey).catch(() => {});
+        }
+        resolve();
+      };
       tx.onerror = () => reject(new Error(tx.error?.message ?? "IndexedDB transaction error"));
     });
   } catch (err) {

@@ -1,4 +1,6 @@
 import { setAccessToken as setApiAccessToken } from "./api";
+import { recordBootDiagnostic } from "./boot-diagnostics";
+import { postNativeAuthJson } from "./native-auth-http";
 import { resolveApiBaseUrl } from "./runtime-config";
 import { isNativePlatform } from "./native-platform";
 import { getNativeRefreshToken, storeNativeRefreshToken } from "./native-storage";
@@ -9,8 +11,6 @@ import { getNativeRefreshToken, storeNativeRefreshToken } from "./native-storage
  * This module owns the single source of truth for the current access token
  * and exposes helpers for HTTP and WebSocket layers.
  */
-
-const API_BASE_URL = resolveApiBaseUrl();
 
 function parseRefreshResponse(
   payload: unknown
@@ -60,15 +60,76 @@ async function _doRefreshSessionAccessToken(): Promise<string | null> {
       headers["X-Refresh-Token"] = nativeToken;
     }
   }
+  const apiBase = resolveApiBaseUrl();
+  const nativeTransport = isNativePlatform() ? "capacitor-http" : "fetch";
+  recordBootDiagnostic("auth.refresh", "starting refresh request", {
+    native: isNativePlatform(),
+    hasRefreshHeader: "X-Refresh-Token" in headers,
+    target: apiBase,
+    transport: nativeTransport,
+  });
+
+  if (isNativePlatform()) {
+    try {
+      const nativeResponse = await postNativeAuthJson("/auth/refresh", { headers });
+      if (nativeResponse) {
+        if (nativeResponse.status < 200 || nativeResponse.status >= 300) {
+          recordBootDiagnostic("auth.refresh", "refresh request rejected by server", {
+            status: nativeResponse.status,
+            target: apiBase,
+            transport: "capacitor-http",
+          });
+          setSessionAccessToken(null);
+          return null;
+        }
+
+        const payload = parseRefreshResponse(nativeResponse.data);
+        if (!payload) {
+          recordBootDiagnostic("auth.refresh", "refresh payload malformed", {
+            target: apiBase,
+            transport: "capacitor-http",
+          });
+          setSessionAccessToken(null);
+          return null;
+        }
+
+        if (payload.refreshToken) {
+          void storeNativeRefreshToken(payload.refreshToken);
+        }
+
+        setSessionAccessToken(payload.accessToken);
+        recordBootDiagnostic("auth.refresh", "refresh request succeeded", {
+          rotatedRefreshToken: Boolean(payload.refreshToken),
+          target: apiBase,
+          transport: "capacitor-http",
+        });
+        return payload.accessToken;
+      }
+    } catch (err) {
+      recordBootDiagnostic("auth.refresh", "refresh request failed at network layer", {
+        target: apiBase,
+        hasRefreshHeader: "X-Refresh-Token" in headers,
+        error: err instanceof Error ? err.message : String(err),
+        transport: "capacitor-http",
+      });
+      throw new Error("network_error");
+    }
+  }
 
   let response: Response;
   try {
-    response = await fetch(`${API_BASE_URL}/auth/refresh`, {
+    response = await fetch(`${apiBase}/auth/refresh`, {
       method: "POST",
       credentials: "include",
       headers,
     });
-  } catch {
+  } catch (err) {
+    recordBootDiagnostic("auth.refresh", "refresh request failed at network layer", {
+      target: apiBase,
+      hasRefreshHeader: "X-Refresh-Token" in headers,
+      error: err instanceof Error ? err.message : String(err),
+      transport: "fetch",
+    });
     // Network-level failure (no connectivity, DNS, etc.).
     // Do NOT clear the token or return null — the caller should retry,
     // not sign the user out over a transient connection hiccup.
@@ -76,6 +137,11 @@ async function _doRefreshSessionAccessToken(): Promise<string | null> {
   }
 
   if (!response.ok) {
+    recordBootDiagnostic("auth.refresh", "refresh request rejected by server", {
+      status: response.status,
+      target: apiBase,
+      transport: "fetch",
+    });
     // Server explicitly rejected the session (401/403) — it really is expired.
     setSessionAccessToken(null);
     return null;
@@ -83,6 +149,10 @@ async function _doRefreshSessionAccessToken(): Promise<string | null> {
 
   const payload = parseRefreshResponse(await response.json());
   if (!payload) {
+    recordBootDiagnostic("auth.refresh", "refresh payload malformed", {
+      target: apiBase,
+      transport: "fetch",
+    });
     setSessionAccessToken(null);
     return null;
   }
@@ -94,5 +164,10 @@ async function _doRefreshSessionAccessToken(): Promise<string | null> {
   }
 
   setSessionAccessToken(payload.accessToken);
+  recordBootDiagnostic("auth.refresh", "refresh request succeeded", {
+    rotatedRefreshToken: Boolean(payload.refreshToken),
+    target: apiBase,
+    transport: "fetch",
+  });
   return payload.accessToken;
 }

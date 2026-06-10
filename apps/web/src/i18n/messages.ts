@@ -957,6 +957,7 @@ const enMessages: TranslationMap = {
   "settings.cache.clearAll.button": "Clear all",
   "settings.cache.clearAll.confirm": "Confirm",
   "settings.cache.refresh": "Refresh",
+  "settings.cache.empty": "Cache is empty",
 };
 
 

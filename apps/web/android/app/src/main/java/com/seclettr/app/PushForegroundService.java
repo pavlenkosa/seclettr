@@ -21,9 +21,7 @@ import androidx.core.app.NotificationCompat;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import java.util.Map;
 import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 
 import okhttp3.OkHttpClient;
@@ -80,7 +78,7 @@ public class PushForegroundService extends Service {
             "seclettr:push_ws_keepalive"
         );
         wakeLock.setReferenceCounted(false);
-        wakeLock.acquire();
+        wakeLock.acquire(30 * 60 * 1000L); // 30 min max; re-acquired on each connectWebSocket()
     }
 
     @Override
@@ -148,8 +146,13 @@ public class PushForegroundService extends Service {
 
     @Override
     public void onTaskRemoved(Intent rootIntent) {
-        Log.d(TAG, "Task removed — scheduling restart");
-        scheduleRestart();
+        SharedPreferences prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
+        if (prefs.getBoolean("use_fcm", false)) {
+            Log.d(TAG, "Task removed — FCM configured, skipping restart");
+        } else {
+            Log.d(TAG, "Task removed — scheduling restart");
+            scheduleRestart();
+        }
         super.onTaskRemoved(rootIntent);
     }
 
@@ -197,11 +200,21 @@ public class PushForegroundService extends Service {
         if (running && webSocket != null) return;
 
         SharedPreferences prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
+
+        // If FCM was active before this process was killed, do not restart the
+        // WS foreground service — FCM handles delivery without a persistent notification.
+        if (prefs.getBoolean("use_fcm", false)) {
+            Log.d(TAG, "FCM configured — skipping WS foreground service restore");
+            stopSelf();
+            return;
+        }
+
         String savedServerUrl = prefs.getString(KEY_SERVER_URL, null);
         String savedToken = prefs.getString(KEY_TOKEN, null);
 
         if (savedServerUrl == null || savedToken == null) {
             Log.w(TAG, "No saved state to restore");
+            stopSelf();
             return;
         }
 
@@ -335,11 +348,11 @@ public class PushForegroundService extends Service {
         }
     }
 
-    private static final Map<String, Integer> conversationNotifIds = new ConcurrentHashMap<>();
-    private static int notifIdCounter = NOTIF_BASE_ID;
-
-    private static int getOrCreateNotifId(String conversationKey) {
-        return conversationNotifIds.computeIfAbsent(conversationKey, k -> notifIdCounter++);
+    // Derive a stable notification ID from the conversation key so IDs survive
+    // process restarts without a persisted counter.  Range [10000, ~8M+10000]
+    // avoids collision with NOTIF_SERVICE_ID (1001).
+    private static int stableNotifId(String conversationKey) {
+        return (conversationKey.hashCode() & 0x7FFFFF) + 10000;
     }
 
     private void handlePlainMessageNew(JSONObject message) {
@@ -364,7 +377,7 @@ public class PushForegroundService extends Service {
             title = senderUsername;
         }
 
-        int notifId = getOrCreateNotifId(conversationKey);
+        int notifId = stableNotifId(conversationKey);
 
         String deepLinkPath;
         if (groupId != null && !groupId.isEmpty()) {
@@ -382,7 +395,7 @@ public class PushForegroundService extends Service {
         if (senderUserId == null) return;
 
         String conversationKey = "en:dm:" + senderUserId;
-        int notifId = getOrCreateNotifId(conversationKey);
+        int notifId = stableNotifId(conversationKey);
         pushNotification(notifId, "Seclettr", "New encrypted message", "/?chat=" + Uri.encode(senderUserId));
     }
 
@@ -391,7 +404,7 @@ public class PushForegroundService extends Service {
         if (groupId == null) return;
 
         String conversationKey = "en:group:" + groupId;
-        int notifId = getOrCreateNotifId(conversationKey);
+        int notifId = stableNotifId(conversationKey);
         pushNotification(notifId, "Seclettr", "New encrypted group message", "/?group=" + Uri.encode(groupId));
     }
 
@@ -449,27 +462,26 @@ public class PushForegroundService extends Service {
     }
 
     private void createNotificationChannels() {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) return;
         NotificationManager nm = getSystemService(NotificationManager.class);
         if (nm == null) return;
 
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            NotificationChannel serviceChannel = new NotificationChannel(
-                CHANNEL_SERVICE,
-                "Push Service",
-                NotificationManager.IMPORTANCE_LOW
-            );
-            serviceChannel.setDescription("Ongoing notification for push message service");
-            nm.createNotificationChannel(serviceChannel);
+        NotificationChannel serviceChannel = new NotificationChannel(
+            CHANNEL_SERVICE, "Push Service", NotificationManager.IMPORTANCE_LOW);
+        serviceChannel.setDescription("Ongoing notification for push message service");
+        nm.createNotificationChannel(serviceChannel);
 
-            NotificationChannel messagesChannel = new NotificationChannel(
-                CHANNEL_MESSAGES,
-                "Messages",
-                NotificationManager.IMPORTANCE_HIGH
-            );
-            messagesChannel.setDescription("New message notifications");
-            messagesChannel.enableVibration(true);
-            nm.createNotificationChannel(messagesChannel);
-        }
+        NotificationChannel messagesChannel = new NotificationChannel(
+            CHANNEL_MESSAGES, "Messages", NotificationManager.IMPORTANCE_HIGH);
+        messagesChannel.setDescription("New message notifications");
+        messagesChannel.enableVibration(true);
+        nm.createNotificationChannel(messagesChannel);
+
+        NotificationChannel callsChannel = new NotificationChannel(
+            "seclettr_calls", "Calls", NotificationManager.IMPORTANCE_HIGH);
+        callsChannel.setDescription("Incoming call notifications");
+        callsChannel.enableVibration(true);
+        nm.createNotificationChannel(callsChannel);
     }
 
     private Notification buildServiceNotification() {

@@ -1,3 +1,5 @@
+import { IS_DIAGNOSTIC_BUILD } from "./diagnostic-mode";
+
 /**
  * Unified client-side logger.
  *
@@ -9,6 +11,7 @@
  */
 
 const IS_DEV = import.meta.env.DEV;
+const ALLOW_VERBOSE_LOGS = IS_DEV || IS_DIAGNOSTIC_BUILD;
 
 const SENSITIVE_KEY_PATTERN =
   /token|secret|password|authorization|cookie|session|ciphertext|digest|signature|stack|private|proof/i;
@@ -77,11 +80,11 @@ function sanitizeArgs(args: unknown[]): unknown[] {
 }
 
 export const logger = {
-  debug: IS_DEV
-    ? (message: string, ...args: unknown[]) => console.debug(message, ...args)
+  debug: ALLOW_VERBOSE_LOGS
+    ? (message: string, ...args: unknown[]) => console.debug(message, ...sanitizeArgs(args))
     : () => {},
-  info: IS_DEV
-    ? (message: string, ...args: unknown[]) => console.info(message, ...args)
+  info: ALLOW_VERBOSE_LOGS
+    ? (message: string, ...args: unknown[]) => console.info(message, ...sanitizeArgs(args))
     : () => {},
   warn: (message: string, ...args: unknown[]) => console.warn(message, ...sanitizeArgs(args)),
   error: (message: string, ...args: unknown[]) => console.error(message, ...sanitizeArgs(args)),

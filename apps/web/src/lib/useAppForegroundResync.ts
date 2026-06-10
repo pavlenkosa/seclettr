@@ -22,6 +22,17 @@ export function useAppForegroundResync(isReady: boolean): void {
   useEffect(() => {
     if (!isReady) return;
 
+    // The session was just restored and the access token is already fresh.
+    // Initialising lastResyncAt here suppresses the appStateChange / visibilitychange
+    // event that Capacitor fires at the very moment the app becomes active after a
+    // process kill — without this guard that event triggers an immediate second
+    // /auth/refresh while the network stack is still stabilising, causing a
+    // "Failed to fetch" that stalls WS reconnection for several seconds.
+    lastResyncAt.current = Date.now();
+
+    let disposed = false;
+    let capRemove: (() => void) | null = null;
+
     const handleResync = () => {
       const now = Date.now();
       if (now - lastResyncAt.current < RESYNC_DEBOUNCE_MS) return;
@@ -29,16 +40,25 @@ export function useAppForegroundResync(isReady: boolean): void {
       void resync();
     };
 
-    document.addEventListener("visibilitychange", () => {
+    const handleVisibilityChange = () => {
       if (document.visibilityState === "visible") handleResync();
-    });
+    };
 
-    let capRemove: (() => void) | undefined;
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+
     if (isNativePlatform()) {
       import("@capacitor/app").then(({ App }) => {
+        if (disposed) {
+          return null;
+        }
+
         App.addListener("appStateChange", ({ isActive }) => {
           if (isActive) handleResync();
         }).then((listener) => {
+          if (disposed) {
+            void listener.remove();
+            return;
+          }
           capRemove = () => { void listener.remove(); };
         }).catch(() => {
           // Capacitor not available (web/SSR)
@@ -49,6 +69,8 @@ export function useAppForegroundResync(isReady: boolean): void {
     }
 
     return () => {
+      disposed = true;
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
       capRemove?.();
     };
   }, [isReady]);

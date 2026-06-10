@@ -142,9 +142,13 @@ export const CUSTOM_THEME_VARS = [
   "--brand-mark-base-start", "--brand-mark-base-mid", "--brand-mark-base-end",
 ] as const;
 
-/** Returns true when the bg needs light text (OKLCH L < 0.50 ≈ WCAG Y < 0.22). */
+/**
+ * Returns true when the bg needs light text.
+ * Threshold 0.60 (≈ WCAG Y < 0.32) covers medium-tone grays that read as dark
+ * even though their raw lightness is above 0.50.
+ */
 export function isCustomBgDark(bgHex: string): boolean {
-  return (hexToOklch(bgHex)?.l ?? 0) < 0.50;
+  return (hexToOklch(bgHex)?.l ?? 0) < 0.60;
 }
 
 /**
@@ -158,7 +162,7 @@ export function deriveCustomThemeVars(bgHex: string, accentHex: string): Record<
 
   const { l, c, h } = bgOkl;
   const { l: al, c: ac, h: ah } = acOkl;
-  const isDark = l < 0.50;
+  const isDark = l < 0.60;
 
   // Chroma for surface tiers is capped to prevent garish tinting on highly
   // saturated backgrounds (e.g. #8800ff). The cap mirrors what Material
@@ -307,17 +311,26 @@ export function deriveCustomThemeVars(bgHex: string, accentHex: string): Record<
     v["--danger-soft-bg"]    = "rgb(127 29 29 / 0.35)";
     v["--danger-soft-border"] = "rgb(248 113 113 / 0.36)";
   } else {
-    // Surfaces: step L downward (toward more saturated) for light theme.
+    // Light theme: surfaces step L upward (lighter) from bg-primary, keeping a
+    // subtle hue tint so panels feel connected to the chosen background color.
+    // This mirrors how the default light theme has bg-secondary = white (lighter
+    // than bg-primary = #eef3fa), but uses a tinted near-white instead of pure
+    // white so a pink/green/etc background actually shows through the UI chrome.
+    const shellC  = surfC * 0.40;  // Much lower chroma — very subtle tint
+    const shellBg = oklchToHex({ l: clamp01(l + 0.05), c: shellC, h });
     const strongBg = surf(-0.03, 1.02);
 
-    v["--bg-secondary"]          = surf(-0.04, 1.05);
-    v["--bg-tertiary"]           = surf(-0.08, 1.10);
+    v["--bg-secondary"]          = oklchToHex({ l: clamp01(l + 0.03), c: surfC * 0.60, h });
+    v["--bg-tertiary"]           = surf(-0.06, 1.10);
     v["--bg-message-in"]         = "#ffffff";
-    v["--surface-shell"]         = "#ffffff";
+    v["--surface-shell"]         = shellBg;
     v["--surface-shell-strong"]  = strongBg;
+    // surface-float must go LIGHTER than bg-primary in light themes so that cards,
+    // modals, and dropdowns sit above the coloured background without inheriting its hue.
+    // surf(-0.03) went darker/more-saturated — wrong direction for light-on-colour hierarchy.
     v["--surface-float"]         = "#ffffff";
-    v["--panel-sidebar-bg"]      = "#ffffff";
-    v["--panel-header-bg"]       = "#ffffff";
+    v["--panel-sidebar-bg"]      = shellBg;
+    v["--panel-header-bg"]       = shellBg;
     v["--panel-modal-bg"]        = "#ffffff";
 
     // Text: near-black with a subtle hue tint matching the bg character.
@@ -340,10 +353,10 @@ export function deriveCustomThemeVars(bgHex: string, accentHex: string): Record<
     v["--bubble-shadow"]      = "none";
     v["--avatar-shadow"]      = "0 1px 4px rgb(15 23 42 / 0.10)";
 
-    v["--icon-btn-bg"]         = "#ffffff";
+    v["--icon-btn-bg"]         = shellBg;
     v["--icon-btn-border"]     = "rgb(15 23 42 / 0.14)";
     v["--icon-btn-color"]      = "rgb(15 23 42 / 0.70)";
-    v["--icon-btn-hover-bg"]   = surf(-0.06, 1.04);
+    v["--icon-btn-hover-bg"]   = oklchToHex({ l: clamp01(l + 0.09), c: shellC * 0.60, h });
     v["--icon-btn-hover-color"] = textPrimary;
 
     v["--list-item-hover-bg"]   = "rgb(15 23 42 / 0.04)";
@@ -351,7 +364,7 @@ export function deriveCustomThemeVars(bgHex: string, accentHex: string): Record<
     v["--list-item-active-ring"] = hexAlpha(accentHex, 0.10);
 
     v["--message-container-bg"] = bgHex;
-    v["--timestamp-bg"]         = "#ffffff";
+    v["--timestamp-bg"]         = shellBg;
     v["--timestamp-border"]     = "rgb(15 23 42 / 0.10)";
     v["--message-in-bg"]        = "#ffffff";
     v["--message-in-border"]    = "rgb(15 23 42 / 0.10)";

@@ -9,63 +9,83 @@ interface NativeSpeakerToggleResult {
   supported: boolean;
   speakerOn: boolean;
   toggle: () => void;
+  /** Explicitly set the target route (speaker or earpiece). Used by the audio
+   *  route sheet so its selection is reflected in the enforcer's target and
+   *  won't be reverted by the next periodic correction tick. */
+  setTarget: (enabled: boolean) => void;
 }
 
 interface UseNativeSpeakerToggleOptions {
   readonly preferredSpeakerOn?: boolean;
 }
 
+function wait(ms: number): Promise<void> {
+  return new Promise((resolve) => { window.setTimeout(resolve, ms); });
+}
+
 /**
  * Manages earpiece / loudspeaker routing for native Android calls.
  *
- * Problem: Android WebRTC initialises its own audio session 200–900ms after the
- * offer/answer exchange, and in doing so may call AudioManager.setMode() and
- * reset setSpeakerphoneOn() back to true (speaker). A single 600ms retry is not
- * reliable — WebRTC may reset audio *after* the retry fires.
+ * Problem: Android WebRTC initialises its own audio session after the
+ * offer/answer exchange completes — which can be several seconds after
+ * component mount on outgoing calls (waiting for callee to answer).
+ * WebRTC calls AudioManager.setMode() and resets setSpeakerphoneOn() to true.
+ * Retrying only for the first 1800ms is not enough when call setup takes 3-5s.
  *
- * Fix: apply earpiece at mount (0ms) then at 400ms, 900ms, and 1800ms.
- * Each attempt reads the actual hardware state first so we only write when the
- * state has drifted, avoiding unnecessary mode resets.
+ * Fix: track the *target* route separately from the hardware state. The apply
+ * effect re-runs whenever the target changes (component mount or user tap) and
+ * fires at [0, 500, 1200, 2500, 4500, 7500ms] — a window wide enough to cover
+ * WebRTC resets that happen after a slow call connect. Each attempt reads actual
+ * hardware state first and only writes when drifted.
  *
- * State sync: a 2-second periodic check corrects UI state if WebRTC or the OS
- * flips the audio route without going through our toggle.
+ * User override: tapping the speaker button changes the target, which re-arms
+ * the same multi-attempt backoff — so the user's choice also wins against
+ * a WebRTC reset that fires shortly after the tap.
+ *
+ * State sync: a 2-second periodic interval keeps the UI in sync with hardware
+ * changes the app did not initiate (Bluetooth headset disconnect, OS override).
  */
 export function useNativeSpeakerToggle(
   { preferredSpeakerOn = false }: UseNativeSpeakerToggleOptions = {},
 ): NativeSpeakerToggleResult {
   const supported = isNativeAudioRouteSupported();
   const [speakerOn, setSpeakerOn] = useState(false);
+  // targetSpeakerOn: what we want — starts as preferredSpeakerOn, changed by user tap.
+  const [targetSpeakerOn, setTargetSpeakerOn] = useState(preferredSpeakerOn);
 
-  // Multi-attempt backoff to win the race against WebRTC's audio session init
-  // while still allowing the caller to declare the preferred route for the
-  // current call mode (earpiece for voice, loudspeaker for video).
+  // Reset target when the call type changes (e.g. voice → video escalation).
+  useEffect(() => {
+    setTargetSpeakerOn(preferredSpeakerOn);
+  }, [preferredSpeakerOn]);
+
+  // Multi-attempt backoff: apply targetSpeakerOn at each delay.
+  // Re-runs every time targetSpeakerOn changes, covering both the initial
+  // call-setup race and subsequent user-initiated route changes.
   useEffect(() => {
     if (!supported) return;
 
+    // Delays span the full call setup window. Outgoing calls connect up to
+    // ~5s after mount; WebRTC audio init fires ~200-900ms after connect.
+    const DELAYS = [0, 500, 1200, 2500, 4500, 7500] as const;
     let cancelled = false;
-    // Delays at which to check + re-apply the preferred route, in ms after mount.
-    const DELAYS = [0, 400, 900, 1800] as const;
 
-    const applyPreferredRoute = async (delay: number): Promise<void> => {
-      if (delay > 0) {
-        await new Promise<void>((resolve) => setTimeout(resolve, delay));
-      }
+    const applyTarget = async (delay: number): Promise<void> => {
+      if (delay > 0) await wait(delay);
       if (cancelled) return;
       const actual = await getNativeSpeakerOn();
       if (cancelled) return;
-      if (actual !== preferredSpeakerOn) {
-        await setNativeSpeaker(preferredSpeakerOn);
-        if (!cancelled) setSpeakerOn(preferredSpeakerOn);
+      if (actual !== targetSpeakerOn) {
+        await setNativeSpeaker(targetSpeakerOn);
+        if (!cancelled) setSpeakerOn(targetSpeakerOn);
         return;
       }
       setSpeakerOn(actual);
     };
 
-    const timers: ReturnType<typeof window.setTimeout>[] = [];
-    void applyPreferredRoute(0);
-    for (const delay of DELAYS.slice(1)) {
-      timers.push(window.setTimeout(() => { void applyPreferredRoute(delay); }, delay));
-    }
+    void applyTarget(0);
+    const timers = (DELAYS.slice(1) as readonly number[]).map((delay) =>
+      window.setTimeout(() => { void applyTarget(delay); }, delay)
+    );
 
     return () => {
       cancelled = true;
@@ -73,26 +93,38 @@ export function useNativeSpeakerToggle(
       // Restore earpiece on unmount so the device is not left in speaker mode.
       void setNativeSpeaker(false);
     };
-  }, [preferredSpeakerOn, supported]);
+  }, [supported, targetSpeakerOn]);
 
-  // Periodic state sync: correct React state if the hardware audio route has
-  // drifted from what the UI shows (e.g. Bluetooth disconnect, OS override).
+  // Periodic enforcer: read hardware state every 2s and correct drift.
+  // This catches WebRTC audio resets that happen after the initial backoff window
+  // closes (e.g. outgoing call answered 20s+ after mount, WebRTC resets at 20.5s).
+  // When the user picks a route via the audio sheet, setTarget() updates
+  // targetSpeakerOn so the enforcer does not fight their choice.
   useEffect(() => {
     if (!supported) return;
-    const id = window.setInterval(() => {
-      void getNativeSpeakerOn().then((actual) => {
+    const id = window.setInterval(async () => {
+      const actual = await getNativeSpeakerOn();
+      if (actual !== targetSpeakerOn) {
+        await setNativeSpeaker(targetSpeakerOn);
+        setSpeakerOn(targetSpeakerOn);
+      } else {
         setSpeakerOn((prev) => (prev !== actual ? actual : prev));
-      });
+      }
     }, 2000);
     return () => clearInterval(id);
-  }, [supported]);
+  }, [supported, targetSpeakerOn]);
 
   const toggle = useCallback(() => {
     if (!supported) return;
     const next = !speakerOn;
-    setSpeakerOn(next);
-    void setNativeSpeaker(next);
+    setSpeakerOn(next);           // optimistic UI update
+    setTargetSpeakerOn(next);     // re-arm backoff with new target
   }, [supported, speakerOn]);
 
-  return { supported, speakerOn, toggle };
+  const setTarget = useCallback((enabled: boolean) => {
+    setTargetSpeakerOn(enabled);
+    setSpeakerOn(enabled);
+  }, []);
+
+  return { supported, speakerOn, toggle, setTarget };
 }

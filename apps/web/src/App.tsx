@@ -15,12 +15,14 @@
  *   - room/direct/group call runtime
  *   - settings/chat presentation internals
  */
-import { lazy, Suspense, useCallback, useEffect, useRef, useState, type ReactNode } from "react";
+import { lazy, Suspense, useCallback, useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import { useShallow } from "zustand/react/shallow";
 import { AppErrorFallback, ErrorBoundary } from "./components/common/ErrorBoundary";
 import { AppBootSkeleton } from "./components/common/AppBootSkeleton";
 import { startAppRealtimeListeners } from "./lib/app-realtime-bootstrap";
+import { formatBootDiagnostics, getBootDiagnosticsSnapshot } from "./lib/boot-diagnostics";
+import { IS_DIAGNOSTIC_BUILD } from "./lib/diagnostic-mode";
 import { logger } from "./lib/logger.js";
 import { useInactivityLock } from "./lib/useInactivityLock";
 import { useAppForegroundResync } from "./lib/useAppForegroundResync";
@@ -53,6 +55,101 @@ const UIKitPage = import.meta.env.DEV
   : null;
 
 const DEVTOOLS_VISIBILITY_KEY = "seclettr.devtools.visible.v1";
+
+// ── Diagnostic overlay (diagnostic builds only) ───────────────────────────
+
+const diagShell: CSSProperties = {
+  position: "fixed",
+  bottom: "calc(var(--safe-bottom, 0px) + 12px)",
+  right: "12px",
+  zIndex: 999999,
+  display: "flex",
+  flexDirection: "column",
+  alignItems: "flex-end",
+  gap: "8px",
+  pointerEvents: "none",
+};
+const diagTrace: CSSProperties = {
+  pointerEvents: "all",
+  background: "rgba(0,0,0,0.94)",
+  color: "#a8ff78",
+  fontFamily: "monospace",
+  fontSize: "10px",
+  lineHeight: "1.45",
+  padding: "10px 12px",
+  borderRadius: "12px",
+  maxWidth: "min(92vw, 400px)",
+  maxHeight: "55vh",
+  overflowY: "auto",
+  whiteSpace: "pre-wrap",
+  wordBreak: "break-all",
+  border: "1px solid rgba(168,255,120,0.28)",
+  boxShadow: "0 4px 24px rgba(0,0,0,0.7)",
+};
+const diagRow: CSSProperties = {
+  display: "flex",
+  gap: "6px",
+  pointerEvents: "all",
+};
+const diagBtn = (accent?: boolean, active?: boolean): CSSProperties => ({
+  padding: "6px 12px",
+  background: accent
+    ? "rgba(220,50,50,0.92)"
+    : active ? "rgba(60,180,60,0.88)" : "rgba(20,20,20,0.88)",
+  color: "#fff",
+  border: accent ? "none" : "1px solid rgba(255,255,255,0.22)",
+  borderRadius: "999px",
+  fontSize: "11px",
+  fontWeight: 700,
+  cursor: "pointer",
+  letterSpacing: "0.04em",
+  whiteSpace: "nowrap",
+});
+
+function DiagBootOverlay() {
+  const [open, setOpen] = useState(false);
+  const [trace, setTrace] = useState("");
+  const [copied, setCopied] = useState(false);
+
+  const handleToggle = () => {
+    if (!open) {
+      setTrace(formatBootDiagnostics() || "(no events yet — restore may not have run)");
+    }
+    setOpen((v) => !v);
+  };
+
+  const handleCopy = () => {
+    if (!trace || !navigator.clipboard?.writeText) return;
+    void navigator.clipboard.writeText(trace).then(() => {
+      setCopied(true);
+      setTimeout(() => { setCopied(false); }, 2200);
+    });
+  };
+
+  const hasEvents = getBootDiagnosticsSnapshot().length > 0;
+
+  return (
+    <div style={diagShell}>
+      {open ? (
+        <div style={diagTrace}>{trace}</div>
+      ) : null}
+      <div style={diagRow}>
+        {open ? (
+          <button type="button" style={diagBtn(false, copied)} onClick={handleCopy}>
+            {copied ? "Copied ✓" : "Copy"}
+          </button>
+        ) : null}
+        <button
+          type="button"
+          style={{ ...diagBtn(true), outline: hasEvents ? "2px solid #a8ff78" : "none" }}
+          onClick={handleToggle}
+        >
+          {open ? "✕ DIAG" : "DIAG"}
+        </button>
+      </div>
+    </div>
+  );
+}
 
 interface AppRouteElementsOptions {
   readonly hasActiveSession: boolean;
@@ -197,6 +294,14 @@ export function App() {
     void lock();
   }, [lock]);
 
+  const copyBootDiagnostics = useCallback(() => {
+    const diagnostics = formatBootDiagnostics();
+    if (!diagnostics || !navigator.clipboard?.writeText) {
+      return;
+    }
+    void navigator.clipboard.writeText(diagnostics);
+  }, []);
+
   useInactivityLock({
     enabled: hasActiveSession && pinEnabled,
     timeoutMs: LOCK_TIMEOUT_MS,
@@ -306,6 +411,8 @@ export function App() {
         <AppBootSkeleton
           offline
           onRetry={() => { void tryRestoreSession(); }}
+          diagnosticsText={IS_DIAGNOSTIC_BUILD ? formatBootDiagnostics() : null}
+          onCopyDiagnostics={IS_DIAGNOSTIC_BUILD ? copyBootDiagnostics : undefined}
         />
       );
     }
@@ -356,6 +463,8 @@ export function App() {
           <DevToolsPanel />
         </Suspense>
       ) : null}
+
+      {IS_DIAGNOSTIC_BUILD ? <DiagBootOverlay /> : null}
       </div>
     </ErrorBoundary>
   );

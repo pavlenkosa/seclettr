@@ -5,6 +5,7 @@ import android.app.PendingIntent;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.os.SystemClock;
 import android.util.Log;
 
@@ -15,6 +16,15 @@ public class BootReceiver extends BroadcastReceiver {
     @Override
     public void onReceive(Context context, Intent intent) {
         if (!Intent.ACTION_BOOT_COMPLETED.equals(intent.getAction())) return;
+
+        // Skip WS foreground service if FCM is configured — FCM handles delivery
+        // without a persistent notification or wake lock.
+        SharedPreferences prefs = context.getSharedPreferences(
+            "seclettr_push_state", Context.MODE_PRIVATE);
+        if (prefs.getBoolean("use_fcm", false)) {
+            Log.d(TAG, "Boot completed — FCM configured, skipping foreground service start");
+            return;
+        }
 
         Log.d(TAG, "Boot completed — scheduling push service start");
 

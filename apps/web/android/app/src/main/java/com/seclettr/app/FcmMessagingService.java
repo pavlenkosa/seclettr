@@ -1,10 +1,12 @@
 package com.seclettr.app;
 
+import android.app.NotificationChannel;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.content.Context;
 import android.content.Intent;
 import android.net.Uri;
+import android.os.Build;
 import android.util.Log;
 
 import androidx.core.app.NotificationCompat;
@@ -13,20 +15,41 @@ import com.google.firebase.messaging.FirebaseMessagingService;
 import com.google.firebase.messaging.RemoteMessage;
 
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 
 public class FcmMessagingService extends FirebaseMessagingService {
 
     private static final String TAG = "SeclettrFCM";
     private static final String CHANNEL_MESSAGES = "seclettr_messages";
-    private static final int NOTIF_BASE_ID = 3000;
+    private static final String CHANNEL_CALLS = "seclettr_calls";
 
     private static String currentFcmToken = null;
-    private static final Map<String, Integer> conversationNotifIds = new ConcurrentHashMap<>();
-    private static int notifIdCounter = NOTIF_BASE_ID;
 
     public static String getCurrentFcmToken() {
         return currentFcmToken;
+    }
+
+    @Override
+    public void onCreate() {
+        super.onCreate();
+        createNotificationChannels();
+    }
+
+    private void createNotificationChannels() {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) return;
+        NotificationManager nm = getSystemService(NotificationManager.class);
+        if (nm == null) return;
+
+        NotificationChannel messagesChannel = new NotificationChannel(
+            CHANNEL_MESSAGES, "Messages", NotificationManager.IMPORTANCE_HIGH);
+        messagesChannel.setDescription("New message notifications");
+        messagesChannel.enableVibration(true);
+        nm.createNotificationChannel(messagesChannel);
+
+        NotificationChannel callsChannel = new NotificationChannel(
+            CHANNEL_CALLS, "Calls", NotificationManager.IMPORTANCE_HIGH);
+        callsChannel.setDescription("Incoming call notifications");
+        callsChannel.enableVibration(true);
+        nm.createNotificationChannel(callsChannel);
     }
 
     @Override
@@ -67,35 +90,33 @@ public class FcmMessagingService extends FirebaseMessagingService {
             case "message":
                 conversationKey = "dm:" + data.get("fromUserId");
                 priority = NotificationCompat.PRIORITY_HIGH;
-                showMessageNotification(conversationKey, "Reply", deepLinkUrl, data, serverUrl, priority);
+                showMessageNotification(conversationKey, "Reply", deepLinkUrl, data, priority);
                 break;
 
             case "group_message":
                 conversationKey = "group:" + data.get("groupId");
                 priority = NotificationCompat.PRIORITY_HIGH;
-                showMessageNotification(conversationKey, "Reply", deepLinkUrl, data, serverUrl, priority);
+                showMessageNotification(conversationKey, "Reply", deepLinkUrl, data, priority);
                 break;
 
             case "call_invite":
                 String callId = data.get("callId");
                 conversationKey = "call:" + (callId != null ? callId : "unknown");
                 priority = NotificationCompat.PRIORITY_HIGH;
-                String answerUrl = deepLinkUrl;
-                String declineUrl = deepLinkUrl;
-                showCallNotification(conversationKey, "Incoming call", fromUsername + " is calling",
-                    answerUrl, declineUrl, priority, true);
+                showCallNotification(conversationKey, "Incoming call",
+                    fromUsername + " is calling",
+                    deepLinkUrl, deepLinkUrl, priority);
                 break;
 
             case "group_call_invite":
                 String gCallId = data.get("callId");
                 conversationKey = "call:" + (gCallId != null ? gCallId : "unknown");
                 priority = NotificationCompat.PRIORITY_HIGH;
-                String joinUrl = deepLinkUrl;
-                String gDeclineUrl = deepLinkUrl;
                 String groupName = data.get("groupName");
-                if (groupName == null) groupName = "Group";
-                showCallNotification(conversationKey, "Group call", groupName + " — call started",
-                    joinUrl, gDeclineUrl, priority, true);
+                if (groupName == null || groupName.isEmpty()) groupName = "Group";
+                showCallNotification(conversationKey, "Group call",
+                    groupName + " — call started",
+                    deepLinkUrl, deepLinkUrl, priority);
                 break;
 
             case "missed_call":
@@ -110,10 +131,17 @@ public class FcmMessagingService extends FirebaseMessagingService {
         }
     }
 
+    // Derive a stable notification ID from the conversation key so IDs survive
+    // process restarts without a persisted counter.  Range [10000, ~8M+10000]
+    // avoids collision with PushForegroundService.NOTIF_SERVICE_ID (1001).
+    private static int stableNotifId(String conversationKey) {
+        return (conversationKey.hashCode() & 0x7FFFFF) + 10000;
+    }
+
     private void showMessageNotification(String conversationKey, String replyLabel,
                                           String deepLinkUrl, Map<String, String> data,
-                                          String serverUrl, int priority) {
-        int notifId = getOrCreateNotifId(conversationKey);
+                                          int priority) {
+        int notifId = stableNotifId(conversationKey);
 
         String title = data.get("fromUsername");
         if (title == null || title.isEmpty()) title = "Seclettr";
@@ -138,15 +166,14 @@ public class FcmMessagingService extends FirebaseMessagingService {
     }
 
     private void showCallNotification(String conversationKey, String title, String body,
-                                       String answerUrl, String declineUrl,
-                                       int priority, boolean requireInteraction) {
-        int notifId = getOrCreateNotifId(conversationKey);
+                                       String answerUrl, String declineUrl, int priority) {
+        int notifId = stableNotifId(conversationKey);
 
         PendingIntent tapIntent = buildTapIntent(answerUrl, notifId);
         PendingIntent answerIntent = buildNavigateIntent(answerUrl, notifId + 1);
         PendingIntent declineIntent = buildNavigateIntent(declineUrl, notifId + 2);
 
-        NotificationCompat.Builder builder = new NotificationCompat.Builder(this, CHANNEL_MESSAGES)
+        NotificationCompat.Builder builder = new NotificationCompat.Builder(this, CHANNEL_CALLS)
             .setSmallIcon(R.drawable.ic_stat_notification)
             .setContentTitle(title)
             .setContentText(body)
@@ -154,6 +181,7 @@ public class FcmMessagingService extends FirebaseMessagingService {
             .setContentIntent(tapIntent)
             .setPriority(priority)
             .setFullScreenIntent(tapIntent, true)
+            .setTimeoutAfter(60_000)
             .addAction(R.drawable.ic_stat_notification, "Answer", answerIntent)
             .addAction(R.drawable.ic_stat_notification, "Decline", declineIntent);
 
@@ -161,7 +189,7 @@ public class FcmMessagingService extends FirebaseMessagingService {
     }
 
     private void showMissedCallNotification(String conversationKey, String deepLinkUrl, int priority) {
-        int notifId = getOrCreateNotifId(conversationKey);
+        int notifId = stableNotifId(conversationKey);
 
         PendingIntent tapIntent = buildTapIntent(deepLinkUrl, notifId);
 
@@ -195,10 +223,6 @@ public class FcmMessagingService extends FirebaseMessagingService {
         if (nm != null) {
             nm.notify(notifId, builder.build());
         }
-    }
-
-    private static int getOrCreateNotifId(String key) {
-        return conversationNotifIds.computeIfAbsent(key, k -> notifIdCounter++);
     }
 
     private String buildDeepLinkUrl(String serverUrl, String path) {

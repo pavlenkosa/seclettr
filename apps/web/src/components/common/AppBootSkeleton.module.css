@@ -95,6 +95,54 @@
   background: color-mix(in srgb, var(--accent) 18%, transparent);
 }
 
+.diagnosticsBlock {
+  width: min(26rem, calc(100vw - 2rem));
+  margin-top: 0.35rem;
+  padding: 0.72rem;
+  border-radius: 14px;
+  border: 1px solid color-mix(in srgb, var(--panel-border-soft) 82%, transparent);
+  background: color-mix(in srgb, var(--surface-shell-strong) 94%, transparent);
+  text-align: left;
+}
+
+.diagnosticsHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.diagnosticsTitle {
+  font-size: 0.73rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+
+.diagnosticsBtn {
+  padding: 0.24rem 0.56rem;
+  border-radius: 999px;
+  border: 1px solid color-mix(in srgb, var(--accent) 44%, transparent);
+  background: transparent;
+  color: var(--accent);
+  font-size: 0.72rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.diagnosticsPre {
+  margin: 0.6rem 0 0;
+  max-height: 11rem;
+  overflow: auto;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  line-height: 1.45;
+  color: var(--text-secondary);
+}
+
 @media (prefers-reduced-motion: reduce) {
   .stack { animation: none; }
   .spinner { animation: none; border-color: var(--accent); opacity: 0.6; }

@@ -7,6 +7,7 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc --noEmit && tsc --noEmit -p tsconfig.node.json && vite build --mode production",
+    "build:diagnostic": "tsc --noEmit && tsc --noEmit -p tsconfig.node.json && VITE_APP_DIAGNOSTIC=true vite build --mode diagnostic",
     "preview": "vite preview",
     "test": "vitest run",
     "test:coverage": "vitest run --coverage --coverage.provider=v8 --coverage.reporter=lcov",
@@ -15,9 +16,11 @@
     "check:ui-contracts": "node scripts/check-ui-contracts.mjs",
     "check:ui-style": "node scripts/check-ui-style.mjs",
     "android:sync": "vite build --mode production && cap sync android && node scripts/patch-capacitor-plugins.mjs",
+    "android:sync:diagnostic": "VITE_APP_DIAGNOSTIC=true vite build --mode diagnostic && cap sync android && node scripts/patch-capacitor-plugins.mjs",
     "android:open": "cap open android",
     "android:run": "cap run android",
     "android:build:debug": "bash ./scripts/build-android-artifacts.sh debug",
+    "android:build:diagnostic": "bash ./scripts/build-android-artifacts.sh diagnostic",
     "android:build:release": "bash ./scripts/build-android-artifacts.sh release"
   },
   "dependencies": {

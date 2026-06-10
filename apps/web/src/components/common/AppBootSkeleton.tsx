@@ -5,9 +5,11 @@ import styles from "./AppBootSkeleton.module.css";
 interface Props {
   readonly offline?: boolean;
   readonly onRetry?: () => void;
+  readonly diagnosticsText?: string | null;
+  readonly onCopyDiagnostics?: () => void;
 }
 
-export function AppBootSkeleton({ offline, onRetry }: Props = {}) {
+export function AppBootSkeleton({ offline, onRetry, diagnosticsText, onCopyDiagnostics }: Props = {}) {
   const { t } = useI18n();
   return (
     <div
@@ -29,6 +31,19 @@ export function AppBootSkeleton({ offline, onRetry }: Props = {}) {
                 {t("restore.networkError.retry")}
               </button>
             )}
+            {diagnosticsText ? (
+              <div className={styles.diagnosticsBlock}>
+                <div className={styles.diagnosticsHeader}>
+                  <span className={styles.diagnosticsTitle}>Diagnostic boot trace</span>
+                  {onCopyDiagnostics ? (
+                    <button type="button" className={styles.diagnosticsBtn} onClick={onCopyDiagnostics}>
+                      Copy
+                    </button>
+                  ) : null}
+                </div>
+                <pre className={styles.diagnosticsPre}>{diagnosticsText}</pre>
+              </div>
+            ) : null}
           </div>
         ) : (
           <span className={styles.spinner} aria-hidden="true" />

@@ -1,3 +1,5 @@
+import { registerPlugin } from "@capacitor/core";
+import { LocalNotifications } from "@capacitor/local-notifications";
 import { isNativePlatform } from "./native-platform";
 import { resolveApiBaseUrl } from "./runtime-config";
 
@@ -29,10 +31,6 @@ interface NativePushPlugin {
   addListener: (event: string, handler: (data: unknown) => void) => Promise<{ remove: () => void }>;
 }
 
-interface CapacitorGlobal {
-  Plugins?: Record<string, unknown>;
-}
-
 let _initialized = false;
 
 interface NativeNotifPrefs {
@@ -52,13 +50,9 @@ export function setNativeNotificationPreferences(prefs: NativeNotifPrefs): void 
   _prefs = prefs;
 }
 
-// Access the plugin through the Capacitor global injected by the native bridge —
-// avoids bundling @capacitor/local-notifications into the web build entirely.
 function getPlugin(): LocalNotificationsPlugin | null {
   if (!isNativePlatform()) return null;
-  const cap = (window as unknown as { Capacitor?: CapacitorGlobal }).Capacitor;
-  const plugin = cap?.Plugins?.["LocalNotifications"];
-  return plugin ? (plugin as LocalNotificationsPlugin) : null;
+  return LocalNotifications as unknown as LocalNotificationsPlugin;
 }
 
 let _permissionGranted: boolean | null = null;
@@ -192,11 +186,11 @@ export async function showNativeGroupNotification(params: {
 
 // ─── Native push foreground service (Android ForegroundService WS) ─────
 
+const NativePush = registerPlugin<NativePushPlugin>("NativePush");
+
 function getNativePushPlugin(): NativePushPlugin | null {
   if (!isNativePlatform()) return null;
-  const cap = (window as unknown as { Capacitor?: CapacitorGlobal }).Capacitor;
-  const plugin = cap?.Plugins?.["NativePush"];
-  return plugin ? (plugin as NativePushPlugin) : null;
+  return NativePush;
 }
 
 let _fcmTokenCleanup: (() => void) | null = null;

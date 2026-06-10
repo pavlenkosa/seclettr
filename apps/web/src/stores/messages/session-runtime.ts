@@ -1,5 +1,6 @@
 import {
   bootstrapReceiverSession,
+  clearRatchetState,
   deserializeRatchetState,
   fromBase64Url,
   generateKeyPair,
@@ -35,6 +36,17 @@ interface StoredDeviceKeys {
   signedPreKeyPub?: string;
   signedPreKeyId: number;
   otkPrivateKeys?: Record<number, string>;
+}
+
+const activeRatchetStates = new Set<RatchetState>();
+
+if (typeof window !== "undefined") {
+  window.addEventListener("beforeunload", () => {
+    for (const state of activeRatchetStates) {
+      clearRatchetState(state);
+    }
+    activeRatchetStates.clear();
+  });
 }
 
 export interface MessageSessionRuntime {
@@ -136,7 +148,9 @@ export function createMessageSessionRuntime(
     );
     if (!data) return null;
 
-    return deserializeRatchetState(data);
+    const state = await deserializeRatchetState(data);
+    activeRatchetStates.add(state);
+    return state;
   };
 
   const saveSession = async (deviceId: string, state: RatchetState): Promise<void> => {
@@ -217,6 +231,7 @@ export function createMessageSessionRuntime(
     );
 
     const state = await initSender(sharedSecret, recipientSignedPreKeyPublic);
+    activeRatchetStates.add(state);
     sharedSecret.fill(0);
 
     await saveSession(recipientDeviceId, state);
@@ -315,6 +330,8 @@ export function createMessageSessionRuntime(
       initialMessage: params.initialMessage,
       associatedData: params.associatedData,
     });
+
+    activeRatchetStates.add(bootstrap.session);
 
     // Eagerly commit: save the new session and wipe the consumed OTK from storage
     // before returning plaintext. Deferring this creates a replay window — if the

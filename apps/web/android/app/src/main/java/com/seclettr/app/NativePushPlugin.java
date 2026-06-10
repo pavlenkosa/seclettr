@@ -46,6 +46,22 @@ public class NativePushPlugin extends Plugin {
     public void load() {
         super.load();
         activeInstance = this;
+
+        // Eagerly prime the in-memory FCM token cache so the first getFcmToken()
+        // call returns the real token instead of "".  onNewToken() is NOT called
+        // on every app launch (only on token rotation), so without this the JS
+        // layer always sees an empty token and starts the WS foreground service
+        // even when FCM is properly configured.
+        try {
+            com.google.firebase.messaging.FirebaseMessaging.getInstance().getToken()
+                .addOnSuccessListener(token -> {
+                    if (token != null && !token.isEmpty()) {
+                        fcmToken = token;
+                    }
+                });
+        } catch (Exception e) {
+            // Firebase unavailable (e.g., no google-services.json in dev build) — ignore.
+        }
     }
 
     @Override
@@ -63,14 +79,43 @@ public class NativePushPlugin extends Plugin {
 
     @PluginMethod
     public void getFcmToken(PluginCall call) {
-        JSObject result = new JSObject();
-        result.put("token", fcmToken != null ? fcmToken : "");
-        call.resolve(result);
+        // Serve from cache if already populated (by load() or onNewToken()).
+        if (fcmToken != null && !fcmToken.isEmpty()) {
+            JSObject result = new JSObject();
+            result.put("token", fcmToken);
+            call.resolve(result);
+            return;
+        }
+
+        // Cache cold — fetch from Firebase SDK.  This path runs on first launch
+        // before load()'s async getToken() has completed.
+        try {
+            com.google.firebase.messaging.FirebaseMessaging.getInstance().getToken()
+                .addOnSuccessListener(token -> {
+                    fcmToken = (token != null) ? token : "";
+                    JSObject result = new JSObject();
+                    result.put("token", fcmToken);
+                    call.resolve(result);
+                })
+                .addOnFailureListener(e -> {
+                    JSObject result = new JSObject();
+                    result.put("token", "");
+                    call.resolve(result);
+                });
+        } catch (Exception e) {
+            JSObject result = new JSObject();
+            result.put("token", "");
+            call.resolve(result);
+        }
     }
 
     @PluginMethod
     public void useFcm(PluginCall call) {
         fcmActive = true;
+        // Persist the flag so BootReceiver and PushForegroundService skip the
+        // WS fallback after process death / device reboot.
+        getContext().getSharedPreferences("seclettr_push_state", android.content.Context.MODE_PRIVATE)
+            .edit().putBoolean("use_fcm", true).apply();
         call.resolve();
     }
 
@@ -149,6 +194,12 @@ public class NativePushPlugin extends Plugin {
 
     @PluginMethod
     public void stop(PluginCall call) {
+        // Clear the persisted FCM flag so the WS fallback can restart on next
+        // boot if FCM becomes unavailable (e.g., user clears app data and FCM
+        // token registration fails on next launch).
+        getContext().getSharedPreferences("seclettr_push_state", android.content.Context.MODE_PRIVATE)
+            .edit().putBoolean("use_fcm", false).apply();
+
         Intent intent = new Intent(getContext(), PushForegroundService.class);
         intent.setAction(ACTION_STOP);
 

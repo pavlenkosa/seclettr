@@ -98,3 +98,78 @@
     gap: 0.85rem;
   }
 }
+
+/* ─── Native full-screen layout ───────────────────────────────────────────── */
+
+.nativeContainer {
+  display: flex;
+  flex-direction: column;
+  /* Use height + overflow-y so content can scroll on small devices.
+     min-height alone cannot scroll because #root has overflow: hidden. */
+  height: 100dvh;
+  overflow-y: auto;
+  overscroll-behavior-y: contain;
+  padding:
+    calc(var(--safe-top) + var(--space-10))
+    calc(var(--safe-right) + var(--space-6))
+    calc(var(--safe-bottom) + var(--space-6))
+    calc(var(--safe-left) + var(--space-6));
+  background: var(--bg-primary);
+}
+
+.nativeTop {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-2);
+  margin-bottom: var(--space-8);
+}
+
+.nativeLogoImg {
+  border-radius: 18px;
+  display: block;
+}
+
+.nativeTitle {
+  font-size: 1.6rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  letter-spacing: -0.02em;
+  margin: 0.4rem 0 0;
+}
+
+.nativeSubtitle {
+  font-size: 0.88rem;
+  color: var(--text-secondary);
+  margin: 0;
+  text-align: center;
+}
+
+.nativeSteps {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.nativeBackLink {
+  display: block;
+  text-align: center;
+  color: var(--accent);
+  font-size: 0.9rem;
+  font-weight: 600;
+  text-decoration: none;
+  margin-top: var(--space-6);
+}
+
+.nativeBackLink:hover {
+  color: var(--accent-hover);
+  text-decoration: underline;
+}
+
+.nativeFooter {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: var(--space-8);
+  padding-top: var(--space-4);
+}

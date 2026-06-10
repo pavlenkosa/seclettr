@@ -14,6 +14,7 @@
  */
 import { create } from "zustand";
 import { AUTH_ERROR_CODES } from "@/lib/auth-error-codes";
+import { recordBootDiagnostic } from "@/lib/boot-diagnostics";
 import {
   clearLegacyStorageKeyStorage,
   clearPersistedStorageKey,
@@ -56,6 +57,11 @@ import {
   updateNativePushToken,
 } from "@/lib/native-notifications";
 import { refreshSessionAccessToken } from "@/lib/session";
+import {
+  getNativeServerUrl,
+  hydrateNativeServerUrlForBoot,
+  isNativePlatform,
+} from "@/lib/native-platform";
 
 export type { AuthLifecycleState, AuthRecoveryReason, AuthState } from "./auth-types";
 
@@ -197,26 +203,54 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     });
     try {
       const pinEnabled = await hasPinSet().catch(() => false);
+      recordBootDiagnostic("auth.restore", "starting restore session flow", {
+        pinEnabled,
+        native: isNativePlatform(),
+        hasSyncServerUrl: Boolean(getNativeServerUrl()),
+      });
 
       set({ pinEnabled });
       clearLegacyLockSnapshotStorage();
 
-      // Wrap resolveRestoredSession in a single retry for transient network failures.
-      // On Android the radio may not be ready immediately after the process is killed.
-      let restoreResult!: RestoreSessionResult;
-      try {
-        restoreResult = await resolveRestoredSession();
-      } catch (firstErr) {
-        if (firstErr instanceof Error && firstErr.message === "network_error") {
-          logger.warn("[auth] network error on restore — retrying in 1.5s");
-          await new Promise<void>((resolve) => setTimeout(resolve, 1500));
-          restoreResult = await resolveRestoredSession(); // second attempt; may throw → outer catch
-        } else {
-          throw firstErr;
-        }
+      if (isNativePlatform() && !getNativeServerUrl()) {
+        await hydrateNativeServerUrlForBoot().catch(() => null);
       }
 
+      // On Android the radio may not be ready immediately after a process kill.
+      // Retry up to 3 times with increasing delays before giving up.
+      const RETRY_DELAYS_MS = [1500, 3000, 5000];
+      let restoreResult!: RestoreSessionResult;
+      let lastNetworkErr: Error | null = null;
+      for (let attempt = 0; attempt <= RETRY_DELAYS_MS.length; attempt++) {
+        try {
+          restoreResult = await resolveRestoredSession();
+          lastNetworkErr = null;
+          break;
+        } catch (err) {
+          if (err instanceof Error && err.message === "network_error") {
+            lastNetworkErr = err;
+            if (attempt < RETRY_DELAYS_MS.length) {
+              const delayMs = RETRY_DELAYS_MS[attempt]!;
+              if (isNativePlatform() && !getNativeServerUrl()) {
+                await hydrateNativeServerUrlForBoot().catch(() => null);
+              }
+              recordBootDiagnostic("auth.restore", "restore hit transient network error; retrying", {
+                attempt: attempt + 1,
+                retryDelayMs: delayMs,
+                hasSyncServerUrl: Boolean(getNativeServerUrl()),
+              });
+              logger.warn(`[auth] network error on restore — retrying in ${delayMs}ms (attempt ${attempt + 1})`);
+              await new Promise<void>((resolve) => setTimeout(resolve, delayMs));
+            }
+          } else {
+            throw err;
+          }
+        }
+      }
+      if (lastNetworkErr) throw lastNetworkErr;
+
       if (restoreResult.outcome === "signed_out") {
+        recordBootDiagnostic("auth.restore", "restore resolved to signed_out");
         suspendRealtimeSession("restore-signed-out");
         clearLegacyLockSnapshotStorage();
         set(buildSignedOutState());
@@ -224,6 +258,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       }
 
       if (restoreResult.outcome === "locked") {
+        recordBootDiagnostic("auth.restore", "restore resolved to locked");
         suspendRealtimeSession("restore-locked");
         if (!pinEnabled) {
           set(buildRecoveryRequiredState(
@@ -237,6 +272,9 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       }
 
       if (restoreResult.outcome === "recovery_required") {
+        recordBootDiagnostic("auth.restore", "restore resolved to recovery_required", {
+          reason: restoreResult.reason,
+        });
         suspendRealtimeSession("restore-recovery-required");
         clearLegacyLockSnapshotStorage();
         set(buildRecoveryRequiredState(
@@ -251,6 +289,10 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       set(buildReadyState(restoreResult.session));
       authRealtimeRuntime.activate(restoreResult.session.accessToken, "session-restore");
       void startNativePushService(restoreResult.session.accessToken);
+      recordBootDiagnostic("auth.restore", "restore completed successfully", {
+        userId: restoreResult.session.userId,
+        deviceId: restoreResult.session.deviceId,
+      });
 
       return true;
     } catch (err) {
@@ -259,10 +301,17 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       // instead of the scary recovery screen.
       if (err instanceof Error && err.message === "network_error") {
         logger.warn("[auth] session restore failed — no network after retry");
+        recordBootDiagnostic("auth.restore", "restore failed with persistent network error", {
+          native: isNativePlatform(),
+          hasSyncServerUrl: Boolean(getNativeServerUrl()),
+        });
         set({ error: "network_error" });
         return false;
       }
       logger.warn("[auth] unexpected error during session restore", err);
+      recordBootDiagnostic("auth.restore", "restore failed unexpectedly", {
+        error: err instanceof Error ? err.message : String(err),
+      });
       suspendRealtimeSession("restore-error");
       set(buildRecoveryRequiredState(
         "unexpected_restore_failure",

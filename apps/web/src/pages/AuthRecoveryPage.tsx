@@ -6,6 +6,7 @@ import { mapAuthErrorMessage, shouldShowAuthErrorDetails } from "@/lib/auth-erro
 import { logger } from "@/lib/logger.js";
 import { isNativePlatform } from "@/lib/native-platform";
 import { useAuthStore } from "@/stores/auth";
+import { LabelPill } from "@/components/ui";
 import { AuthCard } from "./auth/AuthCard";
 import { AuthErrorNotice } from "./auth/AuthErrorNotice";
 import { AuthRecoveryDestructiveAction } from "./auth/AuthRecoveryDestructiveAction";
@@ -13,14 +14,92 @@ import { AuthRecoveryExplanation } from "./auth/AuthRecoveryExplanation";
 import { AuthRecoverySuccess } from "./auth/AuthRecoverySuccess";
 import styles from "./AuthRecoveryPage.module.css";
 
+interface NativeAuthRecoveryLayoutProps {
+  readonly recoveryReasonText: string | null;
+  readonly friendlyError: string | null;
+  readonly errorDetail: string | null | undefined;
+  readonly isResetting: boolean;
+  readonly hasResetCompleted: boolean;
+  readonly onReset: () => void;
+  readonly onBackToSignIn: () => void;
+}
+
+function NativeAuthRecoveryLayout({
+  recoveryReasonText,
+  friendlyError,
+  errorDetail,
+  isResetting,
+  hasResetCompleted,
+  onReset,
+  onBackToSignIn,
+}: NativeAuthRecoveryLayoutProps) {
+  const { t } = useI18n();
+
+  return (
+    <div className={styles.nativeContainer}>
+      <div className={styles.nativeTop}>
+        <img src="/favicon.svg" width="68" height="68" alt="" aria-hidden="true" className={styles.nativeLogoImg} />
+        <h1 className={styles.nativeTitle}>{t("common.appName")}</h1>
+        <p className={styles.nativeSubtitle}>{t("auth.recovery.title")}</p>
+      </div>
+
+      <div className={styles.nativeSteps}>
+        {recoveryReasonText ? (
+          <AuthRecoveryExplanation
+            id="auth-recovery-reason"
+            title={t("auth.recovery.reasonTitle")}
+            body={recoveryReasonText}
+            tone="accent"
+            flat
+          />
+        ) : null}
+
+        <AuthRecoveryExplanation
+          id="auth-recovery-step-1"
+          title={t("auth.recovery.stepCredentialsTitle")}
+          body={t("auth.recovery.stepCredentialsBody")}
+          flat
+        />
+
+        <AuthRecoveryDestructiveAction
+          id="auth-recovery-step-2"
+          title={t("auth.recovery.stepDataTitle")}
+          body={t("auth.recovery.stepDataBody")}
+          actionLabel={t("auth.recovery.resetAction")}
+          busyLabel={t("auth.recovery.resetting")}
+          disabled={isResetting}
+          onClick={onReset}
+          successNotice={<AuthRecoverySuccess visible={hasResetCompleted} message={t("auth.recovery.resetDone")} />}
+          flat
+        />
+
+        <AuthRecoveryExplanation
+          id="auth-recovery-step-3"
+          title={t("auth.recovery.stepPasswordTitle")}
+          body={t("auth.recovery.stepPasswordBody")}
+          flat
+        />
+
+        <AuthErrorNotice message={friendlyError} detail={errorDetail} />
+      </div>
+
+      <Link to="/auth" className={styles.nativeBackLink} onClick={onBackToSignIn}>
+        {t("auth.recovery.backToSignIn")}
+      </Link>
+
+      <div className={styles.nativeFooter}>
+        <LabelPill size="sm">{`v${__APP_VERSION__}`}</LabelPill>
+        <LanguageSwitcher />
+      </div>
+    </div>
+  );
+}
+
 export function AuthRecoveryPage() {
   const { t } = useI18n();
   const { error, authRecoveryReason, clearError, resetLocalDeviceData } = useAuthStore();
   const [isResetting, setIsResetting] = useState(false);
   const [hasResetCompleted, setHasResetCompleted] = useState(false);
-  // On native Capacitor the step sections render as flat rows with hairline dividers
-  // instead of nested SurfacePanel cards — same pattern as SecuritySettingsSection.
-  const flat = isNativePlatform();
 
   const friendlyError = useMemo(() => mapAuthErrorMessage(error, t), [error, t]);
   const showErrorDetails = shouldShowAuthErrorDetails(error);
@@ -56,6 +135,22 @@ export function AuthRecoveryPage() {
     }
   };
 
+  // Native: full-screen layout matching AuthPage's NativeAuthForm visual language
+  if (isNativePlatform()) {
+    return (
+      <NativeAuthRecoveryLayout
+        recoveryReasonText={recoveryReasonText}
+        friendlyError={friendlyError}
+        errorDetail={errorDetail}
+        isResetting={isResetting}
+        hasResetCompleted={hasResetCompleted}
+        onReset={() => { void handleResetLocalData(); }}
+        onBackToSignIn={clearError}
+      />
+    );
+  }
+
+  // Web: card layout
   return (
     <div className={styles.container}>
       <AuthCard
@@ -71,7 +166,6 @@ export function AuthRecoveryPage() {
                 title={t("auth.recovery.reasonTitle")}
                 body={recoveryReasonText}
                 tone="accent"
-                flat={flat}
               />
             ) : null}
 
@@ -79,7 +173,6 @@ export function AuthRecoveryPage() {
               id="auth-recovery-step-1"
               title={t("auth.recovery.stepCredentialsTitle")}
               body={t("auth.recovery.stepCredentialsBody")}
-              flat={flat}
             />
 
             <AuthRecoveryDestructiveAction
@@ -89,16 +182,14 @@ export function AuthRecoveryPage() {
               actionLabel={t("auth.recovery.resetAction")}
               busyLabel={t("auth.recovery.resetting")}
               disabled={isResetting}
-              onClick={handleResetLocalData}
+              onClick={() => { void handleResetLocalData(); }}
               successNotice={<AuthRecoverySuccess visible={hasResetCompleted} message={t("auth.recovery.resetDone")} />}
-              flat={flat}
             />
 
             <AuthRecoveryExplanation
               id="auth-recovery-step-3"
               title={t("auth.recovery.stepPasswordTitle")}
               body={t("auth.recovery.stepPasswordBody")}
-              flat={flat}
             />
 
             <AuthErrorNotice message={friendlyError} detail={errorDetail} />

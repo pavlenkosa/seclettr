@@ -1,4 +1,6 @@
-import { isNativePlatform } from "./native-platform";
+import { Preferences } from "@capacitor/preferences";
+import { recordBootDiagnostic } from "./boot-diagnostics";
+import { isNativePlatform, isNativePluginAvailable } from "./native-platform";
 
 /**
  * Key under which the refresh token is persisted via Capacitor Preferences
@@ -19,39 +21,89 @@ interface PreferencesPlugin {
   remove: (opts: { key: string }) => Promise<void>;
 }
 
-interface CapacitorGlobal {
-  Plugins?: Record<string, unknown>;
+function getPlugin(): PreferencesPlugin | null {
+  if (!isNativePlatform() || !isNativePluginAvailable("Preferences")) return null;
+  return Preferences as unknown as PreferencesPlugin;
 }
 
-function getPlugin(): PreferencesPlugin | null {
-  if (!isNativePlatform()) return null;
-  const cap = (window as unknown as { Capacitor?: CapacitorGlobal }).Capacitor;
-  const plugin = cap?.Plugins?.["Preferences"];
-  return plugin ? (plugin as PreferencesPlugin) : null;
+const NATIVE_STORAGE_RETRY_DELAYS_MS = [0, 120, 320, 700] as const;
+
+function wait(ms: number): Promise<void> {
+  return new Promise((resolve) => {
+    globalThis.setTimeout(resolve, ms);
+  });
+}
+
+async function withNativePreferencesRetry<T>(
+  operation: "get" | "set" | "remove",
+  key: string,
+  run: (plugin: PreferencesPlugin) => Promise<T>
+): Promise<T> {
+  let lastError: unknown = null;
+
+  for (let index = 0; index < NATIVE_STORAGE_RETRY_DELAYS_MS.length; index += 1) {
+    const delayMs = NATIVE_STORAGE_RETRY_DELAYS_MS[index] ?? 0;
+    if (delayMs > 0) {
+      await wait(delayMs);
+    }
+
+    const plugin = getPlugin();
+    if (!plugin) {
+      recordBootDiagnostic("native-storage", "preferences plugin unavailable during native storage op", {
+        operation,
+        key,
+        attempt: index + 1,
+      });
+      continue;
+    }
+
+    try {
+      const result = await run(plugin);
+      if (index > 0) {
+        recordBootDiagnostic("native-storage", "native storage op recovered after retry", {
+          operation,
+          key,
+          attempt: index + 1,
+        });
+      }
+      return result;
+    } catch (error) {
+      lastError = error;
+      recordBootDiagnostic("native-storage", "native storage op failed", {
+        operation,
+        key,
+        attempt: index + 1,
+        error: error instanceof Error ? error.message : String(error),
+      });
+    }
+  }
+
+  throw (lastError instanceof Error ? lastError : new Error(`native_preferences_${operation}_failed`));
 }
 
 export async function nativeStorageGet(key: string): Promise<string | null> {
-  const plugin = getPlugin();
-  if (plugin) {
-    const { value } = await plugin.get({ key });
-    return value;
+  if (isNativePlatform()) {
+    try {
+      const { value } = await withNativePreferencesRetry("get", key, (plugin) => plugin.get({ key }));
+      return value;
+    } catch {
+      return null;
+    }
   }
   try { return localStorage.getItem(key); } catch { return null; }
 }
 
 export async function nativeStorageSet(key: string, value: string): Promise<void> {
-  const plugin = getPlugin();
-  if (plugin) {
-    await plugin.set({ key, value });
+  if (isNativePlatform()) {
+    await withNativePreferencesRetry("set", key, (plugin) => plugin.set({ key, value }));
     return;
   }
   try { localStorage.setItem(key, value); } catch { /* ignore */ }
 }
 
 export async function nativeStorageRemove(key: string): Promise<void> {
-  const plugin = getPlugin();
-  if (plugin) {
-    await plugin.remove({ key });
+  if (isNativePlatform()) {
+    await withNativePreferencesRetry("remove", key, (plugin) => plugin.remove({ key }));
     return;
   }
   try { localStorage.removeItem(key); } catch { /* ignore */ }

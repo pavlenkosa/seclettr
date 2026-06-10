@@ -10,6 +10,10 @@ import {
   toCurrentDeviceCryptoMaterial,
 } from "./auth-device-keys";
 import { api } from "@/lib/api";
+import { postNativeAuthJson } from "@/lib/native-auth-http";
+import { resolveApiBaseUrl } from "@/lib/runtime-config";
+import { isNativePlatform } from "@/lib/native-platform";
+import { getNativeRefreshToken } from "@/lib/native-storage";
 import {
   clearBrowserTrustStore,
   clearBrowserTrustStoreCache,
@@ -45,6 +49,17 @@ export async function clearRatchetSessions(reason: string): Promise<void> {
 }
 
 export async function revokeServerSession(): Promise<void> {
+  // On native, add the persisted refresh token as a header so the server can
+  // delete the DB session even when the WebView cookie was wiped (process kill).
+  if (isNativePlatform()) {
+    const nativeToken = await getNativeRefreshToken().catch(() => null);
+    const nativeResponse = await postNativeAuthJson("/auth/logout", {
+      headers: nativeToken ? { "X-Refresh-Token": nativeToken } : undefined,
+    }).catch(() => null);
+    if (nativeResponse) {
+      return;
+    }
+  }
   await api.post("/auth/logout").catch(() => null);
 }
 

@@ -12,6 +12,7 @@
  *   - session restore / lock / unlock / logout flows
  */
 import { api } from "@/lib/api";
+import { postNativeAuthJson } from "@/lib/native-auth-http";
 import {
   generateIdentityBundle,
   generateOneTimePreKeys,
@@ -22,7 +23,9 @@ import {
 } from "@seclettr/crypto";
 import {
   AUTH_PROTOCOL_VERSION,
+  LoginResponseSchema,
   type LoginResponse,
+  RegisterResponseSchema,
   type RegisterResponse,
 } from "@seclettr/protocol";
 import {
@@ -47,6 +50,53 @@ import type { AuthReadySnapshot } from "./auth-types";
 
 const BACKGROUND_POLL_TOKEN_KEY = "sc:background_poll_token";
 const OTK_BATCH_SIZE = 100;
+
+function extractAuthErrorMessage(payload: unknown, fallback: string): string {
+  if (payload && typeof payload === "object") {
+    const error = (payload as { error?: unknown }).error;
+    if (typeof error === "string" && error.length > 0) {
+      return error;
+    }
+  }
+  return fallback;
+}
+
+function parseRegisterResponse(payload: unknown): RegisterResponse {
+  const { version: _version, ...response } = RegisterResponseSchema.parse(payload);
+  return response;
+}
+
+function parseLoginResponse(payload: unknown): LoginResponse {
+  const { version: _version, ...response } = LoginResponseSchema.parse(payload);
+  return response;
+}
+
+async function postNativeCredentialAuth<TResponse>(
+  path: "/auth/register" | "/auth/login",
+  body: unknown,
+  parseResponse: (payload: unknown) => TResponse
+): Promise<TResponse | null> {
+  if (!isNativePlatform()) {
+    return null;
+  }
+
+  let response;
+  try {
+    response = await postNativeAuthJson(path, { body });
+  } catch (error) {
+    throw new Error(error instanceof Error && error.message.length > 0 ? error.message : "Failed to fetch");
+  }
+
+  if (!response) {
+    return null;
+  }
+
+  if (response.status < 200 || response.status >= 300) {
+    throw new Error(extractAuthErrorMessage(response.data, "Request failed"));
+  }
+
+  return parseResponse(response.data);
+}
 
 export interface AuthCredentialFlowResult {
   readonly session: AuthReadySnapshot;
@@ -83,7 +133,7 @@ export async function runRegisterFlow({
   const spk = await generateSignedPreKey(spkId, identity.signingKeyPair.privateKey);
   const otks = await generateOneTimePreKeys(1, OTK_BATCH_SIZE);
 
-  const result = await api.post<RegisterResponse>("/auth/register", {
+  const registerBody = {
     version: AUTH_PROTOCOL_VERSION,
     username,
     password,
@@ -102,7 +152,13 @@ export async function runRegisterFlow({
         publicKey: toBase64Url(otk.publicKey),
       })),
     },
-  });
+  };
+
+  const result = await postNativeCredentialAuth(
+    "/auth/register",
+    registerBody,
+    parseRegisterResponse
+  ) ?? await api.post<RegisterResponse>("/auth/register", registerBody);
 
   // Persist the refresh token to native Preferences so it survives Android
   // process-kill (which can wipe the WebView cookie store).
@@ -194,7 +250,7 @@ export async function runLoginFlow({
     const newOtkStartId = maxOtkId + 1000;
     const topupOtks = await generateOneTimePreKeys(newOtkStartId, OTK_BATCH_SIZE);
 
-    const result = await api.post<LoginResponse>("/auth/login", {
+    const loginBody = {
       version: AUTH_PROTOCOL_VERSION,
       username,
       password,
@@ -213,7 +269,13 @@ export async function runLoginFlow({
           publicKey: toBase64Url(otk.publicKey),
         })),
       },
-    });
+    };
+
+    const result = await postNativeCredentialAuth(
+      "/auth/login",
+      loginBody,
+      parseLoginResponse
+    ) ?? await api.post<LoginResponse>("/auth/login", loginBody);
 
     // Persist the refresh token to native Preferences.
     if (result.refreshToken) {
@@ -261,7 +323,7 @@ export async function runLoginFlow({
   const spk = await generateSignedPreKey(spkId, identity.signingKeyPair.privateKey);
   const otks = await generateOneTimePreKeys(spkId * 1000, OTK_BATCH_SIZE);
 
-  const result = await api.post<LoginResponse>("/auth/login", {
+  const loginBody = {
     version: AUTH_PROTOCOL_VERSION,
     username,
     password,
@@ -280,7 +342,13 @@ export async function runLoginFlow({
         publicKey: toBase64Url(otk.publicKey),
       })),
     },
-  });
+  };
+
+  const result = await postNativeCredentialAuth(
+    "/auth/login",
+    loginBody,
+    parseLoginResponse
+  ) ?? await api.post<LoginResponse>("/auth/login", loginBody);
 
   // Persist the refresh token to native Preferences.
   if (result.refreshToken) {

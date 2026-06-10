@@ -34,6 +34,13 @@ import {
   refreshGroupCallParticipant,
   removeGroupCallParticipant,
 } from "../../services/group-call-presence.js";
+import {
+  hasActiveGroupMembership,
+  loadGroupMemberDeviceIds,
+  loadUserDeviceIds,
+  publishGroupCallFanOut as publishGroupCallEvent,
+  endGroupCallIfRosterEmpty,
+} from "../../services/group-call-participant-routing.js";
 
 const CreateCallBodySchema = z.object({
   calleeUserId: z.string().uuid().optional(),
@@ -108,27 +115,6 @@ async function groupExists(groupId: string): Promise<boolean> {
   return groups.length > 0;
 }
 
-async function hasActiveGroupMembership(
-  groupId: string,
-  userId: string
-): Promise<boolean> {
-  const membership = await getActiveGroupMembership(groupId, userId);
-  return membership !== null;
-}
-
-async function getActiveGroupMembership(
-  groupId: string,
-  userId: string
-): Promise<GroupMembership | null> {
-  const membership = await query<GroupMembership>(
-    `SELECT group_id, role
-     FROM group_members
-     WHERE group_id = $1 AND user_id = $2 AND removed_at IS NULL`,
-    [groupId, userId]
-  );
-  return membership[0] ?? null;
-}
-
 async function getActiveCallSession(
   callId: string
 ): Promise<ActiveCallSession | null> {
@@ -179,18 +165,6 @@ async function getExistingActiveGroupCallForUpdate(
   return result.rows[0] ?? null;
 }
 
-async function loadGroupMemberDeviceIds(groupId: string): Promise<string[]> {
-  const devices = await query<{ id: string }>(
-    `SELECT d.id
-     FROM devices d
-     INNER JOIN group_members gm ON gm.user_id = d.user_id
-     WHERE gm.group_id = $1
-       AND gm.removed_at IS NULL`,
-    [groupId]
-  );
-  return [...new Set(devices.map((device) => device.id))];
-}
-
 async function notifyDirectCallCounterpartDevices(
   call: ActiveCallSession,
   actorUserId: string,
@@ -211,31 +185,6 @@ async function notifyDirectCallCounterpartDevices(
         type: messageType,
         callId: call.id,
         recipientDeviceId: targetDeviceId,
-      })
-    )
-  );
-}
-
-async function loadUserDeviceIds(userId: string): Promise<string[]> {
-  const devices = await query<{ id: string }>(
-    `SELECT id
-     FROM devices
-     WHERE user_id = $1`,
-    [userId]
-  );
-  return [...new Set(devices.map((device) => device.id))];
-}
-
-async function publishGroupCallEvent(
-  groupId: string,
-  payload: Omit<Record<string, unknown>, "recipientDeviceId"> & { type: string }
-): Promise<void> {
-  const deviceIds = await loadGroupMemberDeviceIds(groupId);
-  await Promise.all(
-    deviceIds.map((deviceId) =>
-      publishMessage({
-        ...payload,
-        recipientDeviceId: deviceId,
       })
     )
   );
@@ -304,43 +253,6 @@ function canEndGroupCallForEveryone(
   userId: string
 ): boolean {
   return currentCall.caller_user_id === userId;
-}
-
-async function endGroupCallIfRosterEmpty(
-  currentCall: ActiveCallSession,
-  endedByUserId: string
-): Promise<boolean> {
-  if (!currentCall.group_id) return false;
-
-  const remainingParticipants = await listGroupCallParticipants(currentCall.id);
-  if (remainingParticipants.length > 0) {
-    return false;
-  }
-
-  const updated = await query<{ id: string }>(
-    `UPDATE call_sessions
-     SET status = 'ended',
-         ended_at = COALESCE(ended_at, now())
-     WHERE id = $1
-       AND status IN ('ringing', 'active')
-     RETURNING id`,
-    [currentCall.id]
-  );
-  if (updated.length === 0) {
-    return false;
-  }
-
-  await clearGroupCallParticipants(currentCall.id);
-  await publishGroupCallEvent(currentCall.group_id, {
-    type: "group.call.ended",
-    groupId: currentCall.group_id,
-    callId: currentCall.id,
-    callerUserId: currentCall.caller_user_id,
-    endedByUserId,
-    endedAt: new Date().toISOString(),
-    wasMissed: currentCall.status === "ringing",
-  });
-  return true;
 }
 
 async function validateCreateCallTarget(
@@ -776,7 +688,7 @@ async function authorizeCallStatusUpdate(
     return false;
   }
 
-  const membership = await getActiveGroupMembership(currentCall.group_id, userId);
+  const membership = await hasActiveGroupMembership(currentCall.group_id, userId);
   if (!membership) {
     void reply.code(403).send({ error: "Forbidden" });
     return false;

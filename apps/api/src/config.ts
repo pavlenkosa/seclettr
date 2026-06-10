@@ -2,7 +2,7 @@
  * Centralised configuration loaded from environment variables.
  * All secrets come from env - never hardcoded.
  */
-import { readFileSync, existsSync } from "node:fs";
+import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { resolve, dirname } from "node:path";
 import { z } from "zod";

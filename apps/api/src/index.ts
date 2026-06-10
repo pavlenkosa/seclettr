@@ -126,7 +126,7 @@ export async function buildApp() {
     },
     credentials: true,
     methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
-    allowedHeaders: ["Authorization", "Content-Type", "X-Request-ID", "X-Client-Origin"],
+    allowedHeaders: ["Authorization", "Content-Type", "X-Request-ID", "X-Client-Origin", "X-Refresh-Token"],
   });
 
   await fastify.register(fastifyRateLimit, {

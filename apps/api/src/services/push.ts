@@ -1,3 +1,5 @@
+import type * as FirebaseAdmin from "firebase-admin";
+import type { Messaging } from "firebase-admin/messaging";
 import webpush, { type PushSubscription } from "web-push";
 import { readFileSync } from "node:fs";
 import { query } from "../db/pool.js";
@@ -73,7 +75,7 @@ function mapPushPreferencesRow(row: PushPreferencesRow | undefined): PushPrefere
 // ── FCM provider ─────────────────────────────────────────────────────────────
 
 let fcmInitialised = false;
-let fcmMessaging: import("firebase-admin/messaging").Messaging | null = null;
+let fcmMessaging: Messaging | null = null;
 
 function isFcmConfigured(): boolean {
   return Boolean(config.FCM_SERVICE_ACCOUNT_PATH) || Boolean(config.FCM_SERVICE_ACCOUNT_JSON);
@@ -85,7 +87,7 @@ async function ensureFcmConfigured(): Promise<boolean> {
 
   try {
     const mod = await import("firebase-admin");
-    const admin = mod as unknown as typeof import("firebase-admin");
+    const admin: typeof FirebaseAdmin = mod;
     const serviceAccountPath = config.FCM_SERVICE_ACCOUNT_PATH;
     const serviceAccountJson = config.FCM_SERVICE_ACCOUNT_JSON;
 
@@ -123,13 +125,19 @@ async function sendFcmPush(token: string, payload: PushPayload): Promise<boolean
   androidData["serverUrl"] = config.APP_URL;
   androidData["body"] = payload.body;
 
+  // Call invites are time-critical: a 60-second-old push that arrives late should
+  // be discarded rather than shown as a stale "Answer" notification.
+  // All other types keep a 60s TTL to tolerate brief connectivity gaps.
+  const pushType = payload.data?.["type"] ?? "";
+  const isCallInvite = pushType === "call_invite" || pushType === "group_call_invite";
+
   try {
     await fcmMessaging.send({
       token,
       data: androidData,
       android: {
         priority: "high" as const,
-        ttl: 60000,
+        ttl: isCallInvite ? 0 : 60000,
       },
       apns: {
         payload: {

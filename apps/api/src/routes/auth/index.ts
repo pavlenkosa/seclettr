@@ -108,17 +108,20 @@ async function enforceWsTicketRateLimit(request: FastifyRequest, reply: FastifyR
 async function resolveRefreshSession(
   request: FastifyRequest
 ): Promise<RefreshSessionResolution> {
-  // Cookie is the primary carrier.  Native clients (Capacitor) may additionally
-  // send an `X-Refresh-Token` header as a fallback: on Android the WebView cookie
-  // store can be wiped after an OS-level process kill, while Preferences storage
-  // (used by `@capacitor/preferences`) survives restarts.
-  // The header fallback is only accepted from known native origins to prevent
-  // regular browser JS from using this path.
+  // For native clients (Capacitor) the `X-Refresh-Token` header is the primary
+  // carrier.  Capacitor Preferences survives Android process kills while the
+  // WebView cookie store can be wiped, so the client always sends the latest
+  // persisted token as a header.  The cookie is kept as a fallback for the
+  // transition window (e.g. first launch before Preferences is populated).
+  // For regular browser sessions the HttpOnly cookie is the only carrier.
+  // The header path is restricted to known native origins to prevent misuse.
   const cookieToken = request.cookies["refresh_token"];
   const headerToken = isNativeClient(request)
     ? (request.headers["x-refresh-token"] as string | undefined)
     : undefined;
-  const rawToken = cookieToken ?? headerToken;
+  const rawToken = isNativeClient(request)
+    ? (headerToken ?? cookieToken)
+    : cookieToken;
 
   if (!rawToken) {
     return { ok: false, error: "No refresh token", clearCookie: false };
@@ -194,11 +197,25 @@ function sendRefreshSessionError(
  */
 function isNativeClient(request: FastifyRequest): boolean {
   if (config.NODE_ENV === "development") return true;
-  const origin = request.headers["origin"] ?? "";
+  const originHeader = request.headers["origin"];
+  const clientOriginHeader = request.headers["x-client-origin"];
+  const origin = typeof originHeader === "string"
+    ? originHeader
+    : Array.isArray(originHeader)
+      ? (originHeader[0] ?? "")
+      : "";
+  const clientOrigin = typeof clientOriginHeader === "string"
+    ? clientOriginHeader
+    : Array.isArray(clientOriginHeader)
+      ? (clientOriginHeader[0] ?? "")
+      : "";
   return (
     origin === "https://localhost" ||
     origin === "capacitor://localhost" ||
-    origin === "ionic://localhost"
+    origin === "ionic://localhost" ||
+    clientOrigin === "https://localhost" ||
+    clientOrigin === "capacitor://localhost" ||
+    clientOrigin === "ionic://localhost"
   );
 }
 
@@ -604,7 +621,12 @@ export async function authRoutes(fastify: FastifyInstance): Promise<void> {
   });
 
   fastify.post("/logout", { preHandler: enforceAuthRouteRateLimit }, async (request, reply) => {
-    const rawToken = request.cookies["refresh_token"];
+    const headerToken = isNativeClient(request)
+      ? (request.headers["x-refresh-token"] as string | undefined)
+      : undefined;
+    const rawToken = isNativeClient(request)
+      ? (headerToken ?? request.cookies["refresh_token"])
+      : request.cookies["refresh_token"];
     if (rawToken) {
       const parsedRefresh = parseRefreshToken(rawToken);
       if (parsedRefresh) {

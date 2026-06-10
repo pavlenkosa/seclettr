@@ -347,6 +347,18 @@ function bytesEqual(a: Uint8Array, b: Uint8Array): boolean {
   return diff === 0;
 }
 
+export function clearRatchetState(state: RatchetState): void {
+  state.DHs.privateKey.fill(0);
+  if (state.DHr) state.DHr.fill(0);
+  state.RK.fill(0);
+  if (state.CKs) state.CKs.fill(0);
+  if (state.CKr) state.CKr.fill(0);
+  for (const mk of state.MKSKIPPED.values()) {
+    mk.fill(0);
+  }
+  state.MKSKIPPED.clear();
+}
+
 function toHex(bytes: Uint8Array): string {
   return Array.from(bytes).map(b => b.toString(16).padStart(2, "0")).join("");
 }

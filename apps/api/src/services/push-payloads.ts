@@ -247,6 +247,7 @@ export function buildGroupCallStartedPushPayload({
       callId,
       callType,
       groupId,
+      groupName: normalizedGroupName,
       fromUserId: callerUserId,
       fromUsername: preferences.showSender ? (callerUsername ?? "") : "",
       url: `/?group=${encodeURIComponent(groupId)}`,

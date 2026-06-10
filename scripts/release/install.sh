@@ -52,7 +52,7 @@ DIM='\033[2m'
 RST='\033[0m'
 
 # ── Progress tracking ──────────────────────────────────────────────────────────
-_TOTAL_STEPS=7
+_TOTAL_STEPS=8
 _CURRENT_STEP=0
 
 step() {
@@ -167,6 +167,33 @@ log_warn() {
 die() {
   echo -e "${RED}ERR${RST} $*" >&2
   exit 1
+}
+
+web_probe_url() {
+  if [[ "$NETWORK_MODE" == "http" ]]; then
+    printf 'http://127.0.0.1:%s/runtime-config.js' "${WEB_HTTP_PORT:-80}"
+  else
+    printf 'https://127.0.0.1:%s/runtime-config.js' "${WEB_HTTPS_PORT:-443}"
+  fi
+}
+
+verify_web_reachability() {
+  local url
+  url="$(web_probe_url)"
+  local -a curl_args=(-fsS)
+  if [[ "$NETWORK_MODE" != "http" ]]; then
+    curl_args+=(-k)
+  fi
+
+  for attempt in $(seq 1 30); do
+    if curl "${curl_args[@]}" "$url" 2>/dev/null | grep -q '__SECLETTR_RUNTIME_CONFIG__'; then
+      log_ok "Web probe succeeded: $url"
+      return 0
+    fi
+    sleep 2
+  done
+
+  die "Web probe failed: $url"
 }
 
 require_command() {
@@ -2026,6 +2053,11 @@ step "Verifying container health"
 sleep 3
 docker_compose ps --format "table {{.Name}}\t{{.Status}}\t{{.Ports}}" 2>/dev/null \
   || docker_compose ps
+
+if is_mode_with_web; then
+  step "Verifying web reachability"
+  run_quiet "Probing deployed web runtime" verify_web_reachability
+fi
 
 # ── Final summary ──────────────────────────────────────────────────────────────
 

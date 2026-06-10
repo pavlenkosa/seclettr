@@ -85,6 +85,15 @@ jobs:
       - name: Lint web
         run: pnpm --filter @seclettr/web lint
 
+      - name: Lint API and SFU
+        run: pnpm --filter @seclettr/api lint && pnpm --filter @seclettr/sfu lint
+
+      - name: UI contracts
+        run: pnpm --filter @seclettr/web check:ui-contracts
+
+      - name: UI style
+        run: pnpm --filter @seclettr/web check:ui-style
+
       - name: Audit production dependencies
         run: pnpm audit:prod:gate
 

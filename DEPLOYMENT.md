@@ -7,63 +7,97 @@ You do not need to build from source.
 
 ## Installation Modes
 
-Seclettr supports two deployment modes:
+All deployment paths use the **release bundle** — a `.tar.gz` that contains the compose
+file, nginx configs, migrations, and installer script.
 
-### Online Mode (Recommended)
-- Images pulled automatically from `ghcr.io/pavlenkosa/seclettr/*`
-- Fast updates: only changed layers are downloaded
-- No need to download large bundles (~10MB: scripts + configs only)
+| Mode | Image source | Bundle size |
+|------|-------------|-------------|
+| **Online** (recommended) | Pulled from `ghcr.io/pavlenkosa/seclettr/*` at install time | ~10 MB (configs only) |
+| **Offline** | Loaded from `prebuilt-images.tar.gz` inside the bundle | ~1 GB |
 
-### Offline Mode
-- Images loaded from local `prebuilt-images.tar.gz`
-- Works on air-gapped servers
-- Larger bundle size (~1GB)
+The installer detects which mode to use automatically: if the image archive is present in
+the bundle it loads from it; otherwise it pulls from GHCR.
 
 ---
 
-## Quick Start (Online Mode)
+## Quick Start
 
 ### 1. Prerequisites
+
 - Linux server (Ubuntu 22.04+ recommended)
 - Docker + Docker Compose plugin
-- Open ports:
-  - `80` and `443` for web access
-  - `3478` (TURN) + UDP media ranges for calls
-- Domain name (recommended for production)
+- Open ports: `80` and `443` (web), `3478` UDP/TCP + `50000–51999` UDP (TURN/media)
+- A domain name pointing at the server (recommended for production)
 
 Install Docker if missing:
 ```bash
 curl -fsSL https://get.docker.com | sh
 ```
 
-### 2. Get Deployment Files
+### 2. Download the Release Bundle
 
-```bash
-mkdir -p /opt/seclettr && cd /opt/seclettr
+Go to the [GitHub Releases](https://github.com/pavlenkosa/seclettr/releases) page and
+download the latest assets:
 
-# Get compose file and env template
-curl -fLO https://raw.githubusercontent.com/pavlenkosa/seclettr/main/infra/docker-compose.release.yml
-curl -fLO https://raw.githubusercontent.com/pavlenkosa/seclettr/main/infra/.env.example
-
-# Rename for convenience
-mv docker-compose.release.yml docker-compose.yml
-mv .env.example .env
+```
+seclettr-release-main-<timestamp>.tar.gz
+seclettr-release-main-<timestamp>.tar.gz.sha256
 ```
 
-### 3. Configure Environment
+Or with curl:
+```bash
+# Replace <tag> with the release tag, e.g. v1.3.0-beta
+RELEASE_URL="https://github.com/pavlenkosa/seclettr/releases/download/<tag>"
+curl -fLO "$RELEASE_URL/seclettr-release-main-<timestamp>.tar.gz"
+curl -fLO "$RELEASE_URL/seclettr-release-main-<timestamp>.tar.gz.sha256"
+```
 
-Edit `.env` and set these values:
-- `CORS_ORIGIN`: URL your users will access (e.g., `https://chat.example.com`)
-- `TURN_DOMAIN`: domain or IP of your server
-- `TURN_EXTERNAL_IP`: public IP
-- `ANNOUNCED_IP`: public IP (same as TURN_EXTERNAL_IP)
+Verify integrity:
+```bash
+sha256sum -c seclettr-release-main-<timestamp>.tar.gz.sha256
+```
 
-Leave `CHANGE_ME_*` values as-is — they are auto-generated on first run.
-
-### 4. Run
+### 3. Unpack and Configure
 
 ```bash
-docker compose up -d
+tar -xzf seclettr-release-main-<timestamp>.tar.gz
+cd seclettr-release-main-<timestamp>
+```
+
+The installer generates cryptographic secrets automatically. You only need to set
+network-specific values that it cannot guess:
+
+```bash
+# Open .env and set:
+#   CORS_ORIGIN   — URL your users will access (e.g. https://chat.example.com)
+#   TURN_DOMAIN   — domain or IP of the TURN server (same host is fine)
+#   TURN_EXTERNAL_IP / ANNOUNCED_IP — public IP of the server
+```
+
+### 4. Run Installer
+
+```bash
+# Interactive (recommended for first deploy)
+./install.sh --interactive
+
+# Non-interactive (CI/automation)
+./install.sh --non-interactive --mode full --network tls
+```
+
+The installer will:
+1. Pull Docker images from GHCR (online mode) or load from bundle (offline mode)
+2. Generate secrets for any `CHANGE_ME_*` placeholders
+3. Run database migrations
+4. Start all services
+
+### 5. Verify
+
+```bash
+# Check service health
+docker compose -p seclettr --env-file .env -f docker-compose.yml ps
+
+# API should return {"status":"ok"}
+curl http://127.0.0.1:3001/health
 ```
 
 ---

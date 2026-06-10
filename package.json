@@ -1,6 +1,6 @@
 {
   "name": "seclettr-messenger",
-  "version": "1.3.0-beta",
+  "version": "1.3.1-beta",
   "private": true,
   "description": "E2EE web messenger",
   "license": "Apache-2.0",
@@ -12,7 +12,7 @@
     "build": "turbo run build",
     "test": "turbo run test",
     "test:coverage": "pnpm --filter @seclettr/web test:coverage && pnpm --filter @seclettr/api test:coverage && pnpm --filter @seclettr/crypto test:coverage",
-    "test:e2e": "bash ./scripts/ops/e2e-smoke.sh",
+    "test:e2e": "bash ./scripts/seclettr ops e2e",
     "test:e2e:playwright": "playwright test",
     "lint": "turbo run lint",
     "typecheck": "turbo run typecheck",
@@ -25,15 +25,15 @@
     "db:seed": "node scripts/run-pnpm.mjs --filter @seclettr/api run db:seed",
     "env:test:gen:ps": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/gen-test-env.ps1",
     "env:test:gen:ps:force": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/gen-test-env.ps1 -Force",
-    "env:test:gen:sh": "bash ./scripts/dev/test-env.sh",
+    "env:test:gen:sh": "bash ./scripts/seclettr dev test-env",
     "push:vapid:gen": "node scripts/gen-vapid.mjs",
-    "release:build": "bash ./scripts/release/build.sh",
-    "release:install": "bash ./scripts/release/install.sh",
-    "server:install": "bash ./scripts/server/install.sh",
+    "release:build": "bash ./scripts/seclettr release build",
+    "release:install": "bash ./scripts/seclettr release install",
+    "server:install": "bash ./scripts/seclettr server install",
     "licenses:third-party": "node scripts/generate-third-party-notices.mjs",
     "licenses:third-party:check": "node scripts/generate-third-party-notices.mjs --check",
-    "sonar:scan": "bash ./scripts/sonar-scan.sh",
-    "sonar:scan:coverage": "pnpm test:coverage && bash ./scripts/sonar-scan.sh"
+    "sonar:scan": "bash ./scripts/seclettr sonar scan",
+    "sonar:scan:coverage": "bash ./scripts/seclettr sonar scan --coverage"
   },
   "simple-git-hooks": {
     "pre-commit": "node scripts/generate-third-party-notices.mjs && git add THIRD_PARTY_NOTICES.md",

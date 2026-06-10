@@ -28,11 +28,15 @@ PROJECT_NAME="seclettr"
 APPLY=false
 ROLLBACK=false
 
-RED='\033[0;31m'; GRN='\033[0;32m'; YLW='\033[0;33m'; CYN='\033[0;36m'; BLD='\033[1m'; RST='\033[0m'
+RED='\033[0;31m'; GRN='\033[0;32m'; YLW='\033[0;33m'; CYN='\033[0;36m'; BLD='\033[1m'; DIM='\033[2m'; RST='\033[0m'
 ok()   { echo -e "  ${GRN}✓${RST} $*"; }
 warn() { echo -e "  ${YLW}⚠${RST} $*"; }
 fail() { echo -e "  ${RED}✗${RST} $*"; exit 1; }
 info() { echo -e "  ${CYN}→${RST} $*"; }
+
+compose_cmd() {
+  docker compose --env-file "$ENV_FILE" -f "$COMPOSE_FILE" --project-name "$PROJECT_NAME" "$@"
+}
 
 usage() {
   cat <<USAGE
@@ -124,13 +128,13 @@ fi
 if [[ "$APPLY" != "true" ]]; then
   info "Dry-run — use --apply to execute"
   info "Would create backup at: ${BACKUP_DIR}"
-  info "Would run migrations and restart stack"
+  info "Would run the canonical migrate service and restart stack"
   exit 0
 fi
 
 mkdir -p "$BACKUP_DIR"
 info "Backing up database to ${BACKUP_DIR}/postgres.sql.gz..."
-docker exec "${PROJECT_NAME}-postgres-1" pg_dump -U seclettr seclettr 2>/dev/null | \
+compose_cmd exec -T postgres pg_dump -U seclettr seclettr 2>/dev/null | \
   gzip > "$BACKUP_DIR/postgres.sql.gz" && \
   ok "Database backup saved ($(wc -c < "$BACKUP_DIR/postgres.sql.gz") bytes)" || \
   warn "Backup failed, continuing anyway"
@@ -143,46 +147,27 @@ docker tag "${GHCR_REGISTRY}/${GHCR_NAMESPACE}/sfu:${IMAGE_TAG}" "seclettr/sfu:r
 ok "Images tagged as seclettr/*:release"
 
 # ── 6. Run migrations ──────────────────────────────────────────────────
-if [[ -d "${COMPOSE_DIR}/migrations" ]]; then
-  info "Running migrations..."
-  # Get current max migration from DB
-  CURRENT_MIGRATION=$(docker exec "${PROJECT_NAME}-api-1" node -e "
-    const { query } = require('/app/apps/api/dist/db/pool.js');
-    query(\"SELECT migration FROM _migrations ORDER BY migration DESC LIMIT 1\").then(r => console.log(r[0]?.migration || 'none'));
-  " 2>/dev/null || echo "unknown")
-
-  info "Current migration: ${CURRENT_MIGRATION}"
-
-  for f in $(ls "${COMPOSE_DIR}/migrations"/*.sql 2>/dev/null | sort); do
-    fname=$(basename "$f")
-    if [[ "$fname" > "$CURRENT_MIGRATION" || "$CURRENT_MIGRATION" == "none" ]]; then
-      info "  Applying: $fname"
-      cat "$f" | docker exec -i "${PROJECT_NAME}-postgres-1" psql -U seclettr -d seclettr 2>&1 || warn "  Migration $fname failed"
-    else
-      info "  Skipping: $fname (already applied)"
-    fi
-  done
-  ok "Migrations applied"
-else
-  warn "No migrations directory found"
-fi
+info "Running canonical migrate service..."
+compose_cmd --profile ops run --rm migrate
+ok "Migrations applied via canonical runner"
 
 # ── 7. Restart stack ───────────────────────────────────────────────────
 info "Restarting stack with new images..."
-docker compose -f "$COMPOSE_FILE" --project-name "$PROJECT_NAME" up -d --remove-orphans 2>&1 | tail -3
+compose_cmd up -d --remove-orphans 2>&1 | tail -3
 ok "Stack restarted"
 
 # ── 8. Health check ────────────────────────────────────────────────────
 info "Waiting for API to become healthy..."
 for i in $(seq 1 30); do
   sleep 2
-  HEALTH=$(docker exec "${PROJECT_NAME}-api-1" wget -qO- http://127.0.0.1:3001/health 2>/dev/null || true)
+  HEALTH=$(compose_cmd exec -T api wget -qO- http://127.0.0.1:3001/health 2>/dev/null || true)
   if echo "$HEALTH" | grep -q '"status":"ok"'; then
     ok "API is healthy"
     break
   fi
   if [[ "$i" -eq 30 ]]; then
-    warn "API did not become healthy after 60s — check 'docker logs ${PROJECT_NAME}-api-1'"
+    compose_cmd logs --tail 50 api || true
+    fail "API did not become healthy after 60s"
   fi
 done
 

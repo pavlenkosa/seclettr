@@ -11,7 +11,7 @@
   <a href="https://github.com/pavlenkosa/seclettr/actions/workflows/release-bundle.yml">
     <img src="https://github.com/pavlenkosa/seclettr/actions/workflows/release-bundle.yml/badge.svg?branch=main" alt="Release Bundle" />
   </a>
-  <img src="https://img.shields.io/badge/version-1.3.0--beta-2563eb" alt="Version 1.3.0-beta" />
+  <img src="https://img.shields.io/badge/version-1.3.1--beta-2563eb" alt="Version 1.3.1-beta" />
   <img src="https://img.shields.io/badge/license-Apache%202.0-0f766e" alt="License Apache-2.0" />
   <img src="https://img.shields.io/badge/node-%3E%3D22-1f2937" alt="Node >= 22" />
   <img src="https://img.shields.io/badge/pnpm-%3E%3D8-f59e0b" alt="pnpm >= 8" />
@@ -23,7 +23,7 @@
 > Self-hostable messaging and calling stack with encrypted chats, explicit plain-chat flows, direct/group/room calls, and one deployable monorepo for web, API, and SFU services.
 
 > [!IMPORTANT]
-> Seclettr is currently `1.3.0-beta` and under active development. The encrypted messaging model is implemented in the client stack, but the server still handles the metadata and transport needed for routing, storage, presence, attachments, and calls. Call media protection depends on the selected call-security mode and on browser/runtime compatibility.
+> Seclettr is currently `1.3.1-beta` and under active development. The encrypted messaging model is implemented in the client stack, but the server still handles the metadata and transport needed for routing, storage, presence, attachments, and calls. Call media protection depends on the selected call-security mode and on browser/runtime compatibility.
 
 ## Why Seclettr
 
@@ -347,6 +347,42 @@ Relevant workflows:
 
 - `.github/workflows/ci.yml`
 - `.github/workflows/release-bundle.yml`
+
+## Push Notifications on Android — OEM Battery Restrictions
+
+Android push delivery via FCM works without any special configuration on stock Android (Pixel, Android One). On OEM distributions with aggressive battery management, reliable delivery requires manual user action.
+
+### Affected devices
+
+Xiaomi / MIUI / HyperOS, Huawei EMUI (with Google Play Services), Oppo ColorOS, Realme UI, Vivo FuntouchOS, OnePlus OxygenOS.
+
+### Required user steps per OEM
+
+**Xiaomi / MIUI / HyperOS**
+1. Settings → Apps → Manage Apps → Seclettr → Battery saver → **No restrictions**
+2. Settings → Apps → Manage Apps → Seclettr → **Auto-start → Enabled**
+
+**Huawei EMUI (with Google Play Services)**
+1. Settings → Battery → App launch → Seclettr → Manage manually → Enable **Auto-launch**, **Secondary launch**, and **Run in background**
+
+**Oppo / Realme / OnePlus**
+1. Settings → Battery → Battery optimization → Seclettr → **Don't optimize**
+
+### Devices without Google Play Services
+
+Huawei devices sold after mid-2019 may not have Google Play Services. FCM is unavailable on these devices. Seclettr does not currently support Huawei Push Kit (HPK). Push notifications will not be delivered on such devices.
+
+### What the app guarantees
+
+| Scenario | Push delivery |
+|---|---|
+| Stock Android with FCM | Reliable via Google Play Services daemon |
+| OEM device with Auto-start and battery exemption granted | Reliable (FCM path unaffected) |
+| OEM device without the settings above | Best-effort; delivery may be delayed or dropped |
+| Device killed by "Clear all" in recents | No push via WS fallback; FCM delivery depends on GMS availability |
+| No Google Play Services | No push |
+
+The app does not start a persistent background service when FCM is configured. The "Push notifications active" notification only appears on devices where FCM is not yet available (first launch before the FCM token is registered, or deploys without `FCM_SERVICE_ACCOUNT_*` configured).
 
 ## Current Caveats
 

@@ -1,1 +1,0 @@
-server/install.sh

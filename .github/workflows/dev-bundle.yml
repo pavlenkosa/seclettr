@@ -122,6 +122,7 @@ jobs:
           context: .
           file: ./apps/api/Dockerfile
           push: true
+          load: true
           tags: |
             ${{ steps.meta.outputs.api_image }}:${{ steps.meta.outputs.image_tag }}
           build-args: |
@@ -137,6 +138,7 @@ jobs:
           context: .
           file: ./apps/web/Dockerfile
           push: true
+          load: true
           tags: |
             ${{ steps.meta.outputs.web_image }}:${{ steps.meta.outputs.image_tag }}
           build-args: |
@@ -152,6 +154,7 @@ jobs:
           context: .
           file: ./apps/sfu/Dockerfile
           push: true
+          load: true
           tags: |
             ${{ steps.meta.outputs.sfu_image }}:${{ steps.meta.outputs.image_tag }}
           build-args: |
@@ -164,15 +167,18 @@ jobs:
       - name: Build dev bundle
         shell: bash
         run: |
+          COMMON_ARGS=(
+            --name      "${{ steps.meta.outputs.bundle_prefix }}"
+            --tag       "${{ steps.meta.outputs.image_tag }}"
+            --api-image "${{ steps.meta.outputs.api_image }}"
+            --web-image "${{ steps.meta.outputs.web_image }}"
+            --sfu-image "${{ steps.meta.outputs.sfu_image }}"
+            --skip-build
+          )
           if [[ "${{ github.event_name }}" == "workflow_run" ]]; then
-            pnpm release:build -- \
-              --name "${{ steps.meta.outputs.bundle_prefix }}" \
-              --tag  "${{ steps.meta.outputs.image_tag }}" \
-              --skip-verify
+            pnpm release:build -- "${COMMON_ARGS[@]}" --skip-verify
           else
-            pnpm release:build -- \
-              --name "${{ steps.meta.outputs.bundle_prefix }}" \
-              --tag  "${{ steps.meta.outputs.image_tag }}"
+            pnpm release:build -- "${COMMON_ARGS[@]}"
           fi
 
       - name: Rebuild workspace packages before Android
@@ -191,6 +197,42 @@ jobs:
           path: apps/web/android/app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
           retention-days: 30
+
+      - name: Smoke-test bundle install
+        shell: bash
+        run: |
+          BUNDLE=$(ls artifacts/*.tar.gz | grep -v '.sha256' | head -1)
+          TMPDIR=$(mktemp -d)
+          tar -xzf "$BUNDLE" -C "$TMPDIR" --strip-components=1
+          cd "$TMPDIR"
+
+          # Minimal env — only vars the installer cannot auto-generate
+          cp .env.example .env
+          {
+            echo "CORS_ORIGIN=http://localhost"
+            echo "TURN_DOMAIN=localhost"
+            echo "TURN_EXTERNAL_IP=127.0.0.1"
+            echo "ANNOUNCED_IP=127.0.0.1"
+          } >> .env
+
+          # Install in non-interactive HTTP mode; images are already local
+          ./install.sh --non-interactive --mode full --network http --skip-load
+
+          # Wait for API health (up to 60 s)
+          for i in $(seq 1 30); do
+            sleep 2
+            if curl -fsS http://127.0.0.1:3001/health | grep -q '"status":"ok"'; then
+              echo "API healthy after $((i*2))s"
+              break
+            fi
+            if [[ "$i" -eq 30 ]]; then
+              docker compose -p seclettr logs --tail 40 api || true
+              echo "ERR: API did not become healthy" && exit 1
+            fi
+          done
+
+          # Cleanup
+          docker compose -p seclettr --env-file .env -f docker-compose.yml down -v --remove-orphans || true
 
       - name: Upload artifact — dev bundle
         uses: actions/upload-artifact@v4

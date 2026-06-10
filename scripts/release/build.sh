@@ -31,6 +31,9 @@ Options:
   --out-dir <path>    Output directory (default: artifacts)
   --name <name>       Bundle name prefix (default: seclettr-release)
   --tag <tag>         Docker image tag (default: release)
+  --api-image <name>  API image name override (default: seclettr/api)
+  --web-image <name>  Web image name override (default: seclettr/web)
+  --sfu-image <name>  SFU image name override (default: seclettr/sfu)
   --skip-build        Reuse existing local images instead of rebuilding
   --skip-verify       Skip the pre-release verification gate
   -h, --help          Show this help
@@ -49,6 +52,18 @@ while [[ $# -gt 0 ]]; do
       ;;
     --tag)
       IMAGE_TAG="$2"
+      shift 2
+      ;;
+    --api-image)
+      API_IMAGE="$2"
+      shift 2
+      ;;
+    --web-image)
+      WEB_IMAGE="$2"
+      shift 2
+      ;;
+    --sfu-image)
+      SFU_IMAGE="$2"
       shift 2
       ;;
     --skip-build)
@@ -159,6 +174,13 @@ chmod +x "$STAGE_DIR/install.sh" "$STAGE_DIR/uninstall.sh" "$STAGE_DIR/install-d
 cp -R "$NGINX_SRC_DIR" "$STAGE_DIR/nginx"
 mkdir -p "$STAGE_DIR/nginx/certs"
 cp -R "$MIGRATIONS_SRC_DIR" "$STAGE_DIR/migrations"
+
+cat >"$STAGE_DIR/release.env" <<EOF
+SECLETTR_IMAGE_TAG=${IMAGE_TAG}
+SECLETTR_API_IMAGE=${API_IMAGE}
+SECLETTR_WEB_IMAGE=${WEB_IMAGE}
+SECLETTR_SFU_IMAGE=${SFU_IMAGE}
+EOF
 
 cat >"$STAGE_DIR/RELEASE_INFO.txt" <<EOF
 version=${SECLETTR_VERSION}

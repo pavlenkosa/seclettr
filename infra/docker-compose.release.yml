@@ -217,7 +217,7 @@ services:
       - ./nginx/certs:/etc/nginx/certs:ro
       - ./nginx/runtime-config.js:/usr/share/nginx/html/runtime-config.js:ro
     healthcheck:
-      test: ["CMD-SHELL", "wget -qO- --no-check-certificate https://127.0.0.1:8443/ >/dev/null 2>&1 || true"]
+      test: ["CMD-SHELL", "wget -qO- --no-check-certificate https://127.0.0.1:8443/runtime-config.js | grep -q '__SECLETTR_RUNTIME_CONFIG__'"]
       interval: 10s
       timeout: 5s
       retries: 5

@@ -78,7 +78,7 @@ load_env_file "$ENV_FILE"
 
 cleanup() {
   if [[ "$REUSE_STACK" == "false" && "$KEEP_RUNNING" == "false" ]]; then
-    bash "$SCRIPT_DIR/dev-down.sh" \
+    bash "$SCRIPT_DIR/dev/down.sh" \
       --env-file "$ENV_FILE" \
       --project-name "$PROJECT_NAME" \
       --volumes || true
@@ -96,7 +96,7 @@ if [[ "$REUSE_STACK" == "false" ]]; then
     dev_up_args+=(--no-build)
   fi
 
-  bash "$SCRIPT_DIR/dev-up.sh" "${dev_up_args[@]}"
+  bash "$SCRIPT_DIR/dev/up.sh" "${dev_up_args[@]}"
 fi
 
 wait_for_http "http://127.0.0.1:${DEV_API_PORT}/health" "API health endpoint"

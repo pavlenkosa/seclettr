@@ -23,10 +23,16 @@ main() {
       node -e "console.log(require('$ROOT_DIR/package.json').version)" 2>/dev/null || echo "?"
       exit 0
       ;;
-    dev)    shift; cmd_dev "$@" ;;
-    release) shift; cmd_release "$@" ;;
+    dev)       shift; cmd_dev "$@" ;;
+    release)   shift; cmd_release "$@" ;;
+    ops)       shift; cmd_ops "$@" ;;
+    android)   shift; cmd_android "$@" ;;
+    sonar)     shift; cmd_sonar "$@" ;;
+    server)    shift; cmd_server "$@" ;;
+    # kept for backward-compat; prefer: seclettr ops ghcr update
+    ghcr)      shift; cmd_ops_ghcr "$@" ;;
+    # kept for backward-compat; prefer: seclettr server install
     server-install) shift; cmd_server_install "$@" ;;
-    ghcr)   shift; cmd_ghcr "$@" ;;
     *)
       echo -e "${RED}ERR${RST} Unknown command: $1"
       echo "  Run 'seclettr help' for usage."
@@ -35,7 +41,7 @@ main() {
   esac
 }
 
-# ── dev ─────────────────────────────────────────────────────────────────────────
+# ── dev ────────────────────────────────────────────────────────────────────────
 
 cmd_dev() {
   if [[ $# -eq 0 ]]; then
@@ -44,13 +50,14 @@ cmd_dev() {
   fi
 
   case "$1" in
-    up)       shift; seclettr_logo; cmd_dev_up "$@" ;;
-    down)     shift; seclettr_logo; cmd_dev_down "$@" ;;
-    install)  shift; seclettr_logo; cmd_dev_install "$@" ;;
-    certs)    shift; seclettr_logo; cmd_dev_certs "$@" ;;
+    up)        shift; seclettr_logo; cmd_dev_up "$@" ;;
+    down)      shift; seclettr_logo; cmd_dev_down "$@" ;;
+    install)   shift; seclettr_logo; cmd_dev_install "$@" ;;
+    certs)     shift; seclettr_logo; cmd_dev_certs "$@" ;;
     status|ps) shift; seclettr_logo; cmd_dev_status "$@" ;;
-    logs)     shift; seclettr_logo; cmd_dev_logs "$@" ;;
-    test-env) shift; seclettr_logo; cmd_dev_test_env "$@" ;;
+    logs)      shift; seclettr_logo; cmd_dev_logs "$@" ;;
+    test-env)  shift; seclettr_logo; cmd_dev_test_env "$@" ;;
+    --help|-h) seclettr_help; exit 0 ;;
     *)
       echo -e "${RED}ERR${RST} Unknown dev command: $1"
       exit 1
@@ -134,9 +141,9 @@ cmd_dev_logs() {
   while [[ $# -gt 0 ]]; do
     case "$1" in
       --project|-p) project="$2"; shift 2 ;;
-      -f|--follow) follow=true; shift ;;
-      -*) shift ;;
-      *) service="$1"; shift ;;
+      -f|--follow)  follow=true; shift ;;
+      -*)           shift ;;
+      *)            service="$1"; shift ;;
     esac
   done
 
@@ -155,37 +162,37 @@ cmd_dev_logs() {
     "${log_args[@]}"
 }
 
-cmd_dev_install() {
-  exec bash "$SECLETTR_CLI_DIR/dev/install.sh" "$@"
-}
+cmd_dev_install()  { exec bash "$SECLETTR_CLI_DIR/dev/install.sh" "$@"; }
+cmd_dev_certs()    { exec bash "$SECLETTR_CLI_DIR/dev/certs.sh" "$@"; }
+cmd_dev_test_env() { exec bash "$SECLETTR_CLI_DIR/dev/test-env.sh" "$@"; }
 
-cmd_dev_certs() {
-  exec bash "$SECLETTR_CLI_DIR/dev/certs.sh" "$@"
-}
-
-cmd_dev_test_env() {
-  exec bash "$SECLETTR_CLI_DIR/dev/test-env.sh" "$@"
-}
-
-# ── release ─────────────────────────────────────────────────────────────────────
+# ── release ────────────────────────────────────────────────────────────────────
 
 cmd_release() {
   if [[ $# -eq 0 ]]; then
-    echo -e "${RED}ERR${RST} Usage: seclettr release <build|install>"
+    echo -e "${RED}ERR${RST} Usage: seclettr release <build|install|uninstall>"
     exit 1
   fi
 
   case "$1" in
     build)
-      shift
-      seclettr_logo
+      shift; seclettr_logo
       exec bash "$SECLETTR_CLI_DIR/release/build.sh" "$@"
       ;;
     install)
-      shift
-      seclettr_logo
+      shift; seclettr_logo
       exec bash "$SECLETTR_CLI_DIR/release/install.sh" "$@"
       ;;
+    uninstall)
+      shift; seclettr_logo
+      log_warn "This will stop all services and remove containers and images."
+      if ! seclettr_confirm "Continue with uninstall?" "n"; then
+        log_ok "Cancelled"
+        exit 0
+      fi
+      exec bash "$SECLETTR_CLI_DIR/release/uninstall.sh" "$@"
+      ;;
+    --help|-h) seclettr_help; exit 0 ;;
     *)
       echo -e "${RED}ERR${RST} Unknown release command: $1"
       exit 1
@@ -193,25 +200,39 @@ cmd_release() {
   esac
 }
 
-# ── server-install ──────────────────────────────────────────────────────────────
+# ── ops ────────────────────────────────────────────────────────────────────────
 
-cmd_server_install() {
-  seclettr_logo
-  exec bash "$SECLETTR_CLI_DIR/server/install.sh" "$@"
+cmd_ops() {
+  if [[ $# -eq 0 ]]; then
+    echo -e "${RED}ERR${RST} Usage: seclettr ops <e2e|ghcr>"
+    exit 1
+  fi
+
+  case "$1" in
+    e2e)       shift; seclettr_logo; cmd_ops_e2e "$@" ;;
+    ghcr)      shift; cmd_ops_ghcr "$@" ;;
+    --help|-h) seclettr_help; exit 0 ;;
+    *)
+      echo -e "${RED}ERR${RST} Unknown ops command: $1"
+      exit 1
+      ;;
+  esac
 }
 
-# ── ghcr ────────────────────────────────────────────────────────────────────────
+cmd_ops_e2e() {
+  log_step "Running Playwright e2e smoke suite..."
+  exec bash "$SECLETTR_CLI_DIR/ops/e2e-smoke.sh" "$@"
+}
 
-cmd_ghcr() {
+cmd_ops_ghcr() {
   if [[ $# -eq 0 ]]; then
-    echo -e "${RED}ERR${RST} Usage: seclettr ghcr <update>"
+    echo -e "${RED}ERR${RST} Usage: seclettr ops ghcr <update>"
     exit 1
   fi
 
   case "$1" in
     update)
-      shift
-      seclettr_logo
+      shift; seclettr_logo
       if [[ "$*" != *"--apply"* ]]; then
         log_warn "Dry-run mode. Add --apply to actually pull images and restart."
       fi
@@ -222,6 +243,88 @@ cmd_ghcr() {
       exit 1
       ;;
   esac
+}
+
+# ── android ────────────────────────────────────────────────────────────────────
+
+cmd_android() {
+  if [[ $# -eq 0 ]]; then
+    echo -e "${RED}ERR${RST} Usage: seclettr android <sync>"
+    exit 1
+  fi
+
+  case "$1" in
+    sync)
+      shift; seclettr_logo
+      exec bash "$SECLETTR_CLI_DIR/update-android-version.sh" "$@"
+      ;;
+    --help|-h) seclettr_help; exit 0 ;;
+    *)
+      echo -e "${RED}ERR${RST} Unknown android command: $1"
+      exit 1
+      ;;
+  esac
+}
+
+# ── sonar ──────────────────────────────────────────────────────────────────────
+
+cmd_sonar() {
+  if [[ $# -eq 0 ]]; then
+    echo -e "${RED}ERR${RST} Usage: seclettr sonar <scan>"
+    exit 1
+  fi
+
+  case "$1" in
+    scan)
+      shift; seclettr_logo
+      local with_coverage=false
+      for arg in "$@"; do
+        [[ "$arg" == "--coverage" ]] && with_coverage=true
+      done
+
+      if [[ "$with_coverage" == "true" ]]; then
+        log_step "Collecting coverage..."
+        (cd "$ROOT_DIR" && pnpm test:coverage)
+        log_step "Running Sonar scan with coverage..."
+      else
+        log_step "Running Sonar scan..."
+      fi
+
+      exec bash "$SECLETTR_CLI_DIR/sonar-scan.sh"
+      ;;
+    --help|-h) seclettr_help; exit 0 ;;
+    *)
+      echo -e "${RED}ERR${RST} Unknown sonar command: $1"
+      exit 1
+      ;;
+  esac
+}
+
+# ── server ─────────────────────────────────────────────────────────────────────
+
+cmd_server() {
+  if [[ $# -eq 0 ]]; then
+    echo -e "${RED}ERR${RST} Usage: seclettr server <install>"
+    exit 1
+  fi
+
+  case "$1" in
+    install)
+      shift; seclettr_logo
+      exec bash "$SECLETTR_CLI_DIR/server/install.sh" "$@"
+      ;;
+    --help|-h) seclettr_help; exit 0 ;;
+    *)
+      echo -e "${RED}ERR${RST} Unknown server command: $1"
+      exit 1
+      ;;
+  esac
+}
+
+# backward-compat alias
+cmd_server_install() {
+  seclettr_logo
+  exec bash "$SECLETTR_CLI_DIR/server/install.sh" "$@"
 }
 
 # ── Entry ──────────────────────────────────────────────────────────────────────

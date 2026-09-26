@@ -72,7 +72,14 @@ const EnvBooleanDefaultFalseSchema = z.preprocess((value) => {
 }, z.boolean());
 
 const ConfigSchema = z.object({
-  NODE_ENV: z.enum(["development", "test", "production"]).default("development"),
+  // Fail closed on runtime mode (AUDIT.md F6): an unset/empty NODE_ENV
+  // resolves to "production" so production-only guardrails (weak-secret
+  // rejection, METRICS_BEARER_TOKEN requirement, secure defaults, disabled
+  // dev registration bypass) apply by default. Development must be opted
+  // into explicitly: docker-compose.dev.yml sets NODE_ENV=development,
+  // vitest sets NODE_ENV=test, and infra/.env.dev carries NODE_ENV for
+  // native tsx runs with SECLETTR_ALLOW_DEV_ENV_FILE=1.
+  NODE_ENV: z.enum(["development", "test", "production"]).default("production"),
   PORT: z.coerce.number().int().min(1).max(65535).default(3001),
   HOST: z.string().default("0.0.0.0"),
   TRUST_PROXY: z.string().default("loopback, linklocal, uniquelocal"),

@@ -54,6 +54,7 @@ x-api-env: &api-env
   JWT_SECRET: ${JWT_SECRET:?JWT_SECRET must be set}
   JWT_ACCESS_TTL: ${JWT_ACCESS_TTL:-15m}
   REFRESH_TOKEN_TTL_DAYS: ${REFRESH_TOKEN_TTL_DAYS:-30}
+  # WARNING: true lets anyone create accounts. Set to false for private deployments.
   ALLOW_PUBLIC_REGISTRATION: ${ALLOW_PUBLIC_REGISTRATION:-true}
   COOKIE_SECURE: ${COOKIE_SECURE:-true}
   CORS_ORIGIN: ${CORS_ORIGIN:?CORS_ORIGIN must be set}

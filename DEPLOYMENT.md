@@ -153,6 +153,8 @@ Open `.env` and adjust:
 
 All cryptographic secrets are generated automatically if you leave them as `CHANGE_ME_*` placeholders.
 
+> **Note:** `ALLOW_PUBLIC_REGISTRATION` defaults to `true` in the release compose file; set it to `false` in your `.env` for private deployments.
+
 ### 5. Choose Deployment Mode
 
 | Mode | Services | Best for |

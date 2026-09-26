@@ -165,6 +165,9 @@ const baselineChecks: Record<string, () => Promise<boolean>> = {
     columnExists("background_poll_tokens", "expires_at"),
   "029_fcm_device_tokens.sql": async () =>
     tableExists("push_device_tokens"),
+  "030_refresh_token_rotation.sql": async () =>
+    (await columnExists("auth_sessions", "previous_refresh_token_hash")) &&
+    columnExists("auth_sessions", "rotated_at"),
 };
 
 async function baselineBootstrappedMigrations(files: string[]): Promise<void> {

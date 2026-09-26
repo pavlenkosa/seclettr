@@ -444,6 +444,7 @@ export default defineConfig(({ command }) => ({
     environment: "node",
     globals: true,
     include: ["src/**/*.test.ts", "src/**/*.test.tsx"],
+    setupFiles: ["./src/test/setup.ts"],
     coverage: {
       provider: "v8",
       reporter: ["lcov", "text-summary"],

@@ -188,10 +188,10 @@ describe("SecuritySettingsSection", () => {
     expect(document.body.textContent).toContain("settings.appLock.pinEntry.persistenceUnavailable");
   });
 
-  it("disables PIN setup when secure local persistence is unavailable", () => {
+  it("disables PIN setup when secure local persistence is unavailable", async () => {
     authStoreState.storageKeyVolatile = true;
 
-    act(() => {
+    await act(async () => {
       root.render(
         <SecuritySettingsSection
           callSecurityMode="balanced"

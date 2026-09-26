@@ -187,7 +187,6 @@ describe("useGroupCallSessionLifecycle reconnect", () => {
 
   beforeEach(() => {
     vi.useFakeTimers();
-    (globalThis as typeof globalThis & { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
     container = document.createElement("div");
     document.body.appendChild(container);
     root = createRoot(container);
@@ -213,7 +212,6 @@ describe("useGroupCallSessionLifecycle reconnect", () => {
     });
     container.remove();
     vi.useRealTimers();
-    delete (globalThis as typeof globalThis & { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT;
   });
 
   it("marks the joined room active before opening the SFU client", async () => {

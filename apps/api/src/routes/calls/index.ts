@@ -99,7 +99,7 @@ async function enforceCallRouteRateLimit(
 
   if (limit.allowed) return;
 
-  reply.header("Retry-After", String(limit.retryAfterSec));
+  void reply.header("Retry-After", String(limit.retryAfterSec));
   void reply.code(429).send({ error: "Too many call requests" });
 }
 

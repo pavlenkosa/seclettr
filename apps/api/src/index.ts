@@ -97,7 +97,7 @@ export async function buildApp() {
 
   fastify.addHook("onSend", async (request, reply, payload) => {
     if (!reply.hasHeader("x-request-id")) {
-      reply.header("X-Request-ID", request.id);
+      void reply.header("X-Request-ID", request.id);
     }
     return payload;
   });
@@ -285,7 +285,7 @@ export async function buildApp() {
       cacheDepHealth(dbOk, redisOk);
       health = { dbOk, redisOk };
     }
-    reply.type("text/plain; version=0.0.4; charset=utf-8");
+    void reply.type("text/plain; version=0.0.4; charset=utf-8");
     return renderPrometheusMetrics(health);
   });
 

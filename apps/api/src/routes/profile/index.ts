@@ -100,7 +100,7 @@ export async function profileRoutes(fastify: FastifyInstance): Promise<void> {
         windowSec: PROFILE_UPDATE_RATE_WINDOW_SEC,
       });
       if (!rateOk.allowed) {
-        reply.header("Retry-After", String(rateOk.retryAfterSec));
+        void reply.header("Retry-After", String(rateOk.retryAfterSec));
         return reply.code(429).send({ error: "Too many profile update requests" });
       }
 
@@ -132,7 +132,7 @@ export async function profileRoutes(fastify: FastifyInstance): Promise<void> {
         windowSec: AVATAR_UPLOAD_RATE_WINDOW_SEC,
       });
       if (!rateOk.allowed) {
-        reply.header("Retry-After", String(rateOk.retryAfterSec));
+        void reply.header("Retry-After", String(rateOk.retryAfterSec));
         return reply.code(429).send({ error: "Too many avatar upload requests" });
       }
 
@@ -226,12 +226,12 @@ export async function profileRoutes(fastify: FastifyInstance): Promise<void> {
       }
 
       const contentType = object.ContentType ?? "image/jpeg";
-      reply.header("Content-Type", contentType);
+      void reply.header("Content-Type", contentType);
       // Cache for 5 minutes in the browser; the avatarKey in the profile response
       // acts as a cache-buster (key changes only when avatar is updated).
-      reply.header("Cache-Control", "private, max-age=300");
+      void reply.header("Cache-Control", "private, max-age=300");
       if (object.ContentLength) {
-        reply.header("Content-Length", String(object.ContentLength));
+        void reply.header("Content-Length", String(object.ContentLength));
       }
 
       const stream = object.Body as Readable;
@@ -252,7 +252,7 @@ export async function profileRoutes(fastify: FastifyInstance): Promise<void> {
         windowSec: PROFILE_LOOKUP_RATE_WINDOW_SEC,
       });
       if (!rateOk.allowed) {
-        reply.header("Retry-After", String(rateOk.retryAfterSec));
+        void reply.header("Retry-After", String(rateOk.retryAfterSec));
         return reply.code(429).send({ error: "Too many profile lookup requests" });
       }
 

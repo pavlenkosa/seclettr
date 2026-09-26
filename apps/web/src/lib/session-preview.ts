@@ -116,6 +116,7 @@ async function doPreviewRefreshSession(): Promise<RefreshSessionPreview | null> 
       method: "POST",
       credentials: "include",
       headers,
+      signal: AbortSignal.timeout(30_000),
     });
   } catch (err) {
     recordBootDiagnostic("auth.preview", "session preview failed at network layer", {

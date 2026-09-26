@@ -122,6 +122,7 @@ async function _doRefreshSessionAccessToken(): Promise<string | null> {
       method: "POST",
       credentials: "include",
       headers,
+      signal: AbortSignal.timeout(30_000),
     });
   } catch (err) {
     recordBootDiagnostic("auth.refresh", "refresh request failed at network layer", {

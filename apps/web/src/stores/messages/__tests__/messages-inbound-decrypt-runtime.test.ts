@@ -13,6 +13,10 @@ vi.mock("@/lib/direct-envelope", () => ({
 
 vi.mock("@seclettr/crypto", () => ({
   ratchetDecrypt: ratchetDecryptMock,
+  serializeRatchetState: vi.fn((state: unknown) => state),
+  deserializeRatchetState: vi.fn(async (serialized: unknown) =>
+    JSON.parse(JSON.stringify(serialized))
+  ),
 }));
 
 function createIncomingMessage(overrides: Record<string, unknown> = {}) {

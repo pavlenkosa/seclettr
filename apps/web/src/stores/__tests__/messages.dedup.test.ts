@@ -105,7 +105,19 @@ vi.mock("@seclettr/crypto", () => ({
       MKSKIPPED: new Map((s.MKSKIPPED ?? []).map(([k, v]: [string, string]) => [k, fromB64(v)])),
     };
   }),
-  serializeRatchetState: vi.fn(),
+  serializeRatchetState: vi.fn((state: any) => ({
+    DHs_pub: Buffer.from(state.DHs.publicKey).toString("base64url"),
+    DHs_priv: Buffer.from(state.DHs.privateKey).toString("base64url"),
+    DHr: state.DHr ? Buffer.from(state.DHr).toString("base64url") : null,
+    RK: Buffer.from(state.RK).toString("base64url"),
+    CKs: state.CKs ? Buffer.from(state.CKs).toString("base64url") : null,
+    CKr: state.CKr ? Buffer.from(state.CKr).toString("base64url") : null,
+    Ns: state.Ns,
+    Nr: state.Nr,
+    PN: state.PN,
+    MKSKIPPED: Array.from((state.MKSKIPPED as Map<string, Uint8Array>).entries())
+      .map(([k, v]): [string, string] => [k, Buffer.from(v).toString("base64url")]),
+  })),
 }));
 
 let useMessagesStore: typeof MessagesStore.useMessagesStore;

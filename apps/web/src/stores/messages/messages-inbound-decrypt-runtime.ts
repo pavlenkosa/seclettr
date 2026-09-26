@@ -1,5 +1,7 @@
 import {
   ratchetDecrypt,
+  serializeRatchetState,
+  deserializeRatchetState,
   type EncryptedMessage,
   type RatchetState,
 } from "@seclettr/crypto";
@@ -73,11 +75,17 @@ async function ratchetDecryptWithAdFallback(
   adV1: Uint8Array,
   adV0: Uint8Array
 ): Promise<Uint8Array> {
+  // Clone state for the v1 attempt. If it fails, we retry with v0 AD against
+  // the pristine state (avoiding counter advancement or skipped-key deletion).
+  const sessionClone = await deserializeRatchetState(
+    serializeRatchetState(session)
+  );
   try {
     return await ratchetDecrypt(session, msg, adV1);
   } catch (error) {
     if (error instanceof Error && error.name === "OperationError") {
-      return await ratchetDecrypt(session, msg, adV0);
+      // Retry with legacy AD against a fresh clone to preserve state
+      return await ratchetDecrypt(sessionClone, msg, adV0);
     }
     throw error;
   }

@@ -1,6 +1,25 @@
 import { ensureSodium } from "./sodium.js";
-import { generateKeyPair, restoreKeyPairFromPrivateKey, type KeyPair } from "./keys.js";
+import { generateKeyPair, restoreKeyPairFromPrivateKey, type KeyPair, clonePrivateKey } from "./keys.js";
 import { buf } from "./buf.js";
+
+// Deep clone of RatchetState for transactional decrypt (clone-before-mutate pattern)
+function cloneRatchetState(state: RatchetState): RatchetState {
+  const clone: RatchetState = {
+    DHs: { ...state.DHs, privateKey: clonePrivateKey(state.DHs.privateKey) },
+    DHr: state.DHr ? Uint8Array.from(state.DHr) : null,
+    RK: Uint8Array.from(state.RK),
+    CKs: state.CKs ? Uint8Array.from(state.CKs) : null,
+    CKr: state.CKr ? Uint8Array.from(state.CKr) : null,
+    Ns: state.Ns,
+    Nr: state.Nr,
+    PN: state.PN,
+    MKSKIPPED: new Map<string, Uint8Array>(),
+  };
+  for (const [k, v] of state.MKSKIPPED) {
+    clone.MKSKIPPED.set(k, Uint8Array.from(v));
+  }
+  return clone;
+}
 
 const MAX_SKIP = 1000;
 
@@ -210,14 +229,18 @@ export async function ratchetDecrypt(
   message: EncryptedMessage,
   associatedData: Uint8Array
 ): Promise<Uint8Array> {
+  const candidate = cloneRatchetState(state);
+
   const { header, ciphertext } = message;
   const headerBytes = encodeHeader(header);
   const ad = concat(associatedData, headerBytes);
 
-  const mk = trySkippedMessageKey(state, header);
+  const mk = trySkippedMessageKey(candidate, header);
   if (mk) {
     try {
       const plain = await aeadDecrypt(mk, ciphertext, ad);
+      // Auth succeeded: commit to live state
+      commitRatchetState(state, candidate);
       return plain;
     } finally {
       mk.fill(0);
@@ -225,19 +248,19 @@ export async function ratchetDecrypt(
   }
 
   const dhPubKey = header.dh;
-  const isDHStep = !state.DHr || !bytesEqual(dhPubKey, state.DHr);
+  const isDHStep = !candidate.DHr || !bytesEqual(dhPubKey, candidate.DHr);
 
   if (isDHStep) {
-    await skipMessageKeys(state, header.pn);
-    await dhRatchetStep(state, dhPubKey);
+    await skipMessageKeys(candidate, header.pn);
+    await dhRatchetStep(candidate, dhPubKey);
   }
 
-  await skipMessageKeys(state, header.n);
+  await skipMessageKeys(candidate, header.n);
 
-  if (!state.CKr) throw new Error("Receiving chain not initialised");
-  const { nextCk, mk: msgKey } = await kdfCk(state.CKr);
-  state.CKr = nextCk;
-  state.Nr++;
+  if (!candidate.CKr) throw new Error("Receiving chain not initialised");
+  const { nextCk, mk: msgKey } = await kdfCk(candidate.CKr);
+  candidate.CKr = nextCk;
+  candidate.Nr++;
 
   let plain;
   try {
@@ -245,7 +268,25 @@ export async function ratchetDecrypt(
   } finally {
     msgKey.fill(0);
   }
+
+  // Auth succeeded: commit to live state
+  commitRatchetState(state, candidate);
   return plain;
+}
+
+function commitRatchetState(target: RatchetState, source: RatchetState): void {
+  target.DHs = { ...source.DHs, privateKey: clonePrivateKey(source.DHs.privateKey) };
+  target.DHr = source.DHr ? Uint8Array.from(source.DHr) : null;
+  target.RK = Uint8Array.from(source.RK);
+  target.CKs = source.CKs ? Uint8Array.from(source.CKs) : null;
+  target.CKr = source.CKr ? Uint8Array.from(source.CKr) : null;
+  target.Ns = source.Ns;
+  target.Nr = source.Nr;
+  target.PN = source.PN;
+  target.MKSKIPPED = new Map<string, Uint8Array>();
+  for (const [k, v] of source.MKSKIPPED) {
+    target.MKSKIPPED.set(k, Uint8Array.from(v));
+  }
 }
 
 function trySkippedMessageKey(

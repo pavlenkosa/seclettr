@@ -14,8 +14,8 @@ Source: `pnpm licenses list --prod --json`.
 | Apache-2.0 | 81 |
 | BlueOak-1.0.0 | 4 |
 | BSD-2-Clause | 1 |
-| BSD-3-Clause | 15 |
-| ISC | 26 |
+| BSD-3-Clause | 14 |
+| ISC | 27 |
 | MIT | 243 |
 | MPL-2.0 | 1 |
 
@@ -113,11 +113,10 @@ Source: `pnpm licenses list --prod --json`.
 | @protobufjs/eventemitter | 1.1.1 | BSD-3-Clause | https://github.com/dcodeIO/protobuf.js#readme | node_modules/.pnpm/@protobufjs+eventemitter@1.1.1/node_modules/@protobufjs/eventemitter/LICENSE | Daniel Wirtz |
 | @protobufjs/fetch | 1.1.1 | BSD-3-Clause | https://github.com/dcodeIO/protobuf.js#readme | node_modules/.pnpm/@protobufjs+fetch@1.1.1/node_modules/@protobufjs/fetch/LICENSE | Daniel Wirtz |
 | @protobufjs/float | 1.0.2 | BSD-3-Clause | https://github.com/dcodeIO/protobuf.js#readme | node_modules/.pnpm/@protobufjs+float@1.0.2/node_modules/@protobufjs/float/LICENSE | Daniel Wirtz |
-| @protobufjs/inquire | 1.1.2 | BSD-3-Clause | https://github.com/dcodeIO/protobuf.js#readme | node_modules/.pnpm/@protobufjs+inquire@1.1.2/node_modules/@protobufjs/inquire/LICENSE | Daniel Wirtz |
 | @protobufjs/path | 1.1.2 | BSD-3-Clause | https://github.com/dcodeIO/protobuf.js#readme | node_modules/.pnpm/@protobufjs+path@1.1.2/node_modules/@protobufjs/path/LICENSE | Daniel Wirtz |
 | @protobufjs/pool | 1.1.0 | BSD-3-Clause | https://github.com/dcodeIO/protobuf.js#readme | node_modules/.pnpm/@protobufjs+pool@1.1.0/node_modules/@protobufjs/pool/LICENSE | Daniel Wirtz |
 | @protobufjs/utf8 | 1.1.1 | BSD-3-Clause | https://github.com/dcodeIO/protobuf.js#readme | node_modules/.pnpm/@protobufjs+utf8@1.1.1/node_modules/@protobufjs/utf8/LICENSE | Daniel Wirtz |
-| @remix-run/router | 1.23.2 | MIT | https://github.com/remix-run/react-router#readme | node_modules/.pnpm/@remix-run+router@1.23.2/node_modules/@remix-run/router/LICENSE.md | Remix Software |
+| @remix-run/router | 1.23.4 | MIT | https://github.com/remix-run/react-router#readme | node_modules/.pnpm/@remix-run+router@1.23.4/node_modules/@remix-run/router/LICENSE.md | Remix Software |
 | @smithy/core | 3.24.4 | Apache-2.0 | https://github.com/smithy-lang/smithy-typescript/tree/main/packages/core | node_modules/.pnpm/@smithy+core@3.24.4/node_modules/@smithy/core/LICENSE | AWS Smithy Team |
 | @smithy/credential-provider-imds | 4.3.4 | Apache-2.0 | https://github.com/smithy-lang/smithy-typescript/tree/main/packages/credential-provider-imds | node_modules/.pnpm/@smithy+credential-provider-imds@4.3.4/node_modules/@smithy/credential-provider-imds/LICENSE | AWS SDK for JavaScript Team |
 | @smithy/fetch-http-handler | 5.4.4 | Apache-2.0 | https://github.com/smithy-lang/smithy-typescript/tree/main/packages/fetch-http-handler | node_modules/.pnpm/@smithy+fetch-http-handler@5.4.4/node_modules/@smithy/fetch-http-handler/LICENSE | AWS SDK for JavaScript Team |
@@ -235,6 +234,7 @@ Source: `pnpm licenses list --prod --json`.
 | gopd | 1.2.0 | MIT | https://github.com/ljharb/gopd#readme | node_modules/.pnpm/gopd@1.2.0/node_modules/gopd/LICENSE | Jordan Harband |
 | gtoken | 7.1.0 | MIT | https://github.com/google/node-gtoken#readme | node_modules/.pnpm/gtoken@7.1.0/node_modules/gtoken/LICENSE | Google, LLC |
 | h264-profile-level-id | 2.3.2 | ISC | https://github.com/versatica/h264-profile-level-id#readme | node_modules/.pnpm/h264-profile-level-id@2.3.2_supports-color@10.2.2/node_modules/h264-profile-level-id/LICENSE | Iñaki Baz Castillo |
+| h264-profile-level-id | 2.3.3 | ISC | https://github.com/versatica/h264-profile-level-id#readme | node_modules/.pnpm/h264-profile-level-id@2.3.3_supports-color@10.2.2/node_modules/h264-profile-level-id/LICENSE | Iñaki Baz Castillo |
 | has-symbols | 1.1.0 | MIT | https://github.com/ljharb/has-symbols#readme | node_modules/.pnpm/has-symbols@1.1.0/node_modules/has-symbols/LICENSE | Jordan Harband |
 | has-tostringtag | 1.0.2 | MIT | https://github.com/inspect-js/has-tostringtag#readme | node_modules/.pnpm/has-tostringtag@1.0.2/node_modules/has-tostringtag/LICENSE | Jordan Harband |
 | hasown | 2.0.3 | MIT | https://github.com/inspect-js/hasOwn#readme | node_modules/.pnpm/hasown@2.0.3/node_modules/hasown/LICENSE | Jordan Harband |
@@ -279,7 +279,7 @@ Source: `pnpm licenses list --prod --json`.
 | lru-cache | 6.0.0 | ISC | https://github.com/isaacs/node-lru-cache#readme | node_modules/.pnpm/lru-cache@6.0.0/node_modules/lru-cache/LICENSE | Isaac Z. Schlueter |
 | lru-memoizer | 2.3.0 | MIT | https://github.com/jfromaniello/lru-memoizer#readme | node_modules/.pnpm/lru-memoizer@2.3.0/node_modules/lru-memoizer/LICENSE | José F. Romaniello |
 | math-intrinsics | 1.1.0 | MIT | https://github.com/es-shims/math-intrinsics#readme | node_modules/.pnpm/math-intrinsics@1.1.0/node_modules/math-intrinsics/LICENSE | Jordan Harband |
-| mediasoup | 3.20.0 | ISC | https://mediasoup.org | node_modules/.pnpm/mediasoup@3.20.0/node_modules/mediasoup/LICENSE | - |
+| mediasoup | 3.20.6 | ISC | https://mediasoup.org | node_modules/.pnpm/mediasoup@3.20.6/node_modules/mediasoup/LICENSE | - |
 | mediasoup-client | 3.20.0 | ISC | https://mediasoup.org | node_modules/.pnpm/mediasoup-client@3.20.0/node_modules/mediasoup-client/LICENSE | - |
 | mime | 3.0.0 | MIT | https://github.com/broofa/mime#readme | node_modules/.pnpm/mime@3.0.0/node_modules/mime/LICENSE | Robert Kieffer |
 | mime-db | 1.52.0 | MIT | https://github.com/jshttp/mime-db#readme | node_modules/.pnpm/mime-db@1.52.0/node_modules/mime-db/LICENSE | - |
@@ -322,13 +322,13 @@ Source: `pnpm licenses list --prod --json`.
 | process-warning | 3.0.0 | MIT | https://github.com/fastify/fastify-warning#readme | node_modules/.pnpm/process-warning@3.0.0/node_modules/process-warning/LICENSE | Tomas Della Vedova |
 | process-warning | 5.0.0 | MIT | https://github.com/fastify/fastify-warning#readme | node_modules/.pnpm/process-warning@5.0.0/node_modules/process-warning/LICENSE | Tomas Della Vedova |
 | proto3-json-serializer | 2.0.2 | Apache-2.0 | https://github.com/googleapis/proto3-json-serializer-nodejs#readme | node_modules/.pnpm/proto3-json-serializer@2.0.2/node_modules/proto3-json-serializer/LICENSE | - |
-| protobufjs | 7.6.1 | BSD-3-Clause | https://protobufjs.github.io/protobuf.js/ | node_modules/.pnpm/protobufjs@7.6.1/node_modules/protobufjs/LICENSE | Daniel Wirtz |
+| protobufjs | 7.6.6 | BSD-3-Clause | https://protobufjs.github.io/protobuf.js/ | node_modules/.pnpm/protobufjs@7.6.6/node_modules/protobufjs/LICENSE | Daniel Wirtz |
 | proxy-addr | 2.0.7 | MIT | https://github.com/jshttp/proxy-addr#readme | node_modules/.pnpm/proxy-addr@2.0.7/node_modules/proxy-addr/LICENSE | Douglas Christopher Wilson |
 | quick-format-unescaped | 4.0.4 | MIT | https://github.com/davidmarkclements/quick-format#readme | node_modules/.pnpm/quick-format-unescaped@4.0.4/node_modules/quick-format-unescaped/LICENSE | David Mark Clements |
 | react | 18.3.1 | MIT | https://reactjs.org/ | node_modules/.pnpm/react@18.3.1/node_modules/react/LICENSE | - |
 | react-dom | 18.3.1 | MIT | https://reactjs.org/ | node_modules/.pnpm/react-dom@18.3.1_react@18.3.1/node_modules/react-dom/LICENSE | - |
-| react-router | 6.30.3 | MIT | https://github.com/remix-run/react-router#readme | node_modules/.pnpm/react-router@6.30.3_react@18.3.1/node_modules/react-router/LICENSE.md | Remix Software |
-| react-router-dom | 6.30.3 | MIT | https://github.com/remix-run/react-router#readme | node_modules/.pnpm/react-router-dom@6.30.3_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/react-router-dom/LICENSE.md | Remix Software |
+| react-router | 6.30.6 | MIT | https://github.com/remix-run/react-router#readme | node_modules/.pnpm/react-router@6.30.6_react@18.3.1/node_modules/react-router/LICENSE.md | Remix Software |
+| react-router-dom | 6.30.6 | MIT | https://github.com/remix-run/react-router#readme | node_modules/.pnpm/react-router-dom@6.30.6_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/react-router-dom/LICENSE.md | Remix Software |
 | readable-stream | 3.6.2 | MIT | https://github.com/nodejs/readable-stream#readme | node_modules/.pnpm/readable-stream@3.6.2/node_modules/readable-stream/LICENSE | - |
 | real-require | 0.2.0 | MIT | https://github.com/pinojs/real-require | node_modules/.pnpm/real-require@0.2.0/node_modules/real-require/LICENSE.md | Paolo Insogna |
 | redis-errors | 1.2.0 | MIT | https://github.com/NodeRedis/redis-errors#readme | node_modules/.pnpm/redis-errors@1.2.0/node_modules/redis-errors/LICENSE | Ruben Bridgewater |

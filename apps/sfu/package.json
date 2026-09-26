@@ -20,7 +20,7 @@
     "@fastify/websocket": "^10.0.1",
     "@seclettr/protocol": "workspace:*",
     "fastify": "^4.29.1",
-    "mediasoup": "^3.13.18",
+    "mediasoup": "^3.20.6",
     "nanoid": "^5.1.16",
     "zod": "^3.22.4"
   },

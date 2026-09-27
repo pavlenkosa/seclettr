@@ -21,4 +21,21 @@ describe("migration baseline coverage", () => {
     const missing = files.filter((file) => !source.includes(`"${file}"`));
     expect(missing).toEqual([]);
   });
+
+  /**
+   * Guards CI-exposed defect: `EXPECTED_LATEST_MIGRATION` in `index.ts` is a
+   * hardcoded constant that must track the newest migration file, otherwise
+   * fresh installs crash-loop at startup after applying the latest migration.
+   */
+  it("keeps EXPECTED_LATEST_MIGRATION in sync with the newest migration file", async () => {
+    const files = (await readdir(MIGRATIONS_DIR)).filter((name) =>
+      name.endsWith(".sql")
+    );
+    const newest = files.sort().at(-1);
+    expect(newest).toBeDefined();
+    const source = await readFile(join(__dirname, "../index.ts"), "utf8");
+    const match = source.match(/EXPECTED_LATEST_MIGRATION = "([^"]+)"/);
+    expect(match).not.toBeNull();
+    expect(match![1]).toBe(newest);
+  });
 });

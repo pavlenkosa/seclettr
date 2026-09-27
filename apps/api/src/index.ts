@@ -292,7 +292,7 @@ export async function buildApp() {
   return fastify;
 }
 
-const EXPECTED_LATEST_MIGRATION = "029_fcm_device_tokens.sql";
+const EXPECTED_LATEST_MIGRATION = "030_refresh_token_rotation.sql";
 
 async function checkDbSchemaVersion(): Promise<void> {
   const rows = await query<{ filename: string }>(

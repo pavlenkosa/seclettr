@@ -290,6 +290,31 @@ MinIO data remain in place.
 
 ---
 
+## Android Release Signing
+
+The Android release build refuses to run without a keystore (no silent debug
+signing). Provide these env vars (e.g. from your CI secret store):
+
+```
+SECLETTR_ANDROID_KEYSTORE_PATH   # path to your .keystore/.jks file
+SECLETTR_ANDROID_KEYSTORE_PASSWORD
+SECLETTR_ANDROID_KEY_ALIAS
+SECLETTR_ANDROID_KEY_PASSWORD
+```
+
+Generate a keystore once, keep it out of git (`apps/web/android/.gitignore`):
+
+```
+keytool -genkeypair -v -keystore release.keystore -alias seclettr \
+  -keyalg RSA -keysize 2048 -validity 10000
+```
+
+Build: `./apps/web/scripts/build-android-artifacts.sh release`
+Verify: `jarsigner -verify -certs apps/web/android/app/build/outputs/apk/release/app-release.apk`
+(or `apksigner verify --print-certs` if installed).
+
+---
+
 ## Security Notes
 
 - Do not expose Postgres/Redis/MinIO ports publicly.

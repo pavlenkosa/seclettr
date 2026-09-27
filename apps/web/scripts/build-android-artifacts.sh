@@ -23,6 +23,18 @@ case "${MODE}" in
   diagnostic)
     ;;
   release)
+    # Preflight: fail before gradle runs if release signing env is missing.
+    missing=()
+    for var in SECLETTR_ANDROID_KEYSTORE_PATH SECLETTR_ANDROID_KEYSTORE_PASSWORD SECLETTR_ANDROID_KEY_ALIAS SECLETTR_ANDROID_KEY_PASSWORD; do
+      [[ -n "${!var:-}" ]] || missing+=("${var}")
+    done
+    if [[ ${#missing[@]} -gt 0 ]]; then
+      echo "[android] ERROR: release mode requires signing env vars:" >&2
+      printf '  %s\n' "${missing[@]}" >&2
+      echo "[android] see DEPLOYMENT.md (Android release signing)" >&2
+      exit 1
+    fi
+    [[ -f "${SECLETTR_ANDROID_KEYSTORE_PATH}" ]] || { echo "[android] ERROR: keystore not found: ${SECLETTR_ANDROID_KEYSTORE_PATH}" >&2; exit 1; }
     ;;
   -h|--help)
     usage

@@ -31,6 +31,17 @@ export default async function globalSetup() {
   if (!process.env["QM_API_TEST_REFRESH_RATE_LIMIT_MAX"]) {
     process.env["QM_API_TEST_REFRESH_RATE_LIMIT_MAX"] = "500";
   }
+  if (!process.env["QM_API_TEST_CALL_ROUTE_RATE_LIMIT_MAX"]) {
+    // Parallel vitest suites share one in-process app and one fixed-window key
+    // (rate:calls-route:v1:127.0.0.1). Observed aggregate call-route demand in
+    // full-suite runs: ~525 req when green, >2000 when a failure triggers
+    // client polling/retry storms. The headroom avoids cascading 429s from
+    // an unrelated failure; production default (90) is unchanged.
+    process.env["QM_API_TEST_CALL_ROUTE_RATE_LIMIT_MAX"] = "10000";
+  }
+  if (!process.env["QM_API_TEST_GLOBAL_RATE_LIMIT_MAX"]) {
+    process.env["QM_API_TEST_GLOBAL_RATE_LIMIT_MAX"] = "5000";
+  }
   // Integration tests register users over HTTP, so public registration must be
   // enabled for the test server. Production defaults to disabled (see
   // AUDIT.md H2); CI sets ALLOW_PUBLIC_REGISTRATION=true explicitly, and this

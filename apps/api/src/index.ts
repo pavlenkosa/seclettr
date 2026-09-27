@@ -140,9 +140,19 @@ export async function buildApp() {
     allowedHeaders: ["Authorization", "Content-Type", "X-Request-ID", "X-Client-Origin", "X-Refresh-Token"],
   });
 
+  // Test-only override for the integration harness: the full vitest suite
+  // issues more requests than the 200/min in-memory global limiter allows,
+  // which would 429 unrelated tests. Production semantics unchanged.
+  const TEST_GLOBAL_RATE_LIMIT_MAX = (() => {
+    const override = process.env["QM_API_TEST_GLOBAL_RATE_LIMIT_MAX"];
+    if (!override) return 200;
+    const parsed = Number.parseInt(override, 10);
+    return Number.isFinite(parsed) && parsed > 0 ? parsed : 200;
+  })();
+
   await fastify.register(fastifyRateLimit, {
     global: true,
-    max: 200,
+    max: TEST_GLOBAL_RATE_LIMIT_MAX,
     timeWindow: "1 minute",
     // Do not take the API down when Redis is unavailable: fail open like the
     // per-route fixed-window limiter instead of returning 500 for every request.

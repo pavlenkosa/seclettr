@@ -85,7 +85,14 @@ type CreateCallResponse =
   | { callId: string; created: boolean; callerUserId: string };
 
 const CALL_ROUTE_RATE_LIMIT_WINDOW_SEC = 60;
-const CALL_ROUTE_RATE_LIMIT_MAX = 90;
+// Test-only override lets integration suites raise the per-IP budget;
+// production default and semantics unchanged.
+const CALL_ROUTE_RATE_LIMIT_MAX = (() => {
+  const override = process.env["QM_API_TEST_CALL_ROUTE_RATE_LIMIT_MAX"];
+  if (!override) return 90;
+  const parsed = Number.parseInt(override, 10);
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : 90;
+})();
 
 async function enforceCallRouteRateLimit(
   request: FastifyRequest,

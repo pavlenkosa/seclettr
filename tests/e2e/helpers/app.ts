@@ -121,6 +121,12 @@ export async function selectUserFromNewConversation(
   });
   await expect(userOption).toHaveCount(1, { timeout: 10_000 });
   await userOption.first().click();
+
+  // Selecting a user opens the chat-type picker; the smoke suites exercise the
+  // encrypted (E2EE) direct conversation path.
+  const encryptedOption = page.getByRole("button", { name: /^Encrypted chat/ });
+  await expect(encryptedOption).toBeVisible({ timeout: 10_000 });
+  await encryptedOption.click();
 }
 
 export async function openConversationFromSidebar(

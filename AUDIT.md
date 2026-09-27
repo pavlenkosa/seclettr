@@ -17,14 +17,20 @@ Severity legend: **Critical** (blocks release/install or enables account comprom
 
 ## Status update 2026-09-27
 
-Current HEAD: `dev/main` @ `d42a543` (remediation continued through `4a5fa09`, plus the new
-e2e-helper commit `d42a543`). Supersedes stale statements in the follow-up audit below:
-lint is now 0 errors / 408 warnings (not 456); unit tests are now crypto 46 / API 150 / SFU 24 /
-protocol 54 / web 1334 (not 149 API / 1,331 web); Playwright E2E (4/4 chromium) and the external
-SFU suite (1/1) are wired into CI and pass locally against a live stack; API integration suites
-run with a migration 030 baseline; the F5 unit-test gap is being addressed. CI state: Dev CI
-PASSed on `be0bd21`; the Dev Bundle workflow was still failing at the smoke step on pre-fix
-commits at last observation — the fix is committed in `56b9a00` and awaits a CI run.
+Current HEAD: `dev/main` @ `5c1290a` (14 commits ahead of `origin/dev/main` @ `f871535`; full
+unpushed list: `git log --oneline f871535..HEAD`). Supersedes stale statements in the follow-up
+audit below:
+- lint: 0 errors (api 44 warnings incl. ~39 accepted require-await on register fns; web 381 warnings).
+- Tests: crypto 46 / API 150 / SFU 24 / protocol 54 / web 1341 (241 files), all pass.
+- New API HTTP integration suites (run against real Postgres, migration 030 baseline):
+  refresh-rotation (8), devices (7), calls (6), groups-membership (7), auth-attachment (6 + 1 skip).
+- Playwright E2E: 4/4 chromium + 1/1 external SFU pass locally against the live dev stack.
+- F10: saved-messages at-rest encryption is implemented (app storage key).
+- Android: env-gated release signing added; fail-fast verified with apksigner (v2 scheme).
+CI state: Dev CI PASSed on `4a5fa09` (last pushed commit); the Dev Bundle workflow still fails at
+the smoke step pre-fix — it runs the default-branch workflow against `main` @ `9209fe8`, so the
+fix committed in `56b9a00` (unpushed) has not yet run there. The e2e workflow is NOT_RUN:
+schedule/dispatch-only and not registered until merge to the default branch.
 
 ## Follow-up audit at `7d257a9`
 

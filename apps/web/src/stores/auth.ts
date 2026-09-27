@@ -530,15 +530,17 @@ const authRealtimeRuntime = createAuthRealtimeRuntime({
 // When the background push foreground-service's WS token expires (4001),
 // the service emits "pushAuthFailure". Refresh the session and hand the
 // service a fresh token so it can reconnect without waiting 30 s.
-void onNativePushAuthFailure(async () => {
-  const state = useAuthStore.getState();
-  if (state.authLifecycle !== "ready") return;
-  try {
-    const token = await refreshSessionAccessToken();
-    if (token) {
-      void updateNativePushToken(token);
+void onNativePushAuthFailure(() => {
+  void (async () => {
+    const state = useAuthStore.getState();
+    if (state.authLifecycle !== "ready") return;
+    try {
+      const token = await refreshSessionAccessToken();
+      if (token) {
+        void updateNativePushToken(token);
+      }
+    } catch {
+      // Network error — service will retry on its own schedule.
     }
-  } catch {
-    // Network error — service will retry on its own schedule.
-  }
+  })();
 });

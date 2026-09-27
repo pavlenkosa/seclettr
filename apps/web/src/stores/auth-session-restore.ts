@@ -89,7 +89,7 @@ export function parseSessionIdentity(
   return { userId: payload.sub, deviceId: payload.deviceId };
 }
 
-async function runSessionMigrationOnce(): Promise<void> {
+function runSessionMigrationOnce(): void {
   if (localStorage.getItem(SESSION_MIGRATION_FLAG) === "1") return;
   localStorage.setItem(SESSION_MIGRATION_FLAG, "1");
 }

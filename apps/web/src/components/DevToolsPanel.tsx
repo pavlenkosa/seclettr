@@ -182,7 +182,7 @@ export function DevToolsPanel() {
     await window.__scDumpCallDebug();
   }, []);
 
-  async function clearAllData() {
+  function clearAllData() {
     if (!window.confirm("Are you sure you want to clear all data?")) return;
     localStorage.clear();
     window.location.reload();

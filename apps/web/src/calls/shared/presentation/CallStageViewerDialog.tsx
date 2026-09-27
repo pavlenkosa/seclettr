@@ -159,7 +159,7 @@ export function CallStageViewerDialog({
         <div className={styles.actions}>
           {canToggleNativeFullscreen ? (
             <IconButton
-              onClick={() => handleToggleNativeFullscreen()}
+              onClick={() => void handleToggleNativeFullscreen()}
               className={styles.actionButton}
               size={36}
               aria-label={isNativeFullscreen ? exitFullscreenLabel : enterFullscreenLabel}

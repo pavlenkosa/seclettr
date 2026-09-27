@@ -325,7 +325,7 @@ export function MessageComposerEmojiPicker({
   const searchInputRef = useRef<HTMLInputElement>(null);
 
   useModalSurfaceA11y({
-    containerRef: pickerRef as RefObject<HTMLElement>,
+    containerRef: pickerRef,
     isActive: isOpen,
     onClose: onToggleOpen,
     initialFocusRef: searchInputRef,

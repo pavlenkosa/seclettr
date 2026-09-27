@@ -1,4 +1,4 @@
-import type { CSSProperties } from "react";
+import { type CSSProperties, type RefObject } from "react";
 import { useI18n } from "@/i18n";
 import { useSecuritySettings } from "@/ui-settings";
 import { useVideoNoteAttachmentRuntime } from "@/chats/runtime/useVideoNoteAttachmentRuntime";
@@ -44,7 +44,7 @@ function VideoNoteCircleContent({
   videoUrl: string | null;
   loading: boolean;
   isPlain: boolean;
-  videoRef: import("react").RefObject<HTMLVideoElement>;
+  videoRef: RefObject<HTMLVideoElement>;
   isPlaying: boolean;
   remainingSeconds: number;
 }) {

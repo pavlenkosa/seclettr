@@ -13,7 +13,7 @@
  * Both call sites are lazy (invoked only on 401 retry / post-refresh).
  */
 import { safeParseVersionedWire } from "@seclettr/protocol";
-import { z, type ZodTypeAny } from "zod";
+import { type z, type ZodTypeAny } from "zod";
 import { refreshSessionAccessToken } from "../session";
 import { resolveApiBaseUrl } from "../runtime-config";
 import { isNativePlatform, getNativeServerUrl } from "../native-platform";

@@ -89,7 +89,7 @@ export function DirectCallIncomingMinimized({
           </IconButton>
           <IconButton
             ref={incomingMinimizedAcceptButtonRef}
-            onClick={() => onAccept()}
+            onClick={() => void onAccept()}
             className={styles.dockBtn}
             size={38}
             tone="success"

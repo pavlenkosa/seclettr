@@ -259,14 +259,16 @@ export async function startNativePushService(token: string): Promise<void> {
   // Listen for FCM token to upgrade
   if (!_fcmTokenCleanup) {
     try {
-      const handle = await plugin.addListener("fcmTokenReceived", async (data: unknown) => {
-        const { token: newToken } = data as { token: string };
-        if (!newToken) return;
-        const registered = await registerFcmTokenOnServer(newToken);
-        if (registered) {
-          await plugin.useFcm();
-          await plugin.stop();
-        }
+      const handle = await plugin.addListener("fcmTokenReceived", (data: unknown) => {
+        void (async () => {
+          const { token: newToken } = data as { token: string };
+          if (!newToken) return;
+          const registered = await registerFcmTokenOnServer(newToken);
+          if (registered) {
+            await plugin.useFcm();
+            await plugin.stop();
+          }
+        })();
       });
       _fcmTokenCleanup = () => handle.remove();
     } catch {

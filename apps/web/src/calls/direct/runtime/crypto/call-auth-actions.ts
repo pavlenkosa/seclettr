@@ -134,7 +134,7 @@ export async function createSignedCallRenegotiationAnswerAuth(params: {
 export async function verifyIncomingCallOffer(
   message: IncomingCallOfferMessage
 ): Promise<CallSignalVerificationResult> {
-  const currentUserId = (await loadAuthStoreState()).userId;
+  const currentUserId = loadAuthStoreState().userId;
   if (currentUserId && message.targetUserId && message.targetUserId !== currentUserId) {
     return { state: "invalid" };
   }
@@ -159,7 +159,7 @@ export async function verifyIncomingCallOffer(
 export async function verifyIncomingCallAnswer(
   message: IncomingCallAnswerMessage
 ): Promise<CallSignalVerificationResult> {
-  const currentUserId = (await loadAuthStoreState()).userId;
+  const currentUserId = loadAuthStoreState().userId;
   if (currentUserId && message.targetUserId && message.targetUserId !== currentUserId) {
     return { state: "invalid" };
   }
@@ -186,7 +186,7 @@ async function verifyIncomingCallRenegotiationMessage(
   expectedRecipientUserId: string | null | undefined,
   kind: "renegotiate-offer" | "renegotiate-answer"
 ): Promise<CallSignalVerificationResult> {
-  const currentUserId = (await loadAuthStoreState()).userId;
+  const currentUserId = loadAuthStoreState().userId;
   if (currentUserId && expectedRecipientUserId && expectedRecipientUserId !== currentUserId) {
     return { state: "invalid" };
   }

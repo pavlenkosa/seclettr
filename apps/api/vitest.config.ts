@@ -11,6 +11,7 @@ const integrationTestFiles = [
   "src/test/devices.integration.test.ts",
   "src/test/calls.integration.test.ts",
   "src/test/groups-membership.integration.test.ts",
+  "src/test/auth-attachment-deny.integration.test.ts",
 ];
 
 // Requires an external SFU instance; only run when explicitly requested.

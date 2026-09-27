@@ -322,3 +322,34 @@ Verify: `jarsigner -verify -certs apps/web/android/app/build/outputs/apk/release
 - Use TLS in production.
 - Keep Docker host and OS patched.
 - Read legal notices: `LEGAL_NOTICE.md`
+
+## Release gating (USER_ACTION_REQUIRED) — P0-3
+
+Release bundles (`Release Bundle` workflow) are published only after required
+checks pass for the exact commit SHA:
+
+- Automatic path: `workflow_run` fires only on **CI success on `main`**.
+- Manual path (`workflow_dispatch`): accepts ONLY a full 40-character commit
+  SHA and a verification step queries the GitHub API
+  (`/commits/{sha}/check-runs` + `/actions/runs?head_sha=`) and fails unless
+  ALL of the following checks are successful for that exact SHA:
+
+  | Required check name         | Source workflow      | Job |
+  |-----------------------------|----------------------|-----|
+  | `verify`                    | `ci.yml`             | `verify` |
+  | `E2E (chromium)`            | `e2e.yml`            | `e2e-chromium` |
+  | `External SFU integration`  | `e2e.yml`            | `external-sfu-integration` |
+  | `verify` (Dev CI)           | `dev-ci.yml`         | `verify` |
+
+  Note: if GitHub branch protection rejects two checks with the same display
+  name `verify`, rename one of the jobs' `name:` field first (e.g. Dev CI →
+  `verify (dev)`), then update this table.
+
+### Action required by a repository administrator
+
+GitHub does not allow branch-protection required-status-checks to be defined
+in repository files. In **Settings → Branches → main → Require status checks
+before merging**, add exactly the check names listed above
+(`USER_ACTION_REQUIRED`). Until configured, merge gating relies on the
+workflow-level dispatch verification only; the automatic `workflow_run` path
+is already restricted to successful CI runs on `main`.

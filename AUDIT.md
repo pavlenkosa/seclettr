@@ -1,16 +1,157 @@
 # Seclettr — Full Code & Delivery Audit
 
 Date: 2026-09-26
-Branch audited: `dev/main` @ `38bc2e4`
-Method: read-only review of the whole monorepo (API, web, SFU, crypto, protocol,
-infra, scripts, CI, tests, docs) plus manual verification of each critical claim.
-No files were modified during the audit itself.
+Initial branch snapshot: `dev/main` @ `38bc2e4`
+Follow-up snapshot: `dev/main` @ `7d257a9`
+Method: risk-based read-only review of the monorepo (API, web, SFU, crypto, protocol,
+infra, scripts, CI, tests, docs), repository-wide automated checks and targeted runtime
+reproductions of critical claims. This was not a line-by-line review of every repository file;
+the follow-up inventory contained 2,814 files, with approximately 195,000 TypeScript source
+lines. No production code was modified during either audit pass.
 
 Severity legend: **Critical** (blocks release/install or enables account compromise),
 **High** (serious security/correctness), **Medium**, **Low**.
 
 > This document is a point-in-time snapshot. Items marked "(fixed)" were addressed
 > in the remediation pass that followed the audit; see the git history for details.
+
+## Status update 2026-09-27
+
+Current HEAD: `dev/main` @ `d42a543` (remediation continued through `4a5fa09`, plus the new
+e2e-helper commit `d42a543`). Supersedes stale statements in the follow-up audit below:
+lint is now 0 errors / 408 warnings (not 456); unit tests are now crypto 46 / API 150 / SFU 24 /
+protocol 54 / web 1334 (not 149 API / 1,331 web); Playwright E2E (4/4 chromium) and the external
+SFU suite (1/1) are wired into CI and pass locally against a live stack; API integration suites
+run with a migration 030 baseline; the F5 unit-test gap is being addressed. CI state: Dev CI
+PASSed on `be0bd21`; the Dev Bundle workflow was still failing at the smoke step on pre-fix
+commits at last observation — the fix is committed in `56b9a00` and awaits a CI run.
+
+## Follow-up audit at `7d257a9`
+
+The follow-up pass found additional unresolved issues and corrected stale status claims from
+the initial audit. Current release assessment: suitable for internal beta testing, but not ready
+for a broad production release until the High items below and the verification gaps are resolved.
+
+### F1 — High — Direct-message legacy AD fallback mutates ratchet state before authentication
+
+- `packages/crypto/src/double-ratchet.ts:208-248` deletes skipped keys and/or advances `DHr`,
+  `CKr`, and `Nr` before AES-GCM authentication succeeds.
+- `apps/web/src/stores/messages/messages-inbound-decrypt-runtime.ts:70-81` retries an
+  `OperationError` with legacy associated data using that same already-mutated state.
+- Runtime reproduction on the real crypto package:
+  - decrypt with v1 AD: `OperationError`;
+  - retry the same valid legacy message with v0 AD: authentication still fails;
+  - after one tampered attempt, retrying the original on the same state also fails and `Nr`
+    advances again.
+- The persisted session is normally not overwritten after a failed inbound decrypt because
+  `loadSession()` deserializes a fresh state and `saveSession()` happens after success. The
+  immediate fallback in the same call is nevertheless deterministically broken.
+- Existing web coverage mocks `ratchetDecrypt`, so it proves control flow but not the real state
+  transition. Required fix: decrypt against a cloned/candidate state and commit only after
+  authentication, with real-crypto regression tests for tamper/retry and v1-to-v0 fallback.
+
+### F2 — High — Current hardened branch is not the release branch
+
+- At follow-up time `dev/main` was 14 commits ahead of `main`; the local checkout was also one
+  commit ahead of `origin/dev/main`.
+- `.github/workflows/release-bundle.yml:4-16` publishes from `main`; the `dev/main` workflow
+  creates a development artifact but no GitHub Release.
+- Therefore the reviewed fixes are not automatically represented by the production release
+  channel. Promote the reviewed commit to `main` or define an explicit, verified release flow
+  from the active branch.
+
+### F3 — High/Medium — Production dependency advisories remain
+
+- `pnpm audit --prod` on 2026-09-26 reported: 0 critical, 1 high, 11 moderate, 1 low.
+- The High Fastify advisory `GHSA-jx2c-rxcm-jvmq` is allowlisted in
+  `scripts/audit-prod-gate.mjs`. API and SFU have explicit control-character guards for
+  `Content-Type`, which mitigate the described tab bypass, but the vulnerable dependency remains.
+- Moderate advisories include Fastify validation/proxy issues, React Router open-redirect/XSS,
+  mediasoup SCTP authentication, and transitive `protobufjs`/`uuid` issues. Some have reduced
+  exploitability in the current configuration, but the gate accepts every Moderate advisory
+  without a per-advisory decision record.
+- Reassess each advisory, apply available patch-level updates where compatible, and document
+  concrete non-exploitability evidence for every deferred item.
+
+### F4 — Medium — Browser auth restore and refresh can wait indefinitely
+
+- `apps/web/src/lib/session.ts:119-125` and `apps/web/src/lib/session-preview.ts:113-119`
+  call browser `fetch` without a timeout or caller abort signal.
+- `apps/web/src/stores/auth-session-restore.ts:97-103` blocks startup directly on session preview.
+- A connection that never completes can leave startup pending, while the shared refresh promise
+  blocks later HTTP, WebSocket, and SFU refresh consumers. The Capacitor path has explicit connect
+  and read timeouts; the browser path does not.
+
+### F5 — Medium — Refresh-token rotation is not concurrency-safe
+
+- `apps/api/src/routes/auth/index.ts:566-605` verifies the old hash and then performs an
+  unconditional update without a row lock, compare-and-swap predicate, or reuse record.
+- Two tabs/processes can validate the same old token and issue different replacements; one
+  response can contain a token that is already invalid. Per-tab promise deduplication does not
+  coordinate separate tabs or native processes.
+- A correct change needs explicit multi-tab semantics, a bounded previous-token grace/reuse
+  strategy, and integration tests for concurrent refresh, replay, logout, and process restart.
+
+### F6 — Medium — Runtime mode is still fail-open to development
+
+- `apps/api/src/config.ts:74-92` still defaults missing `NODE_ENV` to `development`, which makes
+  production-only weak-secret guards conditional on an operator remembering the variable.
+- Reproduction with only `DATABASE_URL` and a 32-byte `JWT_SECRET` resolved to development with
+  the default TURN secret and MinIO credentials.
+- `ALLOW_PUBLIC_REGISTRATION` itself now correctly defaults to false, but the release Compose and
+  `.env.example` explicitly default it to true without a prominent operator warning.
+- Make runtime mode explicit for server startup and document the release registration policy.
+
+### F7 — Medium — CI does not exercise the complete release surface
+
+- Playwright tests under `tests/e2e` are not referenced by any workflow.
+- `apps/api/src/test/group-call-sfu-bootstrap.test.ts` remains unwired in CI.
+- The browser E2E suite currently has four smoke scenarios and does not cover encrypted groups,
+  attachments, group/room calls, logout/revocation, or multi-tab refresh.
+- Dev CI does not run coverage or `check:doc-paths`; main CI does.
+- Android release/signing, fresh-install/upgrade, and real multi-browser/WebRTC compatibility
+  remain outside the normal CI proof.
+
+### F8 — Medium — Lint passes with a large warning backlog
+
+- Repository lint returned zero errors but 456 warnings: 366 in web (74 files) and 90 in API
+  (25 files).
+- Production warnings include floating/misused promises, hook dependency warnings, unsafe
+  assignments/member access and promise-returning UI handlers.
+- The CI command therefore proves only "no lint errors", not absence of the classes represented
+  by warning-only rules. Prioritize production `no-floating-promises`, hook dependency, and async
+  event-handler warnings before tightening the warning budget.
+
+### F9 — Medium/Low — Test depth and signal quality are uneven
+
+- Follow-up line coverage: protocol 89.5%, crypto 80.4%, web 64.4%, SFU 49.3%, API 20.5%.
+  API's configured line threshold is only 18%, and default coverage excludes integration suites.
+- 1,589 unit tests passed, but the web suite emits extensive React `act(...)` warnings, attempted
+  real fetches from presentation tests, repeated Capacitor plugin registration messages, and an
+  asynchronous pending-sync error after a test. This noise can conceal new regressions.
+- Local API integration execution was blocked by missing `DATABASE_URL`; external SFU, Playwright,
+  Android, and release-bundle installation were not executed during the follow-up.
+
+### F10 — Medium/Low — Local-at-rest data protection remains incomplete
+
+- `apps/web/src/stores/saved/useSavedMessagesStore.ts:44-48` stores saved message text and
+  attachment data URLs as plaintext JSON in `localStorage`.
+- The plain-message cache key is derived from non-secret identifiers and is obfuscation rather
+  than protection against a local attacker.
+- This is an acknowledged design task rather than a mechanical encryption change: it requires an
+  OS-keystore/passphrase-backed key, migration behavior, and a documented local-attacker model.
+
+### Follow-up verification evidence
+
+- Passed: `pnpm verify:release`, API unit tests (136), crypto tests (44), protocol tests (54),
+  SFU tests (24), web tests (1,331), full five-package coverage gate, typechecks, web production
+  build/bundle budgets, UI contract/style checks, `check:doc-paths`, third-party notice check,
+  and `git diff --check`.
+- `pnpm lint` passed with the 456 warnings recorded above.
+- `pnpm audit:prod:gate` passed only because the High advisory is explicitly allowlisted and
+  Moderate advisories are outside the failure policy.
+- Not run/proven: database-backed API integration, external SFU integration, Playwright E2E,
+  Android artifacts/signing, full Docker bundle install/upgrade, and real browser media matrices.
 
 ---
 
@@ -68,17 +209,13 @@ Severity legend: **Critical** (blocks release/install or enables account comprom
   `X-Content-Type-Options: nosniff` on the plain bucket proxy.
 
 ### C6 — E2E and external-SFU tests never run in CI
-- `.github/workflows/dev-ci.yml:39-50` omits `QM_API_INCLUDE_INTEGRATION_TESTS`, so the 5 API
-  integration suites (auth, attachment-access, group-history-contract, direct-call-signing-sync,
-  guest-rooms) are silently skipped on `dev/main`.
+- API integration suites are now explicitly enabled in both main and dev CI with
+  `QM_API_INCLUDE_INTEGRATION_TESTS=1`.
 - `tests/e2e` (Playwright) is referenced by no workflow; `group-call-sfu-bootstrap.test.ts`
   (`test:integration:external`) is never invoked.
-- `apps/api/vitest.config.ts:14-28` gates integration by substring-matching `process.argv`,
-  which is fragile.
-- Fix: add the env flag to dev CI, wire e2e + external-SFU jobs, replace argv sniffing.
-  - Fix (partial, done): `QM_API_INCLUDE_INTEGRATION_TESTS: "1"` added to `dev-ci.yml` so the
-    integration suites run on `dev/main` too. Playwright e2e and the external-SFU suite remain
-    unwired, and the argv sniffing in `vitest.config.ts` is unchanged.
+- Fix (partial, done at `7d257a9`): integration selection uses explicit
+  `QM_API_INCLUDE_INTEGRATION_TESTS` / `QM_API_INCLUDE_EXTERNAL_SFU_TESTS` flags rather than
+  `process.argv` sniffing. Playwright E2E and the external-SFU suite remain unwired.
 
 ### C7 — Storage images no longer exist on Docker Hub (fresh install cannot start)
 - `infra/docker-compose.yml:70,91`, `infra/docker-compose.release.yml:97,116`, and
@@ -117,8 +254,9 @@ Severity legend: **Critical** (blocks release/install or enables account comprom
 - `:55`: `NODE_ENV` defaults to `development`, disabling every production guard.
 - Impact: a bare-metal `pnpm start` without `NODE_ENV=production` runs with open registration
   and weak-secret allowances.
-- Fix (done): `NODE_ENV` must be explicit; `ALLOW_PUBLIC_REGISTRATION` defaults to false;
-  dotenv loader only under an explicit opt-in / test.
+- Fix (partial): `ALLOW_PUBLIC_REGISTRATION` now defaults to false and dotenv loading is limited
+  to explicit opt-in/test. `NODE_ENV` still defaults to `development`; see F6. Release Compose
+  also explicitly defaults public registration to true.
 
 ### H3 — Attachment verification buffers whole objects in memory
 - `apps/api/src/routes/attachments/index.ts:170-244`: `verifyAttachmentObject` /
@@ -221,9 +359,9 @@ Web
   `src/lib/session-preview.ts:115`).
   - Fix (partial, done): the shared API transport `request()` now composes a 30s
     `AbortSignal.timeout` with any caller-provided signal and maps a timeout to `ApiError(408)`.
-    Uploads use a separate XHR/fetch path (`lib/upload-progress.ts`) and are unaffected. The
-    boot-time `session-preview.ts` call is intentionally left unbounded: it already fails open to
-    `network_error` on any network failure and is a best-effort startup probe.
+    Uploads use a separate XHR/fetch path (`lib/upload-progress.ts`) and are unaffected. Browser
+    session preview and refresh remain unbounded and can block restore/refresh if a request never
+    settles; see F4.
 - Logger redaction short-circuits at `depth > 2` (`src/lib/logger.ts:63`), leaking deep nested
   values in production.
   - Fix (done): values beyond the depth bound are replaced with `[Truncated]` instead of returned
@@ -320,7 +458,9 @@ Docs
 - All SQL is parameterized; no string-concatenated user input reaches SQL.
 - No `dangerouslySetInnerHTML`, `eval`, `innerHTML`, or dynamic `Function` in the web app.
 - Access tokens are memory-only; refresh tokens use HttpOnly cookies on web.
-- No `@ts-ignore` / `@ts-expect-error` / explicit `any` / TODO in non-test source.
+- No `@ts-ignore` / `@ts-expect-error` / TODO markers were found in non-test source. Explicit or
+  inferred unsafe values do remain in production paths and are represented in the lint warning
+  backlog; see F8.
 - Private keys are never sent to the server; only public material is uploaded.
 - Argon2id is used for the app-lock PIN with constant-time comparison.
 - WebSocket client has backoff+jitter, bounded queue, protocol-version hard fail.
@@ -337,3 +477,7 @@ Docs
    Android backup, media-key zeroization. (Phase 1)
 3. Harden and instrument: SFU limits, crypto memory fixes, protocol bounds, CI e2e/coverage/
    security scanning, migrations tests, docs. (Phase 2)
+4. Follow-up blockers: make ratchet decrypt transactional, restore real legacy-AD compatibility,
+   add browser auth timeouts, make refresh rotation concurrency-safe, eliminate or explicitly
+   accept current dependency advisories, reduce production lint warnings, and run the unproven
+   integration/E2E/release-install surfaces. (Phase 3)

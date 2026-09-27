@@ -1,9 +1,32 @@
 # Blocking E2E workflow (audit F7 graduation). Both suites proven green locally
 # on 2026-09-27 against a live stack (SFU bootstrap + 4 chromium e2e); now blocking.
-# First CI run still to be observed.
+# P0-2: this workflow is a release-candidate gate. It runs on every push to
+# dev/main and on pull requests (excluding docs-only changes), on a nightly
+# schedule for broader validation, and manually via workflow_dispatch.
 name: E2E
 
 on:
+  push:
+    branches:
+      - dev/main
+      - main
+    paths-ignore:
+      - 'README.md'
+      - 'AUDIT.md'
+      - 'DEPLOYMENT.md'
+      - 'LEGAL_NOTICE.md'
+      - 'THIRD_PARTY_NOTICES.md'
+      - 'docs/**/*.md'
+      - '**/*.md'
+  pull_request:
+    paths-ignore:
+      - 'README.md'
+      - 'AUDIT.md'
+      - 'DEPLOYMENT.md'
+      - 'LEGAL_NOTICE.md'
+      - 'THIRD_PARTY_NOTICES.md'
+      - 'docs/**/*.md'
+      - '**/*.md'
   workflow_dispatch:
   schedule:
     - cron: '0 4 * * *'

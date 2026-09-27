@@ -9,6 +9,7 @@ const integrationTestFiles = [
   "src/test/malformed-param.test.ts",
   "src/test/refresh-rotation.integration.test.ts",
   "src/test/devices.integration.test.ts",
+  "src/test/calls.integration.test.ts",
 ];
 
 // Requires an external SFU instance; only run when explicitly requested.

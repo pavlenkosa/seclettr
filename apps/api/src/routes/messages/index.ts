@@ -523,7 +523,7 @@ export async function messageRoutes(fastify: FastifyInstance): Promise<void> {
           if (!payload) return;
 
           await sendPushToUser(body.recipientUserId, payload);
-        })().catch((err) => {
+        })().catch((err: unknown) => {
           request.log.warn({ err, userId: body.recipientUserId }, "push notification failed for direct message");
           recordPushNotificationFailure();
         });

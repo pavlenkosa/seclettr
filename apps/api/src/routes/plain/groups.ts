@@ -491,7 +491,7 @@ export async function plainGroupRoutes(fastify: FastifyInstance): Promise<void> 
 
       const chunks: Buffer[] = [];
       let totalBytes = 0;
-      for await (const chunk of data.file) {
+      for await (const chunk of data.file as AsyncIterable<Buffer>) {
         totalBytes += chunk.length;
         if (totalBytes > GROUP_AVATAR_MAX_BYTES) {
           return reply.code(413).send({ error: "Avatar image too large (max 4 MB)" });

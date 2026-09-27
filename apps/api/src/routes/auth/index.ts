@@ -661,7 +661,7 @@ export async function authRoutes(fastify: FastifyInstance): Promise<void> {
     return reply.code(401).send({ error: "Invalid or expired refresh token" });
   });
 
-  fastify.post("/ws-ticket", { preHandler: [requireAuth, enforceWsTicketRateLimit] }, async (request) => {
+  fastify.post("/ws-ticket", { preHandler: [requireAuth, enforceWsTicketRateLimit] }, (request) => {
     const wsToken = fastify.jwt.sign(
       {
         sub: request.auth.sub,

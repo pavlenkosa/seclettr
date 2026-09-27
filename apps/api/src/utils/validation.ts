@@ -19,7 +19,7 @@ export function parseOrReply<TSchema extends ZodTypeAny>(
     });
     return null;
   }
-  return parsed.data;
+  return parsed.data as zInfer<TSchema>;
 }
 
 export function parseVersionedOrReply<TSchema extends ZodTypeAny>(
@@ -30,7 +30,7 @@ export function parseVersionedOrReply<TSchema extends ZodTypeAny>(
 ): StripVersion<zInfer<TSchema>> | null {
   const parsed = safeParseVersionedWire(schema, payload, supportedVersion);
   if (parsed.success) {
-    return parsed.data;
+    return parsed.data as StripVersion<zInfer<TSchema>>;
   }
 
   if (parsed.error.code === "UNSUPPORTED_PROTOCOL_VERSION") {

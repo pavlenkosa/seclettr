@@ -446,7 +446,7 @@ function notifyOfflineGroupMembersAboutStartedCall(
         await sendPushToUser(memberId, payload);
       })
     );
-  })().catch((err) => {
+  })().catch((err: unknown) => {
     request.log.warn(
       { err, groupId },
       "push notification failed for group call start"
@@ -550,7 +550,7 @@ function notifyCalleeAboutMissedCall(
     if (!payload) return;
 
     await sendPushToUser(calleeUserId, payload);
-  })().catch((err) => {
+  })().catch((err: unknown) => {
     request.log.warn(
       { err, calleeUserId },
       "push notification failed for missed call"
@@ -587,7 +587,7 @@ function notifyOfflineDirectCalleeAboutInvite(
     if (!payload) return;
 
     await sendPushToUser(calleeUserId, payload);
-  })().catch((err) => {
+  })().catch((err: unknown) => {
     request.log.warn(
       { err, calleeUserId },
       "push notification failed for call invite"
@@ -828,7 +828,7 @@ export async function callRoutes(fastify: FastifyInstance): Promise<void> {
   fastify.get(
     "/turn-credentials",
     { preHandler: callPreHandlers },
-    async (request) => {
+    (request) => {
       const { sub: userId } = request.auth;
       return generateTurnCredentials(userId);
     }

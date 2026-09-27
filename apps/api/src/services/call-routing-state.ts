@@ -642,7 +642,9 @@ export function createCallSessionStore(
         await redis.del(getDeviceIndexRedisKey(deviceId));
         return [];
       }
-      const callIds = uniqueDeviceIds(parsed);
+      const callIds = uniqueDeviceIds(
+        parsed as unknown as string[]
+      );
       setLocalDeviceIndex(deviceId, callIds);
       return callIds;
     } catch {

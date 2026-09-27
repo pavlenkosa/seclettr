@@ -153,7 +153,7 @@ export async function profileRoutes(fastify: FastifyInstance): Promise<void> {
       // Collect to buffer so we can measure size and upload.
       const chunks: Buffer[] = [];
       let totalBytes = 0;
-      for await (const chunk of data.file) {
+      for await (const chunk of data.file as AsyncIterable<Buffer>) {
         totalBytes += chunk.length;
         if (totalBytes > AVATAR_MAX_BYTES) {
           return reply.code(413).send({ error: "Avatar image too large (max 4 MB)" });

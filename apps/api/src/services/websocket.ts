@@ -262,7 +262,7 @@ export async function registerWebSocketHandler(
       context: Record<string, unknown>,
       failureMessage: string
     ): void => {
-      void signalRunner.enqueue(task).catch((err) => {
+      void signalRunner.enqueue(task).catch((err: unknown) => {
         fastify.log.warn(
           {
             err,
@@ -474,7 +474,7 @@ export async function registerWebSocketHandler(
     void replayMessageReceipts(fastify, auth.deviceId);
     void rt.directCallSignalRouter
       .replayPendingOffers(fastify, client)
-      .catch((err) => {
+      .catch((err: unknown) => {
         fastify.log.warn(
           { err, userId: auth.sub, deviceId: auth.deviceId },
           "Failed to replay pending direct-call offers after reconnect"
@@ -489,7 +489,7 @@ export async function registerWebSocketHandler(
     pingInterval = setInterval(() => {
       if (socket.readyState === socket.OPEN) {
         socket.ping();
-        void touchDeviceSocket(client.userId, client.deviceId).catch((err) => {
+        void touchDeviceSocket(client.userId, client.deviceId).catch((err: unknown) => {
           fastify.log.warn({ err, deviceId: client.deviceId }, "Failed to refresh device socket TTL");
         });
       }

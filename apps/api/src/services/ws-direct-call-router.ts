@@ -401,10 +401,10 @@ export function createDirectCallSignalRouter(
     return session.calleeDeviceIds;
   };
 
-  const getEstablishedPeerTarget = async (
+  const getEstablishedPeerTarget = (
     senderDeviceId: string,
     session: CallSession
-  ): Promise<string | null> => {
+  ): string | null => {
     if (!session.calleeDeviceId) return null;
     if (!isEstablishedDirectCallParticipant(senderDeviceId, session)) return null;
     if (senderDeviceId === session.callerDeviceId) {
@@ -475,7 +475,7 @@ export function createDirectCallSignalRouter(
             "Cleaned up stale direct-call session after disconnect grace timeout"
           );
         }
-      })().catch((err) => {
+      })().catch((err: unknown) => {
         fastify.log.warn(
           { err, deviceId: client.deviceId, userId: client.userId },
           "Failed to cleanup stale direct-call sessions after disconnect"
@@ -546,7 +546,7 @@ export function createDirectCallSignalRouter(
       return;
     }
 
-    const targetDeviceId = await getEstablishedPeerTarget(
+    const targetDeviceId = getEstablishedPeerTarget(
       sender.deviceId,
       session
     );

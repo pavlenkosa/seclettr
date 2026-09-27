@@ -90,11 +90,11 @@ function toIsoString(
   return value instanceof Date ? value.toISOString() : value;
 }
 
-async function verifyContactGrant(
+function verifyContactGrant(
   fastify: FastifyInstance,
   request: FastifyRequest,
   targetUserId: string
-): Promise<boolean> {
+): boolean {
   const rawGrant = readSingleHeaderValue(
     request.headers[CONTACT_GRANT_HEADER]
   );
@@ -140,7 +140,7 @@ async function resolveMetadataAccess(
   }
 
   if (options?.allowContactGrant) {
-    const contactGrantAllowed = await verifyContactGrant(
+    const contactGrantAllowed = verifyContactGrant(
       fastify,
       request,
       targetUserId

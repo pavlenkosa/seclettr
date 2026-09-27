@@ -250,7 +250,7 @@ export async function buildApp() {
   }
 
   // GET /health/live  — process liveness only, no external dep checks (cheap)
-  fastify.get("/health/live", async () => {
+  fastify.get("/health/live", () => {
     return { status: "ok", version: APP_VERSION };
   });
 

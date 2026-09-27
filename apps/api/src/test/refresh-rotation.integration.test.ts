@@ -26,7 +26,7 @@ interface RegisterResult {
   userId: string;
   deviceId: string;
   accessToken: string;
-  refreshToken?: string;
+  refreshToken?: string | undefined;
   setCookie: string | null;
   status: number;
 }
@@ -77,7 +77,7 @@ async function registerUser(username: string): Promise<RegisterResult> {
     userId: body.userId,
     deviceId: body.deviceId,
     accessToken: body.accessToken,
-    refreshToken: body.refreshToken ?? tokenFromCookie ?? null,
+    refreshToken: body.refreshToken ?? tokenFromCookie ?? undefined,
     setCookie: setCookieHeader,
   };
 }

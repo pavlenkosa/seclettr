@@ -114,7 +114,7 @@ async function sendJSON(
   method: string,
   path: string,
   token: string | undefined,
-  payload: unknown
+  payload?: unknown
 ): Promise<{ status: number; body: any }> {
   const res = await fetch(`${BASE_URL}${path}`, {
     method,
@@ -122,7 +122,9 @@ async function sendJSON(
       "Content-Type": "application/json",
       ...(token ? authHeaders(token) : {}),
     },
-    body: payload === undefined ? undefined : JSON.stringify(payload),
+    ...(payload === undefined
+      ? {}
+      : { body: JSON.stringify(payload) }),
   });
   const body = await res.json().catch(() => ({}));
   return { status: res.status, body };

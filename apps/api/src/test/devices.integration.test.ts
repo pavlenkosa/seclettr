@@ -121,7 +121,7 @@ async function loginDevice(username: string): Promise<Session> {
 }
 
 /** Register, then login a second device for the same user. */
-async function provisionedTwoDeviceUser(): Promise<Session[]> {
+async function provisionedTwoDeviceUser(): Promise<[Session, Session]> {
   const username = `dv_it_${Date.now()}_${usernameSeq++}_${Math.floor(Math.random() * 1e6)}`;
   const first = await registerUser(username);
   const second = await loginDevice(username);

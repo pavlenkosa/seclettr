@@ -428,6 +428,8 @@ const enMessages: TranslationMap = {
   "conversation.retrySend": "Tap to retry",
   "saved.title": "Saved Messages",
   "saved.subtitle": "Notes and bookmarks",
+  "saved.locked": "Locked. Unlock storage to see saved messages.",
+  "saved.error": "Saved messages are unavailable.",
   "saved.emptyHint": "Send yourself notes, links, or anything you want to keep.",
   "saved.composer.placeholder": "Write a note…",
   "saved.deleteMessage": "Delete note",

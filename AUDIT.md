@@ -17,9 +17,10 @@ Severity legend: **Critical** (blocks release/install or enables account comprom
 
 ## Status update 2026-09-27
 
-Current HEAD: `dev/main` @ `5c1290a` (14 commits ahead of `origin/dev/main` @ `f871535`; full
-unpushed list: `git log --oneline f871535..HEAD`). Supersedes stale statements in the follow-up
-audit below:
+Current HEAD: `dev/main` @ `a637b69` (unpushed: `5c1290a` lint sweep + this docs refresh;
+`origin/dev/main` = `f871535`, verified via ls-remote — the 13-commit remediation batch
+`d42a543..f871535` is already pushed, but its CI run has NOT yet been observed; the next
+push run will show the lint-sweep + coverage commits). Supersedes stale statements in the follow-up audit below:
 - lint: 0 errors (api 44 warnings incl. ~39 accepted require-await on register fns; web 381 warnings).
 - Tests: crypto 46 / API 150 / SFU 24 / protocol 54 / web 1341 (241 files), all pass.
 - New API HTTP integration suites (run against real Postgres, migration 030 baseline):

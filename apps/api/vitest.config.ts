@@ -13,6 +13,7 @@ const integrationTestFiles = [
   "src/test/groups-membership.integration.test.ts",
   "src/test/auth-attachment-deny.integration.test.ts",
   "src/test/call-route-rate-limit.integration.test.ts",
+  "src/test/auth-route-rate-limit.integration.test.ts",
 ];
 
 // Requires an external SFU instance; only run when explicitly requested.

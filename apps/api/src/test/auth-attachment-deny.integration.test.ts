@@ -422,10 +422,14 @@ describe("Authentication deny paths (real Postgres)", () => {
     expect(garbage.status).toBe(401);
   });
 
+  // Dedicated 429 exercise lives in auth-route-rate-limit.integration.test.ts,
+  // run via `pnpm --filter @seclettr/api test:integration:authlimit`
+  // (QM_API_TEST_AUTH_RATE_LIMIT_MAX=3) — the full-suite harness forces
+  // QM_API_TEST_AUTH_RATE_LIMIT_MAX=500, so the 429 path cannot be exercised
+  // under this harness. See global-setup.ts rate-limit override.
   it.skip(
-    "rate-limit denial (429) after repeated failed logins — SKIPPED: " +
-      "integration global-setup forces QM_API_TEST_AUTH_RATE_LIMIT_MAX=500, " +
-      "so the 429 path cannot be exercised under this harness",
+    "rate-limit denial (429) after repeated failed logins — moved to " +
+      "auth-route-rate-limit.integration.test.ts (dedicated MAX=3 run)",
     () => {
       expect.unreachable("See global-setup.ts rate-limit override");
     }

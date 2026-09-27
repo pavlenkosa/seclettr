@@ -109,3 +109,11 @@ jobs:
       # without coverage (same precedent as the auth-429 skip).
       - name: Call route rate limit (dedicated 429 run)
         run: pnpm --filter @seclettr/api test:integration:crlimit
+
+      # Deterministic 429 exercise for the per-IP /auth/* route budget: the
+      # shared full-suite harness runs with MAX=500, where a 429 is
+      # unreachable, so the security behavior is verified here with a small
+      # explicit MAX instead of being skipped without coverage (same precedent
+      # as the call-route 429 run above).
+      - name: Auth route rate limit (dedicated 429 run)
+        run: pnpm --filter @seclettr/api test:integration:authlimit

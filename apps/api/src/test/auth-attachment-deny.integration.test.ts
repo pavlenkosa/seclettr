@@ -90,12 +90,23 @@ async function registerUser(username: string): Promise<RegisterResult> {
       device: deviceProvisioning(Math.floor(Math.random() * 16382) + 1),
     }),
   });
-  const body = (await res.json().catch(() => ({}))) as Record<string, unknown>;
+  const body = (await res.json().catch(() => ({}))) as {
+    userId?: unknown;
+    deviceId?: unknown;
+    accessToken?: unknown;
+    refreshToken?: unknown;
+  };
   const setCookieHeader = res.headers.get("set-cookie");
   const tokenFromCookie = setCookieHeader
     ?.match(/(?:^|; )?refresh_token=([^;]+)/)?.[1]
     ?.split(";")[0];
-  const session: Session | undefined =
+  const refreshToken =
+    typeof body.refreshToken === "string"
+      ? body.refreshToken
+      : tokenFromCookie;
+  const session:
+    | Session
+    | undefined =
     typeof body.userId === "string" &&
     typeof body.deviceId === "string" &&
     typeof body.accessToken === "string"
@@ -103,13 +114,15 @@ async function registerUser(username: string): Promise<RegisterResult> {
           userId: body.userId,
           deviceId: body.deviceId,
           accessToken: body.accessToken,
-          refreshToken:
-            typeof body.refreshToken === "string"
-              ? body.refreshToken
-              : tokenFromCookie,
+          ...(refreshToken !== undefined ? { refreshToken } : {}),
         }
       : undefined;
-  return { status: res.status, session, setCookie: setCookieHeader, body };
+  return {
+    status: res.status,
+    ...(session !== undefined ? { session } : {}),
+    setCookie: setCookieHeader,
+    body,
+  };
 }
 
 async function provisionedUser(): Promise<Session> {
@@ -173,11 +186,14 @@ async function initAttachment(
       contentType: "application/octet-stream",
     }),
   });
-  const body = (await res.json().catch(() => ({}))) as Record<string, unknown>;
+  const body = (await res.json().catch(() => ({}))) as {
+    attachmentId?: unknown;
+  };
+  const attachmentId =
+    typeof body.attachmentId === "string" ? body.attachmentId : undefined;
   return {
     status: res.status,
-    attachmentId:
-      typeof body.attachmentId === "string" ? body.attachmentId : undefined,
+    ...(attachmentId !== undefined ? { attachmentId } : {}),
     body,
   };
 }

@@ -191,7 +191,7 @@ jobs:
         run: pnpm --filter @seclettr/web run android:build:debug
 
       - name: Upload artifact — Android APK
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: seclettr-dev-debug-apk
           path: apps/web/android/app/build/outputs/apk/debug/app-debug.apk
@@ -239,7 +239,7 @@ jobs:
           docker compose -p seclettr --env-file .env -f docker-compose.yml down -v --remove-orphans || true
 
       - name: Upload artifact — dev bundle
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: ${{ steps.meta.outputs.bundle_prefix }}
           path: |

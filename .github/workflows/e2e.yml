@@ -55,6 +55,13 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      # The Playwright config and @playwright/test live at the repo root (the
+      # e2e-smoke script runs `pnpm exec playwright test` from the root), so the
+      # browser install must use the same resolved binary from the root too.
+      # Without this, chromium.launch() fails in global-setup with no artifacts.
+      - name: Install Playwright browsers
+        run: pnpm exec playwright install --with-deps chromium
+
       - name: Run E2E smoke suite (chromium)
         run: bash scripts/ops/e2e-smoke.sh -- --project=chromium
 
@@ -67,7 +74,7 @@ jobs:
           retention-days: 7
 
       - name: Upload test results
-        if: failure()
+        if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: test-results

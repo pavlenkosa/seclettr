@@ -95,7 +95,13 @@ network-specific values that it cannot guess:
 ```
 
 The installer will:
-1. Pull Docker images from GHCR (online mode) or load from bundle (offline mode)
+1. Acquire required Docker images deterministically: use locally present
+   images first, load the bundled `prebuilt-images.tar.gz` when it exists,
+   then pull (online, default) only the still-missing pinned third-party
+   images (exact `image:tag` pins from the bundle compose file). With
+   `--offline`, the archive is the only source: if it is missing or does not
+   contain every required image, the installer fails — it never touches the
+   network.
 2. Generate secrets for any `CHANGE_ME_*` placeholders
 3. Run database migrations
 4. Start all services

@@ -13,6 +13,7 @@
     "test": "turbo run test",
     "test:coverage": "pnpm --filter @seclettr/protocol test:coverage && pnpm --filter @seclettr/crypto test:coverage && pnpm --filter @seclettr/sfu test:coverage && pnpm --filter @seclettr/web test:coverage && pnpm --filter @seclettr/api test:coverage",
     "test:e2e": "bash ./scripts/seclettr ops e2e",
+    "test:install-ladder": "bash ./scripts/ops/tests/install-images-ladder.sh",
     "test:e2e:playwright": "playwright test",
     "lint": "turbo run lint",
     "typecheck": "turbo run typecheck",

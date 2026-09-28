@@ -382,26 +382,13 @@ jobs:
           tar -xzf "$BUNDLE" -C "$SMOKE_DIR" --strip-components=1
           echo "SMOKE_DIR=$SMOKE_DIR" >> "$GITHUB_ENV"
 
-      # prebuilt-images.tar.gz contains only api/web/sfu; support images are
-      # referenced by the bundle compose (pinned in infra/.env.example) and
-      # must be present locally for install.sh to validate.
-      - name: Docker load prebuilt images
-        shell: bash
-        run: docker load -i "$SMOKE_DIR/prebuilt-images.tar.gz"
-
-      - name: Pull support images
-        shell: bash
-        run: |
-          IMAGES=(
-            postgres:16-alpine
-            redis:7-alpine
-            bitnamilegacy/minio:2025.7.23-debian-12-r5
-            bitnamilegacy/minio-client:2025.7.21-debian-12-r3
-            coturn/coturn:4.18.0-r0-alpine
-          )
-          for image in "${IMAGES[@]}"; do
-            docker pull "$image"
-          done
+      # prebuilt-images.tar.gz contains the bundled api/web/sfu images. The
+      # pinned third-party images (postgres/redis/minio/mc/coturn) are NOT
+      # pre-pulled here — install.sh's acquisition ladder must acquire them
+      # itself (local check → archive load → online pull of exact pins), so
+      # this job exercises the real user path on a clean runner. The install
+      # step below lets install.sh do the archive load itself (SKIP_LOAD
+      # defaults to false); no manual `docker load` happens here.
 
       - name: Configure bundle environment
         shell: bash
@@ -421,10 +408,10 @@ jobs:
         run: |
           cd "$SMOKE_DIR"
 
-          # Install in non-interactive HTTP mode; api/web/sfu images are
-          # already local (loaded from prebuilt-images.tar.gz), support
-          # images were pulled by the previous step.
-          ./install.sh --non-interactive --mode full --network http --skip-load
+          # Install in non-interactive HTTP mode. install.sh's own
+          # acquisition ladder loads prebuilt-images.tar.gz (bundled
+          # api/web/sfu) and pulls the pinned third-party images online.
+          ./install.sh --non-interactive --mode full --network http
 
           # Wait for API health (up to 60 s). Full-mode install runs DB
           # migrations against the freshly created empty database, so a

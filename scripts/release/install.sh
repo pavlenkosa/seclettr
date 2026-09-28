@@ -18,6 +18,7 @@ SKIP_BACKUP=false
 ACTION="install"
 CLI_UPDATE_FROM=""
 CLI_UPDATE_ARCHIVE=""
+CLI_OFFLINE_MODE=false
 PREVIOUS_BUNDLE_DIR=""
 BACKUP_DIR=""
 
@@ -29,6 +30,7 @@ INTERACTIVE_MODE="auto"
 SETUP_DOMAIN=""
 
 DEPLOY_MODE=""
+OFFLINE_MODE=false
 NETWORK_MODE=""
 WEB_RUNTIME_API_URL=""
 WEB_RUNTIME_SFU_URL=""
@@ -142,6 +144,8 @@ Options:
   --env-file <path>                   Path to runtime .env file (default: ./.env)
   --compose-file <path>               Path to compose file (default: ./docker-compose.yml)
   --image-archive <path>              Path to image archive (default: ./prebuilt-images.tar.gz)
+  --offline                           Explicit offline mode: only the image archive may satisfy
+                                      missing images; network is never used (default: online)
   --project-name <name>               Docker Compose project name (default: seclettr)
   --update [archive-or-dir]           Update. Accepts a new release .tar.gz or unpacked release directory
   --from <path>                       Previous release bundle directory when running from the new bundle
@@ -969,6 +973,113 @@ validate_runtime_images_available() {
   fi
 }
 
+# ── Third-party image acquisition ladder ───────────────────────────────────────
+#
+# Deterministic per-image acquisition (no blind either/or between archive load
+# and registry pull):
+#   1. Collect required pinned third-party image:tag refs from the bundle.
+#   2. Check each locally (docker image inspect).
+#   3. All present → done.
+#   4. Missing AND image archive exists → docker load the archive.
+#   5. Recheck.
+#   6. Still missing AND online allowed → docker pull ONLY the missing pinned tags.
+#   7. Recheck.
+#   8. Still missing → die listing the exact missing tags.
+#
+# In explicit offline mode (--offline) the archive is the ONLY permitted source:
+# if it is missing or does not satisfy every image, we hard-fail without any
+# network fallback.
+
+image_present() {
+  "${DOCKER_CMD[@]}" image inspect "$1" >/dev/null 2>&1
+}
+
+missing_images_of() {
+  local missing=() image_ref
+  for image_ref in "$@"; do
+    image_present "$image_ref" || missing+=("$image_ref")
+  done
+  if [[ ${#missing[@]} -gt 0 ]]; then
+    printf '%s\n' "${missing[@]}"
+  fi
+}
+
+load_image_archive() {
+  "${DOCKER_CMD[@]}" load -i "$IMAGE_ARCHIVE"
+}
+
+pull_image() {
+  "${DOCKER_CMD[@]}" pull "$1"
+}
+
+ensure_images_available() {
+  local required=()
+  local service image_ref
+
+  # Third-party support images, pinned by the bundle compose file. Uses
+  # runtime_image_for_service so env-overridable defaults stay honored.
+  for service in postgres redis minio minio-init coturn; do
+    if in_selected_services "$service"; then
+      image_ref="$(runtime_image_for_service "$service")"
+      required+=("$image_ref")
+    fi
+  done
+
+  if [[ ${#required[@]} -eq 0 ]]; then
+    return 0
+  fi
+
+  # Step 2–3: all present locally → nothing to acquire.
+  local missing
+  missing="$(missing_images_of "${required[@]}")" || true
+  if [[ -z "$missing" ]]; then
+    return 0
+  fi
+
+  # Step 4: archive present → load it (in offline mode it MUST exist).
+  if [[ "$OFFLINE_MODE" == "true" && ! -f "$IMAGE_ARCHIVE" ]]; then
+    die "Offline mode: image archive not found: $IMAGE_ARCHIVE
+  Missing image(s): $(printf '%s ' $missing | sed 's/ $//')
+  Provide the archive or drop --offline to install online."
+  fi
+
+  if [[ -f "$IMAGE_ARCHIVE" ]]; then
+    log_step "Loading missing images from archive: $IMAGE_ARCHIVE"
+    load_image_archive
+    # Step 5: recheck exact tags.
+    missing="$(missing_images_of "${required[@]}")" || true
+    if [[ -z "$missing" ]]; then
+      return 0
+    fi
+  fi
+
+  # Step 6: online allowed → pull ONLY the still-missing pinned tags.
+  if [[ "$OFFLINE_MODE" == "true" ]]; then
+    die "Offline mode: image archive did not satisfy required images.
+  Archive: $IMAGE_ARCHIVE
+  Missing image(s): $(printf '%s ' $missing | sed 's/ $//')
+  Rebuild the archive or install online (drop --offline)."
+  fi
+
+  log_step "Pulling missing images: $(printf '%s ' $missing | sed 's/ $//')"
+  local pull_failed=() image
+  for image in $missing; do
+    if ! pull_image "$image"; then
+      pull_failed+=("$image")
+    fi
+  done
+
+  if [[ ${#pull_failed[@]} -gt 0 ]]; then
+    die "Failed to pull required image(s): ${pull_failed[*]}"
+  fi
+
+  # Step 7: recheck.
+  missing="$(missing_images_of "${required[@]}")" || true
+  if [[ -n "$missing" ]]; then
+    die "Required image(s) still missing after archive load and pull: $(printf '%s ' $missing | sed 's/ $//')"
+  fi
+}
+
 absolute_path() {
   local path="$1"
   if [[ "$path" == /* ]]; then
@@ -1019,6 +1130,14 @@ validate_network_mode() {
       die "Invalid network mode '$1'. Use one of: tls, http"
       ;;
   esac
+}
+
+in_selected_services() {
+  local want="$1" svc
+  for svc in "${SELECTED_SERVICES[@]}"; do
+    [[ "$svc" == "$want" ]] && return 0
+  done
+  return 1
 }
 
 is_mode_with_backend() {
@@ -1779,6 +1898,12 @@ window.__SECLETTR_RUNTIME_CONFIG__ = Object.freeze({
 EOF_CONFIG
 }
 
+# Test hook: when sourcing this script to unit-test its functions, stop here —
+# before argument parsing and any side effects.
+if [[ "${SECLETTR_INSTALL_SHELL_ONLY:-0}" == "1" ]]; then
+  return 0 2>/dev/null || true
+fi
+
 while [[ $# -gt 0 ]]; do
   case "$1" in
     install)
@@ -1842,6 +1967,10 @@ while [[ $# -gt 0 ]]; do
     --image-archive)
       IMAGE_ARCHIVE="$2"
       shift 2
+      ;;
+    --offline)
+      CLI_OFFLINE_MODE=true
+      shift
       ;;
     --project-name)
       PROJECT_NAME="$2"
@@ -1974,6 +2103,7 @@ fi
 apply_bundle_image_refs
 
 DEPLOY_MODE="${CLI_DEPLOY_MODE:-${DEPLOY_MODE:-full}}"
+OFFLINE_MODE="$CLI_OFFLINE_MODE"
 if [[ -n "${CLI_NETWORK_MODE:-}" ]]; then
   NETWORK_MODE="$CLI_NETWORK_MODE"
 elif [[ -n "${NETWORK_MODE:-}" ]]; then
@@ -2064,15 +2194,9 @@ if [[ "$ACTION" == "update" && "$SKIP_BACKUP" == "false" ]]; then
 fi
 
 if [[ "$SKIP_LOAD" == "false" ]]; then
-  if [[ -f "$IMAGE_ARCHIVE" ]]; then
-    step "Loading Docker images from offline archive"
-    run_quiet "Importing prebuilt-images.tar.gz (this may take a minute…)" \
-      "${DOCKER_CMD[@]}" load -i "$IMAGE_ARCHIVE"
-  else
-    step "Pulling Docker images from registry"
-    run_quiet "Pulling images from container registry" \
-      docker_compose pull
-  fi
+  step "Acquiring required Docker images"
+  run_quiet "Ensuring required images are available (local → archive → pull)" \
+    ensure_images_available
 fi
 
 validate_runtime_images_available

@@ -56,7 +56,7 @@ seclettr-release-main-<timestamp>.tar.gz.sha256
 
 Or with curl:
 ```bash
-# Replace <tag> with the release tag, e.g. v1.3.1-beta
+# Replace <tag> with the release tag, e.g. v1.4.0-beta
 RELEASE_URL="https://github.com/stepan-pavlenko/seclettr/releases/download/<tag>"
 curl -fLO "$RELEASE_URL/seclettr-release-main-<timestamp>.tar.gz"
 curl -fLO "$RELEASE_URL/seclettr-release-main-<timestamp>.tar.gz.sha256"

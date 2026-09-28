@@ -21,6 +21,30 @@ x-logging: &default-logging
     max-size: "10m"
     max-file: "3"
 
+# Applied to the application containers (api/sfu/web). They run as non-root and
+# need no Linux capabilities; drop them all and forbid privilege escalation
+# (AUDIT.md infra).
+x-hardening: &default-hardening
+  security_opt:
+    - "no-new-privileges:true"
+  cap_drop:
+    - ALL
+
+# Memory ceilings on the stateless app containers; data services manage their
+# own memory and are left unconstrained. Override via env if needed.
+x-api-limits: &api-limits
+  resources:
+    limits:
+      memory: ${API_MEMORY_LIMIT:-1g}
+x-web-limits: &web-limits
+  resources:
+    limits:
+      memory: ${WEB_MEMORY_LIMIT:-256m}
+x-sfu-limits: &sfu-limits
+  resources:
+    limits:
+      memory: ${SFU_MEMORY_LIMIT:-2g}
+
 services:
 
   # ── PostgreSQL ────────────────────────────────────────────────────────────
@@ -67,8 +91,11 @@ services:
   # ── MinIO (S3-compatible object storage) ──────────────────────────────────
 
   minio:
-    image: minio/minio:latest
+    image: ${MINIO_IMAGE:-bitnamilegacy/minio:2025.7.23-debian-12-r5}
     restart: unless-stopped
+    # The Bitnami-based image defaults to UID 1001, which cannot write the
+    # root-owned named volume; pin root to match the previous upstream image.
+    user: "0:0"
     command: server /data --console-address ":9001"
     environment:
       MINIO_ROOT_USER: ${MINIO_ACCESS_KEY:?MINIO_ACCESS_KEY must be set}
@@ -88,7 +115,7 @@ services:
   # ── MinIO bucket creation (one-shot init container) ───────────────────────
 
   minio-init:
-    image: minio/mc:latest
+    image: ${MINIO_MC_IMAGE:-bitnamilegacy/minio-client:2025.7.21-debian-12-r3}
     depends_on:
       minio:
         condition: service_healthy
@@ -103,7 +130,7 @@ services:
   # ── coturn TURN server ────────────────────────────────────────────────────
 
   coturn:
-    image: coturn/coturn:latest
+    image: ${COTURN_IMAGE:-coturn/coturn:4.18.0-r0-alpine}
     restart: unless-stopped
     network_mode: host  # required for TURN to work correctly with host IP
     command: >
@@ -129,6 +156,7 @@ services:
       context: ..
       dockerfile: apps/api/Dockerfile
     restart: unless-stopped
+    <<: *default-hardening
     extra_hosts:
       - "host.docker.internal:host-gateway"
     depends_on:
@@ -183,6 +211,8 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+    deploy:
+      <<: *api-limits
     logging: *default-logging
 
   # ── SFU (mediasoup) ───────────────────────────────────────────────────────
@@ -192,6 +222,7 @@ services:
       context: ..
       dockerfile: apps/sfu/Dockerfile
     restart: unless-stopped
+    <<: *default-hardening
     network_mode: host  # mediasoup needs host networking for RTP UDP
     environment:
       NODE_ENV: production
@@ -208,6 +239,8 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+    deploy:
+      <<: *sfu-limits
     logging: *default-logging
 
   # ── Web (Nginx serving the Vite build) ────────────────────────────────────
@@ -217,6 +250,7 @@ services:
       context: ..
       dockerfile: apps/web/Dockerfile
     restart: unless-stopped
+    <<: *default-hardening
     extra_hosts:
       - "host.docker.internal:host-gateway"
     ports:
@@ -235,6 +269,8 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+    deploy:
+      <<: *web-limits
     logging: *default-logging
 
 volumes:

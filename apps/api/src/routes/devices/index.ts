@@ -90,11 +90,11 @@ function toIsoString(
   return value instanceof Date ? value.toISOString() : value;
 }
 
-async function verifyContactGrant(
+function verifyContactGrant(
   fastify: FastifyInstance,
   request: FastifyRequest,
   targetUserId: string
-): Promise<boolean> {
+): boolean {
   const rawGrant = readSingleHeaderValue(
     request.headers[CONTACT_GRANT_HEADER]
   );
@@ -140,7 +140,7 @@ async function resolveMetadataAccess(
   }
 
   if (options?.allowContactGrant) {
-    const contactGrantAllowed = await verifyContactGrant(
+    const contactGrantAllowed = verifyContactGrant(
       fastify,
       request,
       targetUserId
@@ -196,7 +196,7 @@ async function enforceUserSearchRateLimit(request: FastifyRequest, reply: Fastif
 
   if (limit.allowed) return;
 
-  reply.header("Retry-After", String(limit.retryAfterSec));
+  void reply.header("Retry-After", String(limit.retryAfterSec));
   void reply.code(429).send({ error: "Too many user search requests" });
 }
 
@@ -234,7 +234,7 @@ async function enforceDirectRelationshipCreateRateLimit(
     return true;
   }
 
-  reply.header("Retry-After", String(limit.retryAfterSec));
+  void reply.header("Retry-After", String(limit.retryAfterSec));
   void reply.code(429).send({ error: "Too many direct relationship requests" });
   return false;
 }
@@ -534,7 +534,7 @@ export async function userRoutes(fastify: FastifyInstance): Promise<void> {
       if (requesterUserId !== userId) {
         const limit = await enforceUserDeviceMetadataLookupLimit(requesterUserId, userId);
         if (!limit.allowed) {
-          reply.header("Retry-After", String(limit.retryAfterSec));
+          void reply.header("Retry-After", String(limit.retryAfterSec));
           request.log.warn(
             {
               requesterUserId,
@@ -650,7 +650,7 @@ export async function userRoutes(fastify: FastifyInstance): Promise<void> {
 
         const limit = await enforcePreKeyBundleLookupLimit(requesterUserId, deviceId);
         if (!limit.allowed) {
-          reply.header("Retry-After", String(limit.retryAfterSec));
+          void reply.header("Retry-After", String(limit.retryAfterSec));
           request.log.warn(
             {
               requesterUserId,

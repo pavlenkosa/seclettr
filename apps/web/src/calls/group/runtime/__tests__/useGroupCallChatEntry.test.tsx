@@ -81,7 +81,6 @@ describe("useGroupCallChatEntry", () => {
   const closeSpy = vi.fn();
 
   beforeEach(() => {
-    (globalThis as typeof globalThis & { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
     container = document.createElement("div");
     document.body.appendChild(container);
     root = createRoot(container);
@@ -111,7 +110,6 @@ describe("useGroupCallChatEntry", () => {
       root.unmount();
     });
     container.remove();
-    delete (globalThis as typeof globalThis & { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT;
   });
 
   function render(props?: Partial<React.ComponentProps<typeof HookHarness>>) {

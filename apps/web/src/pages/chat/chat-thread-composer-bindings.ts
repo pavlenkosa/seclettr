@@ -161,8 +161,9 @@ export function buildChatThreadComposerBindings({
   if (activeThreadKind === "saved") {
     return {
       composerKey: "saved:saved",
-      onSendText: async (text) => {
+      onSendText: (text) => {
         sendSavedMessage(text);
+        return Promise.resolve();
       },
       onSendFile: async (file, mediaGroupId, caption) => {
         await sendSavedFile(file, { kind: "file", caption, mediaGroupId });

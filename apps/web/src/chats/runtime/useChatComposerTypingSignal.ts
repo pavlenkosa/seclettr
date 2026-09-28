@@ -40,7 +40,7 @@ export function useChatComposerTypingSignal({
     sendTypingSignal(recipientUserId, false, chatKind);
     typingActiveRef.current = false;
     lastTypingStartSentAtRef.current = 0;
-  }, [clearTypingTimer, isGroupComposer, recipientUserId, sendTypingSignal]);
+  }, [chatKind, clearTypingTimer, isGroupComposer, recipientUserId, sendTypingSignal]);
 
   const scheduleTypingStop = useCallback(() => {
     clearTypingTimer();

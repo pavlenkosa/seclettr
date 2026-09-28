@@ -305,6 +305,8 @@ export const ruMessages: TranslationMap = {
   "conversation.retrySend": "Нажмите для повтора",
   "saved.title": "Избранное",
   "saved.subtitle": "Заметки и закладки",
+  "saved.locked": "Заблокировано. Разблокируйте хранилище, чтобы увидеть избранное.",
+  "saved.error": "Сохранённые сообщения недоступны.",
   "saved.emptyHint": "Отправляйте себе заметки, ссылки и всё, что хотите сохранить.",
   "saved.composer.placeholder": "Написать заметку…",
   "saved.deleteMessage": "Удалить заметку",

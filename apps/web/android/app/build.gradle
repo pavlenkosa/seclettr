@@ -16,10 +16,38 @@ android {
             ignoreAssetsPattern = '!.svn:!.git:!.ds_store:!*.scc:.*:!CVS:!thumbs.db:!picasa.ini:!*~'
         }
     }
+    signingConfigs {
+        release {
+            // Activated only when keystore env vars are provided (externalized-secrets).
+            // Env vars are inherited by Gradle automatically; no keystore is stored in-repo.
+            def ksPath = System.getenv('SECLETTR_ANDROID_KEYSTORE_PATH')
+            def ksStorePassword = System.getenv('SECLETTR_ANDROID_KEYSTORE_PASSWORD')
+            def ksKeyAlias = System.getenv('SECLETTR_ANDROID_KEY_ALIAS')
+            def ksKeyPassword = System.getenv('SECLETTR_ANDROID_KEY_PASSWORD')
+            if (ksPath && ksStorePassword && ksKeyAlias && ksKeyPassword) {
+                storeFile file(ksPath)
+                storePassword ksStorePassword
+                keyAlias ksKeyAlias
+                keyPassword ksKeyPassword
+            }
+        }
+    }
     buildTypes {
         release {
+            // NOTE: minifyEnabled stays false for now; enabling R8 needs runtime
+            // verification (follow-up, see DEPLOYMENT.md).
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+            // Fail fast instead of silently falling back to debug signing.
+            if (gradle.startParameter.taskNames.any { it.equalsIgnoreCase('assembleRelease') || it.equalsIgnoreCase('bundleRelease') || it.contains('Release') }) {
+                if (!signingConfigs.release.storePassword) {
+                    throw new GradleException(
+                        'release signing requires SECLETTR_ANDROID_KEYSTORE_PATH, ' +
+                        'SECLETTR_ANDROID_KEYSTORE_PASSWORD, SECLETTR_ANDROID_KEY_ALIAS, ' +
+                        'SECLETTR_ANDROID_KEY_PASSWORD env vars (see DEPLOYMENT.md)')
+                }
+                signingConfig signingConfigs.release
+            }
         }
     }
 }

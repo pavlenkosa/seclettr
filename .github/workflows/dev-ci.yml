@@ -48,18 +48,21 @@ jobs:
       S3_BUCKET: seclettr-attachments
       S3_ACCESS_KEY: minioadmin
       S3_SECRET_KEY: minioadmin
+      # Run the API integration suites on dev/main as well; without this they
+      # are silently skipped (AUDIT.md C6).
+      QM_API_INCLUDE_INTEGRATION_TESTS: "1"
 
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
 
       - name: Setup Node
-        uses: actions/setup-node@v5
+        uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5
         with:
           node-version: 22
           package-manager-cache: false
 
       - name: Setup pnpm
-        uses: pnpm/action-setup@v6
+        uses: pnpm/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86 # v6
 
       - name: Print toolchain
         run: |
@@ -98,3 +101,19 @@ jobs:
 
       - name: Test
         run: pnpm test
+
+      # Deterministic 429 exercise for the /calls/turn-credentials per-IP
+      # budget: the shared full-suite harness runs with MAX=10000 (headroom for
+      # parallel suites), where a 429 is unreachable, so the security behavior
+      # is verified here with a small explicit MAX instead of being skipped
+      # without coverage (same precedent as the auth-429 skip).
+      - name: Call route rate limit (dedicated 429 run)
+        run: pnpm --filter @seclettr/api test:integration:crlimit
+
+      # Deterministic 429 exercise for the per-IP /auth/* route budget: the
+      # shared full-suite harness runs with MAX=500, where a 429 is
+      # unreachable, so the security behavior is verified here with a small
+      # explicit MAX instead of being skipped without coverage (same precedent
+      # as the call-route 429 run above).
+      - name: Auth route rate limit (dedicated 429 run)
+        run: pnpm --filter @seclettr/api test:integration:authlimit

@@ -35,7 +35,8 @@ curl -fsSL https://raw.githubusercontent.com/stepan-pavlenko/seclettr/main/scrip
 
 - Linux server (Ubuntu 22.04+ recommended)
 - Docker + Docker Compose plugin
-- Open ports: `80` and `443` (web), `3478` UDP/TCP + `50000–51999` UDP (TURN/media)
+- Open ports: `80` and `443` (web), `3478` UDP/TCP + `50000–51999` UDP (TURN)
+- SFU media over UDP `40000–49999` (required for group/room calls; see `RTC_MIN_PORT`/`RTC_MAX_PORT`)
 - A domain name pointing at the server (recommended for production)
 
 Install Docker if missing:
@@ -55,7 +56,7 @@ seclettr-release-main-<timestamp>.tar.gz.sha256
 
 Or with curl:
 ```bash
-# Replace <tag> with the release tag, e.g. v1.3.1-beta
+# Replace <tag> with the release tag, e.g. v1.4.0-beta
 RELEASE_URL="https://github.com/stepan-pavlenko/seclettr/releases/download/<tag>"
 curl -fLO "$RELEASE_URL/seclettr-release-main-<timestamp>.tar.gz"
 curl -fLO "$RELEASE_URL/seclettr-release-main-<timestamp>.tar.gz.sha256"
@@ -94,7 +95,13 @@ network-specific values that it cannot guess:
 ```
 
 The installer will:
-1. Pull Docker images from GHCR (online mode) or load from bundle (offline mode)
+1. Acquire required Docker images deterministically: use locally present
+   images first, load the bundled `prebuilt-images.tar.gz` when it exists,
+   then pull (online, default) only the still-missing pinned third-party
+   images (exact `image:tag` pins from the bundle compose file). With
+   `--offline`, the archive is the only source: if it is missing or does not
+   contain every required image, the installer fails — it never touches the
+   network.
 2. Generate secrets for any `CHANGE_ME_*` placeholders
 3. Run database migrations
 4. Start all services
@@ -151,6 +158,8 @@ Open `.env` and adjust:
 - `TURN_EXTERNAL_IP` / `ANNOUNCED_IP` — public IP of the server (auto-detected if omitted)
 
 All cryptographic secrets are generated automatically if you leave them as `CHANGE_ME_*` placeholders.
+
+> **Note:** `ALLOW_PUBLIC_REGISTRATION` defaults to `true` in the release compose file; set it to `false` in your `.env` for private deployments.
 
 ### 5. Choose Deployment Mode
 
@@ -287,6 +296,31 @@ MinIO data remain in place.
 
 ---
 
+## Android Release Signing
+
+The Android release build refuses to run without a keystore (no silent debug
+signing). Provide these env vars (e.g. from your CI secret store):
+
+```
+SECLETTR_ANDROID_KEYSTORE_PATH   # path to your .keystore/.jks file
+SECLETTR_ANDROID_KEYSTORE_PASSWORD
+SECLETTR_ANDROID_KEY_ALIAS
+SECLETTR_ANDROID_KEY_PASSWORD
+```
+
+Generate a keystore once, keep it out of git (`apps/web/android/.gitignore`):
+
+```
+keytool -genkeypair -v -keystore release.keystore -alias seclettr \
+  -keyalg RSA -keysize 2048 -validity 10000
+```
+
+Build: `./apps/web/scripts/build-android-artifacts.sh release`
+Verify: `jarsigner -verify -certs apps/web/android/app/build/outputs/apk/release/app-release.apk`
+(or `apksigner verify --print-certs` if installed).
+
+---
+
 ## Security Notes
 
 - Do not expose Postgres/Redis/MinIO ports publicly.
@@ -294,3 +328,34 @@ MinIO data remain in place.
 - Use TLS in production.
 - Keep Docker host and OS patched.
 - Read legal notices: `LEGAL_NOTICE.md`
+
+## Release gating (USER_ACTION_REQUIRED) — P0-3
+
+Release bundles (`Release Bundle` workflow) are published only after required
+checks pass for the exact commit SHA:
+
+- Automatic path: `workflow_run` fires only on **CI success on `main`**.
+- Manual path (`workflow_dispatch`): accepts ONLY a full 40-character commit
+  SHA and a verification step queries the GitHub API
+  (`/commits/{sha}/check-runs` + `/actions/runs?head_sha=`) and fails unless
+  ALL of the following checks are successful for that exact SHA:
+
+  | Required check name         | Source workflow      | Job |
+  |-----------------------------|----------------------|-----|
+  | `verify`                    | `ci.yml`             | `verify` |
+  | `E2E (chromium)`            | `e2e.yml`            | `e2e-chromium` |
+  | `External SFU integration`  | `e2e.yml`            | `external-sfu-integration` |
+  | `verify` (Dev CI)           | `dev-ci.yml`         | `verify` |
+
+  Note: if GitHub branch protection rejects two checks with the same display
+  name `verify`, rename one of the jobs' `name:` field first (e.g. Dev CI →
+  `verify (dev)`), then update this table.
+
+### Action required by a repository administrator
+
+GitHub does not allow branch-protection required-status-checks to be defined
+in repository files. In **Settings → Branches → main → Require status checks
+before merging**, add exactly the check names listed above
+(`USER_ACTION_REQUIRED`). Until configured, merge gating relies on the
+workflow-level dispatch verification only; the automatic `workflow_run` path
+is already restricted to successful CI runs on `main`.

@@ -111,7 +111,7 @@ export function DirectCallIncomingOverlay({
         />
         <CallControlButton
           ref={incomingAcceptButtonRef}
-          onClick={() => onAccept()}
+          onClick={() => void onAccept()}
           className={controlsStyles.controlBtn}
           tone="success"
           icon={isVideoCall ? <CameraIcon /> : <PhoneIcon />}

@@ -1,3 +1,4 @@
+/// <reference types="vitest" />
 import { defineConfig, type Plugin } from "vite";
 import react from "@vitejs/plugin-react";
 import { VitePWA } from "vite-plugin-pwa";
@@ -436,5 +437,25 @@ export default defineConfig(({ command }) => ({
   },
   optimizeDeps: {
     include: ["libsodium-wrappers-sumo"],
+  },
+  test: {
+    // Per-file `@vitest-environment` docblocks still take precedence; this
+    // default matches the node environment most component-free tests assume.
+    environment: "node",
+    globals: true,
+    include: ["src/**/*.test.ts", "src/**/*.test.tsx"],
+    setupFiles: ["./src/test/setup.ts"],
+    coverage: {
+      provider: "v8",
+      reporter: ["lcov", "text-summary"],
+      // Ratchet thresholds, set just below current coverage so regressions
+      // fail CI without blocking unrelated work (AUDIT.md Tests).
+      thresholds: {
+        lines: 60,
+        statements: 60,
+        functions: 60,
+        branches: 65,
+      },
+    },
   },
 }));

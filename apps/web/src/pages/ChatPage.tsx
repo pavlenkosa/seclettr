@@ -231,7 +231,8 @@ export function ChatPage() {
 
   useEffect(() => {
     if (userId) {
-      useSavedMessagesStore.getState().load(userId);
+      void useSavedMessagesStore.getState().load(userId);
+      // The load effect above already guards against applying stale-user state.
     } else {
       useSavedMessagesStore.getState().reset();
     }

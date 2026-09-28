@@ -88,7 +88,7 @@ async function enforceRoomRateLimit(
     windowSec: ROOM_RATE_LIMIT_WINDOW_SEC,
   });
   if (limit.allowed) return;
-  reply.header("Retry-After", String(limit.retryAfterSec));
+  void reply.header("Retry-After", String(limit.retryAfterSec));
   void reply.code(429).send({ error: "Too many room requests" });
 }
 

@@ -11,6 +11,9 @@ function buildConfigEnv(
   return {
     DATABASE_URL: "postgresql://seclettr:pass@localhost:5432/seclettr",
     JWT_SECRET: "12345678901234567890123456789012",
+    // NODE_ENV now defaults to "production" fail-closed, so tests must state
+    // their intended runtime mode explicitly instead of relying on absence.
+    NODE_ENV: "test",
     ...overrides,
   };
 }
@@ -146,6 +149,90 @@ describe("config TURN port overrides", () => {
     expect(config.TURN_PORT).toBe(54478);
     expect(config.TURNS_PORT).toBe(56349);
   });
+});
+
+describe("config NODE_ENV fail-closed default", () => {
+  beforeEach(() => {
+    vi.resetModules();
+    applyRequiredBaseEnv();
+  });
+
+  // NODE_ENV: undefined in buildConfigEnv overrides represents an unset
+  // variable; the Zod default then applies (config.ts defaults to
+  // "production" fail-closed, AUDIT.md F6).
+
+  it("resolves unset NODE_ENV to production with guards applied", async () => {
+    const { resolveConfig } = await import("../config.js");
+
+    const config = resolveConfig(
+      buildConfigEnv({
+        NODE_ENV: undefined,
+        TURN_SECRET: "custom-strong-turn-secret",
+        S3_ACCESS_KEY: "custom-access",
+        S3_SECRET_KEY: "custom-secret",
+        METRICS_BEARER_TOKEN: "custom-metrics-token-1234",
+      })
+    );
+
+    expect(config.NODE_ENV).toBe("production");
+  });
+
+  it("explicit development accepts the default TURN secret", async () => {
+    const { resolveConfig } = await import("../config.js");
+
+    const config = resolveConfig(
+      buildConfigEnv({
+        NODE_ENV: "development",
+      })
+    );
+
+    expect(config.NODE_ENV).toBe("development");
+    expect(config.TURN_SECRET).toBe("changeme-turn-secret");
+  });
+
+  it("unset NODE_ENV rejects the default TURN secret (guard fires on default path)", async () => {
+    const { resolveConfig } = await import("../config.js");
+
+    expect(() =>
+      resolveConfig(
+        buildConfigEnv({
+          NODE_ENV: undefined,
+          S3_ACCESS_KEY: "custom-access",
+          S3_SECRET_KEY: "custom-secret",
+          METRICS_BEARER_TOKEN: "custom-metrics-token-1234",
+        })
+      )
+    ).toThrow(/TURN_SECRET must be overridden in production/);
+  });
+
+  it.each(["test", "production"] as const)(
+    "explicit NODE_ENV=%s behaves as before",
+    async (envValue) => {
+      const { resolveConfig } = await import("../config.js");
+
+      if (envValue === "production") {
+        expect(() =>
+          resolveConfig(
+            buildConfigEnv({
+              NODE_ENV: envValue,
+              TURN_SECRET: "changeme-turn-secret",
+              S3_ACCESS_KEY: "custom-access",
+              S3_SECRET_KEY: "custom-secret",
+            })
+          )
+        ).toThrow(/TURN_SECRET must be overridden in production/);
+        return;
+      }
+
+      const config = resolveConfig(
+        buildConfigEnv({
+          NODE_ENV: envValue,
+        })
+      );
+      expect(config.NODE_ENV).toBe("test");
+      expect(config.TURN_SECRET).toBe("changeme-turn-secret");
+    }
+  );
 });
 
 describe("config retention day defaults", () => {

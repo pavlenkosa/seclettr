@@ -442,8 +442,8 @@ export function DirectCallSurfaceRenderer({
             onStopLocalScreenPreviewDrag={onStopLocalScreenPreviewDrag}
             onSwitchCamera={onSwitchCamera}
             onToggleMute={onToggleMute}
-            onToggleVideo={onToggleVideo}
-            onToggleScreenShare={onToggleScreenShare}
+            onToggleVideo={() => void onToggleVideo()}
+            onToggleScreenShare={() => void onToggleScreenShare()}
             selectedScreenResolution={selectedScreenResolution}
             onSelectScreenResolution={onSelectScreenResolution}
             onHangup={onHangup}

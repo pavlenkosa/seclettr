@@ -18,6 +18,7 @@ SKIP_BACKUP=false
 ACTION="install"
 CLI_UPDATE_FROM=""
 CLI_UPDATE_ARCHIVE=""
+CLI_OFFLINE_MODE=false
 PREVIOUS_BUNDLE_DIR=""
 BACKUP_DIR=""
 
@@ -29,6 +30,7 @@ INTERACTIVE_MODE="auto"
 SETUP_DOMAIN=""
 
 DEPLOY_MODE=""
+OFFLINE_MODE=false
 NETWORK_MODE=""
 WEB_RUNTIME_API_URL=""
 WEB_RUNTIME_SFU_URL=""
@@ -142,6 +144,8 @@ Options:
   --env-file <path>                   Path to runtime .env file (default: ./.env)
   --compose-file <path>               Path to compose file (default: ./docker-compose.yml)
   --image-archive <path>              Path to image archive (default: ./prebuilt-images.tar.gz)
+  --offline                           Explicit offline mode: only the image archive may satisfy
+                                      missing images; network is never used (default: online)
   --project-name <name>               Docker Compose project name (default: seclettr)
   --update [archive-or-dir]           Update. Accepts a new release .tar.gz or unpacked release directory
   --from <path>                       Previous release bundle directory when running from the new bundle
@@ -212,6 +216,22 @@ _detect_pkg_manager() {
   fi
 }
 
+# Docker publishes separate repositories per RHEL-family distribution. Using
+# the CentOS repo on Fedora/RHEL installs packages built for a different
+# release and fails (AUDIT.md Medium). Map the detected distro to its repo.
+_docker_rpm_repo_distro() {
+  local distro_id=""
+  if [[ -r /etc/os-release ]]; then
+    distro_id="$(. /etc/os-release && printf '%s' "${ID:-}")"
+  fi
+  case "$distro_id" in
+    fedora) printf '%s' "fedora" ;;
+    rhel) printf '%s' "rhel" ;;
+    centos|rocky|almalinux|ol) printf '%s' "centos" ;;
+    *) printf '%s' "centos" ;;
+  esac
+}
+
 _install_docker() {
   local pm="$(_detect_pkg_manager)"
   case "$pm" in
@@ -235,14 +255,16 @@ https://download.docker.com/linux/${distro_id} ${codename} stable" \
       ;;
     dnf)
       log_step "Installing Docker (dnf)..."
+      local repo_distro; repo_distro="$(_docker_rpm_repo_distro)"
       dnf -y -q install dnf-plugins-core
-      dnf config-manager --add-repo https://download.docker.com/linux/centos/docker-ce.repo
+      dnf config-manager --add-repo "https://download.docker.com/linux/${repo_distro}/docker-ce.repo"
       dnf -y -q install docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
       ;;
     yum)
       log_step "Installing Docker (yum)..."
+      local repo_distro; repo_distro="$(_docker_rpm_repo_distro)"
       yum install -y -q yum-utils
-      yum-config-manager --add-repo https://download.docker.com/linux/centos/docker-ce.repo
+      yum-config-manager --add-repo "https://download.docker.com/linux/${repo_distro}/docker-ce.repo"
       yum install -y -q docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
       ;;
     apk)
@@ -906,9 +928,9 @@ runtime_image_for_service() {
   case "$1" in
     postgres) printf '%s' "postgres:16-alpine" ;;
     redis) printf '%s' "redis:7-alpine" ;;
-    minio) printf '%s' "minio/minio:latest" ;;
-    minio-init) printf '%s' "minio/mc:latest" ;;
-    coturn) printf '%s' "coturn/coturn:latest" ;;
+    minio) printf '%s' "${MINIO_IMAGE:-bitnamilegacy/minio:2025.7.23-debian-12-r5}" ;;
+    minio-init) printf '%s' "${MINIO_MC_IMAGE:-bitnamilegacy/minio-client:2025.7.21-debian-12-r3}" ;;
+    coturn) printf '%s' "${COTURN_IMAGE:-coturn/coturn:4.18.0-r0-alpine}" ;;
     api|migrate) printf '%s:%s' "${SECLETTR_API_IMAGE:-ghcr.io/stepan-pavlenko/seclettr/api}" "${SECLETTR_IMAGE_TAG:-latest}" ;;
     sfu) printf '%s:%s' "${SECLETTR_SFU_IMAGE:-ghcr.io/stepan-pavlenko/seclettr/sfu}" "${SECLETTR_IMAGE_TAG:-latest}" ;;
     web) printf '%s:%s' "${SECLETTR_WEB_IMAGE:-ghcr.io/stepan-pavlenko/seclettr/web}" "${SECLETTR_IMAGE_TAG:-latest}" ;;
@@ -948,6 +970,118 @@ validate_runtime_images_available() {
     die "Required Docker image(s) are not available: ${missing[*]}.
   If installing offline: ensure prebuilt-images.tar.gz is present and run: docker load -i prebuilt-images.tar.gz
   If installing online: check your internet connection and run: docker compose pull"
+  fi
+}
+
+# ── Third-party image acquisition ladder ───────────────────────────────────────
+#
+# Deterministic per-image acquisition (no blind either/or between archive load
+# and registry pull):
+#   1. Collect required pinned third-party image:tag refs from the bundle.
+#   2. Check each locally (docker image inspect).
+#   3. All present → done.
+#   4. Missing AND image archive exists → docker load the archive.
+#   5. Recheck.
+#   6. Still missing AND online allowed → docker pull ONLY the missing pinned tags.
+#   7. Recheck.
+#   8. Still missing → die listing the exact missing tags.
+#
+# In explicit offline mode (--offline) the archive is the ONLY permitted source:
+# if it is missing or does not satisfy every image, we hard-fail without any
+# network fallback.
+
+image_present() {
+  "${DOCKER_CMD[@]}" image inspect "$1" >/dev/null 2>&1
+}
+
+missing_images_of() {
+  local missing=() image_ref
+  for image_ref in "$@"; do
+    image_present "$image_ref" || missing+=("$image_ref")
+  done
+  if [[ ${#missing[@]} -gt 0 ]]; then
+    printf '%s\n' "${missing[@]}"
+  fi
+}
+
+load_image_archive() {
+  "${DOCKER_CMD[@]}" load -i "$IMAGE_ARCHIVE"
+}
+
+pull_image() {
+  "${DOCKER_CMD[@]}" pull "$1"
+}
+
+ensure_images_available() {
+  local required=()
+  local service image_ref
+
+  # Third-party support images, pinned by the bundle compose file. Uses
+  # runtime_image_for_service so env-overridable defaults stay honored.
+  for service in postgres redis minio minio-init coturn; do
+    if in_selected_services "$service"; then
+      image_ref="$(runtime_image_for_service "$service")"
+      required+=("$image_ref")
+    fi
+  done
+
+  if [[ ${#required[@]} -eq 0 ]]; then
+    return 0
+  fi
+
+  # Step 2–3: all present locally → nothing to acquire.
+  local missing
+  missing="$(missing_images_of "${required[@]}")" || true
+  if [[ -z "$missing" ]]; then
+    return 0
+  fi
+
+  # Step 4: archive present → load it (in offline mode it MUST exist).
+  # --skip-load means "don't load the bundled prebuilt archive" (user-managed
+  # app images); it must NOT suppress image acquisition: the pinned
+  # third-party support images are still acquired via pull below.
+  if [[ "$SKIP_LOAD" != "true" && "$OFFLINE_MODE" == "true" && ! -f "$IMAGE_ARCHIVE" ]]; then
+    die "Offline mode: image archive not found: $IMAGE_ARCHIVE
+  Missing image(s): $(printf '%s ' $missing | sed 's/ $//')
+  Provide the archive or drop --offline to install online."
+  fi
+
+  if [[ "$SKIP_LOAD" != "true" && -f "$IMAGE_ARCHIVE" ]]; then
+    log_step "Loading missing images from archive: $IMAGE_ARCHIVE"
+    load_image_archive
+    # Step 5: recheck exact tags.
+    missing="$(missing_images_of "${required[@]}")" || true
+    if [[ -z "$missing" ]]; then
+      return 0
+    fi
+  fi
+
+  # Step 6: online allowed → pull ONLY the still-missing pinned tags.
+  # With --skip-load the archive was deliberately not loaded; missing pins
+  # must still be pulled when online, and hard-fail when offline (fail-closed).
+  if [[ "$OFFLINE_MODE" == "true" ]]; then
+    die "Offline mode: image archive did not satisfy required images.
+  Archive: $IMAGE_ARCHIVE
+  Missing image(s): $(printf '%s ' $missing | sed 's/ $//')
+  Rebuild the archive or install online (drop --offline)."
+  fi
+
+  log_step "Pulling missing images: $(printf '%s ' $missing | sed 's/ $//')"
+  local pull_failed=() image
+  for image in $missing; do
+    if ! pull_image "$image"; then
+      pull_failed+=("$image")
+    fi
+  done
+
+  if [[ ${#pull_failed[@]} -gt 0 ]]; then
+    die "Failed to pull required image(s): ${pull_failed[*]}"
+  fi
+
+  # Step 7: recheck.
+  missing="$(missing_images_of "${required[@]}")" || true
+  if [[ -n "$missing" ]]; then
+    die "Required image(s) still missing after archive load and pull: $(printf '%s ' $missing | sed 's/ $//')"
   fi
 }
 
@@ -1001,6 +1135,14 @@ validate_network_mode() {
       die "Invalid network mode '$1'. Use one of: tls, http"
       ;;
   esac
+}
+
+in_selected_services() {
+  local want="$1" svc
+  for svc in "${SELECTED_SERVICES[@]}"; do
+    [[ "$svc" == "$want" ]] && return 0
+  done
+  return 1
 }
 
 is_mode_with_backend() {
@@ -1761,6 +1903,12 @@ window.__SECLETTR_RUNTIME_CONFIG__ = Object.freeze({
 EOF_CONFIG
 }
 
+# Test hook: when sourcing this script to unit-test its functions, stop here —
+# before argument parsing and any side effects.
+if [[ "${SECLETTR_INSTALL_SHELL_ONLY:-0}" == "1" ]]; then
+  return 0 2>/dev/null || true
+fi
+
 while [[ $# -gt 0 ]]; do
   case "$1" in
     install)
@@ -1824,6 +1972,10 @@ while [[ $# -gt 0 ]]; do
     --image-archive)
       IMAGE_ARCHIVE="$2"
       shift 2
+      ;;
+    --offline)
+      CLI_OFFLINE_MODE=true
+      shift
       ;;
     --project-name)
       PROJECT_NAME="$2"
@@ -1956,6 +2108,7 @@ fi
 apply_bundle_image_refs
 
 DEPLOY_MODE="${CLI_DEPLOY_MODE:-${DEPLOY_MODE:-full}}"
+OFFLINE_MODE="$CLI_OFFLINE_MODE"
 if [[ -n "${CLI_NETWORK_MODE:-}" ]]; then
   NETWORK_MODE="$CLI_NETWORK_MODE"
 elif [[ -n "${NETWORK_MODE:-}" ]]; then
@@ -2016,7 +2169,8 @@ fi
 # ── Installation steps ─────────────────────────────────────────────────────────
 
 # Adjust total step count for skipped optional phases before any output.
-[[ "$SKIP_LOAD" == "true" ]]    && _TOTAL_STEPS=$(( _TOTAL_STEPS - 1 ))
+# Image acquisition is unconditional (SKIP_LOAD only skips the archive load),
+# so its step is always counted in _TOTAL_STEPS.
 [[ "$SKIP_MIGRATE" == "true" ]] && _TOTAL_STEPS=$(( _TOTAL_STEPS - 1 ))
 [[ "$ACTION" == "update" && "$SKIP_BACKUP" == "false" ]] && _TOTAL_STEPS=$(( _TOTAL_STEPS + 1 ))
 
@@ -2045,17 +2199,12 @@ if [[ "$ACTION" == "update" && "$SKIP_BACKUP" == "false" ]]; then
   create_update_backup
 fi
 
-if [[ "$SKIP_LOAD" == "false" ]]; then
-  if [[ -f "$IMAGE_ARCHIVE" ]]; then
-    step "Loading Docker images from offline archive"
-    run_quiet "Importing prebuilt-images.tar.gz (this may take a minute…)" \
-      "${DOCKER_CMD[@]}" load -i "$IMAGE_ARCHIVE"
-  else
-    step "Pulling Docker images from registry"
-    run_quiet "Pulling images from container registry" \
-      docker_compose pull
-  fi
-fi
+# Image acquisition is unconditional: --skip-load only skips loading the
+# bundled prebuilt-images archive (user-managed app images), never the
+# acquisition/pull ladder for pinned third-party images.
+step "Acquiring required Docker images"
+run_quiet "Ensuring required images are available (local → archive → pull)" \
+  ensure_images_available
 
 validate_runtime_images_available
 

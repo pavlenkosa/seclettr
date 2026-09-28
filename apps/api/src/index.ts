@@ -46,8 +46,19 @@ import { plainAttachmentRoutes } from "./routes/plain/attachments.js";
 import { plainPinRoutes } from "./routes/plain/pins.js";
 import { plainFolderRoutes } from "./routes/plain/folders.js";
 import { profileRoutes } from "./routes/profile/index.js";
+import { constantTimeEqualString } from "./lib/constant-time.js";
 
 const LEGACY_WS_CLIENT_PROTOCOL = "qm.v1";
+
+function isMetricsAuthorized(authorization: string | undefined): boolean {
+  if (!config.METRICS_BEARER_TOKEN) {
+    return false;
+  }
+  return constantTimeEqualString(
+    authorization,
+    `Bearer ${config.METRICS_BEARER_TOKEN}`
+  );
+}
 
 function selectWsClientProtocol(protocols: Set<string>): string | false {
   if (protocols.has(WS_CLIENT_PROTOCOL)) {
@@ -86,7 +97,7 @@ export async function buildApp() {
 
   fastify.addHook("onSend", async (request, reply, payload) => {
     if (!reply.hasHeader("x-request-id")) {
-      reply.header("X-Request-ID", request.id);
+      void reply.header("X-Request-ID", request.id);
     }
     return payload;
   });
@@ -129,9 +140,19 @@ export async function buildApp() {
     allowedHeaders: ["Authorization", "Content-Type", "X-Request-ID", "X-Client-Origin", "X-Refresh-Token"],
   });
 
+  // Test-only override for the integration harness: the full vitest suite
+  // issues more requests than the 200/min in-memory global limiter allows,
+  // which would 429 unrelated tests. Production semantics unchanged.
+  const TEST_GLOBAL_RATE_LIMIT_MAX = (() => {
+    const override = process.env["QM_API_TEST_GLOBAL_RATE_LIMIT_MAX"];
+    if (!override) return 200;
+    const parsed = Number.parseInt(override, 10);
+    return Number.isFinite(parsed) && parsed > 0 ? parsed : 200;
+  })();
+
   await fastify.register(fastifyRateLimit, {
     global: true,
-    max: 200,
+    max: TEST_GLOBAL_RATE_LIMIT_MAX,
     timeWindow: "1 minute",
     // Do not take the API down when Redis is unavailable: fail open like the
     // per-route fixed-window limiter instead of returning 500 for every request.
@@ -161,6 +182,52 @@ export async function buildApp() {
 
   await fastify.register(fastifyMultipart, {
     limits: { fileSize: config.MAX_ATTACHMENT_BYTES },
+  });
+
+  // Error and not-found handlers MUST be set before any `register()` call.
+  // Fastify encapsulation copies the parent handler into a child context at
+  // registration time, so a handler installed afterwards does not cover routes
+  // in already-registered plugin scopes — errors then fall through to Fastify's
+  // default serializer, which echoes the raw error message (e.g. Postgres
+  // `22P02 ... invalid input syntax for type uuid`) even in production.
+  fastify.setNotFoundHandler(async (_, reply) => {
+    return reply.code(404).send({ error: "Not found" });
+  });
+
+  // Never leak stack traces in production.
+  fastify.setErrorHandler(async (error, request, reply) => {
+    const maybeZod = error as {
+      name?: string;
+      issues?: unknown;
+      errors?: unknown;
+      flatten?: () => unknown;
+    };
+    if (maybeZod?.name === "ZodError") {
+      return reply.code(400).send({
+        error: "Validation error",
+        details: typeof maybeZod.flatten === "function"
+          ? maybeZod.flatten()
+          : (maybeZod.issues ?? maybeZod.errors ?? []),
+      });
+    }
+    if (error.validation) {
+      return reply.code(400).send({ error: "Validation error", details: error.validation });
+    }
+    // Postgres `22P02` (invalid_text_representation) means a client-supplied
+    // value could not be cast, e.g. a non-UUID path param bound to a UUID
+    // column. That is malformed input, not a server fault, so answer 400 rather
+    // than 500 — and avoid echoing the raw driver message. This centralizes
+    // path-param validation instead of duplicating UUID schemas per route.
+    if ((error as { code?: string }).code === "22P02") {
+      return reply.code(400).send({ error: "Invalid request parameter" });
+    }
+    fastify.log.error({ err: error, url: stripQuery(request.url) }, "Unhandled error");
+    const statusCode = error.statusCode ?? 500;
+    return reply.code(statusCode).send({
+      error: config.NODE_ENV === "production"
+        ? "Internal server error"
+        : error.message,
+    });
   });
 
   await fastify.register(authRoutes, { prefix: "/auth" });
@@ -193,7 +260,7 @@ export async function buildApp() {
   }
 
   // GET /health/live  — process liveness only, no external dep checks (cheap)
-  fastify.get("/health/live", async () => {
+  fastify.get("/health/live", () => {
     return { status: "ok", version: APP_VERSION };
   });
 
@@ -214,9 +281,7 @@ export async function buildApp() {
   fastify.get("/metrics", async (request, reply) => {
     if (
       config.NODE_ENV === "production" &&
-      (!config.METRICS_BEARER_TOKEN ||
-        request.headers.authorization !==
-          `Bearer ${config.METRICS_BEARER_TOKEN}`)
+      !isMetricsAuthorized(request.headers.authorization)
     ) {
       return reply.code(404).send({ error: "Not found" });
     }
@@ -230,46 +295,14 @@ export async function buildApp() {
       cacheDepHealth(dbOk, redisOk);
       health = { dbOk, redisOk };
     }
-    reply.type("text/plain; version=0.0.4; charset=utf-8");
+    void reply.type("text/plain; version=0.0.4; charset=utf-8");
     return renderPrometheusMetrics(health);
-  });
-
-  fastify.setNotFoundHandler(async (_, reply) => {
-    return reply.code(404).send({ error: "Not found" });
-  });
-
-  // Never leak stack traces in production.
-  fastify.setErrorHandler(async (error, request, reply) => {
-    const maybeZod = error as {
-      name?: string;
-      issues?: unknown;
-      errors?: unknown;
-      flatten?: () => unknown;
-    };
-    if (maybeZod?.name === "ZodError") {
-      return reply.code(400).send({
-        error: "Validation error",
-        details: typeof maybeZod.flatten === "function"
-          ? maybeZod.flatten()
-          : (maybeZod.issues ?? maybeZod.errors ?? []),
-      });
-    }
-    if (error.validation) {
-      return reply.code(400).send({ error: "Validation error", details: error.validation });
-    }
-    fastify.log.error({ err: error, url: stripQuery(request.url) }, "Unhandled error");
-    const statusCode = error.statusCode ?? 500;
-    return reply.code(statusCode).send({
-      error: config.NODE_ENV === "production"
-        ? "Internal server error"
-        : error.message,
-    });
   });
 
   return fastify;
 }
 
-const EXPECTED_LATEST_MIGRATION = "029_fcm_device_tokens.sql";
+const EXPECTED_LATEST_MIGRATION = "030_refresh_token_rotation.sql";
 
 async function checkDbSchemaVersion(): Promise<void> {
   const rows = await query<{ filename: string }>(

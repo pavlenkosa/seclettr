@@ -102,14 +102,16 @@ export function useNativeSpeakerToggle(
   // targetSpeakerOn so the enforcer does not fight their choice.
   useEffect(() => {
     if (!supported) return;
-    const id = window.setInterval(async () => {
-      const actual = await getNativeSpeakerOn();
-      if (actual !== targetSpeakerOn) {
-        await setNativeSpeaker(targetSpeakerOn);
-        setSpeakerOn(targetSpeakerOn);
-      } else {
-        setSpeakerOn((prev) => (prev !== actual ? actual : prev));
-      }
+    const id = window.setInterval(() => {
+      void (async () => {
+        const actual = await getNativeSpeakerOn();
+        if (actual !== targetSpeakerOn) {
+          await setNativeSpeaker(targetSpeakerOn);
+          setSpeakerOn(targetSpeakerOn);
+        } else {
+          setSpeakerOn((prev) => (prev !== actual ? actual : prev));
+        }
+      })();
     }, 2000);
     return () => clearInterval(id);
   }, [supported, targetSpeakerOn]);

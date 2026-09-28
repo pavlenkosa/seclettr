@@ -1,6 +1,7 @@
 import { memo, type ReactNode } from "react";
 import { ChatThreadChrome } from "@/chats/presentation/ChatThreadChrome";
 import { SavedMessagesAvatar } from "@/chats/presentation/SavedMessagesAvatar";
+import { useSavedMessagesStore } from "@/stores/saved";
 import { useAvatarUrl } from "@/lib/hooks";
 import type {
   SecurityWorkspaceState,
@@ -70,10 +71,16 @@ function SavedThreadHeader({
   handleBack: WorkspaceEntryState["handleBack"];
   threadChromeActions: ReactNode;
 }) {
+  const status = useSavedMessagesStore((state) => state.status);
+  const subtitle = status === "locked"
+    ? t("saved.locked")
+    : status === "error"
+      ? t("saved.error")
+      : t("saved.subtitle");
   return (
     <ChatThreadChrome
       title={t("saved.title")}
-      subtitle={t("saved.subtitle")}
+      subtitle={subtitle}
       statusLabel={null} statusAriaLabel={null} statusTone={null}
       onStatusClick={null}
       avatarLabel={t("saved.title")}

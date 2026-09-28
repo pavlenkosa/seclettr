@@ -8,6 +8,7 @@ import { requireAuth } from "../../middleware/auth.js";
 import { consumeFixedWindowRateLimit } from "../../utils/fixed-window-rate-limit.js";
 import { parseVersionedOrReply } from "../../utils/validation.js";
 import { buildRefreshToken, parseRefreshToken } from "../../utils/refresh-token.js";
+import { rotateRefreshTokenInLock } from "../../services/refresh-rotation.js";
 import { recordAuthEvent } from "../../services/observability.js";
 import { publishForceDisconnect } from "../../services/redis.js";
 import { invalidateAuthSessionCache } from "../../services/auth-session.js";
@@ -52,6 +53,16 @@ const WS_TICKET_RATE_LIMIT_MAX = (() => {
   return Number.isFinite(parsed) && parsed > 0 ? parsed : 120;
 })();
 
+/**
+ * Seconds during which a reuse of the immediately-superseded refresh token is
+ * answered with an access-token-only response instead of a 401. This makes
+ * concurrent double-refreshes (e.g. two tabs refreshing at once, or a client
+ * retry after a dropped response) safe: exactly one request rotates, the loser
+ * gets an access token without invalidating the winner's new token. The window
+ * must stay short — a confirmed reuse outside it is treated as token theft.
+ */
+const REFRESH_REUSE_GRACE_SECONDS = 30;
+
 interface RefreshSessionRow {
   id: string;
   user_id: string;
@@ -74,7 +85,7 @@ async function enforceAuthRouteRateLimit(request: FastifyRequest, reply: Fastify
 
   if (limit.allowed) return;
 
-  reply.header("Retry-After", String(limit.retryAfterSec));
+  void reply.header("Retry-After", String(limit.retryAfterSec));
   void reply.code(429).send({ error: "Too many auth requests" });
 }
 
@@ -87,7 +98,7 @@ async function enforceRefreshRateLimit(request: FastifyRequest, reply: FastifyRe
 
   if (limit.allowed) return;
 
-  reply.header("Retry-After", String(limit.retryAfterSec));
+  void reply.header("Retry-After", String(limit.retryAfterSec));
   void reply.code(429).send({ error: "Too many refresh requests" });
 }
 
@@ -102,27 +113,30 @@ async function enforceWsTicketRateLimit(request: FastifyRequest, reply: FastifyR
 
   if (limit.allowed) return;
 
-  reply.header("Retry-After", String(limit.retryAfterSec));
+  void reply.header("Retry-After", String(limit.retryAfterSec));
   void reply.code(429).send({ error: "Too many websocket auth requests" });
+}
+
+/**
+ * Shared raw refresh-token extraction for refresh and logout. Native clients
+ * (Capacitor) send the latest persisted token as an `X-Refresh-Token` header
+ * because Preferences survives Android process kills while the WebView cookie
+ * store can be wiped; the cookie is kept as a fallback. Browser sessions use
+ * the HttpOnly cookie only. The header path is restricted to known native
+ * origins to prevent misuse.
+ */
+function extractRefreshToken(request: FastifyRequest): string | undefined {
+  const cookieToken = request.cookies["refresh_token"];
+  const headerToken = isNativeClient(request)
+    ? (request.headers["x-refresh-token"] as string | undefined)
+    : undefined;
+  return isNativeClient(request) ? (headerToken ?? cookieToken) : cookieToken;
 }
 
 async function resolveRefreshSession(
   request: FastifyRequest
 ): Promise<RefreshSessionResolution> {
-  // For native clients (Capacitor) the `X-Refresh-Token` header is the primary
-  // carrier.  Capacitor Preferences survives Android process kills while the
-  // WebView cookie store can be wiped, so the client always sends the latest
-  // persisted token as a header.  The cookie is kept as a fallback for the
-  // transition window (e.g. first launch before Preferences is populated).
-  // For regular browser sessions the HttpOnly cookie is the only carrier.
-  // The header path is restricted to known native origins to prevent misuse.
-  const cookieToken = request.cookies["refresh_token"];
-  const headerToken = isNativeClient(request)
-    ? (request.headers["x-refresh-token"] as string | undefined)
-    : undefined;
-  const rawToken = isNativeClient(request)
-    ? (headerToken ?? cookieToken)
-    : cookieToken;
+  const rawToken = extractRefreshToken(request);
 
   if (!rawToken) {
     return { ok: false, error: "No refresh token", clearCookie: false };
@@ -182,7 +196,7 @@ function sendRefreshSessionError(
   resolution: Extract<RefreshSessionResolution, { ok: false }>
 ) {
   if (resolution.clearCookie) {
-    reply.clearCookie("refresh_token", { path: "/" });
+    void reply.clearCookie("refresh_token", { path: "/" });
   }
   return reply.code(401).send({ error: resolution.error });
 }
@@ -340,7 +354,7 @@ export async function authRoutes(fastify: FastifyInstance): Promise<void> {
       return reply.code(409).send({ error: "Username already taken" });
     }
 
-    reply.setCookie("refresh_token", result.refreshToken, {
+    void reply.setCookie("refresh_token", result.refreshToken, {
       httpOnly: true,
       sameSite: resolveRefreshCookieSameSite(request),
       secure: config.NODE_ENV === "development" ? true : config.COOKIE_SECURE,
@@ -521,7 +535,7 @@ export async function authRoutes(fastify: FastifyInstance): Promise<void> {
       });
     }
 
-    reply.setCookie("refresh_token", result.refreshToken, {
+    void reply.setCookie("refresh_token", result.refreshToken, {
       httpOnly: true,
       sameSite: resolveRefreshCookieSameSite(request),
       secure: config.NODE_ENV === "development" ? true : config.COOKIE_SECURE,
@@ -564,48 +578,90 @@ export async function authRoutes(fastify: FastifyInstance): Promise<void> {
   });
 
   fastify.post("/refresh", { preHandler: enforceRefreshRateLimit }, async (request, reply) => {
-    const resolved = await resolveRefreshSession(request);
-    if (!resolved.ok) {
-      return sendRefreshSessionError(reply, resolved);
+    const rawToken = extractRefreshToken(request);
+    if (!rawToken) {
+      return reply.code(401).send({ error: "No refresh token" });
+    }
+    const parsedRefresh = parseRefreshToken(rawToken);
+    if (!parsedRefresh) {
+      void reply.clearCookie("refresh_token", { path: "/" });
+      return reply.code(401).send({ error: "Invalid refresh token format" });
     }
 
-    const matchedSession = resolved.session;
-
-    const newRefreshSecret = nanoid(64);
-    const newHash = await argon2.hash(newRefreshSecret, ARGON2_OPTIONS);
-    await query(
-      `UPDATE auth_sessions
-       SET refresh_token_hash = $1, last_used_at = now()
-       WHERE id = $2`,
-      [newHash, matchedSession.id]
+    // The row lock (FOR UPDATE) serializes concurrent refreshes of the same
+    // session: exactly one caller verifies against the current hash and
+    // rotates; a loser presenting the just-superseded token is answered via
+    // the grace window instead of being logged out.
+    const result = await transaction((client) =>
+      rotateRefreshTokenInLock({
+        client,
+        sessionId: parsedRefresh.sessionId,
+        secret: parsedRefresh.secret,
+        graceSeconds: REFRESH_REUSE_GRACE_SECONDS,
+      })
     );
-    const newRefreshToken = buildRefreshToken(matchedSession.id, newRefreshSecret);
 
-    const accessToken = fastify.jwt.sign({
-      sub: matchedSession.user_id,
-      deviceId: matchedSession.device_id,
-      sessionId: matchedSession.id,
-      tokenUse: "access" as const,
-    });
+    if (result.outcome === "rotated") {
+      const accessToken = fastify.jwt.sign({
+        sub: result.userId,
+        deviceId: result.deviceId,
+        sessionId: result.sessionId,
+        tokenUse: "access" as const,
+      });
 
-    reply.setCookie("refresh_token", newRefreshToken, {
-      httpOnly: true,
-      sameSite: resolveRefreshCookieSameSite(request),
-      secure: config.NODE_ENV === "development" ? true : config.COOKIE_SECURE,
-      path: "/",
-      maxAge: config.REFRESH_TOKEN_TTL_DAYS * 86400,
-    });
+      void reply.setCookie("refresh_token", result.refreshToken, {
+        httpOnly: true,
+        sameSite: resolveRefreshCookieSameSite(request),
+        secure: config.NODE_ENV === "development" ? true : config.COOKIE_SECURE,
+        path: "/",
+        maxAge: config.REFRESH_TOKEN_TTL_DAYS * 86400,
+      });
 
-    return RefreshResponseSchema.parse({
-      version: AUTH_PROTOCOL_VERSION,
-      accessToken,
-      // Return the rotated token in the body for native clients so they can
-      // keep Preferences in sync (the cookie is rotated but may not survive restart).
-      ...(isNativeClient(request) ? { refreshToken: newRefreshToken } : {}),
-    });
+      return RefreshResponseSchema.parse({
+        version: AUTH_PROTOCOL_VERSION,
+        accessToken,
+        // Return the rotated token in the body for native clients so they can
+        // keep Preferences in sync (the cookie is rotated but may not survive restart).
+        ...(isNativeClient(request) ? { refreshToken: result.refreshToken } : {}),
+      });
+    }
+
+    if (result.outcome === "grace") {
+      const accessToken = fastify.jwt.sign({
+        sub: result.userId,
+        deviceId: result.deviceId,
+        sessionId: result.sessionId,
+        tokenUse: "access" as const,
+      });
+
+      // Access-token-only response: the winner of the rotation race already
+      // holds the only valid refresh token and its string cannot be
+      // reconstructed from the stored argon2 hash, so no refresh token (and no
+      // Set-Cookie) is sent here. Web treats the body refreshToken as optional.
+      return RefreshResponseSchema.parse({
+        version: AUTH_PROTOCOL_VERSION,
+        accessToken,
+      });
+    }
+
+    if (result.confirmedReuse) {
+      // The presented token matched the previous (already-rotated) hash but
+      // fell outside the grace window — a confirmed reuse signal worth
+      // auditing. Fire-and-forget; never logs token material.
+      void appendAuditEvent({
+        eventType: "auth.refresh_reuse_rejected",
+        actorUserId: result.userId,
+        actorDeviceId: result.deviceId,
+        targetId: parsedRefresh.sessionId,
+        ipAddress: request.ip,
+      });
+    }
+
+    void reply.clearCookie("refresh_token", { path: "/" });
+    return reply.code(401).send({ error: "Invalid or expired refresh token" });
   });
 
-  fastify.post("/ws-ticket", { preHandler: [requireAuth, enforceWsTicketRateLimit] }, async (request) => {
+  fastify.post("/ws-ticket", { preHandler: [requireAuth, enforceWsTicketRateLimit] }, (request) => {
     const wsToken = fastify.jwt.sign(
       {
         sub: request.auth.sub,
@@ -622,12 +678,7 @@ export async function authRoutes(fastify: FastifyInstance): Promise<void> {
   });
 
   fastify.post("/logout", { preHandler: enforceAuthRouteRateLimit }, async (request, reply) => {
-    const headerToken = isNativeClient(request)
-      ? (request.headers["x-refresh-token"] as string | undefined)
-      : undefined;
-    const rawToken = isNativeClient(request)
-      ? (headerToken ?? request.cookies["refresh_token"])
-      : request.cookies["refresh_token"];
+    const rawToken = extractRefreshToken(request);
     if (rawToken) {
       const parsedRefresh = parseRefreshToken(rawToken);
       if (parsedRefresh) {
@@ -653,7 +704,7 @@ export async function authRoutes(fastify: FastifyInstance): Promise<void> {
         }
       }
     }
-    reply.clearCookie("refresh_token", { path: "/" });
+    void reply.clearCookie("refresh_token", { path: "/" });
     recordAuthEvent("logout");
     void appendAuditEvent({
       eventType: "auth.logout",

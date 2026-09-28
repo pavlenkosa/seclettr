@@ -274,6 +274,7 @@ export function useMessageComposerDraft({
     sendTextMessage,
     sending,
     stopTyping,
+    textSelectionRef,
     trimmedText,
   ]);
 

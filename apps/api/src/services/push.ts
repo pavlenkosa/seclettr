@@ -92,11 +92,13 @@ async function ensureFcmConfigured(): Promise<boolean> {
     const serviceAccountJson = config.FCM_SERVICE_ACCOUNT_JSON;
 
     let credential: ReturnType<typeof admin.credential.cert>;
+    const parseServiceAccount = (raw: string): string =>
+      JSON.parse(raw) as string;
     if (serviceAccountPath) {
       const fileContent = readFileSync(serviceAccountPath, "utf8");
-      credential = admin.credential.cert(JSON.parse(fileContent));
+      credential = admin.credential.cert(parseServiceAccount(fileContent));
     } else {
-      credential = admin.credential.cert(JSON.parse(serviceAccountJson!));
+      credential = admin.credential.cert(parseServiceAccount(serviceAccountJson!));
     }
 
     if (!admin.apps.length) {

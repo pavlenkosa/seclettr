@@ -1,5 +1,34 @@
 name: Release Bundle
 
+# ============================================================================
+# RELEASE GATE — USER_ACTION_REQUIRED (P0-3)
+# ============================================================================
+# This workflow publishes release bundles (GitHub Release + signed images).
+# It runs automatically ONLY after CI succeeds on main (workflow_run).
+#
+# Manual dispatch (workflow_dispatch) is restricted: it accepts ONLY a full
+# commit SHA, and a verification step fails the job unless every required
+# check below is successful FOR THAT EXACT SHA (via check-runs +
+# workflow-runs GitHub APIs). Building arbitrary unverified refs is no longer
+# possible.
+#
+# Required status checks for branch protection CANNOT be configured from
+# repository files. An administrator must configure them in GitHub:
+# Settings → Branches → main → Require status checks, adding exactly:
+#
+#   Required check names:
+#     - verify                       (ci.yml, job "verify")
+#     - E2E (chromium)               (e2e.yml, job "e2e-chromium")
+#     - External SFU integration     (e2e.yml, job "external-sfu-integration")
+#     - verify                       (dev-ci.yml, job "verify" — same display
+#                                     name "verify" as ci.yml; if GitHub's
+#                                     ambiguous-name restriction blocks adding
+#                                     both, rename one job's `name:` first)
+#   Plus any Dev Bundle / Release Bundle checks you treat as gating.
+#
+# See DEPLOYMENT.md → "Release gating (USER_ACTION_REQUIRED)".
+# ============================================================================
+
 on:
   workflow_run:
     workflows:
@@ -10,14 +39,14 @@ on:
       - main
   workflow_dispatch:
     inputs:
-      ref:
-        description: "Git ref to build (branch, tag, or SHA)"
-        required: false
-        default: "main"
+      sha:
+        description: "Full commit SHA that must have passed ALL required checks"
+        required: true
 
+# Workflow-level default is least privilege; each job grants only what it
+# needs (job-level permissions replace these for that job).
 permissions:
-  contents: write
-  packages: write
+  contents: read
 
 concurrency:
   group: release-bundle-main
@@ -30,21 +59,121 @@ jobs:
       (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success')
     runs-on: ubuntu-latest
     timeout-minutes: 120
+    permissions:
+      contents: read
+      # GHCR image pushes.
+      packages: write
+      # Required by docker/build-push-action to generate SBOM and provenance
+      # attestations (AUDIT.md supply chain).
+      id-token: write
+      attestations: write
+      # "Verify required checks" step reads the check-runs + workflow-runs
+      # APIs for the target SHA.
+      checks: read
+      actions: read
 
     steps:
+      - name: Resolve target SHA
+        id: target
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+            SHA="${{ github.event.inputs.sha }}"
+            # Require a FULL 40-hex commit SHA; no branch/tag shortcuts.
+            if ! [[ "$SHA" =~ ^[0-9a-f]{40}$ ]]; then
+              echo "::error::sha input must be a full 40-character commit SHA, got: $SHA"
+              exit 1
+            fi
+          else
+            SHA="${{ github.event.workflow_run.head_sha }}"
+          fi
+          echo "sha=${SHA}" >> "$GITHUB_OUTPUT"
+
+      - name: Verify required checks passed for target SHA (dispatch only)
+        if: github.event_name == 'workflow_dispatch'
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TARGET_SHA: ${{ steps.target.outputs.sha }}
+        # RESIDUAL (accepted): a dev/main SHA whose checks are green passes
+        # this gate even without a CI(main) run — required checks are verified
+        # by name parity across ci.yml/dev-ci.yml/e2e.yml, not by workflow.
+        run: |
+          set -euo pipefail
+          REPO="${{ github.repository }}"
+          API="https://api.github.com/repos/${REPO}"
+          AUTH="Authorization: Bearer ${GH_TOKEN}"
+          # Required check names must match actual job `name:` values across
+          # the gating workflows (ci.yml / dev-ci.yml / e2e.yml).
+          REQUIRED=("verify" "E2E (chromium)" "External SFU integration")
+
+          MISSING=0
+          for NAME in "${REQUIRED[@]}"; do
+            FOUND="none"
+            # check-runs API (covers job-level check runs)
+            CHECK=$(curl -fsSL -H "$AUTH" \
+              "${API}/commits/${TARGET_SHA}/check-runs?per_page=100" || echo "")
+            FOUND=$(echo "$CHECK" | node -e '
+              let d=""; process.stdin.on("data",c=>d+=c).on("end",()=>{
+                try {
+                  const j=JSON.parse(d);
+                  const want=process.argv[1];
+                  const runs=(j.check_runs||[]).filter(r=>r.name===want);
+                  if(runs.length===0){ console.log("none"); return; }
+                  const ok=runs.some(r=>r.conclusion==="success");
+                  console.log(ok?"success":"failure");
+                } catch(e){ console.log("none"); }
+              });' "$NAME")
+            # Fall back to workflow-run API for workflows whose jobs may not
+            # appear in check-runs (e.g. older runs).
+            if [[ "$FOUND" == "none" || "$FOUND" == "failure" ]]; then
+              WFRUNS=$(curl -fsSL -H "$AUTH" \
+                "${API}/actions/runs?head_sha=${TARGET_SHA}&per_page=100" || echo "")
+              WF_OK=$(echo "$WFRUNS" | node -e '
+                let d=""; process.stdin.on("data",c=>d+=c).on("end",()=>{
+                  try {
+                    const j=JSON.parse(d);
+                    const ok=(j.workflow_runs||[]).some(r=>r.conclusion==="success" && (r.name==="E2E"||r.name==="Dev CI"||r.name==="CI"));
+                    console.log(ok?"success":"none");
+                  } catch(e){ console.log("none"); }
+                });')
+              # WF_OK only proves the workflow succeeded overall; treat as
+              # satisfying the requirement only for the fallback case.
+              if [[ "$FOUND" == "failure" ]]; then
+                echo "::error::required check '${NAME}' completed unsuccessfully for ${TARGET_SHA}"
+                MISSING=1
+              elif [[ "$FOUND" == "none" && "$WF_OK" == "success" ]]; then
+                echo "required check '${NAME}': covered by a successful workflow run"
+              else
+                echo "::error::required check '${NAME}' not found (no successful run) for ${TARGET_SHA}"
+                MISSING=1
+              fi
+            else
+              echo "required check '${NAME}': success"
+            fi
+          done
+          if [[ "$MISSING" -ne 0 ]]; then
+            echo "::error::refusing to build release bundle: not all required checks are successful for ${TARGET_SHA}"
+            exit 1
+          fi
+          echo "All required checks succeeded for ${TARGET_SHA}."
+
       - name: Checkout target ref
-        uses: actions/checkout@v5
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
         with:
-          ref: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.ref || github.event.workflow_run.head_sha }}
+          ref: ${{ steps.target.outputs.sha }}
 
       - name: Setup Node
-        uses: actions/setup-node@v5
+        uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5
         with:
           node-version: 22
           package-manager-cache: false
 
       - name: Setup pnpm
-        uses: pnpm/action-setup@v6
+        uses: pnpm/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86 # v6
 
       - name: Print toolchain
         run: |
@@ -76,6 +205,7 @@ jobs:
           else
             BUILD_TIMESTAMP="$(date -u +'%Y-%m-%dT%H:%M:%SZ')"
           fi
+          # (dispatch builds are SHA-gated; see "Verify required checks" step)
 
           echo "commit_sha=${COMMIT_SHA}" >> "$GITHUB_OUTPUT"
           echo "short_sha=${SHORT_SHA}" >> "$GITHUB_OUTPUT"
@@ -99,21 +229,24 @@ jobs:
           } >> "$GITHUB_OUTPUT"
 
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
+        uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f # v3
 
       - name: Log in to GitHub Container Registry
-        uses: docker/login-action@v3
+        uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9 # v3
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Build and push API image
-        uses: docker/build-push-action@v6
+        uses: docker/build-push-action@10e90e3645eae34f1e60eeb005ba3a3d33f178e8 # v6
         with:
           context: .
           file: ./apps/api/Dockerfile
           push: true
+          # Attach signed SBOM + provenance attestations to the pushed image.
+          sbom: true
+          provenance: true
           tags: |
             ${{ steps.meta.outputs.api_image }}:${{ steps.meta.outputs.image_tag }}
             ${{ steps.meta.outputs.api_image }}:latest
@@ -125,11 +258,13 @@ jobs:
           cache-to: type=gha,mode=max
 
       - name: Build and push Web image
-        uses: docker/build-push-action@v6
+        uses: docker/build-push-action@10e90e3645eae34f1e60eeb005ba3a3d33f178e8 # v6
         with:
           context: .
           file: ./apps/web/Dockerfile
           push: true
+          sbom: true
+          provenance: true
           tags: |
             ${{ steps.meta.outputs.web_image }}:${{ steps.meta.outputs.image_tag }}
             ${{ steps.meta.outputs.web_image }}:latest
@@ -141,11 +276,13 @@ jobs:
           cache-to: type=gha,mode=max
 
       - name: Build and push SFU image
-        uses: docker/build-push-action@v6
+        uses: docker/build-push-action@10e90e3645eae34f1e60eeb005ba3a3d33f178e8 # v6
         with:
           context: .
           file: ./apps/sfu/Dockerfile
           push: true
+          sbom: true
+          provenance: true
           tags: |
             ${{ steps.meta.outputs.sfu_image }}:${{ steps.meta.outputs.image_tag }}
             ${{ steps.meta.outputs.sfu_image }}:latest
@@ -172,8 +309,222 @@ jobs:
             pnpm release:build -- "${COMMON_ARGS[@]}"
           fi
 
+      # Temporary smoke artifact (retention 1 day): consumed by smoke-install
+      # and publish-release so both test/publish the EXACT tarball built above.
+      # The former 30-day artifact upload and Create Release step moved to the
+      # publish-release job.
+      - name: Upload artifact — smoke bundle
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: seclettr-release-smoke-${{ github.run_id }}-${{ steps.meta.outputs.short_sha }}
+          path: |
+            artifacts/*.tar.gz
+            artifacts/*.sha256
+          if-no-files-found: error
+          retention-days: 1
+
+  # ==========================================================================
+  # smoke-install: verify the EXACT bundle artifact boots end-to-end on a
+  # clean runner before anything is published. Skipped transitively when the
+  # build job is skipped/fails (needs + default success() semantics):
+  #   - workflow_dispatch: build's "Verify required checks" step must pass
+  #   - workflow_run: build only runs when the CI run concluded success
+  # ==========================================================================
+  smoke-install:
+    needs: build-release-bundle
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+
+    steps:
+      - name: Resolve target SHA
+        id: target
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+            SHA="${{ github.event.inputs.sha }}"
+            # Require a FULL 40-hex commit SHA; no branch/tag shortcuts.
+            if ! [[ "$SHA" =~ ^[0-9a-f]{40}$ ]]; then
+              echo "::error::sha input must be a full 40-character commit SHA, got: $SHA"
+              exit 1
+            fi
+          else
+            SHA="${{ github.event.workflow_run.head_sha }}"
+          fi
+          # Build job (same workflow run) checked out exactly this SHA; the
+          # artifact name embeds this run_id + first 12 hex chars of the SHA.
+          echo "sha=${SHA}" >> "$GITHUB_OUTPUT"
+          echo "short_sha=${SHA:0:12}" >> "$GITHUB_OUTPUT"
+
+      # Docker-only steps: no node/pnpm setup needed.
+      - name: Download smoke bundle artifact
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          name: seclettr-release-smoke-${{ github.run_id }}-${{ steps.target.outputs.short_sha }}
+          path: artifacts
+
+      - name: Verify bundle checksum
+        shell: bash
+        run: |
+          cd artifacts
+          # build.sh writes <archive>.sha256 (basename form).
+          sha256sum -c --strict ./*.sha256
+
+      - name: Extract bundle
+        shell: bash
+        run: |
+          BUNDLE=$(ls artifacts/*.tar.gz | head -1)
+          SMOKE_DIR="${{ runner.temp }}/seclettr-smoke"
+          rm -rf "$SMOKE_DIR"
+          mkdir -p "$SMOKE_DIR"
+          tar -xzf "$BUNDLE" -C "$SMOKE_DIR" --strip-components=1
+          echo "SMOKE_DIR=$SMOKE_DIR" >> "$GITHUB_ENV"
+
+      # prebuilt-images.tar.gz contains the bundled api/web/sfu images. The
+      # pinned third-party images (postgres/redis/minio/mc/coturn) are NOT
+      # pre-pulled here — install.sh's acquisition ladder must acquire them
+      # itself (local check → archive load → online pull of exact pins), so
+      # this job exercises the real user path on a clean runner. The install
+      # step below lets install.sh do the archive load itself (SKIP_LOAD
+      # defaults to false); no manual `docker load` happens here.
+
+      - name: Configure bundle environment
+        shell: bash
+        run: |
+          cd "$SMOKE_DIR"
+          # Minimal env — only vars the installer cannot auto-generate
+          cp .env.example .env
+          {
+            echo "CORS_ORIGIN=http://localhost"
+            echo "TURN_DOMAIN=localhost"
+            echo "TURN_EXTERNAL_IP=127.0.0.1"
+            echo "ANNOUNCED_IP=127.0.0.1"
+          } >> .env
+
+      - name: Smoke-test bundle install
+        shell: bash
+        run: |
+          cd "$SMOKE_DIR"
+
+          # Install in non-interactive HTTP mode. install.sh's own
+          # acquisition ladder loads prebuilt-images.tar.gz (bundled
+          # api/web/sfu) and pulls the pinned third-party images online.
+          ./install.sh --non-interactive --mode full --network http
+
+          # Wait for API health (up to 60 s). Full-mode install runs DB
+          # migrations against the freshly created empty database, so a
+          # successful health response exercises migration-from-empty-DB.
+          for i in $(seq 1 30); do
+            sleep 2
+            if curl -fsS http://127.0.0.1:3001/health | grep -q '"status":"ok"'; then
+              echo "API healthy after $((i*2))s"
+              break
+            fi
+            if [[ "$i" -eq 30 ]]; then
+              echo "ERR: API did not become healthy" && exit 1
+            fi
+          done
+
+          # Web serves the runtime-config bootstrap (http override maps
+          # 0.0.0.0:${WEB_HTTP_PORT:-80}:8080).
+          WEB_PORT="${WEB_HTTP_PORT:-80}"
+          if ! curl -fsS "http://127.0.0.1:${WEB_PORT}/runtime-config.js" | grep -q '__SECLETTR_RUNTIME_CONFIG__'; then
+            echo "ERR: web runtime-config.js not served correctly" && exit 1
+          fi
+
+          # SFU health endpoint.
+          if ! curl -fsS http://127.0.0.1:3002/health | grep -q 'ok'; then
+            echo "ERR: SFU health check failed" && exit 1
+          fi
+
+          echo "Smoke install OK: API, web runtime-config, SFU health"
+
+      - name: Dump compose logs on failure
+        if: failure()
+        shell: bash
+        run: |
+          cd "$SMOKE_DIR"
+          docker compose -p seclettr --env-file .env -f docker-compose.yml -f docker-compose.http.yml logs --tail 100 api web sfu || true
+
+      - name: Teardown
+        if: always()
+        shell: bash
+        run: |
+          cd "$SMOKE_DIR"
+          docker compose -p seclettr --env-file .env -f docker-compose.yml -f docker-compose.http.yml down -v --remove-orphans || true
+
+  # ==========================================================================
+  # publish-release: runs ONLY after the exact artifact passed smoke install.
+  # Re-downloads the SAME smoke artifact (never rebuilds) and attaches the
+  # identical tar.gz + sha256 as release assets. Gating is transitive via the
+  # needs chain: dispatch → build's verify step → smoke-install → this job.
+  # ==========================================================================
+  publish-release:
+    needs: [build-release-bundle, smoke-install]
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      # Creating the release (and its tag) requires contents write.
+      contents: write
+
+    steps:
+      - name: Resolve target SHA
+        id: target
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+            SHA="${{ github.event.inputs.sha }}"
+            if ! [[ "$SHA" =~ ^[0-9a-f]{40}$ ]]; then
+              echo "::error::sha input must be a full 40-character commit SHA, got: $SHA"
+              exit 1
+            fi
+          else
+            SHA="${{ github.event.workflow_run.head_sha }}"
+          fi
+          echo "sha=${SHA}" >> "$GITHUB_OUTPUT"
+
+      - name: Checkout target ref
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          ref: ${{ steps.target.outputs.sha }}
+
+      - name: Setup Node
+        uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5
+        with:
+          node-version: 22
+          package-manager-cache: false
+
+      - name: Re-derive release metadata
+        id: meta
+        shell: bash
+        run: |
+          set -euo pipefail
+          COMMIT_SHA="$(git rev-parse HEAD)"
+          SHORT_SHA="${COMMIT_SHA:0:12}"
+          APP_VERSION="$(node -e "console.log(require('./package.json').version)")"
+
+          echo "short_sha=${SHORT_SHA}" >> "$GITHUB_OUTPUT"
+          echo "app_version=${APP_VERSION}" >> "$GITHUB_OUTPUT"
+
+          git log -1 --format='%b' HEAD > /tmp/commit-body.txt
+
+      - name: Download smoke bundle artifact
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          name: seclettr-release-smoke-${{ github.run_id }}-${{ steps.meta.outputs.short_sha }}
+          path: artifacts
+
+      - name: Verify bundle checksum
+        shell: bash
+        run: |
+          cd artifacts
+          sha256sum -c --strict ./*.sha256
+
       - name: Create Release
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@3bb12739c298aeb8a4eeaf626c5b8d85266b0e65 # v2
         with:
           tag_name: ${{ github.event_name == 'workflow_dispatch' && format('v{0}', steps.meta.outputs.app_version) || format('snapshot-main-{0}', steps.meta.outputs.short_sha) }}
           name: ${{ github.event_name == 'workflow_dispatch' && format('v{0}', steps.meta.outputs.app_version) || format('Seclettr snapshot {0}', steps.meta.outputs.short_sha) }}
@@ -184,13 +535,3 @@ jobs:
             artifacts/*.tar.gz
             artifacts/*.sha256
           fail_on_unmatched_files: true
-
-      - name: Upload artifact — bundle
-        uses: actions/upload-artifact@v4
-        with:
-          name: ${{ steps.meta.outputs.bundle_prefix }}
-          path: |
-            artifacts/*.tar.gz
-            artifacts/*.sha256
-          if-no-files-found: error
-          retention-days: 30

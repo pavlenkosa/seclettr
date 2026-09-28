@@ -469,7 +469,6 @@ export function useGroupCallSessionSubscriptions({
     setRemoteParticipantMediaModes,
     setRemoteMedia,
     dispatchStatus,
-    // sfuClientRef intentionally omitted: useRef values are stable by identity;
-    // the ref is read inside the callback, not used to decide when to re-subscribe.
+    sfuClientRef, // stable ref identity; read inside callback only.
   ]);
 }

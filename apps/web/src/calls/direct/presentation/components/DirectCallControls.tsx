@@ -378,7 +378,7 @@ export function DirectCallControls({
               resolvedEarphoneLabel={resolvedEarphoneLabel}
               resolvedBluetoothLabel={resolvedBluetoothLabel}
               resolvedSpeakerLabel={resolvedSpeakerLabel}
-              handleSelectRoute={handleSelectRoute}
+              handleSelectRoute={(route) => { void handleSelectRoute(route); }}
               onClose={() => { setOutputSheetOpen(false); }}
             />
           </>

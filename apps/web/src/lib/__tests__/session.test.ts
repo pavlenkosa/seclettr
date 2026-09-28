@@ -111,6 +111,7 @@ describe("refreshSessionAccessToken", () => {
       method: "POST",
       credentials: "include",
       headers: {},
+      signal: expect.any(AbortSignal),
     });
     expect(mockSetAccessToken).not.toHaveBeenCalled();
   });
@@ -138,6 +139,7 @@ describe("refreshSessionAccessToken", () => {
       headers: {
         "X-Refresh-Token": "native-refresh-token",
       },
+      signal: expect.any(AbortSignal),
     });
   });
 
@@ -185,6 +187,7 @@ describe("refreshSessionAccessToken", () => {
       method: "POST",
       credentials: "include",
       headers: {},
+      signal: expect.any(AbortSignal),
     });
   });
 
@@ -222,6 +225,7 @@ describe("refreshSessionAccessToken", () => {
       headers: {
         "X-Refresh-Token": "native-refresh-token",
       },
+      signal: expect.any(AbortSignal),
     });
   });
 
@@ -291,6 +295,76 @@ describe("refreshSessionAccessToken", () => {
       method: "POST",
       credentials: "include",
       headers: {},
+      signal: expect.any(AbortSignal),
     });
+  });
+
+  it("previews a refresh session when the fetch resolves quickly", async () => {
+    const fetchMock = vi.fn().mockResolvedValue(
+      new Response(JSON.stringify({
+        version: AUTH_PROTOCOL_VERSION,
+        userId: "11111111-1111-4111-8111-111111111111",
+        deviceId: "22222222-2222-4222-8222-222222222222",
+        user: {
+          username: "alice",
+        },
+      }), {
+        status: 200,
+        headers: {
+          "Content-Type": "application/json",
+        },
+      })
+    );
+    vi.stubGlobal("fetch", fetchMock);
+
+    const { previewRefreshSession } = await import("@/lib/session-preview");
+
+    await expect(previewRefreshSession()).resolves.toEqual({
+      userId: "11111111-1111-4111-8111-111111111111",
+      deviceId: "22222222-2222-4222-8222-222222222222",
+      username: "alice",
+    });
+    expect(fetchMock).toHaveBeenCalledWith("/api/auth/session", {
+      method: "POST",
+      credentials: "include",
+      headers: {},
+      signal: expect.any(AbortSignal),
+    });
+  });
+
+  it("maps a hung session preview fetch to network_error via the 30s timeout", async () => {
+    let requestedMs: number | undefined;
+    const timeoutSpy = vi.spyOn(AbortSignal, "timeout").mockImplementation((ms: number) => {
+      if (requestedMs === undefined) {
+        requestedMs = ms;
+      }
+      // Already-aborted signal: real fetch rejects immediately with AbortError,
+      // the same rejection path a real 30s timeout takes.
+      return AbortSignal.abort(new DOMException("Aborted", "AbortError"));
+    });
+
+    const { previewRefreshSession } = await import("@/lib/session-preview");
+
+    await expect(previewRefreshSession()).rejects.toThrow("network_error");
+    expect(requestedMs).toBe(30_000);
+    expect(mockSetAccessToken).not.toHaveBeenCalled();
+    timeoutSpy.mockRestore();
+  });
+
+  it("maps a hung refresh fetch to network_error via the 30s timeout without clearing the token", async () => {
+    let requestedMs: number | undefined;
+    const timeoutSpy = vi.spyOn(AbortSignal, "timeout").mockImplementation((ms: number) => {
+      if (requestedMs === undefined) {
+        requestedMs = ms;
+      }
+      return AbortSignal.abort(new DOMException("Aborted", "AbortError"));
+    });
+
+    const { refreshSessionAccessToken } = await import("@/lib/session");
+
+    await expect(refreshSessionAccessToken()).rejects.toThrow("network_error");
+    expect(requestedMs).toBe(30_000);
+    expect(mockSetAccessToken).not.toHaveBeenCalled();
+    timeoutSpy.mockRestore();
   });
 });

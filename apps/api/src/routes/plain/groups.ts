@@ -474,7 +474,7 @@ export async function plainGroupRoutes(fastify: FastifyInstance): Promise<void> 
         windowSec: GROUP_AVATAR_UPLOAD_RATE_WINDOW_SEC,
       });
       if (!rateOk.allowed) {
-        reply.header("Retry-After", String(rateOk.retryAfterSec));
+        void reply.header("Retry-After", String(rateOk.retryAfterSec));
         return reply.code(429).send({ error: "Too many avatar upload requests" });
       }
 
@@ -491,7 +491,7 @@ export async function plainGroupRoutes(fastify: FastifyInstance): Promise<void> 
 
       const chunks: Buffer[] = [];
       let totalBytes = 0;
-      for await (const chunk of data.file) {
+      for await (const chunk of data.file as AsyncIterable<Buffer>) {
         totalBytes += chunk.length;
         if (totalBytes > GROUP_AVATAR_MAX_BYTES) {
           return reply.code(413).send({ error: "Avatar image too large (max 4 MB)" });
@@ -578,9 +578,9 @@ export async function plainGroupRoutes(fastify: FastifyInstance): Promise<void> 
       }
 
       const contentType = object.ContentType ?? "image/jpeg";
-      reply.header("Content-Type", contentType);
-      reply.header("Cache-Control", "private, max-age=300");
-      if (object.ContentLength) reply.header("Content-Length", String(object.ContentLength));
+      void reply.header("Content-Type", contentType);
+      void reply.header("Cache-Control", "private, max-age=300");
+      if (object.ContentLength) void reply.header("Content-Length", String(object.ContentLength));
 
       const { Readable } = await import("node:stream");
       return reply.send(object.Body as InstanceType<typeof Readable>);

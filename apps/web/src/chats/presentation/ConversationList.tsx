@@ -119,7 +119,7 @@ export function ConversationList({
       onSelectFolder={setActiveFolderId}
       onCreateFolder={handleOpenCreateFolder}
       onRenameFolder={(folder) => setFolderDialog({ mode: "rename", folder })}
-      onDeleteFolder={handleDeleteFolder}
+      onDeleteFolder={(folder) => void handleDeleteFolder(folder)}
       t={t}
     />
   ) : null;

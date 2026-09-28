@@ -105,7 +105,7 @@ export function FileAttachment({ msg }: { readonly msg: Message }) {
           isPlain={isPlain}
           error={error}
           msg={msg}
-          decryptAndDownload={decryptAndDownload}
+          decryptAndDownload={() => void decryptAndDownload()}
         />
       )}
     </div>

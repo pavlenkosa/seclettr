@@ -388,6 +388,82 @@ describe("Double Ratchet", () => {
 
     await expect(ratchetDecrypt(bobState, encrypted, ad)).rejects.toThrow();
   });
+
+  it("preserves state after failed decrypt (tamper-and-retry)", async () => {
+    const { aliceState, bobState, ad } = await setupSession();
+    const plaintextMsg1 = enc.encode("msg1");
+    const plaintextMsg2 = enc.encode("msg2");
+
+    const enc1 = await ratchetEncrypt(aliceState, plaintextMsg1, ad);
+    const enc2 = await ratchetEncrypt(aliceState, plaintextMsg2, ad);
+
+    // Tamper the first message
+    const tampered1 = { ...enc1, ciphertext: new Uint8Array(enc1.ciphertext) };
+    tampered1.ciphertext[0] ^= 0xff;
+
+    const nrBefore = bobState.Nr;
+    const mkSizeBefore = bobState.MKSKIPPED.size;
+
+    // Tampered message fails and must NOT advance state
+    await expect(ratchetDecrypt(bobState, tampered1, ad)).rejects.toThrow();
+
+    const nrAfterFail = bobState.Nr;
+    const mkSizeAfterFail = bobState.MKSKIPPED.size;
+
+    expect(nrAfterFail).toBe(nrBefore);
+    expect(mkSizeAfterFail).toBe(mkSizeBefore);
+
+    // Now decrypt the valid second message; it should succeed with same counters
+    const dec2 = await ratchetDecrypt(bobState, enc2, ad);
+    expect(str(dec2)).toBe("msg2");
+
+    // And the valid first message still decrypts
+    const dec1 = await ratchetDecrypt(bobState, enc1, ad);
+    expect(str(dec1)).toBe("msg1");
+  });
+
+  it("skipped-key decrypt survives tampered attempt", async () => {
+    const { aliceState, bobState, ad } = await setupSession();
+
+    const msg1 = enc.encode("first");
+    const msg2 = enc.encode("second");
+    const msg3 = enc.encode("third");
+
+    const enc1 = await ratchetEncrypt(aliceState, msg1, ad);
+    const enc2 = await ratchetEncrypt(aliceState, msg2, ad);
+    const enc3 = await ratchetEncrypt(aliceState, msg3, ad);
+
+    // Receive out of order: tamper enc2, then receive enc3, then enc1
+    const tampered2 = { ...enc2, ciphertext: new Uint8Array(enc2.ciphertext) };
+    tampered2.ciphertext[0] ^= 0xff;
+
+    const nrBefore = bobState.Nr;
+
+    // Tampered enc2 fails and must NOT delete enc2's skipped key
+    await expect(ratchetDecrypt(bobState, tampered2, ad)).rejects.toThrow();
+
+    // Receive enc3 first (valid); this caches enc1 and enc2 keys
+    const dec3 = await ratchetDecrypt(bobState, enc3, ad);
+    expect(str(dec3)).toBe("third");
+
+    const skipKey2 = `${toHex(enc2.header.dh)}:${enc2.header.n}`;
+    expect(bobState.MKSKIPPED.has(skipKey2)).toBe(true);
+
+    // Now receive enc1 (valid); should work using the original skipped key
+    const dec1 = await ratchetDecrypt(bobState, enc1, ad);
+    expect(str(dec1)).toBe("first");
+
+    // enc2 is still in MKSKIPPED and dec2 should succeed
+    const dec2 = await ratchetDecrypt(bobState, enc2, ad);
+    expect(str(dec2)).toBe("second");
+
+    const nrAfter = bobState.Nr;
+    expect(nrAfter).toBe(nrBefore + 3);
+  });
+
+  function toHex(bytes: Uint8Array): string {
+    return Array.from(bytes).map(b => b.toString(16).padStart(2, "0")).join("");
+  }
 });
 
 describe("Receiver bootstrap", () => {
@@ -735,6 +811,29 @@ describe("Sender Keys (group protocol)", () => {
     // And msg-1.
     const d1 = await senderKeyDecrypt(recvState, enc1.message);
     expect(str(d1.plaintext)).toBe("msg-1");
+  });
+
+  it("does not corrupt caller-owned MKSKIPPED state when decrypting a cached key", async () => {
+    let senderState = await generateSenderKey();
+    const recvState = { ...senderState, signingPrivateKey: undefined };
+
+    const enc0 = await senderKeyEncrypt(senderState, distributionId, enc.encode("cached-0"));
+    senderState = enc0.newState;
+    const enc1 = await senderKeyEncrypt(senderState, distributionId, enc.encode("cached-1"));
+
+    // Receive msg-1 first so msg-0's key is cached in recvState.MKSKIPPED.
+    const d1 = await senderKeyDecrypt(recvState, enc1.message);
+    const skipKey = `${distributionId}:${enc0.message.messageId}`;
+    const cachedBefore = d1.newState.MKSKIPPED.get(skipKey);
+    expect(cachedBefore).toBeDefined();
+    const snapshot = Uint8Array.from(cachedBefore!);
+
+    // Decrypt msg-0 via the fast path. This must not mutate the caller's
+    // retained MKSKIPPED entry (AUDIT.md H14).
+    const d0 = await senderKeyDecrypt(d1.newState, enc0.message);
+    expect(str(d0.plaintext)).toBe("cached-0");
+    expect(Array.from(d1.newState.MKSKIPPED.get(skipKey)!)).toEqual(Array.from(snapshot));
+    expect(d1.newState.MKSKIPPED.get(skipKey)!.some((b) => b !== 0)).toBe(true);
   });
 
   it("uses aeadVersion=1 for new messages and correctly uses empty AD for aeadVersion=0", async () => {

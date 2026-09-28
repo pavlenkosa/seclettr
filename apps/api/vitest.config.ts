@@ -6,26 +6,32 @@ const integrationTestFiles = [
   "src/test/group-history-contract.test.ts",
   "src/test/direct-call-signing-sync.test.ts",
   "src/test/guest-rooms.test.ts",
+  "src/test/malformed-param.test.ts",
+  "src/test/refresh-rotation.integration.test.ts",
+  "src/test/devices.integration.test.ts",
+  "src/test/calls.integration.test.ts",
+  "src/test/groups-membership.integration.test.ts",
+  "src/test/auth-attachment-deny.integration.test.ts",
+  "src/test/call-route-rate-limit.integration.test.ts",
+  "src/test/auth-route-rate-limit.integration.test.ts",
 ];
 
 // Requires an external SFU instance; only run when explicitly requested.
 const externalIntegrationTestFiles = ["src/test/group-call-sfu-bootstrap.test.ts"];
 
-const argvIncludes = (file: string) =>
-  process.argv.some((arg) => arg.includes(file));
-
+// Integration mode is opt-in via env flags (set by CI and the
+// `test:integration*` scripts) rather than by sniffing `process.argv`.
+const includeExternalTests =
+  process.env["QM_API_INCLUDE_EXTERNAL_SFU_TESTS"] === "1";
 const includeIntegrationTests =
   process.env["QM_API_INCLUDE_INTEGRATION_TESTS"] === "1" ||
-  integrationTestFiles.some(argvIncludes) ||
-  externalIntegrationTestFiles.some(argvIncludes);
+  includeExternalTests;
 
-const includeExternalTests = externalIntegrationTestFiles.some(argvIncludes);
-
-const excludedTestFiles = includeIntegrationTests
-  ? includeExternalTests
-    ? []
-    : externalIntegrationTestFiles
-  : [...integrationTestFiles, ...externalIntegrationTestFiles];
+const excludedTestFiles = includeExternalTests
+  ? integrationTestFiles
+  : includeIntegrationTests
+    ? externalIntegrationTestFiles
+    : [...integrationTestFiles, ...externalIntegrationTestFiles];
 
 const sharedTestEnv = {
   QM_API_TEST_USE_IN_MEMORY_SERVICES: "1",
@@ -48,5 +54,18 @@ export default defineConfig({
     hookTimeout: 30_000,
     globalSetup: includeIntegrationTests ? ["src/test/global-setup.ts"] : [],
     setupFiles: includeIntegrationTests ? ["src/test/setup.ts"] : [],
+    coverage: {
+      provider: "v8",
+      reporter: ["lcov", "text-summary"],
+      // Integration suites are excluded from the default `test:coverage` run,
+      // so these floors only bound the unit-test surface. They are a ratchet
+      // set just below current levels (AUDIT.md Tests); raise as coverage grows.
+      thresholds: {
+        lines: 18,
+        statements: 18,
+        functions: 38,
+        branches: 60,
+      },
+    },
   },
 });

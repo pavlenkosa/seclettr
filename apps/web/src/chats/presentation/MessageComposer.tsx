@@ -133,8 +133,9 @@ const MessageComposerView = forwardRef<MessageComposerHandle, Props>(function Me
   });
 
   useImperativeHandle(ref, () => ({
-    handleDroppedFiles: async (files: File[]) => {
+    handleDroppedFiles: (files: File[]) => {
       mediaSend.openDialog(files);
+      return Promise.resolve();
     },
   }), [mediaSend]);
 

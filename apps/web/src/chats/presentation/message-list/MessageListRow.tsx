@@ -6,8 +6,8 @@ import {
   DateSeparator,
   MessageBubble,
   MessageRowFrame,
-  MessageBodyKind,
-  MessageListRowMessage,
+  type MessageBodyKind,
+  type MessageListRowMessage,
 } from "./MessageListRowComponents";
 import {
   isFileAttachment,

@@ -85,7 +85,14 @@ type CreateCallResponse =
   | { callId: string; created: boolean; callerUserId: string };
 
 const CALL_ROUTE_RATE_LIMIT_WINDOW_SEC = 60;
-const CALL_ROUTE_RATE_LIMIT_MAX = 90;
+// Test-only override lets integration suites raise the per-IP budget;
+// production default and semantics unchanged.
+const CALL_ROUTE_RATE_LIMIT_MAX = (() => {
+  const override = process.env["QM_API_TEST_CALL_ROUTE_RATE_LIMIT_MAX"];
+  if (!override) return 90;
+  const parsed = Number.parseInt(override, 10);
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : 90;
+})();
 
 async function enforceCallRouteRateLimit(
   request: FastifyRequest,
@@ -99,7 +106,7 @@ async function enforceCallRouteRateLimit(
 
   if (limit.allowed) return;
 
-  reply.header("Retry-After", String(limit.retryAfterSec));
+  void reply.header("Retry-After", String(limit.retryAfterSec));
   void reply.code(429).send({ error: "Too many call requests" });
 }
 
@@ -446,7 +453,7 @@ function notifyOfflineGroupMembersAboutStartedCall(
         await sendPushToUser(memberId, payload);
       })
     );
-  })().catch((err) => {
+  })().catch((err: unknown) => {
     request.log.warn(
       { err, groupId },
       "push notification failed for group call start"
@@ -550,7 +557,7 @@ function notifyCalleeAboutMissedCall(
     if (!payload) return;
 
     await sendPushToUser(calleeUserId, payload);
-  })().catch((err) => {
+  })().catch((err: unknown) => {
     request.log.warn(
       { err, calleeUserId },
       "push notification failed for missed call"
@@ -587,7 +594,7 @@ function notifyOfflineDirectCalleeAboutInvite(
     if (!payload) return;
 
     await sendPushToUser(calleeUserId, payload);
-  })().catch((err) => {
+  })().catch((err: unknown) => {
     request.log.warn(
       { err, calleeUserId },
       "push notification failed for call invite"
@@ -828,7 +835,7 @@ export async function callRoutes(fastify: FastifyInstance): Promise<void> {
   fastify.get(
     "/turn-credentials",
     { preHandler: callPreHandlers },
-    async (request) => {
+    (request) => {
       const { sub: userId } = request.auth;
       return generateTurnCredentials(userId);
     }

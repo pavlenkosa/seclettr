@@ -58,7 +58,7 @@ export async function generateIdentityBundle(): Promise<IdentityBundle> {
   };
 }
 
-function clonePrivateKey(privateKey: Uint8Array): PrivateKeyBytes {
+export function clonePrivateKey(privateKey: Uint8Array): PrivateKeyBytes {
   return new Uint8Array(privateKey) as PrivateKeyBytes;
 }
 

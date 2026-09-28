@@ -102,6 +102,9 @@ jobs:
       - name: Test
         run: pnpm test
 
+      - name: Coverage
+        run: pnpm test:coverage
+
       # Deterministic 429 exercise for the /calls/turn-credentials per-IP
       # budget: the shared full-suite harness runs with MAX=10000 (headroom for
       # parallel suites), where a 429 is unreachable, so the security behavior

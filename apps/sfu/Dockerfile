@@ -1,4 +1,4 @@
-FROM node:22-alpine AS base
+FROM node:26-alpine AS base
 RUN apk add --no-cache python3 py3-pip make g++ linux-headers
 RUN corepack enable && corepack prepare pnpm@11.4.0 --activate
 WORKDIR /app
@@ -28,7 +28,7 @@ COPY apps/sfu/package.json ./apps/sfu/
 COPY packages/protocol/package.json ./packages/protocol/
 RUN pnpm install --frozen-lockfile --prod --filter @seclettr/protocol... --filter @seclettr/sfu...
 
-FROM node:22-alpine AS production
+FROM node:26-alpine AS production
 ARG SECLETTR_VERSION=0.0.0
 ARG GIT_REVISION=
 ARG BUILD_TIMESTAMP=

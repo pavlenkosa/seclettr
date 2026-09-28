@@ -1037,13 +1037,16 @@ ensure_images_available() {
   fi
 
   # Step 4: archive present → load it (in offline mode it MUST exist).
-  if [[ "$OFFLINE_MODE" == "true" && ! -f "$IMAGE_ARCHIVE" ]]; then
+  # --skip-load means "don't load the bundled prebuilt archive" (user-managed
+  # app images); it must NOT suppress image acquisition: the pinned
+  # third-party support images are still acquired via pull below.
+  if [[ "$SKIP_LOAD" != "true" && "$OFFLINE_MODE" == "true" && ! -f "$IMAGE_ARCHIVE" ]]; then
     die "Offline mode: image archive not found: $IMAGE_ARCHIVE
   Missing image(s): $(printf '%s ' $missing | sed 's/ $//')
   Provide the archive or drop --offline to install online."
   fi
 
-  if [[ -f "$IMAGE_ARCHIVE" ]]; then
+  if [[ "$SKIP_LOAD" != "true" && -f "$IMAGE_ARCHIVE" ]]; then
     log_step "Loading missing images from archive: $IMAGE_ARCHIVE"
     load_image_archive
     # Step 5: recheck exact tags.
@@ -1054,6 +1057,8 @@ ensure_images_available() {
   fi
 
   # Step 6: online allowed → pull ONLY the still-missing pinned tags.
+  # With --skip-load the archive was deliberately not loaded; missing pins
+  # must still be pulled when online, and hard-fail when offline (fail-closed).
   if [[ "$OFFLINE_MODE" == "true" ]]; then
     die "Offline mode: image archive did not satisfy required images.
   Archive: $IMAGE_ARCHIVE
@@ -2164,7 +2169,8 @@ fi
 # ── Installation steps ─────────────────────────────────────────────────────────
 
 # Adjust total step count for skipped optional phases before any output.
-[[ "$SKIP_LOAD" == "true" ]]    && _TOTAL_STEPS=$(( _TOTAL_STEPS - 1 ))
+# Image acquisition is unconditional (SKIP_LOAD only skips the archive load),
+# so its step is always counted in _TOTAL_STEPS.
 [[ "$SKIP_MIGRATE" == "true" ]] && _TOTAL_STEPS=$(( _TOTAL_STEPS - 1 ))
 [[ "$ACTION" == "update" && "$SKIP_BACKUP" == "false" ]] && _TOTAL_STEPS=$(( _TOTAL_STEPS + 1 ))
 
@@ -2193,11 +2199,12 @@ if [[ "$ACTION" == "update" && "$SKIP_BACKUP" == "false" ]]; then
   create_update_backup
 fi
 
-if [[ "$SKIP_LOAD" == "false" ]]; then
-  step "Acquiring required Docker images"
-  run_quiet "Ensuring required images are available (local → archive → pull)" \
-    ensure_images_available
-fi
+# Image acquisition is unconditional: --skip-load only skips loading the
+# bundled prebuilt-images archive (user-managed app images), never the
+# acquisition/pull ladder for pinned third-party images.
+step "Acquiring required Docker images"
+run_quiet "Ensuring required images are available (local → archive → pull)" \
+  ensure_images_available
 
 validate_runtime_images_available
 

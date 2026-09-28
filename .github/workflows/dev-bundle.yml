@@ -198,23 +198,6 @@ jobs:
           if-no-files-found: error
           retention-days: 30
 
-      - name: Pull support images
-        shell: bash
-        run: |
-          # prebuilt-images.tar.gz contains only api/web/sfu. The support images
-          # below are referenced by the bundle compose (pinned in infra/.env.example)
-          # and must be present locally for install.sh to validate.
-          IMAGES=(
-            postgres:16-alpine
-            redis:7-alpine
-            bitnamilegacy/minio:2025.7.23-debian-12-r5
-            bitnamilegacy/minio-client:2025.7.21-debian-12-r3
-            coturn/coturn:4.18.0-r0-alpine
-          )
-          for image in "${IMAGES[@]}"; do
-            docker pull "$image"
-          done
-
       - name: Smoke-test bundle install
         shell: bash
         run: |
@@ -232,10 +215,12 @@ jobs:
             echo "ANNOUNCED_IP=127.0.0.1"
           } >> .env
 
-          # Install in non-interactive HTTP mode; api/web/sfu images are already
-          # local (built+loaded above / loaded from prebuilt-images.tar.gz),
-          # support images were pulled by the previous step.
-          ./install.sh --non-interactive --mode full --network http --skip-load
+          # Install in non-interactive HTTP mode via the real installer path:
+          # the bundled app-image archive is loaded, and the pinned
+          # third-party support images are acquired by the installer itself
+          # (local → archive → pull). api/web/sfu images are already local
+          # (built+loaded above).
+          ./install.sh --non-interactive --mode full --network http
 
           # Wait for API health (up to 60 s)
           for i in $(seq 1 30); do

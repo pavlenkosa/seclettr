@@ -70,10 +70,10 @@ new_case() {
   make_shim_full
 }
 
-# run_ladder <offline:0|1> <archive-file:0|1> — runs the REAL
+# run_ladder <offline:0|1> <archive-file:0|1> [skip-load:0|1] — runs the REAL
 # ensure_images_available in a subshell; prints its output.
 run_ladder() {
-  local offline="$1" has_archive="$2"
+  local offline="$1" has_archive="$2" skip_load="${3:-0}"
   : > "$SECLETTR_TEST_LOG"
 
   (
@@ -89,6 +89,7 @@ run_ladder() {
     SELECTED_SERVICES=(postgres redis minio minio-init coturn api sfu web)
     DEPLOY_MODE="full"
     SKIP_MIGRATE=false
+    SKIP_LOAD=$([[ "$skip_load" == "1" ]] && echo true || echo false)
     OFFLINE_MODE=$([[ "$offline" == "1" ]] && echo true || echo false)
     IMAGE_ARCHIVE="$WORK/prebuilt-images.tar.gz"
     BUNDLE_DIR="$WORK"
@@ -164,3 +165,50 @@ EXPECTED_ALL="$(printf '%s\n' "${PINS[@]}" | sort -u)"
 FLOATS="$(grep -E ':latest|:main' "$SECLETTR_TEST_LOG" || true)"
 check "g" "$([[ "$ALL_ARGS" == "$EXPECTED_ALL" && -z "$FLOATS" ]] && echo 1 || echo 0)" \
   "args=[$ALL_ARGS] floats=[$FLOATS]"
+
+# ── (h) production parity: required set via REAL set_selected_services(full) ──
+# Drive the real service selector under the source guard, then run the ladder
+# with every pin missing, an archive present, and network allowed: it must
+# pull exactly the 5 pinned third-party images and exit 0.
+new_case
+OUT="$(
+  (
+    set +e
+    unset MINIO_IMAGE MINIO_MC_IMAGE COTURN_IMAGE
+    export SECLETTR_INSTALL_SHELL_ONLY=1
+    # shellcheck disable=SC1090
+    source "$INSTALL_SH"
+
+    DOCKER_CMD=("$WORK/docker")
+    DEPLOY_MODE="full"
+    SKIP_MIGRATE=false
+    SKIP_LOAD=false
+    OFFLINE_MODE=false
+    IMAGE_ARCHIVE="$WORK/prebuilt-images.tar.gz"
+    BUNDLE_DIR="$WORK"
+    printf 'archive %s\n' "${PINS[@]}" > "$SECLETTR_TEST_STATE"
+
+    # The real selector defines the required set (no harness hardcoding).
+    set_selected_services
+    : "${SELECTED_SERVICES:?"set_selected_services produced no services"}"
+
+    ensure_images_available
+  ) 2>&1
+)"
+RC=$?
+PULLED="$(pulled_refs)"
+EXPECTED_PULLED="$(printf '%s\n' "${PINS[@]}" | sort)"
+check "h" "$([[ $RC -eq 0 && "$PULLED" == "$EXPECTED_PULLED" ]] && echo 1 || echo 0)" \
+  "rc=$RC pulled=[$PULLED] expected=[$EXPECTED_PULLED] out=$OUT"
+
+# ── (i) skip-load regression (exact CI bug): archive load skipped, pins still ──
+# acquired via pull. SKIP_LOAD must mean "don't load prebuilt-images.tar.gz",
+# never "don't acquire images".
+new_case
+OUT="$(run_ladder 0 1 1)"
+RC=$?
+PULLED="$(pulled_refs)"
+EXPECTED_PULLED="$(printf '%s\n' "${PINS[@]}" | sort)"
+LOADS="$(log_count load)"
+check "i" "$([[ $RC -eq 0 && "$PULLED" == "$EXPECTED_PULLED" && "$LOADS" -eq 0 ]] && echo 1 || echo 0)" \
+  "rc=$RC pulls=[$PULLED] loads=$LOADS expected=[$EXPECTED_PULLED] out=$OUT"

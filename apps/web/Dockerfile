@@ -1,4 +1,4 @@
-FROM node:22-alpine AS base
+FROM node:26-alpine AS base
 RUN corepack enable && corepack prepare pnpm@11.4.0 --activate
 WORKDIR /app
 

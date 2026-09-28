@@ -1,4 +1,4 @@
-FROM node:22-alpine AS base
+FROM node:26-alpine AS base
 RUN corepack enable && corepack prepare pnpm@11.4.0 --activate
 WORKDIR /app
 
@@ -32,7 +32,7 @@ COPY packages/crypto/package.json ./packages/crypto/
 COPY packages/protocol/package.json ./packages/protocol/
 RUN pnpm install --frozen-lockfile --prod --filter @seclettr/crypto... --filter @seclettr/protocol... --filter @seclettr/api...
 
-FROM node:22-alpine AS production
+FROM node:26-alpine AS production
 ARG SECLETTR_VERSION=0.0.0
 ARG GIT_REVISION=
 ARG BUILD_TIMESTAMP=

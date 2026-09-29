@@ -111,8 +111,10 @@ describe("in-memory redis client", () => {
     await publishMessage({ type: "presence.update", userId: "u1" });
     await new Promise((r) => setImmediate(r));
     expect(received.length).toBe(1);
-    expect(received[0].channel).toBe(MESSAGE_CHANNEL);
-    const envelope = JSON.parse(received[0].payload) as { version?: number };
+    const first = received[0];
+    if (!first) throw new Error("expected one presence message");
+    expect(first.channel).toBe(MESSAGE_CHANNEL);
+    const envelope = JSON.parse(first.payload) as { version?: number };
     // Messages without a wire version get the current protocol version stamped.
     expect(envelope.version).toBeDefined();
 
@@ -120,7 +122,9 @@ describe("in-memory redis client", () => {
     await redis.publish(MESSAGE_CHANNEL, "raw");
     await new Promise((r) => setImmediate(r));
     expect(received.length).toBe(2);
-    expect(received[1].payload).toBe("raw");
+    const second = received[1];
+    if (!second) throw new Error("expected raw message");
+    expect(second.payload).toBe("raw");
 
     await subscriber.unsubscribe(MESSAGE_CHANNEL);
     await publishMessage({ type: "presence.update", userId: "u2" });
@@ -138,11 +142,13 @@ describe("in-memory redis client", () => {
     await publishPresenceUpdate({
       type: "presence.update",
       userId: "u1",
-      connected: true,
-    } as Parameters<typeof publishPresenceUpdate>[0]);
+      online: true,
+    });
     await new Promise((r) => setImmediate(r));
     expect(payloads.length).toBe(1);
-    const parsed = JSON.parse(payloads[0]) as Record<string, unknown>;
+    const presencePayload = payloads[0];
+    if (!presencePayload) throw new Error("expected presence payload");
+    const parsed = JSON.parse(presencePayload) as Record<string, unknown>;
     expect(parsed["scope"]).toBe("presence.broadcast");
     expect(parsed["type"]).toBe("presence.update");
     subscriber.disconnect();
@@ -156,7 +162,9 @@ describe("in-memory redis client", () => {
     await publishForceDisconnect("device-1");
     await new Promise((r) => setImmediate(r));
     expect(payloads.length).toBe(1);
-    const parsed = JSON.parse(payloads[0]) as Record<string, unknown>;
+    const disconnectPayload = payloads[0];
+    if (!disconnectPayload) throw new Error("expected disconnect payload");
+    const parsed = JSON.parse(disconnectPayload) as Record<string, unknown>;
     expect(parsed).toEqual({
       scope: "device.force_disconnect",
       deviceId: "device-1",

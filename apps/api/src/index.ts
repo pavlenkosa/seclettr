@@ -50,6 +50,14 @@ import { constantTimeEqualString } from "./lib/constant-time.js";
 
 const LEGACY_WS_CLIENT_PROTOCOL = "qm.v1";
 
+/** Map dependency probe results to the readiness status exposed by /health. */
+export function resolveHealthStatus(
+  dbOk: boolean,
+  redisOk: boolean
+): "ok" | "degraded" {
+  return dbOk && redisOk ? "ok" : "degraded";
+}
+
 function isMetricsAuthorized(authorization: string | undefined): boolean {
   if (!config.METRICS_BEARER_TOKEN) {
     return false;
@@ -267,14 +275,14 @@ export async function buildApp() {
   // GET /health/ready — checks DB + Redis readiness (used by load balancers)
   fastify.get("/health/ready", async () => {
     const { dbOk, redisOk } = await checkDependencies();
-    const status = dbOk && redisOk ? "ok" : "degraded";
+    const status = resolveHealthStatus(dbOk, redisOk);
     return { status, version: APP_VERSION, dependencies: { db: dbOk, redis: redisOk } };
   });
 
   // GET /health — legacy alias for /health/ready
   fastify.get("/health", async () => {
     const { dbOk, redisOk } = await checkDependencies();
-    const status = dbOk && redisOk ? "ok" : "degraded";
+    const status = resolveHealthStatus(dbOk, redisOk);
     return { status, version: APP_VERSION };
   });
 

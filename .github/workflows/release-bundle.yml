@@ -58,7 +58,8 @@ jobs:
       github.event_name == 'workflow_dispatch' ||
       (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success')
     runs-on: ubuntu-latest
-    timeout-minutes: 120
+    # 2026-09-29: cold GHA-cache build with triple mediasoup C++ compile exceeded 120m (job cancelled at 121m); warm-cache reference: 21m. 240m = measured worst case + margin.
+    timeout-minutes: 240
     permissions:
       contents: read
       # GHCR image pushes.

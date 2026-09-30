@@ -1653,7 +1653,13 @@ prepare_update_from_previous() {
 }
 
 env_has_placeholders() {
-  grep -q "CHANGE_ME" "$ENV_FILE" 2>/dev/null
+  # Only actual KEY=VALUE assignment lines count. A CHANGE_ME mention inside a
+  # comment line (e.g. the template's "# ...replace all CHANGE_ME values..."
+  # hint) must not mark the file as unfilled: that made every install re-run
+  # fill_env_secrets, which re-derives domain vars (CORS_ORIGIN, TURN_DOMAIN,
+  # S3_PUBLIC_URL) from the detected IP and overwrites the user's values.
+  grep -E '^[[:space:]]*(export[[:space:]]+)?[A-Za-z_][A-Za-z0-9_]*=' "$ENV_FILE" 2>/dev/null \
+    | grep -q "CHANGE_ME"
 }
 
 handoff_update_target() {

@@ -80,7 +80,7 @@ export interface AuthState {
   authLifecycle: AuthLifecycleState;
   authRecoveryReason: AuthRecoveryReason | null;
   authOperation: AuthOperationState;
-  error: AuthErrorCode | (string & {}) | null;
+  error: AuthErrorCode | (string & NonNullable<unknown>) | null;
 
   /** True when a PIN passcode is required to unlock. */
   pinEnabled: boolean;

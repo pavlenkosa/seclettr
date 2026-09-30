@@ -216,6 +216,74 @@ describe("guest rooms", () => {
     expect(crossAccess.status).toBe(403);
   });
 
+  it("issues TURN credentials to a live-room guest and denies stale guests", async () => {
+    const owner = await registerUser(`guest_room_turn_${Date.now()}`);
+    const ownerToken = (owner.body as { accessToken: string }).accessToken;
+    const inviteToken = await createRoom(ownerToken);
+
+    const join = await apiRequest(`/rooms/join/${inviteToken}`, {
+      method: "POST",
+      body: JSON.stringify({ guestName: "Turn Guest" }),
+    });
+    expect(join.status).toBe(200);
+    const parsed = RoomJoinResponseSchema.parse({
+      version: ROOMS_PROTOCOL_VERSION,
+      ...(join.body as Record<string, unknown>),
+    });
+
+    // Live room + live guest row: credentials issued.
+    const turn = await apiRequest("/calls/turn-credentials", {}, parsed.guestToken);
+    expect(turn.status).toBe(200);
+    const turnBody = (turn.body as { username?: string; ttl?: number; uris?: string[] });
+    expect(turnBody.username).toContain(parsed.guestSessionId);
+    expect(turnBody.ttl).toBe(86400);
+    expect(Array.isArray(turnBody.uris)).toBe(true);
+
+    // Unauthenticated request stays denied.
+    const noAuth = await apiRequest("/calls/turn-credentials");
+    expect(noAuth.status).toBe(401);
+
+    // Kicked guest (room_guest_sessions row removed) → denied.
+    await apiRequest(
+      `/rooms/${parsed.callId}/guests/${parsed.guestSessionId}`,
+      { method: "DELETE" },
+      ownerToken
+    );
+    const turnAfterKick = await apiRequest("/calls/turn-credentials", {}, parsed.guestToken);
+    expect(turnAfterKick.status).toBe(403);
+
+    // Ended room (fresh guest, room closed) → not found.
+    const invite2 = await createRoom(ownerToken);
+    const join2 = await apiRequest(`/rooms/join/${invite2}`, {
+      method: "POST",
+      body: JSON.stringify({ guestName: "Turn Guest 2" }),
+    });
+    expect(join2.status).toBe(200);
+    const parsed2 = RoomJoinResponseSchema.parse({
+      version: ROOMS_PROTOCOL_VERSION,
+      ...(join2.body as Record<string, unknown>),
+    });
+    const close = await apiRequest(
+      `/rooms/${parsed2.callId}`,
+      { method: "DELETE" },
+      ownerToken
+    );
+    expect(close.status).toBe(204);
+    const turnAfterClose = await apiRequest("/calls/turn-credentials", {}, parsed2.guestToken);
+    expect(turnAfterClose.status).toBe(404);
+  });
+
+  it("keeps access-token TURN credentials working alongside guest tokens", async () => {
+    const owner = await registerUser(`guest_turn_auth_${Date.now()}`);
+    const ownerToken = (owner.body as { accessToken: string }).accessToken;
+
+    const turn = await apiRequest("/calls/turn-credentials", {}, ownerToken);
+    expect(turn.status).toBe(200);
+    const turnBody = (turn.body as { username?: string; ttl?: number });
+    expect(typeof turnBody.username).toBe("string");
+    expect(turnBody.ttl).toBe(86400);
+  });
+
   it("parses a room create response through the versioned schema", async () => {
     const owner = await registerUser(`guest_room_schema_${Date.now()}`);
     const ownerToken = (owner.body as { accessToken: string }).accessToken;

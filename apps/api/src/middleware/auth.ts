@@ -122,3 +122,17 @@ export async function requireGuestOrAuth(
     await reply.code(401).send({ error: "Unauthorized" });
   }
 }
+
+/**
+ * PreHandler for GET /calls/turn-credentials: accepts access tokens (fully
+ * validated here) and guest tokens (payload passed through; the route must
+ * still validate the guest's live room membership fail-closed before issuing
+ * credentials). Delegates to requireGuestOrAuth so both token classes share a
+ * single validation implementation.
+ */
+export async function requireCallTurnAccess(
+  request: FastifyRequest,
+  reply: FastifyReply
+): Promise<void> {
+  return requireGuestOrAuth(request, reply);
+}

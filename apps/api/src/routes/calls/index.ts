@@ -11,7 +11,7 @@ import {
   SFU_PROTOCOL_VERSION,
   SfuRoomAccessResponseSchema,
 } from "@seclettr/protocol";
-import { requireAuth, requireGuestOrAuth } from "../../middleware/auth.js";
+import { requireAuth, requireGuestOrAuth, requireCallTurnAccess } from "../../middleware/auth.js";
 import { query, transaction, type PoolClient } from "../../db/pool.js";
 import { config } from "../../config.js";
 import { consumeFixedWindowRateLimit } from "../../utils/fixed-window-rate-limit.js";
@@ -834,9 +834,37 @@ export async function callRoutes(fastify: FastifyInstance): Promise<void> {
 
   fastify.get(
     "/turn-credentials",
-    { preHandler: callPreHandlers },
-    (request) => {
-      const { sub: userId } = request.auth;
+    { preHandler: [enforceCallRouteRateLimit, requireCallTurnAccess] },
+    async (request, reply) => {
+      const { sub: userId, tokenUse, roomId } = request.auth;
+
+      // Guest tokens: fail-closed validation before issuing credentials.
+      // The guest JWT carries roomId = the room's call_session_id (see
+      // POST /rooms/join/:token); there is no callId param on this route.
+      if (tokenUse === "guest") {
+        if (!roomId) {
+          return reply.code(403).send({ error: "Forbidden" });
+        }
+        // Kicked guests have their session row removed; deny re-entry.
+        const guestSession = await query<{ id: string }>(
+          `SELECT id FROM room_guest_sessions WHERE id = $1 AND call_session_id = $2`,
+          [userId, roomId]
+        );
+        if (guestSession.length === 0) {
+          return reply.code(403).send({ error: "Forbidden" });
+        }
+        // The referenced room must exist, be a standalone room, and be live.
+        const room = await query<{ id: string }>(
+          `SELECT id FROM call_sessions
+           WHERE id = $1 AND is_room = TRUE AND status IN ('ringing', 'active')`,
+          [roomId]
+        );
+        if (room.length === 0) {
+          return reply.code(404).send({ error: "Room not found" });
+        }
+        return generateTurnCredentials(userId);
+      }
+
       return generateTurnCredentials(userId);
     }
   );

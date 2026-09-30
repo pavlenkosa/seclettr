@@ -509,6 +509,10 @@ export function buildMessageRowPresentationState(params: {
   return buildMessageRowPresentationCache(params);
 }
 
+/**
+ * @internal — test helper. Production code should use the message-list
+ * presentation cache directly.
+ */
 export function buildMessageRowPresentations(params: {
   messages: Message[];
   senderLabels?: Record<string, string>;

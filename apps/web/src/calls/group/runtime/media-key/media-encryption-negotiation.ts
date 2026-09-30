@@ -70,6 +70,7 @@ export function resolveLocalGroupCallMediaEncryptionDecision(
   };
 }
 
+/** @internal — test helper. Runtime code should use the negotiation flow. */
 export function normalizeGroupCallRuntimeMediaEncryptionMode(
   value: string | null | undefined
 ): GroupCallRuntimeMediaEncryptionMode | null {

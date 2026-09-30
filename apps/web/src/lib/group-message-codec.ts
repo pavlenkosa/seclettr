@@ -1,6 +1,7 @@
 import { fromBase64Url, toBase64Url } from "@seclettr/crypto";
 
 export const GROUP_MESSAGE_UNREADABLE = "[encrypted message]";
+/** @internal — test helper. Wire encoding computes signatures per message. */
 export const GROUP_EMPTY_SIGNATURE_B64 = toBase64Url(new Uint8Array(64));
 
 export interface GroupTextContent {

@@ -71,7 +71,8 @@ function readRuntimeConfig(): SeclettrRuntimeConfig {
   const rawStunUrls = (config as { stunUrls?: unknown }).stunUrls;
   if (Array.isArray(rawStunUrls)) {
     const stunUrls = rawStunUrls.filter(
-      (u): u is string => typeof u === "string" && (u.startsWith("stun:") || u.startsWith("turn:"))
+      (u): u is string =>
+        typeof u === "string" && (u.startsWith("stun:") || u.startsWith("turn:") || u.startsWith("turns:"))
     );
     if (stunUrls.length > 0) {
       validated.stunUrls = stunUrls;

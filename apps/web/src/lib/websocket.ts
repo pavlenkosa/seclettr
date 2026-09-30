@@ -70,7 +70,7 @@ export class SeclettrWebSocket {
   private authErrorHandler: (() => Promise<string | null>) | null = null;
   private authRefreshInFlight: Promise<string | null> | null = null;
   // Resolved lazily on first connect() so that the native-server URL set in
-  // localStorage after module init (NativeServerSetup flow) is picked up.
+  // localStorage after module init (native server boot flow) is picked up.
   private wsUrl: string | null = null;
   private readonly queuedOutboundMessages: QueuedOutboundMessage[] = [];
   private readonly defaultQueueTtlMs = 15_000;

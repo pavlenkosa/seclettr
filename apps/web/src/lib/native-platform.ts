@@ -1,5 +1,5 @@
 import { Capacitor } from "@capacitor/core";
-import { nativeStorageGet, nativeStorageRemove, nativeStorageSet } from "./native-storage";
+import { nativeStorageGet, nativeStorageSet } from "./native-storage";
 import { recordBootDiagnostic } from "./boot-diagnostics";
 
 const NATIVE_SERVER_KEY = "sc:native_server_url";
@@ -35,11 +35,6 @@ export function setNativeServerUrl(url: string): void {
   const cleaned = url.replace(/\/+$/, "");
   try { localStorage.setItem(NATIVE_SERVER_KEY, cleaned); } catch { /* ignore */ }
   void nativeStorageSet(NATIVE_SERVER_KEY, cleaned);
-}
-
-export function clearNativeServerUrl(): void {
-  try { localStorage.removeItem(NATIVE_SERVER_KEY); } catch { /* ignore */ }
-  void nativeStorageRemove(NATIVE_SERVER_KEY);
 }
 
 /** Async read from Preferences — use in background runner context. */

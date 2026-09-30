@@ -49,6 +49,18 @@ describe("config S3 env aliasing", () => {
     expect(config.S3_ACCESS_KEY).toBe("s3-access");
     expect(config.S3_SECRET_KEY).toBe("s3-secret");
   });
+
+  it("treats empty S3_PUBLIC_URL as unset (fail closed)", async () => {
+    // Release templates ship `S3_PUBLIC_URL=`; an empty string must not be
+    // treated as a configured origin, or presigned URLs fall back to the
+    // requester-controlled browser origin and can leak the internal MinIO
+    // endpoint.
+    process.env["S3_PUBLIC_URL"] = "";
+
+    const { config } = await import("../config.js");
+
+    expect(config.S3_PUBLIC_URL).toBeUndefined();
+  });
 });
 
 describe("config ALLOW_PUBLIC_REGISTRATION parsing", () => {

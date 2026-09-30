@@ -91,7 +91,10 @@ const ConfigSchema = z.object({
   CORS_ORIGIN: z.string().default("http://localhost:5173"),
   ALLOW_PUBLIC_REGISTRATION: EnvBooleanDefaultFalseSchema,
   S3_ENDPOINT: z.string().default("http://localhost:9000"),
-  S3_PUBLIC_URL: z.string().optional(),
+  S3_PUBLIC_URL: z.preprocess(
+    (value) => (value === "" ? undefined : value),
+    z.string().optional()
+  ),
   S3_BUCKET: z.string().default("seclettr-attachments"),
   S3_ACCESS_KEY: z.string().default("minioadmin"),
   S3_SECRET_KEY: z.string().default("minioadmin"),

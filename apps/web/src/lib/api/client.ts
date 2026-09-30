@@ -13,7 +13,7 @@
  * Both call sites are lazy (invoked only on 401 retry / post-refresh).
  */
 import { safeParseVersionedWire } from "@seclettr/protocol";
-import { type z, type ZodTypeAny } from "zod";
+import { type z } from "zod";
 import { refreshSessionAccessToken } from "../session";
 import { resolveApiBaseUrl } from "../runtime-config";
 import { isNativePlatform, getNativeServerUrl } from "../native-platform";
@@ -151,11 +151,11 @@ export async function request<T>(
   return JSON.parse(body) as T;
 }
 
-export function parseVersionedApiPayload<TSchema extends ZodTypeAny>(
+export function parseVersionedApiPayload<TSchema extends z.ZodType<unknown>>(
   schema: TSchema,
   payload: unknown,
   supportedVersion: number
-) {
+): z.output<TSchema> {
   const parsed = safeParseVersionedWire(
     schema,
     payload,
@@ -168,7 +168,8 @@ export function parseVersionedApiPayload<TSchema extends ZodTypeAny>(
         : "Invalid API payload"
     );
   }
-  return parsed.data;
+  const data: z.output<TSchema> = parsed.data as z.output<TSchema>;
+  return data;
 }
 
 export class ApiError extends Error {
@@ -178,13 +179,14 @@ export class ApiError extends Error {
   }
 }
 
-export function parseLocalPayload<TSchema extends ZodTypeAny>(
+export function parseLocalPayload<TSchema extends z.ZodType<unknown>>(
   schema: TSchema,
   payload: unknown
-): z.infer<TSchema> {
+): z.output<TSchema> {
   const result = schema.safeParse(payload);
   if (!result.success) {
     throw new Error("Invalid API payload");
   }
-  return result.data as z.infer<TSchema>;
+  const data: z.output<TSchema> = result.data as z.output<TSchema>;
+  return data;
 }

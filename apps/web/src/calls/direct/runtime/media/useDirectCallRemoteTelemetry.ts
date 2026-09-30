@@ -18,6 +18,39 @@ interface VideoRtpStatsSummary {
   receivedBytes: number;
 }
 
+/**
+ * Narrow view of an RTCStatsReport entry. Browser implementations vary, so
+ * every field is optional and reports are validated before field access.
+ */
+interface RtcStatsLike {
+  type?: unknown;
+  kind?: unknown;
+  isRemote?: unknown;
+  bytesSent?: unknown;
+  bytesReceived?: unknown;
+  packetsSent?: unknown;
+  packetsReceived?: unknown;
+  trackIdentifier?: unknown;
+  framesDecoded?: unknown;
+}
+
+function asRtcStatsLike(value: unknown): RtcStatsLike | null {
+  if (typeof value !== "object" || value === null) return null;
+  return value as RtcStatsLike;
+}
+
+function isStringField(value: unknown, expected: string): boolean {
+  return typeof value === "string" && value === expected;
+}
+
+function isRemoteReport(report: RtcStatsLike): boolean {
+  return report.isRemote === true;
+}
+
+function asCount(value: unknown): number {
+  return typeof value === "number" && Number.isFinite(value) ? value : 0;
+}
+
 function summarizeVideoRtpStats(stats: RTCStatsReport): VideoRtpStatsSummary {
   const summary: VideoRtpStatsSummary = {
     sentPackets: 0,
@@ -26,14 +59,17 @@ function summarizeVideoRtpStats(stats: RTCStatsReport): VideoRtpStatsSummary {
     receivedBytes: 0,
   };
 
-  for (const report of stats.values()) {
-    if (report.type === "outbound-rtp" && report.kind === "video" && !report.isRemote) {
-      summary.sentPackets += Number(report.packetsSent ?? 0);
-      summary.sentBytes += Number(report.bytesSent ?? 0);
+  for (const rawReport of stats.values()) {
+    const report = asRtcStatsLike(rawReport);
+    // Non-object entries cannot be interpreted — count as unknown samples.
+    if (!report) continue;
+    if (isStringField(report.type, "outbound-rtp") && isStringField(report.kind, "video") && !isRemoteReport(report)) {
+      summary.sentPackets += asCount(report.packetsSent);
+      summary.sentBytes += asCount(report.bytesSent);
     }
-    if (report.type === "inbound-rtp" && report.kind === "video" && !report.isRemote) {
-      summary.receivedPackets += Number(report.packetsReceived ?? 0);
-      summary.receivedBytes += Number(report.bytesReceived ?? 0);
+    if (isStringField(report.type, "inbound-rtp") && isStringField(report.kind, "video") && !isRemoteReport(report)) {
+      summary.receivedPackets += asCount(report.packetsReceived);
+      summary.receivedBytes += asCount(report.bytesReceived);
     }
   }
 
@@ -176,17 +212,20 @@ export function useDirectCallRemoteTelemetry({
       const inboundProgressByTrackId = remoteInboundVideoProgressRef.current;
       const telemetryNow = performance.now();
       const inboundScoreByTrackId = new Map<string, { bytes: number; frames: number; packets: number }>();
-      for (const report of stats.values()) {
-        if (report.type !== "inbound-rtp") continue;
-        const inbound = report as RTCInboundRtpStreamStats;
-        if (inbound.kind !== "video" || report.isRemote) continue;
-        const trackId = inbound.trackIdentifier;
-        if (!trackId) continue;
-        const current = inboundScoreByTrackId.get(trackId) ?? { bytes: 0, frames: 0, packets: 0 };
-        current.bytes = Math.max(current.bytes, inbound.bytesReceived ?? 0);
-        current.frames = Math.max(current.frames, inbound.framesDecoded ?? 0);
-        current.packets = Math.max(current.packets, inbound.packetsReceived ?? 0);
-        inboundScoreByTrackId.set(trackId, current);
+      for (const rawReport of stats.values()) {
+        const report = asRtcStatsLike(rawReport);
+        // Non-object entries cannot be interpreted — count as unknown samples.
+        if (!report) continue;
+        if (!isStringField(report.type, "inbound-rtp")) continue;
+        if (isStringField(report.kind, "video") && !isRemoteReport(report)) {
+          const trackId = typeof report.trackIdentifier === "string" ? report.trackIdentifier : null;
+          if (!trackId) continue;
+          const current = inboundScoreByTrackId.get(trackId) ?? { bytes: 0, frames: 0, packets: 0 };
+          current.bytes = Math.max(current.bytes, asCount(report.bytesReceived));
+          current.frames = Math.max(current.frames, asCount(report.framesDecoded));
+          current.packets = Math.max(current.packets, asCount(report.packetsReceived));
+          inboundScoreByTrackId.set(trackId, current);
+        }
       }
 
       for (const [trackId, score] of inboundScoreByTrackId.entries()) {

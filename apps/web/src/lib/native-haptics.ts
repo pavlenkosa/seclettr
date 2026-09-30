@@ -50,22 +50,6 @@ export function hapticImpactMedium(): void {
   webVibrate(20);
 }
 
-/** Heavy impact — incoming call, alert. */
-export function hapticImpactHeavy(): void {
-  if (!_vibrationEnabled) return;
-  const plugin = getPlugin();
-  if (plugin) { void plugin.impact({ style: "HEAVY" }); return; }
-  webVibrate(40);
-}
-
-/** Success notification — delivered/confirmed. */
-export function hapticNotificationSuccess(): void {
-  if (!_vibrationEnabled) return;
-  const plugin = getPlugin();
-  if (plugin) { void plugin.notification({ type: "SUCCESS" }); return; }
-  webVibrate(15);
-}
-
 /** Warning notification — missed call, error. */
 export function hapticNotificationWarning(): void {
   if (!_vibrationEnabled) return;

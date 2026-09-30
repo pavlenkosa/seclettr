@@ -8,13 +8,20 @@ export const MAX_PROCESSED_MESSAGE_IDS = 5_000;
 
 /**
  * Per-conversation in-memory cap. Appends trim from the head (oldest dropped,
- * newest kept). History older than this is not re-fetchable in the encrypted
- * store, so this only bounds the live array — never a data-loss path for
- * in-app pagination.
+ * newest kept). This only bounds the live array: the persisted record is NOT
+ * capped and must not shrink — persistConversations unions the in-memory
+ * (trimmed) array with the previously persisted array by message id
+ * (union-on-persist), so messages already in storage survive in-memory trims.
+ * The restore path is uncapped by design; restored history is merged with the
+ * live state on load (see createMessagesHistoryRuntime).
  */
 export const MAX_MESSAGES_PER_CONVERSATION = 500;
 
-/** Keep the newest messages up to the per-conversation cap. */
+/**
+ * Keep the newest messages up to the per-conversation cap. Trimming is a
+ * display/memory bound only — persisted history is preserved via
+ * union-on-persist in persistConversations, never dropped by this cap.
+ */
 export function trimMessagesToCap(messages: readonly Message[]): Message[] {
   if (messages.length <= MAX_MESSAGES_PER_CONVERSATION) {
     return [...messages];
@@ -66,6 +73,61 @@ export function trimMessageIds(ids: Set<string>): Set<string> {
   return trimTrackedMessageIds(ids, MAX_PROCESSED_MESSAGE_IDS);
 }
 
+/**
+ * Union restored (previously persisted) messages with the live in-memory
+ * messages by message id. Live entries win for shared ids (e.g. optimistic
+ * message updated to a final status); ids that no longer exist in the live
+ * array (e.g. a trimmed optimistic send removed from memory) are kept from the
+ * persisted record so history never shrinks. Ordering source of truth matches
+ * mergeConversationMessages: timestamp ascending, ties broken by id.
+ */
+function unionMessagesBySnapshotId(
+  restoredMessages: readonly Message[] | undefined,
+  liveMessages: readonly Message[]
+): Message[] {
+  const restored = Array.isArray(restoredMessages) ? restoredMessages : [];
+  const mergedById = new Map<string, Message>();  for (const message of restored) {
+    if (message && typeof message.id === "string") {
+      mergedById.set(message.id, message);
+    }
+  }
+  const live = Array.isArray(liveMessages) ? liveMessages : [];
+  for (const message of live) {
+    if (message && typeof message.id === "string") {
+      mergedById.set(message.id, message);
+    }
+  }
+  return [...mergedById.values()].sort((left, right) => {
+    if (left.timestamp !== right.timestamp) {
+      return left.timestamp - right.timestamp;
+    }
+    return left.id.localeCompare(right.id);
+  });
+}
+
+function unionPersistedConversations(
+  restored: Record<string, Conversation>,
+  live: Record<string, Conversation>
+): Record<string, Conversation> {
+  const merged: Record<string, Conversation> = {};
+  for (const userId of Object.keys(restored)) {
+    const restoredConversation = restored[userId]!;
+    const liveConversation = live[userId];
+    merged[userId] = {
+      ...restoredConversation,
+      messages: unionMessagesBySnapshotId(
+        restoredConversation.messages,
+        liveConversation?.messages ?? []
+      ),
+    };
+  }
+  for (const [userId, liveConversation] of Object.entries(live)) {
+    if (userId in merged) continue;
+    merged[userId] = liveConversation;
+  }
+  return merged;
+}
+
 export async function persistConversations(
   conversations: Record<string, Conversation>
 ): Promise<void> {
@@ -81,8 +143,19 @@ export async function persistConversations(
       },
     ])
   );
+  // Read-before-write: union with the previously persisted record so the
+  // in-memory per-conversation cap (trimMessagesToCap) can never permanently
+  // shrink stored history. Untrusted storage shape is validated defensively.
+  const persisted = await loadDecrypted<Record<string, Conversation>>(
+    sk,
+    storageKey
+  );
+  const nextConversations =
+    persisted && typeof persisted === "object" && !Array.isArray(persisted)
+      ? unionPersistedConversations(persisted, sanitizedConversations)
+      : sanitizedConversations;
   await enqueueConversationPersist(() =>
-    storeEncrypted(sk, storageKey, sanitizedConversations)
+    storeEncrypted(sk, storageKey, nextConversations)
   );
 }
 

@@ -17,6 +17,8 @@ interface Window {
   __SECLETTR_RUNTIME_CONFIG__?: {
     apiUrl?: string;
     sfuUrl?: string;
+    /** STUN server URLs. Empty array disables STUN (TURN-only). */
+    stunUrls?: string[];
   };
   __scGetCallDebugSnapshot?: () => Promise<Record<string, unknown> | null>;
   __scDumpCallDebug?: () => Promise<void>;

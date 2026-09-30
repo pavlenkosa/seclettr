@@ -28,17 +28,57 @@ function normalizeUrl(value: string | null | undefined, fallback: string): strin
   return stripTrailingSlashes(trimmed) || fallback;
 }
 
+/** Same-origin absolute paths ("/api", "/sfu") are allowed as base URLs. */
+function isSameOriginPath(value: string): boolean {
+  return value.startsWith("/");
+}
+
+function isHttpUrl(value: string): boolean {
+  try {
+    const parsed = new URL(value);
+    return parsed.protocol === "http:" || parsed.protocol === "https:";
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * window.__SECLETTR_RUNTIME_CONFIG__ is untrusted host-page data: validate each
+ * field at read time and fall back to existing defaults when malformed.
+ */
 function readRuntimeConfig(): SeclettrRuntimeConfig {
   if (globalThis.window === undefined) {
     return {};
   }
 
-  const config = window.__SECLETTR_RUNTIME_CONFIG__;
+  const config: unknown = window.__SECLETTR_RUNTIME_CONFIG__;
   if (!config || typeof config !== "object") {
     return {};
   }
 
-  return config;
+  const validated: SeclettrRuntimeConfig = {};
+
+  const rawApiUrl = (config as { apiUrl?: unknown }).apiUrl;
+  if (typeof rawApiUrl === "string" && (isSameOriginPath(rawApiUrl) || isHttpUrl(rawApiUrl))) {
+    validated.apiUrl = rawApiUrl;
+  }
+
+  const rawSfuUrl = (config as { sfuUrl?: unknown }).sfuUrl;
+  if (typeof rawSfuUrl === "string" && (isSameOriginPath(rawSfuUrl) || isHttpUrl(rawSfuUrl))) {
+    validated.sfuUrl = rawSfuUrl;
+  }
+
+  const rawStunUrls = (config as { stunUrls?: unknown }).stunUrls;
+  if (Array.isArray(rawStunUrls)) {
+    const stunUrls = rawStunUrls.filter(
+      (u): u is string => typeof u === "string" && (u.startsWith("stun:") || u.startsWith("turn:"))
+    );
+    if (stunUrls.length > 0) {
+      validated.stunUrls = stunUrls;
+    }
+  }
+
+  return validated;
 }
 
 export function resolveApiBaseUrl(): string {

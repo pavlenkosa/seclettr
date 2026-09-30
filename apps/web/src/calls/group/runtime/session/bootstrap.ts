@@ -168,6 +168,35 @@ export async function handleStartGroupCallFailure(
 
 const INITIAL_CALL_BOOTSTRAP_ATTEMPTS = 2;
 
+/**
+ * Matches the bounded-retry cadence used by message ACKs
+ * (lib/message-ack.ts ACK_RETRY_DELAYS_MS) so both call paths behave
+ * consistently: initial attempt + 3 retries with [250, 750, 1500] ms backoff.
+ */
+const ROOM_ACTIVE_RETRY_DELAYS_MS = [250, 750, 1500] as const;
+
+async function setRoomActiveWithRetry(callId: string): Promise<void> {
+  const maxAttempts = ROOM_ACTIVE_RETRY_DELAYS_MS.length + 1;
+  for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
+    try {
+      await api.put<{ ok: boolean }>(`/calls/${callId}/status`, {
+        status: "active",
+      });
+      return;
+    } catch {
+      if (attempt >= maxAttempts) {
+        // Best-effort room state update; never fail bootstrap over it.
+        logger.warn("[group-call] room-active status update failed after retries", {
+          callId,
+          status: "active",
+        });
+        return;
+      }
+      await wait(ROOM_ACTIVE_RETRY_DELAYS_MS[attempt - 1]!);
+    }
+  }
+}
+
 function readApiErrorStatus(error: unknown): number | null {
   if (typeof error !== "object" || error === null) {
     return null;
@@ -250,13 +279,7 @@ export async function runGroupCallBootstrap(
       );
       ctx.syncParticipantDevices(participantDevices);
 
-      try {
-        await api.put<{ ok: boolean }>(`/calls/${resolvedCallId}/status`, {
-          status: "active",
-        });
-      } catch {
-        // Best-effort room state update.
-      }
+      await setRoomActiveWithRetry(resolvedCallId);
 
       await ctx.abortIfStaleSessionRun(async () => {
         await ctx.leaveJoinedCall();

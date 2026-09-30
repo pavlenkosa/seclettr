@@ -419,6 +419,79 @@ describe("useGroupCallSessionLifecycle reconnect", () => {
     expect(statusActions).toContain("SESSION_READY");
   });
 
+  it("retries the room-active status update before opening the SFU client", async () => {
+    const statusActions: string[] = [];
+    mocks.put
+      .mockRejectedValueOnce(new Error("transient failure 1"))
+      .mockRejectedValueOnce(new Error("transient failure 2"))
+      .mockResolvedValueOnce({ ok: true });
+    mocks.startGroupSfuClient.mockResolvedValue(createFakeSfuClient());
+
+    await act(async () => {
+      root.render(
+        <LifecycleHarness
+          onStatus={(action) => {
+            statusActions.push(action.type);
+          }}
+        />
+      );
+    });
+    await flushMicrotasks();
+
+    // The first attempt failed; the retry is waiting on the 250ms backoff timer.
+    expect(mocks.put).toHaveBeenCalledTimes(1);
+
+    for (const delayMs of [250, 750]) {
+      await act(async () => {
+        vi.advanceTimersByTime(delayMs);
+        await Promise.resolve();
+      });
+      await flushMicrotasks();
+    }
+
+    const activeStatusCalls = mocks.put.mock.calls.filter(([path, body]) =>
+      path === "/calls/call-1/status" &&
+      (body as { status?: string }).status === "active"
+    );
+    expect(activeStatusCalls).toHaveLength(3);
+    expect(mocks.startGroupSfuClient).toHaveBeenCalledTimes(1);
+    expect(statusActions).toContain("SESSION_READY");
+  });
+
+  it("continues bootstrap when every room-active status update fails", async () => {
+    const statusActions: string[] = [];
+    const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => undefined);
+    mocks.put.mockRejectedValue(new Error("status endpoint down"));
+    mocks.startGroupSfuClient.mockResolvedValue(createFakeSfuClient());
+
+    await act(async () => {
+      root.render(
+        <LifecycleHarness
+          onStatus={(action) => {
+            statusActions.push(action.type);
+          }}
+        />
+      );
+    });
+
+    for (const delayMs of [250, 750, 1500]) {
+      await act(async () => {
+        vi.advanceTimersByTime(delayMs);
+        await Promise.resolve();
+      });
+      await flushMicrotasks();
+    }
+
+    expect(mocks.put).toHaveBeenCalledTimes(4);
+    expect(mocks.startGroupSfuClient).toHaveBeenCalledTimes(1);
+    expect(statusActions).toContain("SESSION_READY");
+    expect(warnSpy).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({ callId: "call-1", status: "active" })
+    );
+    warnSpy.mockRestore();
+  });
+
   it("ignores stale join completion after the session unmounts", async () => {
     const statusActions: string[] = [];
     let resolveMedia!: (stream: MediaStream) => void;

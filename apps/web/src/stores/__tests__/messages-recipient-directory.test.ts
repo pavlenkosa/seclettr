@@ -14,9 +14,8 @@ describe("createRecipientDeviceDirectory", () => {
       getRequesterUserId: () => "user-self",
       fetchRecipientDevices: async (recipientUserId) =>
         (await fetchRecipientDevicesMock(recipientUserId)) as RecipientDeviceInfo[],
-      establishDirectRelationship: async (recipientUserId) => {
-        await establishDirectRelationshipMock(recipientUserId);
-      },
+      establishDirectRelationship: (recipientUserId) =>
+        establishDirectRelationshipMock(recipientUserId) as Promise<boolean>,
       recipientDeviceCacheTtlMs: 5_000,
       directRelationshipCacheTtlMs: 3_000,
       now: () => currentTime,
@@ -71,7 +70,7 @@ describe("createRecipientDeviceDirectory", () => {
 
   it("caches direct relationship bootstrap separately from device fetches", async () => {
     const directory = createDirectory();
-    establishDirectRelationshipMock.mockResolvedValue(undefined);
+    establishDirectRelationshipMock.mockResolvedValue(true);
 
     await directory.ensureDirectRelationship("user-peer");
     await directory.ensureDirectRelationship("user-peer");
@@ -82,6 +81,27 @@ describe("createRecipientDeviceDirectory", () => {
     await directory.ensureDirectRelationship("user-peer");
 
     expect(establishDirectRelationshipMock).toHaveBeenCalledTimes(2);
+  });
+
+  it("does not cache the direct relationship when bootstrap reports failure", async () => {
+    const directory = createDirectory();
+    establishDirectRelationshipMock.mockResolvedValue(false);
+
+    await directory.ensureDirectRelationship("user-peer");
+    expect(establishDirectRelationshipMock).toHaveBeenCalledTimes(1);
+
+    // A failed bootstrap must be retried on the next send, not suppressed by
+    // the TTL cache.
+    await directory.ensureDirectRelationship("user-peer");
+    expect(establishDirectRelationshipMock).toHaveBeenCalledTimes(2);
+
+    establishDirectRelationshipMock.mockResolvedValue(true);
+    await directory.ensureDirectRelationship("user-peer");
+    expect(establishDirectRelationshipMock).toHaveBeenCalledTimes(3);
+
+    // Only after a confirmed establishment is the result cached.
+    await directory.ensureDirectRelationship("user-peer");
+    expect(establishDirectRelationshipMock).toHaveBeenCalledTimes(3);
   });
 
   it("invalidates cached device lists for the requested recipient", async () => {

@@ -8,7 +8,7 @@ import {
   warmBrowserTrustStore,
 } from "@/lib/browser-trust-store";
 import { getCachedUserLabel } from "@/lib/user-labels";
-import { api } from "@/lib/api";
+import { ApiError, api } from "@/lib/api";
 import { postMessageAck } from "@/lib/message-ack";
 import { logger } from "@/lib/logger.js";
 import { createInboundTrackingCoordinator } from "./inbound-tracking";
@@ -160,7 +160,26 @@ export function createMessagesRuntimeShared(): MessagesRuntimeShared {
       });
       return response.devices;
     },
-    establishDirectRelationship: async () => undefined,
+    establishDirectRelationship: async (recipientUserId) => {
+      // Best-effort bootstrap of the direct relationship that unlocks
+      // device-metadata/prekey access for recipients without a search-derived
+      // contact grant. The POST is idempotent server-side; the authoritative
+      // access decision remains the subsequent device fetch, so a failed or
+      // rejected bootstrap is logged (status code only) and reported as
+      // not-established instead of breaking the send flow.
+      try {
+        await api.post(
+          `/users/${encodeURIComponent(recipientUserId)}/direct-relationship`
+        );
+        return true;
+      } catch (error) {
+        logger.warn("[messages] direct-relationship bootstrap failed", {
+          recipientUserId,
+          status: error instanceof ApiError ? error.status : undefined,
+        });
+        return false;
+      }
+    },
   });
 
   const inboundTrackingCoordinator =

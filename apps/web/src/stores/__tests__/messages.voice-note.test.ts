@@ -172,7 +172,7 @@ describe("useMessagesStore.sendVoiceNote", () => {
         return {};
       }
       if (path === "/users/user-peer/direct-relationship") {
-        return {};
+        return { ok: true };
       }
       if (path === "/messages") {
         return {};
@@ -200,13 +200,25 @@ describe("useMessagesStore.sendVoiceNote", () => {
     expect(directUploadFetchMock).toHaveBeenCalledTimes(1);
     expect(apiUploadMock).not.toHaveBeenCalled();
 
-    expect(apiPostMock).toHaveBeenCalledTimes(3);
+    expect(apiPostMock).toHaveBeenCalledTimes(4);
+    // Attachment sends bootstrap the direct relationship only after the
+    // upload pipeline (init + complete) succeeds, just before dispatching
+    // the encrypted message.
+    expect(apiPostMock).toHaveBeenNthCalledWith(
+      1,
+      "/attachments/init-upload",
+      expect.objectContaining({ contentType: "audio/webm" })
+    );
     expect(apiPostMock).toHaveBeenNthCalledWith(
       2,
       "/attachments/11111111-1111-4111-8111-111111111111/complete"
     );
     expect(apiPostMock).toHaveBeenNthCalledWith(
       3,
+      "/users/user-peer/direct-relationship"
+    );
+    expect(apiPostMock).toHaveBeenNthCalledWith(
+      4,
       "/messages",
       expect.objectContaining({
         recipientUserId: "user-peer",
@@ -247,7 +259,15 @@ describe("useMessagesStore.sendVoiceNote", () => {
     expect(directUploadFetchMock).toHaveBeenCalledTimes(1);
     expect(apiUploadMock).not.toHaveBeenCalled();
 
+    // The voice_note test already established the direct relationship for
+    // this recipient; the 30s relationship cache in the per-module directory
+    // means this send must not re-POST it.
     expect(apiPostMock).toHaveBeenCalledTimes(3);
+    expect(apiPostMock).toHaveBeenNthCalledWith(
+      1,
+      "/attachments/init-upload",
+      expect.objectContaining({ contentType: "video/webm" })
+    );
     expect(apiPostMock).toHaveBeenNthCalledWith(
       2,
       "/attachments/11111111-1111-4111-8111-111111111111/complete"

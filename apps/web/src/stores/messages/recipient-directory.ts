@@ -21,7 +21,7 @@ interface CreateRecipientDeviceDirectoryOptions {
   fetchRecipientDevices: (
     recipientUserId: string
   ) => Promise<Array<{ deviceId: string; identityKeyPublic: string }>>;
-  establishDirectRelationship: (recipientUserId: string) => Promise<void>;
+  establishDirectRelationship: (recipientUserId: string) => Promise<boolean>;
   recipientDeviceCacheTtlMs?: number;
   directRelationshipCacheTtlMs?: number;
   now?: () => number;
@@ -82,8 +82,13 @@ export function createRecipientDeviceDirectory(
     const cachedUntil = directRelationshipCache.get(cacheKey) ?? 0;
     if (cachedUntil > now()) return;
 
-    await options.establishDirectRelationship(recipientUserId);
-    directRelationshipCache.set(cacheKey, now() + directRelationshipCacheTtlMs);
+    // Bootstrap is best-effort: only a confirmed establishment is cached, so
+    // transient failures retry on the next send instead of being suppressed
+    // for the TTL window.
+    const established = await options.establishDirectRelationship(recipientUserId);
+    if (established) {
+      directRelationshipCache.set(cacheKey, now() + directRelationshipCacheTtlMs);
+    }
   };
 
   const getRecipientDevices = async (

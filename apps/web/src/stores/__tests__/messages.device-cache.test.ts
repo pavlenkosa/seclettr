@@ -187,11 +187,12 @@ describe("useMessagesStore recipient device cache", () => {
 
     expect(apiGetMock).toHaveBeenCalledTimes(1);
     expect(apiPostMock.mock.calls.map((call) => call[0])).toEqual([
+      "/users/user-peer/direct-relationship",
       "/messages",
       "/messages",
     ]);
     expect(apiPostMock).toHaveBeenNthCalledWith(
-      1,
+      2,
       "/messages",
       expect.objectContaining({
         recipientUserId: "user-peer",
@@ -223,6 +224,7 @@ describe("useMessagesStore recipient device cache", () => {
 
     expect(apiGetMock).toHaveBeenCalledTimes(2);
     expect(apiPostMock.mock.calls.map((call) => call[0])).toEqual([
+      "/users/user-peer-refresh/direct-relationship",
       "/messages",
     ]);
   });
@@ -309,7 +311,11 @@ describe("useMessagesStore recipient device cache", () => {
       previousIdentityKey: "identity-old",
       currentIdentityKey: "identity-new",
     });
-    expect(apiPostMock).not.toHaveBeenCalled();
+    expect(
+      apiPostMock.mock.calls
+        .filter((call) => call[0] !== "/messages/pending")
+        .map((call) => call[0])
+    ).toEqual(["/users/user-peer-trust/direct-relationship"]);
 
     await useMessagesStore
       .getState()
@@ -330,6 +336,8 @@ describe("useMessagesStore recipient device cache", () => {
       useMessagesStore.getState().sendMessage(recipientUserId, "hello again")
     ).resolves.toBeUndefined();
 
+    // The first send's successful direct-relationship bootstrap is cached
+    // (30s TTL), so the retry send must not re-POST it.
     expect(apiPostMock.mock.calls.map((call) => call[0])).toEqual([
       "/messages",
     ]);

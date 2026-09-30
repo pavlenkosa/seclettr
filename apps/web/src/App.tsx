@@ -330,15 +330,19 @@ export function App() {
     };
   }, []);
 
-  // Prefetch route chunks immediately so they are ready before isBootstrapping flips
-  // to false — this prevents Suspense fallbacks from showing and avoids a second
-  // skeleton appearance after the boot skeleton dismisses.
+  // Prefetch route chunks intent-aware: boot downloads only the page set that
+  // matches the resolved auth state. Re-running on auth-state change (lock,
+  // logout, recovery) fetches the opposite set before navigation, so Suspense
+  // fallbacks still never flash after auth resolves.
   useEffect(() => {
-    void import("./pages/ChatPage");
-    void import("./pages/AuthPage");
-    void import("./pages/AuthRecoveryPage");
-    void import("./pages/RoomJoinPage");
-  }, []);
+    if (hasActiveSession) {
+      void import("./pages/ChatPage");
+      void import("./pages/RoomJoinPage");
+    } else {
+      void import("./pages/AuthPage");
+      void import("./pages/AuthRecoveryPage");
+    }
+  }, [hasActiveSession]);
 
   useEffect(() => {
     let stopRealtimeListeners: (() => void) | null = null;

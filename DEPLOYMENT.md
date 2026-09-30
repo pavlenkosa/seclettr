@@ -12,8 +12,8 @@ file, nginx configs, migrations, and installer script.
 
 | Mode | Image source | Bundle size |
 |------|-------------|-------------|
-| **One-line install** (recommended) | Latest release bundle from GitHub Releases (prebuilt images) | ~1 GB |
-| **Offline / air-gapped** | Same bundle, copied manually | ~1 GB |
+| **One-line install** (recommended) | Latest release bundle from GitHub Releases (prebuilt images) | ~104 MiB |
+| **Offline / air-gapped** | Same bundle, copied manually | ~104 MiB |
 | **Pure online** (advanced) | Pulled from `ghcr.io/stepan-pavlenko/seclettr/*` at install time | ~10 MB (configs only) |
 
 For the pure-online path the GHCR packages must be public (or you must run
@@ -84,15 +84,27 @@ network-specific values that it cannot guess:
 #   TURN_EXTERNAL_IP / ANNOUNCED_IP — public IP of the server
 ```
 
+Set these domain variables **after** the final install run if possible — see
+the `.env` placeholder warning in "Prepare Environment File" below.
+
 ### 4. Run Installer
 
 ```bash
 # Interactive (recommended for first deploy)
 ./install.sh --interactive
 
-# Non-interactive (CI/automation)
+# Non-interactive (CI/automation), self-signed cert (default)
 ./install.sh --non-interactive --mode full --network tls
+
+# Non-interactive with a trusted Let's Encrypt certificate (requires a real
+# domain pointing at this server; renewal is automated by the installer)
+./install.sh --non-interactive --mode full --network tls \
+  --cert-mode letsencrypt --letsencrypt-email you@example.com
 ```
+
+Without `--cert-mode`, the installer defaults to a self-signed certificate.
+To place your own CA-signed certificate manually instead, see "TLS or HTTP"
+in the Release Bundle Installation section below.
 
 The installer will:
 1. Acquire required Docker images deterministically: use locally present
@@ -114,7 +126,17 @@ docker compose -p seclettr --env-file .env -f docker-compose.yml ps
 
 # API should return {"status":"ok"}
 curl http://127.0.0.1:3001/health
+
+# Public API health through nginx (should print {"status":"ok"})
+curl https://<your-domain>/api/health
+
+# Public web endpoint (expect HTTP 200 and a Let's Encrypt issuer when
+# installed with --cert-mode letsencrypt)
+curl -sI https://<your-domain>
 ```
+
+> **Note:** `https://<your-domain>/health` serves the web app's `index.html`,
+> not the API health endpoint. The public API health path is `/api/health`.
 
 ---
 
@@ -159,6 +181,15 @@ Open `.env` and adjust:
 
 All cryptographic secrets are generated automatically if you leave them as `CHANGE_ME_*` placeholders.
 
+> **Warning (placeholder re-detection):** on every install run the installer
+> re-checks `.env` for any `CHANGE_ME` occurrence — **including matches inside
+> comment lines** — and when one is found it re-derives `CORS_ORIGIN`,
+> `TURN_DOMAIN`, and `S3_PUBLIC_URL` from the detected server IP. Auto-generated
+> secret placeholders are safe to leave in place, but the domain variables above
+> must be set **after** the final install run (or after ensuring no `CHANGE_ME`
+> text remains anywhere in `.env`, comments included), otherwise your configured
+> domains are overwritten with the IP on the next run.
+
 > **Note:** `ALLOW_PUBLIC_REGISTRATION` defaults to `true` in the release compose file; set it to `false` in your `.env` for private deployments.
 
 ### 5. Choose Deployment Mode
@@ -177,6 +208,8 @@ All cryptographic secrets are generated automatically if you leave them as `CHAN
   - `cert.pem`
   - `key.pem`
 - Keep `NETWORK_MODE=tls`.
+- Non-interactive alternative: pass `--cert-mode letsencrypt --letsencrypt-email <email>` and the installer obtains the certificate itself and sets up automatic renewal.
+- Let's Encrypt **requires a real domain** — it cannot issue certificates for bare IP addresses. With `--cert-mode letsencrypt` and no domain, the installer falls back to a self-signed certificate.
 
 > **Note:** Self-signed certificates will trigger a browser security warning.
 > Replace them with a CA-signed certificate for public-facing deployments.
@@ -197,6 +230,10 @@ All cryptographic secrets are generated automatically if you leave them as `CHAN
 ```bash
 # Full stack over TLS
 ./install.sh --mode full --network tls
+
+# Full stack over TLS with Let's Encrypt (real domain required)
+./install.sh --mode full --network tls \
+  --cert-mode letsencrypt --letsencrypt-email you@example.com
 
 # Backend only
 ./install.sh --mode backend --non-interactive
@@ -219,9 +256,14 @@ docker compose -p seclettr --env-file .env -f docker-compose.yml ps
 
 Then verify:
 - API health: `http://127.0.0.1:3001/health`
+- Public API health: `https://<your-domain>/api/health` (should return `{"status":"ok"}`; note `https://<your-domain>/health` serves the web app's `index.html` instead)
 - Web:
   - `https://<your-domain>` (TLS mode)
   - `http://<your-domain>` (HTTP mode)
+
+> **Note:** the URL printed in the post-install summary is derived from
+> `TURN_DOMAIN`. If `TURN_DOMAIN` is an IP address, the summary will show that
+> IP as the URL.
 
 ### Common Operations
 

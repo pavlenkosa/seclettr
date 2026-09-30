@@ -3,7 +3,7 @@ export type GroupRole = "owner" | "admin" | "member";
 export interface GroupInfoMember {
   readonly userId: string;
   readonly username: string;
-  readonly role: GroupRole | string;
+  readonly role: GroupRole;
 }
 
 export function normalizeRole(role: GroupInfoMember["role"]): GroupRole {

@@ -131,7 +131,7 @@ export async function resolveRestoredSession(
   }
 
   const { key: storageKey, volatile: storageKeyVolatile } = resolvedStorageKey;
-  await runSessionMigrationOnce();
+  runSessionMigrationOnce();
   const deviceKeys = await loadDecrypted<StoredDeviceKeys>(
     storageKey,
     `device:${sessionPreview.deviceId}:keys`

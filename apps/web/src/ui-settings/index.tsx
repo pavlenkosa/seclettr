@@ -1,4 +1,3 @@
-import { type ReactNode } from "react";
 import { create } from "zustand";
 import { subscribeWithSelector } from "zustand/middleware";
 import { useShallow } from "zustand/react/shallow";
@@ -300,9 +299,4 @@ export function useHapticsSettings(): HapticsSettingsContextValue {
       setVibrationEnabled: s.setVibrationEnabled,
     }))
   );
-}
-
-/** @deprecated The store is now a Zustand singleton — no provider needed. Kept for backward compatibility. */
-export function UiSettingsProvider({ children }: { readonly children: ReactNode }) {
-  return <>{children}</>;
 }

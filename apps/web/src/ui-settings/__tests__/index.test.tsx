@@ -5,7 +5,6 @@ import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
-  UiSettingsProvider,
   useAppearanceSettings,
   useAudioOutputSettings,
   useSecuritySettings,
@@ -67,7 +66,7 @@ function AudioHarness(props: {
   return null;
 }
 
-describe("UiSettingsProvider", () => {
+describe("ui-settings store hooks", () => {
   let container: HTMLDivElement;
   let root: Root;
   let localStorageState: Storage & MemoryStorageState;
@@ -141,7 +140,7 @@ describe("UiSettingsProvider", () => {
   it("keeps domain-specific consumers isolated from unrelated settings changes", () => {
     act(() => {
       root.render(
-        <UiSettingsProvider>
+        <>
           <AppearanceHarness
             hookRef={appearanceRef}
             onRender={() => {
@@ -160,7 +159,7 @@ describe("UiSettingsProvider", () => {
               audioRenderCount += 1;
             }}
           />
-        </UiSettingsProvider>
+        </>
       );
     });
 

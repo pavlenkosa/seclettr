@@ -48,7 +48,8 @@ vi.mock("@/lib/user-labels", () => ({
   shouldHydrateUserLabel: vi.fn(() => false),
 }));
 
-vi.mock("@/stores/messages/conversation-persistence", () => ({
+vi.mock("@/stores/messages/conversation-persistence", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/stores/messages/conversation-persistence")>()),
   persistConversations: persistConversationsMock,
 }));
 

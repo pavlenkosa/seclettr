@@ -3,7 +3,7 @@ import { encodeDirectEnvelope } from "@/lib/direct-envelope";
 import { getCachedUserLabel, shouldHydrateUserLabel } from "@/lib/user-labels";
 import { ratchetEncrypt, serializeRatchetState } from "@seclettr/crypto";
 import { MESSAGE_PROTOCOL_VERSION } from "@seclettr/protocol";
-import { persistConversations } from "./conversation-persistence";
+import { persistConversations, trimMessagesToCap } from "./conversation-persistence";
 import {
   buildDirectMessageADv1,
   parseDirectDeliveries,
@@ -215,7 +215,7 @@ export function createMessagesOutboundTextRuntime(
             [recipientUserId]: {
               userId: recipientUserId,
               username: optimisticUsername,
-              messages: [...(existing?.messages ?? []), optimisticMsg],
+              messages: trimMessagesToCap([...(existing?.messages ?? []), optimisticMsg]),
               lastMessageAt: Date.now(),
               unreadCount: 0,
               peerIdentityKey:

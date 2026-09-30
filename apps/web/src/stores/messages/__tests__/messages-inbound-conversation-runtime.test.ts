@@ -11,7 +11,8 @@ const { persistConversationsMock, primeUserLabelCacheMock, shouldHydrateUserLabe
     shouldHydrateUserLabelMock: vi.fn(() => false),
   }));
 
-vi.mock("@/stores/messages/conversation-persistence", () => ({
+vi.mock("@/stores/messages/conversation-persistence", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/stores/messages/conversation-persistence")>()),
   persistConversations: persistConversationsMock,
 }));
 

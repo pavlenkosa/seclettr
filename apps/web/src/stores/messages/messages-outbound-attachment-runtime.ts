@@ -6,7 +6,7 @@ import {
 } from "@/lib/upload-progress";
 import { encodeDirectEnvelope } from "@/lib/direct-envelope";
 import { getCachedUserLabel, shouldHydrateUserLabel } from "@/lib/user-labels";
-import { persistConversations } from "./conversation-persistence";
+import { persistConversations, trimMessagesToCap } from "./conversation-persistence";
 import type {
   Conversation,
   GetMessagesState,
@@ -177,7 +177,7 @@ export function createMessagesOutboundAttachmentRuntime(
         [params.recipientUserId]: {
           userId: params.recipientUserId,
           username: optimisticUsername,
-          messages: [...(existing?.messages ?? []), optimisticMsg],
+          messages: trimMessagesToCap([...(existing?.messages ?? []), optimisticMsg]),
           lastMessageAt: Date.now(),
           unreadCount: 0,
           peerIdentityKey: existing?.peerIdentityKey,

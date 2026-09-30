@@ -14,7 +14,8 @@ const mockedUserLabels = vi.hoisted(() => ({
   shouldHydrateUserLabel: vi.fn(() => false),
 }));
 
-vi.mock("../conversation-persistence", () => ({
+vi.mock("../conversation-persistence", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("../conversation-persistence")>()),
   persistConversations: mockedPersistence.persistConversations,
   persistPendingReadReceiptMessageIds: mockedPersistence.persistPendingReadReceiptMessageIds,
   trimMessageIds: mockedPersistence.trimMessageIds,

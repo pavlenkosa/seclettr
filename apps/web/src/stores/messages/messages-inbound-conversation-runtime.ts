@@ -3,7 +3,7 @@ import {
   primeUserLabelCache,
   shouldHydrateUserLabel,
 } from "@/lib/user-labels";
-import { persistConversations } from "./conversation-persistence";
+import { persistConversations, trimMessagesToCap } from "./conversation-persistence";
 import type {
   Conversation,
   GetMessagesState,
@@ -68,7 +68,7 @@ export function replaceOrAppendMessage(
   );
   if (existingMessageIndex < 0) {
     return {
-      messages: [...messages, nextMessage],
+      messages: trimMessagesToCap([...messages, nextMessage]),
       existingMessageIndex,
     };
   }

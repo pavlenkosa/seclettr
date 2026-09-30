@@ -2,9 +2,25 @@ import { storeEncrypted, loadDecrypted } from "@seclettr/crypto";
 import { sanitizeDisplayTextOrFallback } from "@/lib/display-text";
 import { trimTrackedMessageIds } from "./inbound-tracking";
 import { useAuthStore } from "@/stores/auth";
-import type { Conversation } from "./types";
+import type { Conversation, Message } from "./types";
 
 export const MAX_PROCESSED_MESSAGE_IDS = 5_000;
+
+/**
+ * Per-conversation in-memory cap. Appends trim from the head (oldest dropped,
+ * newest kept). History older than this is not re-fetchable in the encrypted
+ * store, so this only bounds the live array — never a data-loss path for
+ * in-app pagination.
+ */
+export const MAX_MESSAGES_PER_CONVERSATION = 500;
+
+/** Keep the newest messages up to the per-conversation cap. */
+export function trimMessagesToCap(messages: readonly Message[]): Message[] {
+  if (messages.length <= MAX_MESSAGES_PER_CONVERSATION) {
+    return [...messages];
+  }
+  return messages.slice(-MAX_MESSAGES_PER_CONVERSATION);
+}
 
 const CONVERSATIONS_STORAGE_PREFIX = "conversations:v1:";
 const PROCESSED_MESSAGE_IDS_STORAGE_PREFIX = "processed-message-ids:v1:";

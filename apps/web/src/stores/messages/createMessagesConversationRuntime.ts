@@ -20,6 +20,7 @@ import {
   persistConversations,
   persistPendingReadReceiptMessageIds,
   trimMessageIds,
+  trimMessagesToCap,
 } from "./conversation-persistence";
 import type {
   Conversation,
@@ -270,7 +271,7 @@ export function createMessagesConversationRuntime(
             normalizedUsername && normalizedUsername.length > 0
               ? normalizedUsername
               : conversation.username,
-          messages: [...conversation.messages, callMessage],
+          messages: trimMessagesToCap([...conversation.messages, callMessage]),
           lastMessageAt: callMessage.timestamp,
           unreadCount: direction === "inbound" ? inboundUnread : conversation.unreadCount,
         };

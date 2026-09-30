@@ -16,7 +16,7 @@
 import { getAccessToken } from "@/lib/api";
 import { refreshSessionAccessToken } from "@/lib/session";
 import type { types as MediasoupTypes } from "mediasoup-client";
-import type { ZodTypeAny } from "zod";
+import { type z } from "zod";
 import {
   SFU_PROTOCOL_VERSION,
   SfuCloseProducerResponseSchema,
@@ -183,10 +183,10 @@ export function createSfuHttpClient(
     };
   };
 
-  const parseVersionedSfuPayload = <TSchema extends ZodTypeAny>(
+  const parseVersionedSfuPayload = <TSchema extends z.ZodType<unknown>>(
     schema: TSchema,
     payload: unknown
-  ) => {
+  ): z.output<TSchema> => {
     const parsed = safeParseVersionedWire(
       schema,
       payload,
@@ -201,7 +201,8 @@ export function createSfuHttpClient(
           : "Invalid SFU payload"
       );
     }
-    return parsed.data;
+    const data: z.output<TSchema> = parsed.data as z.output<TSchema>;
+    return data;
   };
 
   return {

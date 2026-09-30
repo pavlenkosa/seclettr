@@ -11,7 +11,7 @@ describe("call connection recovery helpers", () => {
       negotiationReady: true,
       renegotiationUnsupported: false,
       hasPeerTarget: true,
-      hasAttemptedIceRestart: false,
+      attemptedIceRestartCount: 0,
     })).toBe(true);
 
     expect(shouldAttemptDirectCallIceRestart({
@@ -19,7 +19,7 @@ describe("call connection recovery helpers", () => {
       negotiationReady: true,
       renegotiationUnsupported: false,
       hasPeerTarget: true,
-      hasAttemptedIceRestart: false,
+      attemptedIceRestartCount: 0,
     })).toBe(false);
 
     expect(shouldAttemptDirectCallIceRestart({
@@ -27,7 +27,7 @@ describe("call connection recovery helpers", () => {
       negotiationReady: false,
       renegotiationUnsupported: false,
       hasPeerTarget: true,
-      hasAttemptedIceRestart: false,
+      attemptedIceRestartCount: 0,
     })).toBe(false);
 
     expect(shouldAttemptDirectCallIceRestart({
@@ -35,7 +35,7 @@ describe("call connection recovery helpers", () => {
       negotiationReady: true,
       renegotiationUnsupported: true,
       hasPeerTarget: true,
-      hasAttemptedIceRestart: false,
+      attemptedIceRestartCount: 0,
     })).toBe(false);
 
     expect(shouldAttemptDirectCallIceRestart({
@@ -43,15 +43,36 @@ describe("call connection recovery helpers", () => {
       negotiationReady: true,
       renegotiationUnsupported: false,
       hasPeerTarget: false,
-      hasAttemptedIceRestart: false,
+      attemptedIceRestartCount: 0,
     })).toBe(false);
+  });
 
+  it("allows up to two ICE-restart attempts per connection episode", () => {
+    // First disconnect: budget full.
     expect(shouldAttemptDirectCallIceRestart({
       connectionState: "disconnected",
       negotiationReady: true,
       renegotiationUnsupported: false,
       hasPeerTarget: true,
-      hasAttemptedIceRestart: true,
+      attemptedIceRestartCount: 0,
+    })).toBe(true);
+
+    // Second disconnect: one attempt consumed.
+    expect(shouldAttemptDirectCallIceRestart({
+      connectionState: "disconnected",
+      negotiationReady: true,
+      renegotiationUnsupported: false,
+      hasPeerTarget: true,
+      attemptedIceRestartCount: 1,
+    })).toBe(true);
+
+    // Third disconnect: budget exhausted.
+    expect(shouldAttemptDirectCallIceRestart({
+      connectionState: "disconnected",
+      negotiationReady: true,
+      renegotiationUnsupported: false,
+      hasPeerTarget: true,
+      attemptedIceRestartCount: 2,
     })).toBe(false);
   });
 

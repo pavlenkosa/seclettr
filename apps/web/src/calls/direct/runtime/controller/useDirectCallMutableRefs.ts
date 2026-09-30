@@ -104,7 +104,7 @@ export function useDirectCallMutableRefs() {
   const lastRenegotiationAttemptRef = useRef<Record<string, unknown> | null>(null);
   const lastSignalingErrorRef = useRef<Record<string, unknown> | null>(null);
   const disconnectResetTimerRef = useRef<number | null>(null);
-  const disconnectRecoveryAttemptedRef = useRef(false);
+  const disconnectRecoveryAttemptedRef = useRef(0);
   const directCallLifecycleTokenRef = useRef(0);
   const outgoingRingingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const callChatKindRef = useRef<"plain" | "e2ee" | null>(null);

@@ -38,7 +38,7 @@ interface UseDirectCallPeerConnectionRuntimeOptions {
   activeRef: MutableRefObject<ActiveCall | null>;
   peerConnectionRef: MutableRefObject<RTCPeerConnection | null>;
   disconnectResetTimerRef: MutableRefObject<number | null>;
-  disconnectRecoveryAttemptedRef: MutableRefObject<boolean>;
+  disconnectRecoveryAttemptedRef: MutableRefObject<number>;
   negotiationReadyRef: MutableRefObject<boolean>;
   renegotiationUnsupportedRef: MutableRefObject<boolean>;
   sendRenegotiationOfferRef: MutableRefObject<((callId: string, reason: string) => Promise<void>) | null>;
@@ -129,7 +129,7 @@ export function useDirectCallPeerConnectionRuntime({
       }
       if (pc.connectionState === "connected") {
         cancelDisconnectReset();
-        disconnectRecoveryAttemptedRef.current = false;
+        disconnectRecoveryAttemptedRef.current = 0;
         const nowMs = Date.now();
         setActiveIfCurrent(callId, (prev) => ({
           ...prev,
@@ -178,10 +178,10 @@ export function useDirectCallPeerConnectionRuntime({
         negotiationReady: negotiationReadyRef.current,
         renegotiationUnsupported: renegotiationUnsupportedRef.current,
         hasPeerTarget: Boolean(currentActive?.peerUserId && currentActive?.peerDeviceId),
-        hasAttemptedIceRestart: disconnectRecoveryAttemptedRef.current,
+        attemptedIceRestartCount: disconnectRecoveryAttemptedRef.current,
       });
       if (shouldAttemptRecovery) {
-        disconnectRecoveryAttemptedRef.current = true;
+        disconnectRecoveryAttemptedRef.current += 1;
         setActiveIfCurrent(callId, (prev) => ({ ...prev, state: "connecting" }));
         try {
           pc.restartIce();

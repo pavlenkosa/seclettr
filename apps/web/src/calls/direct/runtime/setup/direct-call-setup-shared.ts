@@ -42,7 +42,7 @@ export interface DirectCallNegotiationRefs {
   lastRenegotiationAttemptRef: MutableRefObject<Record<string, unknown> | null>;
   lastSignalingErrorRef: MutableRefObject<Record<string, unknown> | null>;
   disconnectResetTimerRef: MutableRefObject<number | null>;
-  disconnectRecoveryAttemptedRef: MutableRefObject<boolean>;
+  disconnectRecoveryAttemptedRef: MutableRefObject<number>;
 }
 
 // ---------------------------------------------------------------------------
@@ -186,7 +186,7 @@ export function clearDirectCallNegotiationState(refs: Pick<
   refs.pendingRenegotiationReasonRef.current = null;
   refs.lastRenegotiationAttemptRef.current = null;
   refs.lastSignalingErrorRef.current = null;
-  refs.disconnectRecoveryAttemptedRef.current = false;
+  refs.disconnectRecoveryAttemptedRef.current = 0;
 }
 
 export function resetNegotiationSessionState(

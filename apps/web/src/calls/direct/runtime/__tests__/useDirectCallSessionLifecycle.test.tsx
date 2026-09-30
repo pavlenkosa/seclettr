@@ -259,7 +259,7 @@ function createLifecycleContext() {
     lastRenegotiationAttemptRef: { current: { revision: 13, stage: "sent" } },
     lastSignalingErrorRef: { current: { code: "ERR" } },
     disconnectResetTimerRef: { current: disconnectTimer },
-    disconnectRecoveryAttemptedRef: { current: true },
+    disconnectRecoveryAttemptedRef: { current: 1 },
     clearOutgoingMediaStateTrackBindingsRef: { current: clearOutgoingMediaStateTrackBindings },
     isCurrentActiveCallContext: (callId) => activeState.current?.callId === callId,
   };

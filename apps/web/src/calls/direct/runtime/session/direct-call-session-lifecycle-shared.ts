@@ -144,5 +144,5 @@ export type UseDirectCallSessionLifecycleOptions =
     incomingRingtoneRef: MutableRefObject<HTMLAudioElement | null>;
     outgoingRingtoneRef: MutableRefObject<HTMLAudioElement | null>;
     disconnectResetTimerRef: MutableRefObject<number | null>;
-    disconnectRecoveryAttemptedRef: MutableRefObject<boolean>;
+    disconnectRecoveryAttemptedRef: MutableRefObject<number>;
   };

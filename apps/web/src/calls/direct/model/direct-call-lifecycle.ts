@@ -34,8 +34,15 @@ interface DirectCallDisconnectRecoveryParams {
   negotiationReady: boolean;
   renegotiationUnsupported: boolean;
   hasPeerTarget: boolean;
-  hasAttemptedIceRestart: boolean;
+  attemptedIceRestartCount: number;
 }
+
+/**
+ * Maximum ICE-restart attempts allowed per connection episode. The runtime
+ * resets the counter on "connected", so a fresh episode gets a fresh budget;
+ * the disconnect grace timer remains the backstop when attempts run out.
+ */
+export const DIRECT_CALL_MAX_ICE_RESTART_ATTEMPTS = 2;
 
 export function shouldAttemptDirectCallIceRestart(
   params: DirectCallDisconnectRecoveryParams
@@ -45,7 +52,7 @@ export function shouldAttemptDirectCallIceRestart(
     params.negotiationReady &&
     !params.renegotiationUnsupported &&
     params.hasPeerTarget &&
-    !params.hasAttemptedIceRestart
+    params.attemptedIceRestartCount < DIRECT_CALL_MAX_ICE_RESTART_ATTEMPTS
   );
 }
 

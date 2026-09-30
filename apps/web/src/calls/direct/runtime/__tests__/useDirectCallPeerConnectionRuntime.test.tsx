@@ -53,7 +53,7 @@ function HookHarness(props: {
   activeRef: MutableRefObject<ActiveCall | null>;
   peerConnectionRef: MutableRefObject<RTCPeerConnection | null>;
   disconnectResetTimerRef: MutableRefObject<number | null>;
-  disconnectRecoveryAttemptedRef: MutableRefObject<boolean>;
+  disconnectRecoveryAttemptedRef: MutableRefObject<number>;
   negotiationReadyRef: MutableRefObject<boolean>;
   renegotiationUnsupportedRef: MutableRefObject<boolean>;
   sendRenegotiationOfferRef: MutableRefObject<((callId: string, reason: string) => Promise<void>) | null>;
@@ -142,7 +142,7 @@ describe("useDirectCallPeerConnectionRuntime", () => {
           activeRef={activeState}
           peerConnectionRef={peerConnectionRef}
           disconnectResetTimerRef={{ current: null }}
-          disconnectRecoveryAttemptedRef={{ current: false }}
+          disconnectRecoveryAttemptedRef={{ current: 0 }}
           negotiationReadyRef={{ current: false }}
           renegotiationUnsupportedRef={{ current: false }}
           sendRenegotiationOfferRef={{ current: null }}
@@ -192,10 +192,10 @@ describe("useDirectCallPeerConnectionRuntime", () => {
     expect(flushOutgoingIceBatch).toHaveBeenCalledWith("call-1");
   });
 
-  it("promotes connected state, starts duration clock, and attempts disconnect recovery once", async () => {
+  it("promotes connected state, starts duration clock, and retries disconnect recovery within episode budget", async () => {
     const activeState = { current: createActiveCall() } as MutableRefObject<ActiveCall | null>;
     const peerConnectionRef = { current: null } as MutableRefObject<RTCPeerConnection | null>;
-    const disconnectRecoveryAttemptedRef = { current: false } as MutableRefObject<boolean>;
+    const disconnectRecoveryAttemptedRef = { current: 0 } as MutableRefObject<number>;
     const sendRenegotiationOffer = vi.fn(async () => undefined);
     const setActiveIfCurrent = vi.fn((callId: string, update: (current: ActiveCall) => ActiveCall) => {
       if (activeState.current?.callId !== callId) return;
@@ -258,7 +258,39 @@ describe("useDirectCallPeerConnectionRuntime", () => {
 
     expect(fakePc.restartIce).toHaveBeenCalledTimes(1);
     expect(sendRenegotiationOffer).toHaveBeenCalledWith("call-1", "disconnect-recovery");
-    expect(disconnectRecoveryAttemptedRef.current).toBe(true);
+    expect(disconnectRecoveryAttemptedRef.current).toBe(1);
+
+    // Second disconnect within the same connection episode: still allowed
+    // (budget of 2 per episode) — counter increments to 2.
+    act(() => {
+      fakePc.connectionState = "disconnected";
+      fakePc.onconnectionstatechange?.();
+    });
+    expect(fakePc.restartIce).toHaveBeenCalledTimes(2);
+    expect(disconnectRecoveryAttemptedRef.current).toBe(2);
+
+    // Third disconnect within the same episode: budget exhausted, no restart.
+    act(() => {
+      fakePc.connectionState = "disconnected";
+      fakePc.onconnectionstatechange?.();
+    });
+    expect(fakePc.restartIce).toHaveBeenCalledTimes(2);
+    expect(disconnectRecoveryAttemptedRef.current).toBe(2);
+
+    // Reconnecting resets the per-episode budget.
+    act(() => {
+      fakePc.connectionState = "connected";
+      fakePc.onconnectionstatechange?.();
+    });
+    expect(disconnectRecoveryAttemptedRef.current).toBe(0);
+
+    // A fresh episode gets a fresh budget: first attempt succeeds again.
+    act(() => {
+      fakePc.connectionState = "disconnected";
+      fakePc.onconnectionstatechange?.();
+    });
+    expect(fakePc.restartIce).toHaveBeenCalledTimes(3);
+    expect(disconnectRecoveryAttemptedRef.current).toBe(1);
 
     act(() => {
       fakePc.connectionState = "failed";
